@@ -1,40 +1,39 @@
 # agents/lira.md — персональная рабочая память Лиры по #342
 
-## Текущее назначение
+## Текущее состояние
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **Whole B2 author PASS on exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` — 22/22 checks, 18/18 workflows SUCCESS; 2758 unit, 1578 real PG17, 87 visibility. Лира STOP; следующий исполнитель Мира — bounded B2 checkpoint на Draft #357.**
+Moderation visibility stacked delivery:
 
-## Подтверждённое B2
+- B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6` — Mira bounded PASS.
+- B2 Draft #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` — **Mira bounded PASS**.
+- B1/B2 remain Draft/unmerged.
+- **Лира STOP. B3 is prepared but inactive until owner continuation.**
 
-- B2.1 `41f94434e62b59d40d7f7ebd57be5927decb23c9`: `appendVisibilityHistory` neutral ID-only labels, reason/rollback PG regressions.
-- B2.2 exact stable `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`: transactional topic/post Hide/Restore, current version/revision CAS, membership, active actor, direct fresh RBAC+Owner/AP10 admission before no-op; one neutral History event per transition and rollback if append fails. Backend not exposed through public routes.
-- Final [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1493/1493 PG17 incl 7/7 new. No need to recheck same exact head without new cause.
-- B2.3a `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`: `createPost` rejects new replies under hidden topic / hidden direct parent, allows generic reply when root hidden, preserves already-committed matching receipt replay. Topic lock remains NO KEY UPDATE; parent remains KEY SHARE; no new lock-order edge. Scope: `db/forum-repository.ts` and +3 PG tests in `tests/database/moderation-visibility-commands.test.ts`.
-- [Exact-head CI 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit, 1496/1496 PG17 including visibility commands 10/10. No repeated CI polling needed.
-- B2.3b exact `59eb34bd86d31bf00b960b487bed09555bbbe07d`: published edit denies hidden topic/post but preserves matching receipt replay; own title checks hidden topic; source-locale topic/post own/any and no-op check fresh visibility after topic→post locks; any no-op has AP-10 `admin.forum` admission. 6 new PG regressions; one selective title-execution fixture gains `is_hidden` column. No B3+.
-- [Exact-head CI 44706419635](https://github.com/iliya1947/vico-forum/actions/runs/44706419635) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1502/1502 PG17 (16/16 visibility commands). Prior intermediate fixture issue fixed; unrelated settings UI assertion passed on final SHA.
-- B2.3c1 exact `c0160417f52b6c02237251c078f93248f74535ab`: hidden topic admission in `setTopicClosed`, `pinTopic`, `unpinTopic` before closure CAS/no-op and pin idempotency, retaining topic NO KEY UPDATE → actor/AP-10 → History order. +2 PG regressions for hidden open vs hidden closed+pinned, same-state/no-op, Owner/moderator denial, no History mutation, Restore recovery.
-- [Exact-head CI 44709756666](https://github.com/iliya1947/vico-forum/actions/runs/44709756666) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1504/1504 PG17 (18/18 visibility commands). No need to recheck unchanged head without cause.
-- B2.3c2 exact `0430b1db36b90e8f28d6f3d1b2cdc7d1f66e545e`: signal create/withdraw/accepted/rejected operations deny hidden primary/duplicate original topic or selected answer under sorted topic→post→signal→actor locks. Pending status + History remain unchanged on refusal; Restore re-enables. Two modified files (`db/forum-repository.ts`, `tests/database/moderation-visibility-commands.test.ts`), +7 PG regressions. Final exact-head [CI 44711821916](https://github.com/iliya1947/vico-forum/actions/runs/44711821916) **PASS**: **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS; 2758/2758 unit, 1511/1511 PG17, 25/25 visibility**. B2.3c2 author PASS.
-- B2.3c3a exact `373c1b8bab3605e73598f673ed34b9823cee6b50`: `setHelpSolutionModeration` denies hidden topic or selected answer before changed/no-op/clear, pending signal supersession, History. Existing topic→post→signals→actor lock order preserved. Two PG regressions, including Owner/moderator and Restore. [Exact-head CI 44715419604](https://github.com/iliya1947/vico-forum/actions/runs/44715419604) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit and 1513/1513 PostgreSQL17 (27/27 visibility).
-- B2.3c3b exact `038ce369b8e29168b99b4ed8218b3e36b719a692`: `selectBestAnswer` rejects hidden topic and hidden target/current selected answer under sorted topic→post NO KEY UPDATE locks, including same-answer no-op and replacement. Preserves post→signals→actor and transition-only History; +3 PostgreSQL regressions for hidden topic/candidate/old, both own/any, state/History unchanged, Restore. [Exact-head CI 44717164926](https://github.com/iliya1947/vico-forum/actions/runs/44717164926): **22/22 checks, 18/18 workflows SUCCESS, 2758/2758 unit, 1516/1516 PG17 (30/30 visibility)**.
-- B2.3c3c exact `a40d91da20d608ba18879e95bcc1a04e1133e4fe`: `markTopicSolved` reads topic hidden state under existing NO KEY UPDATE, returns generic not-found before owner/any checks, already-solved conflict, signal changes or History. +2 PG regressions: hidden unsolved with pending duplicate signal and hidden already-solved, both own/any, state unchanged, Restore. [Exact-head CI 44719055856](https://github.com/iliya1947/vico-forum/actions/runs/44719055856) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit and 1518/1518 PG17 (32/32 visibility).
-- B2.3c3d exact `039f9ed77c432b9ac22d48b9facac864012522b9`: `confirmHelpDuplicate` denies hidden candidate or canonical original under sorted topic NO KEY UPDATE before relationship/signal/actor/History effects; Owner/moderator and hidden confirmed duplicate paths, existing relationships, no side effects, Restore covered by +2 PG regressions. [Exact-head CI 44721618584](https://github.com/iliya1947/vico-forum/actions/runs/44721618584) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit, 1520/1520 PG17 (34/34 visibility).
-- B2.3c3e exact `d51659b01db7b3c55111616010f760ed5e3b9b6d`: `removeHelpDuplicate` pre-reads active original relationship identity before topic locks, locks duplicate/original sorted NO KEY UPDATE, generic not-found if hidden/missing, rechecks identity under relationship lock before appeal/actor/History. +2 real PG tests: both topic lock orders, hidden duplicate/original, Owner/moderator, pending appeal preserved, Restore resolves appeal/relationship; repeat post-remove conflict. [Exact-head CI 44726577837](https://github.com/iliya1947/vico-forum/actions/runs/44726577837) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1522 PG17 (36 visibility).
-- B2.3c3f exact `86ac06b7a9c71e285b5efe258701866419d112a4`: protected own duplicate appeal V6 exception verified. Existing `appealHelpDuplicate` allows exact active own appeal while duplicate or canonical original is hidden, with author/actor checks, pending uniqueness and no relation/History edits; no production code change. +2 real PG regressions in dedicated visibility suite; [exact-head CI 44737362429](https://github.com/iliya1947/vico-forum/actions/runs/44737362429) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1524 PG17 (38 visibility).
-- B2.3c3g exact `562147fdd0b8d82e04847b0becb0bed554567e08`: `resolveHelpDuplicateAppeal` retains protected pending-appeal decision eligibility across Hide for accepted/rejected, with unchanged exact pending/actor/AP-10 checks, accepted link removal vs rejected retained, single History and no visibility change. +2 PG tests, no production code change. [Exact-head CI 44738934867](https://github.com/iliya1947/vico-forum/actions/runs/44738934867) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1526 PG17 (40 visibility).
-- B2.3d1 exact `acd402a3f74d5fabb9f8ad627277877ea44e4c96`: no separate recovery write path; conflict/rebase sends a fresh `editPublishedPost` request, guarded by topic and post visibility before revision/receipt mutations. Existing matching committed receipt remains idempotently replayable when hidden. +2 PG tests for hidden post exact/changed receipt and new Save, hidden topic stale/rebased Save, Restore; no production change. [Exact-head CI 44744285347](https://github.com/iliya1947/vico-forum/actions/runs/44744285347) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1528 PG17 (42 visibility).
-- B2.3d2 exact `19f2bdaa80b244093f37424a955a18acc3e572f9`: locked title topic gate rejects hidden; body planner pre-reads immutable post→topic, then locks topic NO KEY UPDATE before existing post UPDATE; hidden topic/post or stale membership aborts after head/task, before translation/actor/budget with full rollback. Existing accepted task execution unchanged. +3 PG regressions for Hide/Restore, pending task retention and no head/task/budget on refusal; partial test fixture `is_hidden` columns added. [CI 44746654595](https://github.com/iliya1947/vico-forum/actions/runs/44746654595) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1531 PostgreSQL17.
-- Work confined to Draft #357; no B3+.
+## Следующий возможный этап — B3 core public projection/discovery
 
-## Текущий handoff — whole B2 author PASS, STOP Мире
+On explicit owner continuation, create a new stacked implementation PR with base:
 
-Whole B2 implemented in stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`, base B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`. Deterministic real PostgreSQL barriers verified both orders Hide/Restore with title/body planning, replies, direct-parent replies, published edits, Complaint protected submissions, actor deactivation and FK KEY SHARE; accepted title/body translation tasks complete privately after Hide and their stored results survive Restore. No production changes after B2.3d2.
+`feature/moderation-visibility-b2-commands`
 
-[Final exact-head CI 44753654036](https://github.com/iliya1947/vico-forum/actions/runs/44753654036): **22/22 check-runs, 18/18 workflows SUCCESS; 2758/2758 unit, 1578/1578 PG17 (87/87 visibility)**. Author self-check complete. Earlier intermediate failures were corrected within test fixtures/barriers; no open B2 author finding.
+B3 bounded result from the accepted plan:
+- typed visible post vs hidden tombstone projection;
+- hidden topic neutral public 404;
+- consistent thread snapshot and stable chronology/anchors;
+- SQL visibility filtering before rank/count/LIMIT across the B3 public discovery/read paths;
+- hidden best-answer/duplicate references become safe unavailable projections without changing retained domain state;
+- public post/history/edit/recovery denial where required by B3;
+- sentinel leak tests for HTML/JSON/.data/meta/errors and pagination/rank/count/root/parent boundaries.
 
-**Мира next: bounded B2 coordinator checkpoint on exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`, comparing #357 diff to B1 and accepted V4/V6 plan.** On coordinator PASS the next stacked B3 can be assigned. No B3/Stage6/other modules yet. B1/B2 Draft/unmerged, no Leva before folded final feature; service #342 never merge.
+Do not implement B4 asset/private-file work, B5 own lists/inbox, B6 private moderation surface, B7 actions/UI, or later stages.
+
+Use focused checks while implementing internal B3 microsteps; one full exact-head CI/self-check before the B3 bounded checkpoint, unless a concrete cross-cutting risk requires an earlier full run.
+
+After whole B3 author PASS → STOP Mira for bounded B3 checkpoint. No intermediate merge to main and no Leva until final folded feature.
+
+## B2 review result
+
+Mira reviewed #357 local B1→B2 diff on exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` and found no confirmed current-B2 blocker. Final CI: 22/22 checks, 18/18 workflows SUCCESS; 2758 unit, 1578 PG17. Translation planning coverage already present in B2 overlaps part of future B4 but is not a defect; B4 should avoid duplicate work and verify the remaining boundary when reached.
 
 ## Границы
 
-V-P1–V-P3 accepted; V-T1/V-T2 PASS. Stage6/#300/general UI/UX excluded.
+V-P1–V-P3 accepted; V-T1/V-T2 PASS. #342 never merge. Stage6/#300/general UI/UX excluded.
