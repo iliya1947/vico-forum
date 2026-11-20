@@ -3084,6 +3084,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(within(reopened).getByText("Read")).toBeInTheDocument();
   });
 
+  it("hides participant complaint notifications from a non-participant manager", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-user" identity="manager" />);
+
+    expect(screen.queryByRole("button", { name: /Complaint decision/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Appeal result/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Notifications, 2 unread" })).toBeInTheDocument();
+  });
+
+  it("returns not found for authenticated non-participant direct complaint result access", async () => {
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="complaint-result-non-participant" />);
+
+    const notFound = await screen.findByRole("alert");
+    expect(within(notFound).getByRole("heading", { level: 1, name: "Forum page not found" })).toBeInTheDocument();
+    expect(document.querySelector(".complaint-review")).toBeNull();
+  });
+
   it("opens a complaint decision notification and submits a participant appeal", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
