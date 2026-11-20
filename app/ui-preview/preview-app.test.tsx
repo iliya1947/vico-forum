@@ -1235,8 +1235,11 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     });
     expect(within(filtered).getByText("Message from a blocked author is hidden.")).toBeInTheDocument();
 
+    const blockedPost = filtered.closest("[id^=\"post-\"]") as HTMLElement;
+    expect(blockedPost).not.toBeNull();
     await user.click(within(filtered).getByRole("button", { name: "Show message" }));
-    await waitFor(() => expect(document.querySelector("[data-filtered-post]")).toBeNull());
+    await waitFor(() => expect(blockedPost.querySelector("[data-filtered-post]")).toBeNull());
+    expect(document.querySelector("[data-filtered-post]")).not.toBeNull();
   });
 
   it("opens the Attention reporter's matching profile", async () => {
