@@ -2054,3 +2054,206 @@ describe("V4 real PostgreSQL visibility actor admission and KEY SHARE compatibil
     }
   });
 });
+
+describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct reply, edit and Complaint", () => {
+  async function connected() {
+    const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await c.connect();
+    await c.query("set statement_timeout='25000ms'");
+    const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { c, pid };
+  }
+  async function waitBlocked(waiter: number, possible: number[]) {
+    const end = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < end) {
+      const r = await client.query<{ blockers: number[]; wait_event_type: string | null }>(
+        "select pg_blocking_pids(pid) as blockers,wait_event_type from pg_stat_activity where pid=$1", [waiter],
+      );
+      last = r.rows[0];
+      if (r.rows[0]?.wait_event_type === "Lock"
+        && r.rows[0].blockers.some(pid => possible.includes(pid))) return;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    throw new Error("Post lock barrier was not observed: " + JSON.stringify({waiter,possible,last}));
+  }
+  function forum(c: Client) {
+    return new DrizzleForumRepository(drizzle(c), {cooldownMs: 0, now: () => new Date()},
+      withOwnerUserMeasureAdmission("owner"), undefined, "owner");
+  }
+  const cases = [
+    { transition: "Hide", writerFirst: true, initiallyHidden: false },
+    { transition: "Hide", writerFirst: false, initiallyHidden: false },
+    { transition: "Restore", writerFirst: true, initiallyHidden: true },
+    { transition: "Restore", writerFirst: false, initiallyHidden: true },
+  ] as const;
+  for (const kind of ["body-plan", "direct-reply", "edit", "complaint-post"] as const) {
+    it.each(cases)(
+      kind + " $transition writerFirst=$writerFirst: locked post and real CAS",
+      async ({transition,writerFirst,initiallyHidden}) => {
+        const f = await fixture();
+        if (initiallyHidden) await service.setPostVisibility(postCommand(f));
+        const revision = {
+          contentType: "post-body" as const, contentId: f.postId,
+          revisionId: f.bodyRevisionId, originalContent: "PRIVATE POST", sourceLocale: "en",
+        };
+        const prefix = "post-race-" + f.postId.slice(0, 12);
+        const admission = {
+          subjectKey: "P".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+          cost: 1, windowSeconds: 60,
+          global: { name: prefix + "-global", version: "race-v1", limit: 100 },
+          requester: { name: prefix + "-requester", version: "race-v1", limit: 100 },
+        };
+        const specification = kind === "body-plan"
+          ? await contentPostBodyTaskSpecification(revision,
+            {kind:"revision",mayProceed:true,sourceLocale:"en",resolutionOrigin:"revision-metadata"},
+            "en","he",CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+            "post-visibility-race-v1",protectMarkdownForTranslation(revision.originalContent),
+          )
+          : undefined;
+        const replyId = randomUUID(), replyRevisionId = randomUUID();
+        const receipt = randomUUID(), complaintId = randomUUID();
+        const [holder,writer,manager] = await Promise.all([connected(),connected(),connected()]);
+        const moderation = new ForumService(forum(manager.c));
+        const finalTargetHidden = transition === "Hide";
+        const command = postCommand(f,"moderator1",finalTargetHidden,
+          initiallyHidden ? 1 : 0, transition + " post row lock");
+        let held = false;
+        let write: Promise<unknown> | undefined;
+        let visibility: ReturnType<ForumService["setPostVisibility"]> | undefined;
+        try {
+          await holder.c.query("begin");
+          held = true;
+          await holder.c.query("select id from forum_posts where id=$1 for update", [f.postId]);
+          const beginWriter = async () => {
+            switch(kind) {
+              case "body-plan":
+                write = new DrizzleContentPostBodyPlanningStore(drizzle(writer.c))
+                  .upsertPending(specification!,revision,admission,"author");
+                break;
+              case "direct-reply":
+                write = forum(writer.c).createPost({
+                  id:replyId,topicId:f.topicId,authorId:"author",parentPostId:f.postId,
+                  bodyRevision:{id:replyRevisionId,originalContent:"Raced direct reply",sourceLocale:"en"},
+                });
+                break;
+              case "edit":
+                write = new ForumService(forum(writer.c)).editPublishedPost({
+                  topicId:f.topicId,postId:f.postId,actorId:"author",
+                  expectedRevisionId:f.bodyRevisionId,body:"New body revision",
+                  draftId:receipt,attachmentIds:[],
+                });
+                break;
+              case "complaint-post":
+                write = new DrizzleComplaintsRepository(drizzle(writer.c),
+                  {tenMinutes:10_000,day:10_000},async()=>{}).submit("ordinary",{
+                    target:{kind:"post",topicId:f.topicId,postId:f.postId,revisionId:f.bodyRevisionId},
+                    operationId:complaintId,reason:"spam",explanation:"Protected preexisting report form",
+                  });
+                break;
+            }
+            void write.catch(()=>undefined);
+            await waitBlocked(writer.pid,[holder.pid,manager.pid]);
+          };
+          const beginVisibility = async () => {
+            visibility = moderation.setPostVisibility(command);
+            void visibility.catch(()=>undefined);
+            await waitBlocked(manager.pid,[holder.pid,writer.pid]);
+          };
+          if(writerFirst){await beginWriter();await beginVisibility();}
+          else{await beginVisibility();await beginWriter();}
+          await holder.c.query("commit");
+          held = false;
+          const [written,changed] = await Promise.allSettled([write!,visibility!]);
+          const protectedSubmission = kind==="complaint-post";
+          const writerAdmitted = protectedSubmission ||
+            (transition==="Hide" ? writerFirst : !writerFirst);
+          if (writerAdmitted) {
+            expect(written.status).toBe("fulfilled");
+            if(kind==="body-plan"&&written.status==="fulfilled") {
+              expect(written.value).toMatchObject({outcome:"task",created:true});
+            }
+          } else if(kind==="body-plan") {
+            expect(written).toMatchObject({status:"fulfilled",value:{outcome:"revision-changed"}});
+          } else {
+            expect(written.status).toBe("rejected");
+            if(written.status==="rejected")expect(written.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+          const expectedConflict=kind==="edit"&&transition==="Hide"&&writerFirst;
+          if(expectedConflict){
+            expect(changed.status).toBe("rejected");
+            if(changed.status==="rejected")expect(changed.reason).toBeInstanceOf(ForumStateConflictError);
+          }else{
+            expect(changed.status).toBe("fulfilled");
+            if(changed.status==="fulfilled")expect(changed.value).toMatchObject({
+              hidden:finalTargetHidden,changed:true,
+            });
+          }
+          const state=(await client.query<{
+            hidden:boolean;version:number;revisionId:string;replies:number;
+            postRevisions:number;receipts:number;heads:number;tasks:number;budget:number;complaints:number;
+          }>(`select
+            (select is_hidden from forum_posts where id=$1) as hidden,
+            (select visibility_version from forum_posts where id=$1) as version,
+            (select current_revision_id from forum_posts where id=$1) as "revisionId",
+            (select count(*)::int from forum_posts where id=$2 and parent_post_id=$1) as replies,
+            (select count(*)::int from forum_post_revisions where post_id=$1) as "postRevisions",
+            (select count(*)::int from forum_publication_receipts where post_id=$1) as receipts,
+            (select count(*)::int from translation_task_generation_heads
+              where source_namespace='post-body' and source_key=$1) as heads,
+            (select count(*)::int from translation_tasks
+              where source_namespace='post-body' and source_key=$1) as tasks,
+            (select coalesce(sum(used_units),0)::int from content_translation_request_budget_counters
+              where scope in ($3,$4)) as budget,
+            (select count(*)::int from forum_complaints c join forum_complaint_targets t
+              on t.id=c.target_id where t.post_id=$1) as complaints`,
+            [f.postId,replyId,
+              admission.global.name+"@race-v1",admission.requester.name+"@race-v1"]
+          )).rows[0]!;
+          expect(state.hidden).toBe(expectedConflict?false:finalTargetHidden);
+          expect(state.version).toBe(expectedConflict?0:initiallyHidden?2:1);
+          expect(state.replies).toBe(kind==="direct-reply"&&writerAdmitted?1:0);
+          expect(state.postRevisions).toBe(kind==="edit"&&writerAdmitted?2:1);
+          expect(state.receipts).toBe(kind==="edit"&&writerAdmitted?1:0);
+          expect(state.heads).toBe(kind==="body-plan"&&writerAdmitted?1:0);
+          expect(state.tasks).toBe(kind==="body-plan"&&writerAdmitted?1:0);
+          expect(state.budget).toBe(kind==="body-plan"&&writerAdmitted?2:0);
+          expect(state.complaints).toBe(protectedSubmission?1:0);
+          expect((await events(f.postId)).map(x=>x.action)).toEqual(
+            expectedConflict?[]:initiallyHidden?["post.hidden","post.restored"]:["post.hidden"],
+          );
+          if(expectedConflict) {
+            // Edit wins: Hide correctly refuses the obsolete revision CAS,
+            // then succeeds only with a fresh observed revision.
+            await moderation.setPostVisibility({
+              ...postCommand(f), expectedRevisionId:state.revisionId,
+            });
+            await moderation.setPostVisibility({
+              ...postCommand(f,"moderator1",false,1,"Restore current revision"),
+              expectedRevisionId:state.revisionId,
+            });
+          } else if(finalTargetHidden) {
+            await moderation.setPostVisibility(
+              postCommand(f,"moderator1",false,1,"Restore after post lock race"),
+            );
+          }
+          const final=(await client.query(
+            "select is_hidden from forum_posts where id=$1",[f.postId],
+          )).rows[0];
+          expect(final.is_hidden).toBe(false);
+          if(kind==="body-plan"&&writerAdmitted) {
+            expect((await client.query(
+              "select status from translation_tasks where source_namespace='post-body' and source_key=$1",
+              [f.postId],
+            )).rows).toEqual([{status:"pending"}]);
+          }
+        }finally{
+          if(held)await holder.c.query("rollback");
+          await Promise.allSettled([write,visibility]);
+          await Promise.all([holder.c.end(),writer.c.end(),manager.c.end()]);
+        }
+      },
+      30_000,
+    );
+  }
+});
