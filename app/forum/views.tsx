@@ -1728,7 +1728,9 @@ function AttentionCaseCard({ item, locale, isPreview }: {
         <span className="attention-case-id">#{item.id}</span>
         {item.type !== "review-status" ? <time dateTime={item.createdAt}>{dateLabel} UTC</time> : null}
       </div>
-      <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>
+      {item.topicUnavailable
+        ? <span className="attention-case-topic">{t("attentionCaseTopicUnavailable")}</span>
+        : <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>}
       <div className="attention-case-metadata">
         {item.submittedByUserId && item.submittedByName ? (
           <span>{t("attentionCaseReporter")}: <Link to={forumProfilePath(locale, item.submittedByUserId)}>
@@ -1752,6 +1754,10 @@ function AttentionCaseCard({ item, locale, isPreview }: {
           {t("attentionCaseOriginal")}: <Link to={forumTopicPath(locale, item.original.id)}>
             <bdi dir="auto">{item.original.title}</bdi>
           </Link>
+        </p>
+      ) : item.type === "appeal" ? (
+        <p className="attention-case-original">
+          {t("attentionCaseOriginal")}: {t("helpDuplicateOriginalUnavailable")}
         </p>
       ) : null}
       {item.type === "review-status" ? (
