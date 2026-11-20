@@ -1358,6 +1358,7 @@ export const canonicalEnglishCatalog = {
     attentionCaseModeratorStatus: message("attentionCaseModeratorStatus", "Moderator-assigned solution status", "Status task distinct from a submitted user signal."),
     attentionCaseTargetAnswer: message("attentionCaseTargetAnswer", "View reported answer", "Permanent link to a reported best-answer message."),
     attentionCaseExplanation: message("attentionCaseExplanation", "User's explanation", "Explanation on a pending moderation case."),
+    attentionCaseTopicUnavailable: message("attentionCaseTopicUnavailable", "Topic unavailable", "Neutral label for a hidden current topic in a retained protected Help appeal; do not reveal title or create a public topic link."),
     attentionCaseOriginal: message("attentionCaseOriginal", "Original question", "Proposed or confirmed canonical original in moderation cases."),
     attentionCaseReviewStatus: message("attentionCaseReviewStatus", "Solution needs review", "Current moderator-assigned status on the best answer."),
     attentionCaseReviewGuidance: message("attentionCaseReviewGuidance", "Review the answer in the topic and update its moderation status there.", "Guidance for a moderator-assigned Needs review state, which is not a user report."),
