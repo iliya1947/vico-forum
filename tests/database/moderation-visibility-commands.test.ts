@@ -28,10 +28,10 @@ const repository = new DrizzleForumRepository(
   drizzle(pool), { cooldownMs: 0, now: () => new Date() }, withOwnerUserMeasureAdmission("owner"), undefined, "owner",
 );
 const service = new ForumService(repository);
-async function fixture(bodyContent = "PRIVATE POST", titleContent = "PRIVATE TOPIC") {
+async function fixture(bodyContent = "PRIVATE POST", titleContent = "PRIVATE TOPIC", sectionId = "visibility-section") {
   const topicId = randomUUID(), postId = randomUUID(), titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
   await repository.createTopicWithInitialPost({
-    id: topicId, sectionId: "visibility-section", authorId: "author",
+    id: topicId, sectionId, authorId: "author",
     titleRevision: { id: titleRevisionId, originalContent: titleContent, sourceLocale: "en" },
     initialPost: {
       id: postId, topicId, authorId: "author",
@@ -2263,6 +2263,93 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
 });
 
 describe("B3 public visibility projection and leak-safe discovery", () => {
+  it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
+    const f=await fixture(
+      "B3_HELP_ROOT_2926", "B3_HELP_SELECTED_2926", HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_HIDDEN_BEST_SOURCE_2926",sourceLocale:"en"},
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    const before=await repository.readProfile("ordinary");
+    const publicBefore=await repository.readTopicPage(f.topicId);
+    expect(publicBefore).toMatchObject({isSolved:true,bestAnswerPostId:answerId});
+    expect(publicBefore?.posts[1]).toMatchObject({
+      id:answerId,body:{originalContent:"B3_HIDDEN_BEST_SOURCE_2926"},
+    });
+    expect((await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId))
+      .toMatchObject({isSolved:true,hasBestAnswer:true,replyCount:1});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide selected solution",
+    });
+    const page=await repository.readTopicPage(f.topicId);
+    expect(page).toMatchObject({isSolved:true,bestAnswerPostId:answerId});
+    expect(page?.posts[1]).toEqual({
+      kind:"hidden",id:answerId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    expect(JSON.stringify(page)).not.toContain("B3_HIDDEN_BEST_SOURCE_2926");
+    expect(JSON.stringify(page)).not.toContain(revisionId);
+    const hiddenHelp=(await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId);
+    expect(hiddenHelp).toMatchObject({
+      isSolved:true,hasBestAnswer:true,replyCount:0,solutionModerationStatus:null,
+    });
+    expect(JSON.stringify(hiddenHelp)).not.toContain("B3_HIDDEN_BEST_SOURCE_2926");
+    expect((await repository.readProfile("ordinary"))?.messageCount).toBe(before!.messageCount-1);
+    expect((await repository.readProfile("ordinary"))?.bestAnswerCount).toBe(before!.bestAnswerCount-1);
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore selected solution",
+    });
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toMatchObject({
+      id:answerId,body:{id:revisionId,originalContent:"B3_HIDDEN_BEST_SOURCE_2926"},
+    });
+    expect((await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId))
+      .toMatchObject({isSolved:true,hasBestAnswer:true,replyCount:1});
+    expect((await repository.readProfile("ordinary"))?.messageCount).toBe(before!.messageCount);
+    expect((await repository.readProfile("ordinary"))?.bestAnswerCount).toBe(before!.bestAnswerCount);
+  });
+
+  it("ranks Popular by visible post activity before its period limits", async () => {
+    const first=await fixture("B3_POPULAR_FIRST_2926");
+    const second=await fixture("B3_POPULAR_SECOND_2926");
+    const replyId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:replyId,topicId:first.topicId,authorId:"ordinary",parentPostId:first.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_POPULAR_REPLY_2926",sourceLocale:"en"},
+    });
+    // An isolated future window excludes all existing test fixtures regardless of suite order.
+    const reference=new Date("2035-05-01T12:00:00.000Z");
+    for(const [id,time] of [
+      [first.postId,"2035-05-01T07:00:00.000Z"],
+      [second.postId,"2035-05-01T08:00:00.000Z"],
+      [replyId,"2035-05-01T09:00:00.000Z"],
+    ]){
+      await client.query("update forum_posts set created_at=$1 where id=$2",[new Date(time),id]);
+    }
+    const top=async() => {
+      const popular=await repository.readPopular(reference,1);
+      return ["24h","7d","30d"].map(period=>popular[period as "24h"|"7d"|"30d"][0]?.id);
+    };
+    expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+    await service.setPostVisibility({
+      topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide ranked Popular reply",
+    });
+    expect(await top()).toEqual([second.topicId,second.topicId,second.topicId]);
+    await service.setPostVisibility({
+      topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked Popular reply",
+    });
+    expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+  });
+
+
   it("filters hidden reply from search body matching and reply counts, then restores it", async () => {
     const f=await fixture("B3_UNIQUE_SEARCH_ROOT_20261120");
     const postId=randomUUID(),revisionId=randomUUID();
