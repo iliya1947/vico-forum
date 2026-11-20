@@ -2,6 +2,8 @@ name: SA04-S complete AccountState connected acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - ".github/workflows/sa04-s-completion-browser.yml"
       - "tests/browser/sa04-completion/**"
@@ -21,11 +23,14 @@ on:
       - "workers/app.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   completion_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
