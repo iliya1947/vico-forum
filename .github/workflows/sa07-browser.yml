@@ -2,6 +2,8 @@ name: SA07 Background Localization Files Data and Integrations connected Chromiu
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - ".github/workflows/sa07-browser.yml"
       - "tests/browser/sa07/**"
@@ -37,11 +39,14 @@ on:
       - "workers/attachment-storage.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   sa07_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
