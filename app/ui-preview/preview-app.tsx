@@ -246,6 +246,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "editor-create-topic", label: "Editor · Create topic", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", allowedIdentities: ["user", "manager"] },
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
+  { id: "editor-published-post", label: "Editor · Published post", locale: "en", direction: "ltr", identity: "user", path: "/en/posts/question/edit", view: "topic", allowedIdentities: ["user"] },
   { id: "editor-reply", label: "Editor · Reply", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved", allowedIdentities: ["user", "manager"] },
   { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
@@ -558,14 +559,18 @@ function previewPresentationsForTopic(
   topic: PreviewTopicPage,
 ): ContentTranslationPresentation[] {
   const byPost = new Map(existing.map((presentation) => [presentation.contentId, presentation]));
-  return topic.posts.map((post) => byPost.get(post.id) ?? originalPresentation(
-    "post-body",
-    post.id,
-    post.body.id,
-    post.body.originalContent,
-    post.body.sourceLocale,
-    previewDirectionForLocale(post.body.sourceLocale as PreviewLocale),
-  ));
+  return topic.posts.map((post) => {
+    const presentation = byPost.get(post.id);
+    if (presentation?.revisionId === post.body.id) return presentation;
+    return originalPresentation(
+      "post-body",
+      post.id,
+      post.body.id,
+      post.body.originalContent,
+      post.body.sourceLocale,
+      previewDirectionForLocale(post.body.sourceLocale as PreviewLocale),
+    );
+  });
 }
 
 const previewBuildKey =
@@ -6376,7 +6381,6 @@ function PreviewTopicRoute({ scenario, interactions }: {
         )}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-        editablePostIds={previewEditablePostIds(scenario, interactiveHelpTopic)}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager"}
@@ -6543,7 +6547,6 @@ function PreviewTopicRoute({ scenario, interactions }: {
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
-      editablePostIds={previewEditablePostIds(scenario, interactiveTopic)}
       canManageSolution={scenario.identity === "manager"}
       canManageAnySolution={scenario.identity === "manager"}
       canModerateHelpSolution={false}
