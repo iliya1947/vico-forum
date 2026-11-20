@@ -35,23 +35,23 @@ async function categoryLoader(args: Parameters<typeof rawCategoryLoader>[0]) {
 }
 import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
-import PopularRoute, { loader as rawPopularLoader, headers as popularHeaders } from "../routes/popular";
+import PopularRoute, { loader as rawPopularLoader, headers as popularHeaders, meta as popularMeta } from "../routes/popular";
 async function popularLoader(args: Parameters<typeof rawPopularLoader>[0]) {
   return (await rawPopularLoader(args)).data;
 }
-import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders } from "../routes/search";
+import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders, meta as searchMeta } from "../routes/search";
 async function searchLoader(args: Parameters<typeof rawSearchLoader>[0]) {
   return (await rawSearchLoader(args)).data;
 }
-import TagsRoute, { loader as rawTagsLoader, headers as tagsHeaders } from "../routes/tags";
+import TagsRoute, { loader as rawTagsLoader, headers as tagsHeaders, meta as tagsMeta } from "../routes/tags";
 async function tagsLoader(args: Parameters<typeof rawTagsLoader>[0]) {
   return (await rawTagsLoader(args)).data;
 }
-import TagRoute, { loader as rawTagLoader, headers as tagHeaders } from "../routes/tag";
+import TagRoute, { loader as rawTagLoader, headers as tagHeaders, meta as tagMeta } from "../routes/tag";
 async function tagLoader(args: Parameters<typeof rawTagLoader>[0]) {
   return (await rawTagLoader(args)).data;
 }
-import UnansweredRoute, { loader as rawUnansweredLoader, headers as unansweredHeaders } from "../routes/unanswered";
+import UnansweredRoute, { loader as rawUnansweredLoader, headers as unansweredHeaders, meta as unansweredMeta } from "../routes/unanswered";
 async function unansweredLoader(args: Parameters<typeof rawUnansweredLoader>[0]) {
   return (await rawUnansweredLoader(args)).data;
 }
@@ -5416,6 +5416,65 @@ describe("B3 neutral public document-error presentation", () => {
     });
     expect(documentHeaders.get("Cache-Control")).toBe("no-store");
     expect(documentHeaders.get("X-Hidden-Metadata")).toBeNull();
+  });
+});
+
+describe("B3 public document error and metadata sentinels", () => {
+  it("renders identical neutral 404 HTML for hidden and absent topics and a hidden-only tag", async () => {
+    const secret = "B3_SECRET_HIDDEN_TITLE_IN_URL_7331";
+    const ctx = context("en", "ltr");
+    const readTopicPage = vi.fn(async (_id: string) => undefined);
+    const readTag = vi.fn(async (_key: string) => undefined);
+    ctx.set(forumReaderContext, { ...reader, readTopicPage, readTag });
+
+    const snapshots: string[] = [];
+    for (const target of [
+      { path: `/en/topics/${secret}`, tag: false },
+      { path: "/en/topics/b3-absent-topic-7331", tag: false },
+      { path: "/en/tags/b3-hidden-only-7331", tag: true },
+    ]) {
+      const router = createMemoryRouter([{
+        path: target.tag ? "/:locale/tags/:tagKey" : "/:locale/topics/:topicId",
+        loader: ({ params }) => target.tag
+          ? rawTagLoader({ params, context: ctx })
+          : rawTopicLoader({ params, context: ctx }),
+        Component: target.tag ? TagRoute : TopicRoute,
+        ErrorBoundary: ForumRouteError,
+      }], { initialEntries: [target.path] });
+
+      const rendered = render(
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={null}><RouterProvider router={router} /></HeaderAuthProvider>
+        </I18nextProvider>,
+      );
+      expect(await screen.findByRole("heading", { name: "Forum page not found" }))
+        .toBeInTheDocument();
+      expect(rendered.container.querySelector('[role="alert"][data-status="404"]'))
+        .not.toBeNull();
+      const html = rendered.container.querySelector('[role="alert"][data-status="404"]')?.outerHTML ?? "";
+      expect(html).not.toContain(secret);
+      expect(html).not.toContain("Not Found");
+      expect(html).not.toContain("B3_SECRET_HIDDEN_REVISION_7331");
+      snapshots.push(html);
+      rendered.unmount();
+    }
+
+    expect(snapshots[0]).toBe(snapshots[1]);
+    expect(snapshots[1]).toBe(snapshots[2]);
+    expect(readTopicPage).toHaveBeenCalledTimes(2);
+    expect(readTag).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps public discovery document metadata independent of hidden topic data", () => {
+    const titles = [searchMeta(), tagsMeta(), tagMeta(), popularMeta(), unansweredMeta()];
+    expect(titles).toEqual([
+      [{ title: "Search · Vico Forum" }],
+      [{ title: "Tags · Vico Forum" }],
+      [{ title: "Tag · Vico Forum" }],
+      [{ title: "Popular · Vico Forum" }],
+      [{ title: "Unanswered · Vico Forum" }],
+    ]);
+    expect(JSON.stringify(titles)).not.toContain("B3_SECRET_HIDDEN_TITLE_IN_URL_7331");
   });
 });
 
