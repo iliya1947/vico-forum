@@ -1,8 +1,9 @@
 import {withOperationalFacts,type OwnerOperationalFactSink,type FileReferenceTransition} from "../app/observability/operational-facts";
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
 import { activeAccountPredicate, AccountInactiveError, assertActiveAccountForDrizzleMutation, type AccountState } from "./account-state";
-import {appendForumHistory} from "./forum-history";
+import {appendForumHistory,appendVisibilityHistory} from "./forum-history";
 import { lockPrivacySubject } from "./user-privacy";
+import { isBoundOwner } from "../app/authorization/owner";
 import type {HelpSignalHistoryEffect} from "./admin-history";
 import { validateProfileFields, type ForumProfile, type ProfileFields } from "../app/forum/profile";
 import { publishedMentionRecipients } from "../app/forum/mentions";
@@ -12,6 +13,8 @@ import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { alias } from "drizzle-orm/pg-core";
 import {
   authzRoles,
+  authzRolePermissions,
+  authzUserPermissionOverrides,
   authzUserRoles,
   forumProfiles,
   forumAttachmentDraftRefs,
@@ -612,6 +615,7 @@ export class ForumEntityNotFoundError extends Error {}
 export class ForumAuthorizationError extends Error {}
 export class ForumStateConflictError extends Error {}
 export class ForumTopicClosedError extends ForumStateConflictError {}
+export class ForumVisibilityReasonError extends Error {}
 export class ForumPublicationReplayConflictError extends ForumStateConflictError {}
 export type SolutionManagementScope = "own" | "any";
 
@@ -627,6 +631,7 @@ export class DrizzleForumRepository {
     private readonly writePolicy: ForumWritePolicy = forumWritePolicy,
     private readonly measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
     private readonly operational?:OwnerOperationalFactSink,
+    private readonly ownerUserId?: string,
   ) {}
 
   async searchMentionableUsers(query: string): Promise<Array<{ id: string; name: string }>> {
@@ -2031,6 +2036,111 @@ export class DrizzleForumRepository {
       .from(forumTopicPins)
       .where(eq(forumTopicPins.topicId, topicId));
     return Boolean(pin);
+  }
+
+  /** Dynamic RBAC checked inside the same transaction, without cached UI hints. */
+  private async assertVisibilityManagementPermission(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0], actorId: string,
+  ): Promise<void> {
+    if (isBoundOwner(actorId, this.ownerUserId)) return;
+    const result = await tx.execute<{ allowed: boolean }>(sql`
+      select case
+        when o.effect = 'deny' then false
+        when o.effect = 'allow' then true
+        when rp.permission_key is not null then true
+        else false end as allowed
+      from ${user} u
+      left join ${authzUserPermissionOverrides} o
+        on o.user_id = u.id and o.permission_key = 'forum.content.visibility.manage'
+      left join ${authzUserRoles} ur on ur.user_id = u.id
+      join ${authzRoles} r on r.id = coalesce(ur.role_id,
+        (select id from ${authzRoles} where slug = 'user'))
+      left join ${authzRolePermissions} rp on rp.role_id = r.id
+        and rp.permission_key = 'forum.content.visibility.manage'
+      where u.id = ${actorId}
+    `);
+    if (result.rows[0]?.allowed !== true)
+      throw new ForumAuthorizationError("visibility management permission required");
+  }
+
+  /** Atomically switch a topic's visibility without changing its content/revision. */
+  async setTopicVisibility(input: {
+    topicId: string; actorId: string; hidden: boolean;
+    expectedVisibilityVersion: number; expectedRevisionId: string; reason: string;
+  }): Promise<{ hidden: boolean; visibilityVersion: number; changed: boolean }> {
+    return this.database.transaction(async tx => {
+      const [topic] = await tx.select({
+        hidden: forumTopics.isHidden, version: forumTopics.visibilityVersion,
+        revisionId: forumTopics.currentTitleRevisionId,
+      }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      await this.measureAdmission(tx, input.actorId, "admin.forum");
+      await this.assertVisibilityManagementPermission(tx, input.actorId);
+      if (topic.version !== input.expectedVisibilityVersion || topic.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("topic visibility baseline changed");
+      if (topic.hidden === input.hidden)
+        return { hidden: topic.hidden, visibilityVersion: topic.version, changed: false };
+      if (!input.reason) throw new ForumVisibilityReasonError("visibility reason required");
+      if (topic.version >= 2_147_483_647)
+        throw new ForumStateConflictError("topic visibility version exhausted");
+      const version = topic.version + 1;
+      await tx.update(forumTopics).set({
+        isHidden: input.hidden, visibilityVersion: version,
+        visibilityChangedAt: sql`clock_timestamp()`,
+      }).where(eq(forumTopics.id, input.topicId));
+      await appendVisibilityHistory(tx, input.actorId, {
+        action: input.hidden ? "topic.hidden" : "topic.restored",
+        targetType: "topic", targetId: input.topicId, reason: input.reason,
+        context: {
+          topicId: input.topicId, before: topic.hidden, after: input.hidden,
+          previousVersion: topic.version, version, observedRevisionId: topic.revisionId,
+        },
+      });
+      return { hidden: input.hidden, visibilityVersion: version, changed: true };
+    });
+  }
+
+  /** Lock topic, target post, then actor, with History as the last write. */
+  async setPostVisibility(input: {
+    topicId: string; postId: string; actorId: string; hidden: boolean;
+    expectedVisibilityVersion: number; expectedRevisionId: string; reason: string;
+  }): Promise<{ hidden: boolean; visibilityVersion: number; changed: boolean }> {
+    return this.database.transaction(async tx => {
+      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("no key update");
+      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      const [post] = await tx.select({
+        topicId: forumPosts.topicId, hidden: forumPosts.isHidden,
+        version: forumPosts.visibilityVersion, revisionId: forumPosts.currentRevisionId,
+      }).from(forumPosts).where(eq(forumPosts.id, input.postId)).for("no key update");
+      if (!post || post.topicId !== input.topicId)
+        throw new ForumEntityNotFoundError("post does not exist in topic");
+      await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      await this.measureAdmission(tx, input.actorId, "admin.forum");
+      await this.assertVisibilityManagementPermission(tx, input.actorId);
+      if (post.version !== input.expectedVisibilityVersion || post.revisionId !== input.expectedRevisionId)
+        throw new ForumStateConflictError("post visibility baseline changed");
+      if (post.hidden === input.hidden)
+        return { hidden: post.hidden, visibilityVersion: post.version, changed: false };
+      if (!input.reason) throw new ForumVisibilityReasonError("visibility reason required");
+      if (post.version >= 2_147_483_647)
+        throw new ForumStateConflictError("post visibility version exhausted");
+      const version = post.version + 1;
+      await tx.update(forumPosts).set({
+        isHidden: input.hidden, visibilityVersion: version,
+        visibilityChangedAt: sql`clock_timestamp()`,
+      }).where(and(eq(forumPosts.id, input.postId), eq(forumPosts.topicId, input.topicId)));
+      await appendVisibilityHistory(tx, input.actorId, {
+        action: input.hidden ? "post.hidden" : "post.restored",
+        targetType: "post", targetId: input.postId, reason: input.reason,
+        context: {
+          topicId: input.topicId, postId: input.postId, before: post.hidden, after: input.hidden,
+          previousVersion: post.version, version, observedRevisionId: post.revisionId,
+        },
+      });
+      return { hidden: input.hidden, visibilityVersion: version, changed: true };
+    });
   }
 
   /** Uses the same topic row lock as reply admission; append History last. */

@@ -112,7 +112,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const ownerUserId = validOwnerUserId((env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID);
     const measureAdmission = withOwnerUserMeasureAdmission(ownerUserId);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink,ownerUserId));
     context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission,operational.sink));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
     context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket,operational.storageCapture) : null);
