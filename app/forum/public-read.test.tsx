@@ -32,7 +32,10 @@ import {
 import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
-import PopularRoute, { loader as popularLoader } from "../routes/popular";
+import PopularRoute, { loader as rawPopularLoader, headers as popularHeaders } from "../routes/popular";
+async function popularLoader(args: Parameters<typeof rawPopularLoader>[0]) {
+  return (await rawPopularLoader(args)).data;
+}
 import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders } from "../routes/search";
 async function searchLoader(args: Parameters<typeof rawSearchLoader>[0]) {
   return (await rawSearchLoader(args)).data;
@@ -45,7 +48,10 @@ import TagRoute, { loader as rawTagLoader, headers as tagHeaders } from "../rout
 async function tagLoader(args: Parameters<typeof rawTagLoader>[0]) {
   return (await rawTagLoader(args)).data;
 }
-import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
+import UnansweredRoute, { loader as rawUnansweredLoader, headers as unansweredHeaders } from "../routes/unanswered";
+async function unansweredLoader(args: Parameters<typeof rawUnansweredLoader>[0]) {
+  return (await rawUnansweredLoader(args)).data;
+}
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
@@ -5225,6 +5231,48 @@ describe("B3 public content cache policy", () => {
     loaderHeaders: new Headers(),
     actionHeaders: new Headers(),
     errorHeaders: undefined,
+  });
+
+  it("does not cache Popular rankings or dependency-error documents", async () => {
+    const loaded = await rawPopularLoader({ params: { locale: "en" }, context: context() });
+    expect(loaded.data.periods["24h"]).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = popularHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const failed = context();
+    failed.set(forumReaderContext, {
+      ...reader, readPopular: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    await expect(rawPopularLoader({ params: { locale: "en" }, context: failed }))
+      .rejects.toMatchObject({ status: 503 });
+    const errorHeaders = popularHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("does not cache Unanswered listings or dependency-error documents", async () => {
+    const loaded = await rawUnansweredLoader({ params: { locale: "en" }, context: context() });
+    expect(loaded.data.topics).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = unansweredHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const failed = context();
+    failed.set(forumReaderContext, {
+      ...reader, readUnanswered: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    await expect(rawUnansweredLoader({ params: { locale: "en" }, context: failed }))
+      .rejects.toMatchObject({ status: 503 });
+    const errorHeaders = unansweredHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
   });
 
   it("sets no-store on anonymous topic loader data and document responses", async () => {
