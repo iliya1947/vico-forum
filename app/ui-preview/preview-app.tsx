@@ -6498,7 +6498,6 @@ function PreviewTopicRoute({ scenario, interactions }: {
         )}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
-      canSubmitComplaint={scenario.identity !== "guest"}
         canSubmitComplaint={scenario.identity !== "guest"}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
@@ -6667,6 +6666,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
+      canSubmitComplaint={scenario.identity !== "guest"}
       canManageSolution={scenario.identity === "manager"}
       canManageAnySolution={scenario.identity === "manager"}
       canModerateHelpSolution={false}
