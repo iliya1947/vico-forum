@@ -4324,20 +4324,41 @@ async function previewTopicAction(
   }
 
   if (intent === "correctTitleSourceLocale") {
-    if (scenario.identity !== "manager") return null;
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
     const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
-    if (!sourceLocale) return { error: "invalid" };
+    if (!expectedRevisionId || !sourceLocale) return { error: "invalid" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    if (currentPage.topic.title.id !== expectedRevisionId) {
+      return { error: "conflict" as const };
+    }
+
     interactions.topicTitleSourceLocales.set(routeTopicId, sourceLocale);
-    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+    return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
   if (intent === "correctPostSourceLocale") {
-    if (scenario.identity !== "manager") return null;
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const actorExpectation = String(form.get("editorActorId") ?? "").trim();
     const postId = String(form.get("postId") ?? "").trim();
+    const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
     const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
-    if (!postId || !sourceLocale) return { error: "invalid" };
+    if (!postId || !expectedRevisionId || !sourceLocale) return { error: "invalid" as const };
+    if (actorExpectation && actorExpectation !== actor.id) return { error: "conflict" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    const post = currentPage?.topic.posts.find((candidate) => candidate.id === postId);
+    if (!post) return { error: "notFound" as const };
+    if (post.body.id !== expectedRevisionId) return { error: "conflict" as const };
+
     interactions.postSourceLocales.set(postId, sourceLocale);
-    return { ok: true };
+    return { ok: true as const };
   }
 
   if (intent === "readPostHistory") {
@@ -4688,8 +4709,8 @@ function previewCreatedTopicData(
     canManageAnySolution: false,
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
-    canCorrectTitleSourceLocale: false,
-    canCorrectAnySourceLocale: false,
+    canCorrectTitleSourceLocale: scenario.identity === "manager" || scenario.identity === "owner",
+    canCorrectAnySourceLocale: scenario.identity === "manager" || scenario.identity === "owner",
     canManagePin: scenario.identity === "manager" || scenario.identity === "owner",
     canManageClosure: scenario.identity === "manager" || scenario.identity === "owner",
     canUseAdminPanel: scenario.identity === "manager" || scenario.identity === "owner",
@@ -7179,8 +7200,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
             }
           : null}
         isTopicAuthor={scenario.identity === "user"}
-        canCorrectTitleSourceLocale={scenario.identity === "manager"}
-        canCorrectAnySourceLocale={scenario.identity === "manager"}
+        canCorrectTitleSourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
+        canCorrectAnySourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
         canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
         canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
         canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7335,8 +7356,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canManageSolution={scenario.identity === "manager"}
       canManageAnySolution={scenario.identity === "manager"}
       canModerateHelpSolution={false}
-      canCorrectTitleSourceLocale={scenario.identity === "manager"}
-      canCorrectAnySourceLocale={scenario.identity === "manager"}
+      canCorrectTitleSourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
+      canCorrectAnySourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
       canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
       canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7733,8 +7754,8 @@ function topicData(
     canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canConfirmOwnSolution: solutionAuthor,
-    canCorrectTitleSourceLocale: showSecondaryControls,
-    canCorrectAnySourceLocale: identity === "manager",
+    canCorrectTitleSourceLocale: showSecondaryControls || identity === "owner",
+    canCorrectAnySourceLocale: identity === "manager" || identity === "owner",
     canManagePin: identity === "manager" || identity === "owner",
     canManageClosure: identity === "manager" || identity === "owner",
     canUseAdminPanel: identity === "manager" || identity === "owner",
