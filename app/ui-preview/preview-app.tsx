@@ -7809,7 +7809,7 @@ function topicData(
     topic: translatedTopic,
     titlePresentation: topicTitlePresentation(rtl),
     postPresentations: postPresentations(rtl),
-    generationUnits: showSecondaryControls && locale !== "en"
+    generationUnits: identity !== "guest" && locale !== "en"
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
