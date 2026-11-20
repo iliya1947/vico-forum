@@ -1395,6 +1395,7 @@ export const reviewedCommonFingerprints = {
   attentionCaseModeratorStatus: "3470890e1b90d7f249fad7048fcba15334d16fd8fad5f69f178beb1af6c39c30",
   attentionCaseTargetAnswer: "5079d12cde2fda60ae8a4a0e080173fd7b109d3f604a5f7cb526884a7a526f76",
   attentionCaseExplanation: "9fc18dba1413ebe374bc7bfa934c10e2a5882039ded03a91e32e688f578bbc6d",
+  attentionCaseTopicUnavailable: "8d528d20701234101e85e23f5ee7045ab7262c4e48305e11d7ec44de7efcb64c",
   attentionCaseOriginal: "db74a5100a73451174be59fb968d5ebc032de6a21a5b9c3e243e431bfab8add5",
   attentionCaseReviewStatus: "506157f3932eab8a12bd6d3e8116dd9d790565a5b9951cd8d659f492eb0e7714",
   attentionCaseReviewGuidance: "3297c6c29a108eb7481e75b095217c8a1a8237f13cc3378e296f55b4f97647a8",
