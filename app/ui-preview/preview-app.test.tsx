@@ -1046,7 +1046,7 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     await user.selectOptions(within(roleForm).getByLabelText("Assigned role"), "role-moderator");
     await user.click(within(roleForm).getByRole("button", { name: "Save" }));
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Authorization was updated.");
+    expect(await within(authorization).findByRole("status")).toHaveTextContent("Authorization was updated.");
     expect(document.querySelector(".profile-role")).toHaveTextContent("Moderator");
     const refreshedRoleForm = document.querySelector("#authorization .admin-role-assignment") as HTMLElement;
     expect(within(refreshedRoleForm).getByLabelText("Assigned role")).toHaveValue("role-moderator");
