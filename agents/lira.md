@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 F5 Draft #359 exact **`b221da10cb033512d9ab4c03b55b95fbdae952b6`**, base B2 unchanged. Old [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) failed Typecheck (manual locale missing `attentionCaseTopicUnavailable`, incorrect test response access) and PG (one Help Similar ranking failure of 1599); SQL boolean-precedence fix already present from `113e2ace...`.
-- Reconciled overlapping changes: `sectionLoader` test helper and `unread.test.ts` now unwrap data correctly. Added manual neutral ru/he translations and canonical SHA-256 fingerprint for `attentionCaseTopicUnavailable` in commits `ced50d81...` / `b221da10...`; fingerprint computation checked against existing adjacent key. 9/9 source checks PASS, runtime NOT VERIFIED.
-- New auto [CI #44826260876](https://github.com/iliya1947/vico-forum/actions/runs/44826260876) queued, 13 initial workflows queued. Next `...`: only F5 exact-head full CI and applicable acceptance, on PASS author handoff **Мире** bounded B3 checkpoint; else fix confirmed defects. B4/merge forbidden. STOP.
+- B3 #359 exact `b221da10cb033512d9ab4c03b55b95fbdae952b6`; exact CI `44826260876` still queued, no author PASS.
+- GitHub Actions bottleneck diagnosed: public repo; 116 workflow runs in_progress, 80 queued across multiple branches/old SHAs; B3 current head enqueues >=13 workflows, 18 PR workflows in main and none uses `concurrency`. Older SHA jobs actually executing; GitHub Status Actions operational. Backlog from repeated trigger fan-out is confirmed; precise runner-account limit/root cause not verified. Public standard hosted compute free; no billing-minute evidence.
+- No GitHub cancellation tool in connected actions. No code/YAML edits or rerun. Potential immediate relief = cancel superseded old-SHA runs, preserving exact B3; durable scoped PR-only cancel-in-progress requires workflow-policy decision. See WORKFLOW.md. Next: queue remedy/decision and exact-head F5 validation; B4 blocked. STOP.
 
 ## Cadence
 
