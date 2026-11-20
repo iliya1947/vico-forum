@@ -24,10 +24,11 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `1ddd45f2feb7802e817faa8f81b244703b5979bb`, B2 base unchanged, B3 incomplete.
-- Latest Help Attention B3 batch: `readHelpAttentionCases`/`readHelpAttentionCounts` filter hidden topics and hidden target posts for pending signals, Mixed and selected-solution Needs review before count/page; hidden proposed original on a pending signal becomes `original:null`. No changes to protected appeal count/queue branches.
-- Two real-PG test definitions cover pending mixed signals, hidden proposed original masking, Hide/Restore counts/cases, and selected-solution Needs-review status hide/restore on post and topic. **18/18 static source checks passed; Vitest/PG/HTTP execution NOT verified**, no local checkout. Do not claim runtime PASS.
-- **Known next B3 boundary:** protected duplicate appeal queue can expose hidden current topic/original title; must preserve appeal workflow while masking source, not drop appeal. Next owner `...`: one small related B3 batch on that seam, focused checks, update WORKFLOW/#342, STOP. **Never inspect GitHub Actions/CI before entire B3 completes.** No B4/Mira/merge.
+- Active stacked Draft #359 exact `aac778dc00e158d09fbe5f42209ec8bd798f4266`, base B2 unchanged; B3 remains partial.
+- Latest B3 retained Help appeal batch: `readHelpAttentionCases("appeals")` continues to return/count protected pending appeals while hidden; title revision joins on duplicate/original now require each visible topic. Hidden duplicate is `topicTitle:"",topicUnavailable:true`, hidden canonical original is `original:null`, while guarded review-action topicId is preserved. `AttentionCaseCard` renders localized nonlinked unavailable labels without weakening accept/reject.
+- One PG test definition covers Hide/Restore masking and retained count/action resolution while hidden; one React test definition checks nonlinks and retained buttons/IDs. One canonical label added in catalog.
+- **27/27 targeted static source-contract checks PASS** on exact head. **PostgreSQL/Vitest/HTTP runtime execution NOT VERIFIED** (no checkout/runtime); don't claim runtime PASS. GitHub Actions/CI not inspected.
+- Next owner `...`: one small 2–3-microstep B3 batch based on verified remaining current-stage issues; targeted available checks, service handoff, STOP. **No GitHub Actions/CI inspection until entire B3 completed.** No B4/Mira/merge.
 
 ## Cadence
 
