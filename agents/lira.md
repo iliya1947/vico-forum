@@ -30,7 +30,7 @@ Next owner `...`: one limited 2–3-microstep B3 batch selected from remaining v
 
 ## Latest B3 microbatch
 
-- Draft #359 test-only commit `9e5a77a0dd33abf05a0b930cea7950f545628fb5`, after earlier green `28b60ee3`.
+- Draft #359 test-only commit `8e98af76772a88b0c767d240e49105c65f447937` (test-only correction after `9e5a77a0`: search exposes `postCount`, not `replyCount`), after earlier green `28b60ee3`.
 - Two PostgreSQL boundary regressions: search/replyCount hidden non-root reply Hide→Restore; Unanswered with hidden chronological root and visible/hidden/restored non-root answer.
 - No production change or broadening of B3 scope. Automatically triggered CI initially in progress; mark author PASS only after checking relevant actual results.
 - Continue only after owner `...` and this batch's check result. Select no more than 2–3 related remaining B3 gaps; no B4.
