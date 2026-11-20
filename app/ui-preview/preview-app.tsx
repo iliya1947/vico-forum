@@ -57,6 +57,7 @@ import {
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
 } from "../../db/forum-identifiers";
 import type { HomepageCategoryOverview } from "../forum/homepage";
+import { DELETED_USER_NAME } from "../../db/public-identity";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
 import { BookmarksView, type BookmarkItemPresentation } from "../forum/bookmarks-view";
@@ -5154,7 +5155,12 @@ function previewSectionWithInteractions(
     .filter((topic) => topic.sectionId === base.id)
     .map((topic) => ({
       id: topic.id,
-      authorName: topic.authorName,
+      authorName: interactions.ownerDeactivations.has(topic.authorId)
+        ? DELETED_USER_NAME
+        : topic.authorName,
+      ...(interactions.ownerDeactivations.has(topic.authorId)
+        ? { authorIdentityKind: "deleted" as const }
+        : {}),
       postCount: 1 + (interactions.replies.get(topic.id)?.length ?? 0),
       createdAt: topic.createdAt,
       isPinned: interactions.topicOverrides.get(topic.id)?.isPinned ?? false,
@@ -5165,12 +5171,19 @@ function previewSectionWithInteractions(
         sourceLocale: topic.sourceLocale,
       }),
     }));
-  const existing = base.topics.map((topic) => ({
-    ...topic,
-    title: currentTitle(topic.id, topic.title),
-    postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
-    isPinned: interactions.topicOverrides.get(topic.id)?.isPinned ?? topic.isPinned,
-  }));
+  const existing = base.topics.map((topic) => {
+    const authorId = previewProfileIdForName(topic.authorName);
+    const deactivated = interactions.ownerDeactivations.has(authorId);
+    return {
+      ...topic,
+      ...(deactivated
+        ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+        : {}),
+      title: currentTitle(topic.id, topic.title),
+      postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
+      isPinned: interactions.topicOverrides.get(topic.id)?.isPinned ?? topic.isPinned,
+    };
+  });
   return { ...base, topics: [...created, ...existing] };
 }
 
