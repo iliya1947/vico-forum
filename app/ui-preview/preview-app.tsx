@@ -10,11 +10,13 @@ import {
 } from "../auth/auth-controls";
 import { PERMISSION_CATALOG, type PermissionKey } from "../authorization/catalog";
 import { BLOCK_MANAGE_PRIVILEGED_PERMISSION } from "../../db/user-measure-authority";
+import { COMPLAINT_REASONS } from "../../db/complaints-domain";
 import type { ProfilePrivilegedSections } from "../profile/sections";
 import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import type { ComplaintPriority, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
 import type { ReviewCase } from "../complaints/review-contract";
+import type { ComplaintSubmissionResponse } from "../complaints/response";
 import type { AppealReviewPage, PendingAppealsPage } from "../../db/complaint-appeal-read";
 import type { ComplaintResolvedHistoryPage, ComplaintTimelineEvent, ComplaintTimelinePage } from "../../db/complaint-history-read";
 import { CredentialView } from "../auth/credential-view";
@@ -1578,6 +1580,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && (Boolean(form.closest(".admin-workspace")) || Boolean(form.closest("#authorization"))))
         || ((intent === "createHelpQuestion" || intent === "checkSimilarHelpQuestions")
           && form.id === "help-question-create-form")
+        || (!intent && form.classList.contains("complaint-form"))
         || (intent === "save-profile" && form.classList.contains("profile-form"))
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
@@ -2786,6 +2789,14 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/topics/:topicId/complaints",
+      element: <></>,
+      action: ({ request, params }) => previewComplaintSubmissionAction(
+        scenario, interactions, request, params.topicId,
+      ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/posts/:postId/edit",
       element: <></>,
       loader: ({ params }) => previewPostEditRedirect(
@@ -3872,6 +3883,47 @@ async function previewSectionAction(
   return redirect(forumTopicPath(locale, id));
 }
 
+async function previewComplaintSubmissionAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+  routeTopicId?: string,
+): Promise<ComplaintSubmissionResponse> {
+  if (!previewUser(scenario)) return { error: "unauthenticated" };
+  if (!routeTopicId) return { error: "notFound" };
+
+  const page = previewAdminTopicData(scenario, interactions, routeTopicId);
+  if (!page) return { error: "notFound" };
+
+  const form = await request.formData();
+  const kind = String(form.get("kind") ?? "");
+  const revisionId = String(form.get("revisionId") ?? "").trim();
+  const operationId = String(form.get("operationId") ?? "").trim();
+  const reason = String(form.get("reason") ?? "");
+  const explanation = String(form.get("explanation") ?? "").trim();
+
+  if (
+    (kind !== "post" && kind !== "topic-title")
+    || !revisionId
+    || !operationId
+    || !COMPLAINT_REASONS.includes(reason as (typeof COMPLAINT_REASONS)[number])
+    || (reason === "other" && !explanation)
+  ) {
+    return { error: "invalid" };
+  }
+
+  if (kind === "topic-title") {
+    if (page.topic.title.id !== revisionId) return { error: "conflict" };
+  } else {
+    const postId = String(form.get("postId") ?? "").trim();
+    const post = page.topic.posts.find((candidate) => candidate.id === postId);
+    if (!post) return { error: "notFound" };
+    if (post.body.id !== revisionId) return { error: "conflict" };
+  }
+
+  return { ok: true, operationId };
+}
+
 async function previewTopicAction(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4236,6 +4288,7 @@ function previewCreatedTopicData(
     postPresentations: previewPresentationsForTopic([], topic),
     generationUnits: [],
     canReply: scenario.identity !== "guest",
+    canSubmitComplaint: scenario.identity !== "guest",
     editablePostIds: previewEditablePostIds(scenario, topic),
     canManageSolution: scenario.identity !== "guest",
     canConfirmOwnSolution: scenario.identity !== "guest",
@@ -6445,6 +6498,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
         )}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
+      canSubmitComplaint={scenario.identity !== "guest"}
+        canSubmitComplaint={scenario.identity !== "guest"}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager"}
@@ -6960,6 +7015,7 @@ function topicData(
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
+    canSubmitComplaint: identity !== "guest",
     editablePostIds: identity === "guest"
       ? []
       : translatedTopic.posts
