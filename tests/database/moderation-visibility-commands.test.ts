@@ -2313,6 +2313,70 @@ describe("B3 Help attention public-safe projection", () => {
     expect((await cases("mixed")).filter(x=>x.topicId===question.topicId)).toHaveLength(2);
   });
 
+  it("filters hidden answer-target signals before Help Needs Attention LIMIT and badge counts", async () => {
+    const f=await fixture(
+      "B3_HELP_HIDDEN_SIGNAL_ROOT_6174", "B3_HELP_SIGNAL_VISIBLE_TITLE_6174",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:revisionId,originalContent:"B3_HELP_HIDDEN_SIGNAL_ANSWER_6174",sourceLocale:"en",
+      },
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    const answerSignal=await service.createHelpSignal({
+      kind:"needs-review",topicId:f.topicId,actorId:"ordinary",
+      explanation:"Answer needs review",proposedOriginalTopicId:null,
+    });
+    const detailsSignal=await service.createHelpSignal({
+      kind:"needs-details",topicId:f.topicId,actorId:"author",
+      explanation:"Question needs detail",proposedOriginalTopicId:null,
+    });
+    expect(answerSignal.status).toBe("pending");
+    expect(detailsSignal.status).toBe("pending");
+
+    const reviewOnly={signalKinds:["needs-review"] as const,appeals:false};
+    const both={signalKinds:["needs-review","needs-details"] as const,appeals:false};
+    const read=async(visibility:typeof reviewOnly|typeof both)=>
+      (await repository.readHelpSolutionsNeedsAttention({},visibility))?.questions
+        .find(q=>q.id===f.topicId);
+    expect(await read(reviewOnly)).toMatchObject({
+      attention:{signals:{"needs-review":1},totalSignals:1},
+    });
+    expect(await read(both)).toMatchObject({
+      attention:{signals:{"needs-review":1,"needs-details":1},totalSignals:2},
+    });
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide signaled answer",
+    });
+    expect(await read(reviewOnly)).toBeUndefined();
+    const retained=await read(both);
+    expect(retained?.attention).toMatchObject({
+      signals:{"needs-details":1},totalSignals:1,
+    });
+    expect(retained?.attention?.signals).not.toHaveProperty("needs-review");
+    expect(JSON.stringify(retained)).not.toContain("B3_HELP_HIDDEN_SIGNAL_ANSWER_6174");
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore signaled answer",
+    });
+    expect(await read(both)).toMatchObject({
+      attention:{signals:{"needs-review":1,"needs-details":1},totalSignals:2},
+    });
+    await service.setTopicVisibility(topicCommand(f));
+    expect(await read(both)).toBeUndefined();
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore signaled question"));
+    expect(await read(reviewOnly)).toMatchObject({
+      attention:{signals:{"needs-review":1},totalSignals:1},
+    });
+  });
+
   it("excludes hidden selected-answer Needs review from the status queue and count", async () => {
     const f=await fixture(
       "B3_ATTENTION_SOLVED_ROOT_6072", "B3_ATTENTION_SOLVED_TITLE_6072",
