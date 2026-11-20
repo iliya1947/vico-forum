@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `cc25f9dd826ac0f95a79c3a3a7967198c46428d8`, B2 base unchanged, B3 partial.
-- Latest B3 microbatch fixed a **confirmed indirect public data leak** in `db/forum-repository.ts`: `readTopicBlockedAuthors` used to return matches from hidden-post authors into the signed-in topic loader's `blockedAuthorIds`. SQL now requires visible post and visible topic; no B5 personal-filter graph/list change.
-- One new PostgreSQL regression checks blocked-author projection visible→hidden post→restored post, hidden topic→restored topic; user block removed in `finally`. **17/17 targeted static source checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** (no local checkout/runtime), no runtime PASS.
-- Next owner `...`: one small B3 microbatch from another verified current boundary; focused checks, service handoff and STOP. **Never inspect Actions/CI before whole B3 completes**. No B4/Mira/merge.
+- Active stacked Draft #359 exact `1ddd45f2feb7802e817faa8f81b244703b5979bb`, B2 base unchanged, B3 incomplete.
+- Latest Help Attention B3 batch: `readHelpAttentionCases`/`readHelpAttentionCounts` filter hidden topics and hidden target posts for pending signals, Mixed and selected-solution Needs review before count/page; hidden proposed original on a pending signal becomes `original:null`. No changes to protected appeal count/queue branches.
+- Two real-PG test definitions cover pending mixed signals, hidden proposed original masking, Hide/Restore counts/cases, and selected-solution Needs-review status hide/restore on post and topic. **18/18 static source checks passed; Vitest/PG/HTTP execution NOT verified**, no local checkout. Do not claim runtime PASS.
+- **Known next B3 boundary:** protected duplicate appeal queue can expose hidden current topic/original title; must preserve appeal workflow while masking source, not drop appeal. Next owner `...`: one small related B3 batch on that seam, focused checks, update WORKFLOW/#342, STOP. **Never inspect GitHub Actions/CI before entire B3 completes.** No B4/Mira/merge.
 
 ## Cadence
 
