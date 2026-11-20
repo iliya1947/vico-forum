@@ -191,3 +191,62 @@ describe("V4 topic/post authoritative visibility commands", () => {
     expect(await events(f.topicId)).toHaveLength(1);
   });
 });
+
+describe("V4 reply admission: hidden topic and direct parent", () => {
+  function reply(f: Fixture, parentPostId?: string) {
+    const id = randomUUID();
+    return {
+      id, topicId: f.topicId, authorId: "author",
+      ...(parentPostId === undefined ? {} : { parentPostId }),
+      bodyRevision: { id: randomUUID(), originalContent: "Visibility reply", sourceLocale: "en" },
+    };
+  }
+
+  it("allows generic reply with hidden root but denies direct reply to hidden parent", async () => {
+    const f = await fixture();
+    await service.setPostVisibility(postCommand(f));
+    const generic = await repository.createPost(reply(f));
+    expect(generic.parentPostId).toBeNull();
+
+    const direct = reply(f, f.postId);
+    await expect(repository.createPost(direct)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect((await client.query("select id from forum_posts where id=$1", [direct.id])).rows).toHaveLength(0);
+    expect((await client.query("select id from forum_post_revisions where id=$1", [direct.bodyRevision.id])).rows).toHaveLength(0);
+    expect((await client.query("select id from forum_reply_notifications where post_id=$1", [direct.id])).rows).toHaveLength(0);
+
+    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Restored parent"));
+    const visibleDirect = await repository.createPost(reply(f, f.postId));
+    expect(visibleDirect.parentPostId).toBe(f.postId);
+  });
+
+  it("rejects new replies to hidden topics without publication side effects and admits after Restore", async () => {
+    const f = await fixture();
+    await service.setTopicVisibility(topicCommand(f));
+    const denied = reply(f);
+    await expect(repository.createPost(denied)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect((await client.query("select id from forum_posts where id=$1", [denied.id])).rows).toHaveLength(0);
+    expect((await client.query("select id from forum_post_revisions where id=$1", [denied.bodyRevision.id])).rows).toHaveLength(0);
+    expect((await client.query("select id from forum_reply_notifications where post_id=$1", [denied.id])).rows).toHaveLength(0);
+
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restored topic"));
+    expect((await repository.createPost(reply(f))).topicId).toBe(f.topicId);
+  });
+
+  it("retains inert receipt acknowledgement for already committed replies after Hide", async () => {
+    const f = await fixture(), publishedDraft = {
+      contextKey: "topic:" + f.topicId + ":reply", draftId: randomUUID(), attachmentIds: [],
+    };
+    const first = reply(f);
+    const original = await repository.createPost({ ...first, publishedDraft });
+    const before = (await client.query("select count(*)::int as total from forum_posts where topic_id=$1", [f.topicId])).rows[0]?.total;
+    await service.setTopicVisibility(topicCommand(f));
+    const replay = await repository.createPost({ ...first, id: randomUUID(), publishedDraft });
+    expect(replay.id).toBe(original.id);
+    expect((await client.query("select count(*)::int as total from forum_posts where topic_id=$1", [f.topicId])).rows[0]?.total)
+      .toBe(before);
+    const denied = reply(f);
+    await expect(repository.createPost({ ...denied, publishedDraft: {
+      contextKey: publishedDraft.contextKey, draftId: randomUUID(), attachmentIds: [],
+    } })).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+  });
+});

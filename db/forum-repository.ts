@@ -994,11 +994,14 @@ export class DrizzleForumRepository {
           };
         }
       }
-      const [topic] = await tx.select({ id: forumTopics.id, authorId: forumTopics.authorId, isClosed: forumTopics.isClosed }).from(forumTopics)
+      const [topic] = await tx.select({
+        id: forumTopics.id, authorId: forumTopics.authorId,
+        isClosed: forumTopics.isClosed, isHidden: forumTopics.isHidden,
+      }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId))
         // Still serializes topic-state writers without blocking other FK KEY SHARE reads.
         .for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.isClosed) throw new ForumTopicClosedError("topic is closed to new replies");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
@@ -1015,10 +1018,13 @@ export class DrizzleForumRepository {
       let parentAuthorId: string | null = null;
       if (parentPostId) {
         // Resolve/lock the existing FK parent before taking the actor mutex.
-        const [parent] = await tx.select({ id: forumPosts.id, authorId: forumPosts.authorId }).from(forumPosts)
+        const [parent] = await tx.select({
+          id: forumPosts.id, authorId: forumPosts.authorId, isHidden: forumPosts.isHidden,
+        }).from(forumPosts)
           .where(and(eq(forumPosts.id, parentPostId), eq(forumPosts.topicId, input.topicId)))
           .for("key share");
-        if (!parent) throw new ForumEntityNotFoundError("parent post does not exist in topic");
+        if (!parent || parent.isHidden)
+          throw new ForumEntityNotFoundError("parent post does not exist in topic");
         parentAuthorId = parent.authorId;
       }
       await assertActiveAccountForDrizzleMutation(tx, input.authorId);
