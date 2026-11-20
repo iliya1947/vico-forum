@@ -1309,10 +1309,12 @@ function previewUnansweredTopics(
     )
     .map((topic) => {
       const section = previewSectionPresentation(scenario.locale, topic.sectionId);
+      const deactivated = interactions.ownerDeactivations.has(topic.authorId);
       return {
         id: topic.id,
         ...currentTitle(topic.id, topic.title, topic.sourceLocale),
-        authorName: topic.authorName,
+        authorName: deactivated ? DELETED_USER_NAME : topic.authorName,
+        ...(deactivated ? { authorIdentityKind: "deleted" as const } : {}),
         category: section.category,
         section: { id: section.id, name: section.name },
       };
@@ -1323,10 +1325,17 @@ function previewUnansweredTopics(
       (interactions.replies.get(topic.id)?.length ?? 0) === 0
       && interactions.topicOverrides.get(topic.id)?.isSolved !== true
     )
-    .map((topic) => ({
-      ...topic,
-      ...currentTitle(topic.id, topic.title, topic.sourceLocale),
-    }));
+    .map((topic) => {
+      const authorId = previewProfileIdForName(topic.authorName);
+      const deactivated = interactions.ownerDeactivations.has(authorId);
+      return {
+        ...topic,
+        ...currentTitle(topic.id, topic.title, topic.sourceLocale),
+        ...(deactivated
+          ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+          : {}),
+      };
+    });
 
   return [...created, ...existing];
 }
