@@ -16,7 +16,7 @@ import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
 import { DEFAULT_COMPLAINT_REASON_PRIORITY } from "../complaints/queue-contract";
 import type { ComplaintPriority, ComplaintPrioritySettings, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
-import type { ReviewCase } from "../complaints/review-contract";
+import type { ReviewCase, ReviewFullPost } from "../complaints/review-contract";
 import type { ComplaintSubmissionResponse } from "../complaints/response";
 import type { AppealReviewPage, PendingAppealsPage } from "../../db/complaint-appeal-read";
 import type { ComplaintResolvedHistoryPage, ComplaintTimelineEvent, ComplaintTimelinePage } from "../../db/complaint-history-read";
@@ -2886,6 +2886,17 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/attention/complaints/:caseId/appeals/:appealId/context/:postId",
+      loader: ({ params }) =>
+        previewComplaintAppealContextData(
+          scenario,
+          params.caseId,
+          params.appealId,
+          params.postId,
+        ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/attention/complaints/:caseId/appeals/:appealId",
       element: <PreviewComplaintAppealReviewRoute />,
       loader: ({ params }) => {
@@ -2909,6 +2920,12 @@ function previewRouter(
           timeline: previewComplaintTimeline(interactions, params.caseId),
         };
       },
+      ErrorBoundary: ForumRouteError,
+    },
+    {
+      path: "/:locale/attention/complaints/:caseId/context/:postId",
+      loader: ({ params }) =>
+        previewComplaintContextData(scenario, params.caseId, params.postId),
       ErrorBoundary: ForumRouteError,
     },
     {
@@ -4672,6 +4689,7 @@ const PREVIEW_COMPLAINT_RESULT_PARTICIPANT_ID = "alex";
 const PREVIEW_COMPLAINT_RESULT_DECISION_ID = "66666666-6666-4666-8666-666666666666";
 const PREVIEW_COMPLAINT_RESULT_RESOLVED_APPEAL_ID = "77777777-7777-4777-8777-777777777777";
 const PREVIEW_COMPLAINT_RESULT_PENDING_APPEAL_ID = "88888888-8888-4888-8888-888888888888";
+const PREVIEW_COMPLAINT_CONTEXT_POST_ID = "followup";
 
 function previewComplaintParticipantResultAccessData(scenario: Scenario, caseId?: string) {
   previewAuthenticatedRouteData(scenario);
@@ -4883,6 +4901,54 @@ function previewComplaintQueue(interactions: PreviewInteractionState): Complaint
   };
 }
 
+function previewComplaintFullContextPost(): ReviewFullPost {
+  return {
+    id: PREVIEW_COMPLAINT_CONTEXT_POST_ID,
+    topicId: "typed-api",
+    number: 2,
+    source: {
+      revisionId: "post-r3",
+      originalContent: "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+      sourceLocale: "en",
+      createdAt: "2026-09-27T11:00:00.000Z",
+      direction: "ltr",
+    },
+    author: { id: "maya", name: "Maya Cohen" },
+  };
+}
+
+function previewComplaintContextData(
+  scenario: Scenario,
+  caseId?: string,
+  postId?: string,
+): ReviewFullPost {
+  previewAttentionAccessData(scenario);
+  if (
+    (caseId !== PREVIEW_COMPLAINT_CASE_ID && caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID)
+    || postId !== PREVIEW_COMPLAINT_CONTEXT_POST_ID
+  ) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  return previewComplaintFullContextPost();
+}
+
+function previewComplaintAppealContextData(
+  scenario: Scenario,
+  caseId?: string,
+  appealId?: string,
+  postId?: string,
+): ReviewFullPost {
+  previewAttentionAccessData(scenario);
+  if (
+    caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID
+    || appealId !== PREVIEW_COMPLAINT_APPEAL_ID
+    || postId !== PREVIEW_COMPLAINT_CONTEXT_POST_ID
+  ) {
+    throw new Response("Not Found", { status: 404 });
+  }
+  return previewComplaintFullContextPost();
+}
+
 function previewComplaintReview(interactions: PreviewInteractionState): ReviewCase {
   const automaticPriority = previewComplaintAutomaticPriority(
     interactions,
@@ -4939,7 +5005,21 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
       hasMore: false,
     },
     evidence: { items: [], total: 0, page: 0, hasMore: false },
-    context: { items: [], total: 0, page: 0, hasMore: false },
+    context: {
+      items: [{
+        id: PREVIEW_COMPLAINT_CONTEXT_POST_ID,
+        number: 2,
+        author: { id: "maya", name: "Maya Cohen" },
+        createdAt: "2026-09-27T11:00:00.000Z",
+        excerpt: "Also test overflow with a long identifier",
+        truncated: true,
+        sourceLocale: "en",
+        direction: "ltr",
+      }],
+      total: 1,
+      page: 0,
+      hasMore: false,
+    },
     topic: {
       id: "typed-api",
       title: topicTitle,

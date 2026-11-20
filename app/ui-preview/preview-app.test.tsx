@@ -1491,6 +1491,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.click(screen.getByRole("link", { name: "Open appeal" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Appeal review" })).toBeInTheDocument();
+    expect(screen.getByText("Also test overflow with a long identifier…")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show full message" }));
+    expect(await screen.findByText(
+      "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+    )).toBeInTheDocument();
     await user.selectOptions(screen.getByRole("combobox", { name: "Appeal outcome" }), "overturned");
     const reasoning = document.querySelector('textarea[name="reasoning"]');
     expect(reasoning).not.toBeNull();
@@ -1525,6 +1530,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     await user.click(screen.getByRole("link", { name: "Open case" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Complaint review" })).toBeInTheDocument();
+    expect(screen.getByText("Also test overflow with a long identifier…")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show full message" }));
+    expect(await screen.findByText(
+      "Also test overflow with a long identifier: this-is-a-very-long-unbroken-technical-identifier-that-must-not-break-the-layout",
+    )).toBeInTheDocument();
   });
 
   it("runs the global search form instead of blocking GET submissions", async () => {
