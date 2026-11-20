@@ -24,10 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **F5 gate blocked by queue**, no production/test code changes in this continuation. Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9`; base B2 unchanged.
-- [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290): `database` + `checks` still queued, null steps/log URLs. First 15 exact-head runs all queued. Previous [CI #44821692942](https://github.com/iliya1947/vico-forum/actions/runs/44821692942) on superseded head also queued. main workflow `ubuntu-latest` and no declared concurrency throttle; GitHub official public status Actions operational with no Nov 20 incident, but source of this repo queue NOT VERIFIED.
-- Earlier CI failed on four ESLint errors and 13 PG tests; subsequent B3 test-only corrections target visibility CHECK and future-timestamp isolation. Current exact-head runtime unverified; Help Similar mismatch must be evaluated on real PG. Do not rerun queued workflows or change code on guessed cause.
-- Next owner `...`: continue F5 CI verification/queue diagnosis, if full applicable PASS then hand off **Мире** B3 bounded checkpoint; **STOP**, no B4/merge.
+- B3 F5, Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9`, B2 base unchanged. Author PASS not verified. Current [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) still queued: `checks` and `database` both queued, no steps/logs; all 15 obtained exact-head workflow runs queued. No code changes or reruns in this batch.
+- Comparison: PR #360 older [CI #44820552112](https://github.com/iliya1947/vico-forum/actions/runs/44820552112) both jobs SUCCESS; previous #359 head has one workflow in progress but CI queued, #342 service head CI queued. Real runner queue reason UNKNOWN, so no speculative YAML/quota changes. Previous B3 ESLint/PG fixes test-only and Help Similar needs real PostgreSQL verification.
+- Next owner `...` resume F5 exact-head CI. If full PASS, author self-check → **Мира** bounded B3 coordinator checkpoint; else diagnose current-B3 failures. No B4/merge. STOP.
 
 ## Cadence
 
