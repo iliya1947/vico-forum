@@ -123,6 +123,7 @@ type PreviewVariant =
   | "help-solutions-similar-invalid"
   | "help-solutions-similar-unavailable"
   | "help-solution-outdated"
+  | "help-duplicate-appealable"
   | "category-no-pins"
   | "profile-empty"
   | "profile-error"
@@ -219,6 +220,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager", "owner"] },
   { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager", "owner"] },
   { id: "help-duplicate-disputed", label: "Help duplicate · disputed", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-worker-session", view: "topic", allowedIdentities: ["manager", "owner"] },
+  { id: "help-duplicate-appealable", label: "Help duplicate · author appeal", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/help-worker-session", view: "topic", variant: "help-duplicate-appealable", allowedIdentities: ["user"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["guest"] },
@@ -349,6 +351,7 @@ type PreviewTopicOverride = {
   duplicateRelationshipId?: string | null;
   duplicateDisputed?: boolean;
   pendingDuplicateAppealId?: string | null;
+  pendingDuplicateAppealExplanation?: string | null;
   isPinned?: boolean;
   isClosed?: boolean;
   closureVersion?: number;
@@ -601,8 +604,26 @@ function previewPendingDuplicateAppealId(
 ): string | null {
   const override = interactions.topicOverrides.get(topicId);
   if (override?.pendingDuplicateAppealId !== undefined) return override.pendingDuplicateAppealId;
+  if (scenario.variant === "help-duplicate-appealable") return null;
   const question = previewHelpSolutions(scenario.locale).questions.find((item) => item.id === topicId);
   return question?.duplicateDisputed ? `${topicId}-appeal` : null;
+}
+
+function previewPendingDuplicateAppealExplanation(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  topicId: string,
+): string | null {
+  const override = interactions.topicOverrides.get(topicId);
+  if (override?.pendingDuplicateAppealExplanation !== undefined) {
+    return override.pendingDuplicateAppealExplanation;
+  }
+  if (!previewPendingDuplicateAppealId(scenario, interactions, topicId)) return null;
+  return scenario.locale === "ru"
+    ? "Проблема похожа, но причина и решение отличаются."
+    : scenario.locale === "he"
+      ? "הבעיה דומה, אבל הסיבה והפתרון שונים."
+      : "The problem is similar, but the cause and solution are different.";
 }
 
 function previewEditablePostIds(scenario: Scenario, topic: PreviewTopicPage): string[] {
@@ -1753,6 +1774,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
           && (Boolean(form.closest(".topic-shell")) || form.classList.contains("topic-admin-form")))
+        || (intent === "appealHelpDuplicate" && form.classList.contains("help-duplicate-appeal-form"))
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
@@ -4545,6 +4567,41 @@ async function previewTopicAction(
     return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
+  if (intent === "appealHelpDuplicate") {
+    const explanation = String(form.get("explanation") ?? "")
+      .normalize("NFKC").trim().replace(/\s+/gu, " ");
+    const expectedRelationshipId = String(form.get("expectedRelationshipId") ?? "").trim();
+    if (!explanation || explanation.length > 1000 || !expectedRelationshipId) {
+      return { error: "invalid" as const };
+    }
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    const currentTopic = currentPage.topic;
+    if (currentTopic.section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+      return { error: "conflict" as const };
+    }
+    if (currentTopic.authorId !== actor.id) return { error: "forbidden" as const };
+    if (!currentTopic.duplicateOf || !currentTopic.duplicateRelationshipId) {
+      return { error: "conflict" as const };
+    }
+    if (currentTopic.duplicateRelationshipId !== expectedRelationshipId) {
+      return { error: "conflict" as const };
+    }
+    if (previewPendingDuplicateAppealId(scenario, interactions, routeTopicId)) {
+      return { error: "conflict" as const };
+    }
+
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    interactions.topicOverrides.set(routeTopicId, {
+      ...current,
+      duplicateDisputed: true,
+      pendingDuplicateAppealId: `preview-duplicate-appeal-${++interactions.sequence}`,
+      pendingDuplicateAppealExplanation: explanation,
+    });
+    return redirect(forumTopicPath(locale, routeTopicId));
+  }
+
   if (
     intent === "confirmHelpDuplicate"
     || intent === "removeHelpDuplicate"
@@ -6888,7 +6945,9 @@ function previewAdminTopicData(
       needsDetails: helpQuestion.needsDetails,
       duplicateOf: helpQuestion.duplicateOf,
       duplicateRelationshipId: helpQuestion.duplicateOf ? `${helpQuestion.id}-duplicate` : null,
-      duplicateDisputed: helpQuestion.duplicateDisputed,
+      duplicateDisputed: scenario.variant === "help-duplicate-appealable"
+        ? false
+        : helpQuestion.duplicateDisputed,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -7272,7 +7331,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
       needsDetails: helpQuestion.needsDetails,
       duplicateOf: helpQuestion.duplicateOf,
       duplicateRelationshipId: helpQuestion.duplicateOf ? `${helpQuestion.id}-duplicate` : null,
-      duplicateDisputed: helpQuestion.duplicateDisputed,
+      duplicateDisputed: scenario.variant === "help-duplicate-appealable"
+        ? false
+        : helpQuestion.duplicateDisputed,
       title: {
         id: `${helpQuestion.id}-title`,
         originalContent: helpQuestion.title,
@@ -7288,6 +7349,11 @@ function PreviewTopicRoute({ scenario, interactions }: {
     };
     const interactiveHelpTopic = previewApplyTopicState(helpTopic, interactions);
     const pendingDuplicateAppealId = previewPendingDuplicateAppealId(
+      scenario,
+      interactions,
+      helpQuestion.id,
+    );
+    const pendingDuplicateAppealExplanation = previewPendingDuplicateAppealExplanation(
       scenario,
       interactions,
       helpQuestion.id,
@@ -7328,15 +7394,14 @@ function PreviewTopicRoute({ scenario, interactions }: {
           ? {
               id: pendingDuplicateAppealId,
               relationshipId: interactiveHelpTopic.duplicateRelationshipId,
-              explanation: scenario.locale === "ru"
-                ? "Проблема похожа, но причина и решение отличаются."
-                : scenario.locale === "he"
-                  ? "הבעיה דומה, אבל הסיבה והפתרון שונים."
-                  : "The problem is similar, but the cause and solution are different.",
+              explanation: pendingDuplicateAppealExplanation ?? "",
               createdAt: "2026-10-08T18:00:00.000Z",
             }
           : null}
         isTopicAuthor={scenario.identity === "user"}
+        appealExpectedRelationshipId={previewUser(scenario)?.id === interactiveHelpTopic.authorId
+          ? interactiveHelpTopic.duplicateRelationshipId ?? null
+          : null}
         canCorrectTitleSourceLocale={scenario.identity === "manager"
           || scenario.identity === "owner"
           || previewUser(scenario)?.id === interactiveHelpTopic.authorId}
