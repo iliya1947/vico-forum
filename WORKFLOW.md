@@ -118,11 +118,12 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## B3 current working batch — STOP
 
-- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), B2 base unchanged, exact head `fd0993af7cdca1aa83e49713146010bb69039370`. B1 #355 and B2 #357 remain Draft/unmerged.
-- Existing B3 core implementation and earlier targeted regressions remain. Earlier test-only commits `8e98af76` and `7324fd9c` cover hidden reply Search/postCount, hidden-root Unanswered, correct Search `postCount` 2→1→2, and rank before Search `LIMIT 1`.
-- Current **two-microstep test-only batch** (`fd0993af`): (1) real-PG Help chosen-best Hide/Restore regression verifies retained `isSolved`/`bestAnswerPostId`/Help `hasBestAnswer`, typed hidden tombstone, absent source/revision, visible reply count 1→0→1, Profile visible message/best-answer counters; (2) real-PG Popular ranking for 24h/7d/30d with deterministic isolated timestamps and `limitPerPeriod=1`, proving hidden reply is excluded before rank/limit and Restore recovers ranking. The fixture now optionally accepts Help service section without changing other callers.
-- **Targeted source-contract checks: 11/11 passed** at `fd0993af`. **PostgreSQL runtime tests not executed/verified**: available environment has neither local repo checkout nor test PostgreSQL. No CI-based result is inferred or claimed for the new tests.
-- Owner cadence: **never inspect GitHub Actions/CI before entire B3 scope is complete**. Ignore auto-triggered workflows, no polling/failure analysis/reruns. No broad checks between batches.
-- B3 remains partial: public leak/HTML/JSON/.data/meta/error acceptance, discovery boundaries and final PG execution remain open. No B4+, Mira review, fold/merge.
-- **Next owner `...`**: choose a new 2–3-microstep B3 batch from verified remaining gaps, run available focused checks, update service workspace and STOP; do not report unexecuted PG tests as PASS.
+- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), exact head `e62ec37a16797f39f92c0307262716e4f7ada21c`; base B2 #357 unchanged. B1/B2/B3 stay Draft/unmerged.
+- Previous B3 core public projection/SQL discovery/hidden tombstone and PostgreSQL regression additions (through `fd0993af`) remain partial; runtime PostgreSQL execution of latest added regression tests is still **unverified**.
+- **Current 2-route microbatch** (Topic + Search): both public loader data and document/single-fetch route headers now enforce `no-store`. Topic retains `private, no-store` on authenticated data and authorized action/retry headers; anonymous GET and neutral hidden-topic 404 cannot inherit cacheable policy. Search hits, misses, error responses and route headers enforce `no-store`, overriding a cacheable parent. Added 3 focused route tests in `app/forum/public-read.test.tsx`; search test adapter unwraps React Router `data()` for existing direct-call cases.
+- Head code spans `0ad307ef`→`e62ec37a`, files: `app/routes/topic.tsx`, `app/routes/search.tsx`, `app/forum/public-read.test.tsx`. React Router official headers guidance: loader-provided headers require explicit route `headers` forwarding for document/data paths.
+- **Targeted static source/contract verification: 13/13 passed** at exact head. **Vitest/real HTTP execution not verified:** no local checkout/runtime. Do not claim runtime PASS.
+- Owner cadence: **no GitHub Actions/CI inspection at all until entire B3 completes**; ignore auto workflows. Do not start B4, coordinator review, fold or merge.
+- Remaining B3 includes other public discovery route no-store surfaces, HTML/JSON/.data/meta/error leak acceptance, root/parent/duplicate/unread boundaries, real targeted execution and whole-B3 author self-check.
+- **Next owner `...`:** one small B3 batch (2–3 related microsteps), available targeted checks, update service handoff, STOP.
 
