@@ -5139,4 +5139,32 @@ describe("personal Block presentation in ordinary TopicView", () => {
     expect(document.querySelector("#post-help-question-post [data-message-body]")).not.toBeNull();
     expect(document.getElementById("post-help-answer")).toBeInTheDocument();
   });
+
+  it("renders hidden tombstones without author/Reveal/source/actions, retaining anchors and reply relations", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "answer", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const visible = {
+      ...topic.posts[0]!, id: "visible-reply", parentPostId: "answer",
+      authorId: "ada", authorName: "Ada",
+      body: { id: "visible-reply-rev", originalContent: "Visible answer remains.", sourceLocale: "en" },
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden, visible] };
+    renderRoute(TopicRoute, topicRenderData(page, {
+      canReply: true, editablePostIds: [], canManageAnySolution: true,
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    }), "/en/topics/typed%2Fapi", "en", "ltr", { id: "viewer-a", name: "Viewer" });
+    expect(await screen.findByText("This message is unavailable.")).toBeInTheDocument();
+    expect(document.querySelector("#post-answer[data-moderation-hidden-post]")).not.toBeNull();
+    expect(document.querySelector("#post-answer [data-message-body]")).toBeNull();
+    expect(document.querySelector('#post-answer a[href="#post-answer"]')).not.toBeNull();
+    expect(document.querySelector('#post-answer a[href="#post-visible-reply"]')).not.toBeNull();
+    expect(document.querySelector("#post-answer .topic-message-profile-link")).toBeNull();
+    expect(document.querySelector("#post-answer .topic-message-mobile-actions-toggle")).toBeNull();
+    expect(document.querySelector("#post-answer .message-quick-actions")).toBeNull();
+    expect(document.querySelector("#post-answer button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(screen.getByText("Visible answer remains.")).toBeInTheDocument();
+  });
 });
