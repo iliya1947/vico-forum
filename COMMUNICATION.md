@@ -58,3 +58,8 @@ Owner continued after B2 Mira PASS. Lira is assigned B3 core public projection/d
 ## 2026-11-20 — B3 cadence corrected to small batches
 
 Owner clarified the purpose of decomposition: prevent Lira from stalling on long uninterrupted work. B3 now runs in batches of 2–3 related microsteps (fewer if a step grows), targeted checks, then STOP for owner `...`. Full repository CI is still deferred to whole-B3 completion unless a concrete cross-cutting risk justifies an earlier run.
+
+
+## 2026-11-20 — intermediate B3 auto-CI is not a gate
+
+GitHub automatically triggers broad workflows on B3 pushes. Lira must not wait for, poll or rerun those workflows to close an intermediate 2–3-microstep batch. Batch closure uses targeted checks, then STOP for owner `...`. Full exact-head CI remains a whole-B3 end gate unless a concrete B3-relevant risk requires earlier escalation.
