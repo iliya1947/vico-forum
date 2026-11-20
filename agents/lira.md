@@ -24,9 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F5 author source review performed, exact-head CI pending**. Draft #359 exact `8a907374c797a33b233b6f244d090aa0725862fb`, unchanged B2 base. Reviewed B3 30-file inventory, production diff and targeted regression coverage against V5/V8. No confirmed blocking source defect in inspected scope; **final author PASS not granted**.
-- First observed Actions page for exact SHA: 15 runs (1 SUCCESS, 2 IN_PROGRESS, 12 QUEUED, 0 FAILURE). `CI` run `44819865484`: database + checks both QUEUED. No real unit/PG/HTTP/build result to assert, no rerun initiated.
-- Next owner `...`: **continue F5 gate only**. Read exact-head workflow/jobs when available, diagnose actual failure before edits or on all required PASS record final author PASS and handoff **Мире bounded B3 checkpoint** through service PR #342. Do not start B4 or merge.
+- **B3 F5**: initial whole-B3 source audit had no confirmed blockers, but exact `8a907374c797a33b233b6f244d090aa0725862fb` CI failed. 4 new ESLint errors; PG 13 failed / 1586 passed: 1 improper direct Hide test violating state CHECK, 11 tests hit cooldown due leaked future 2035 post created_at, 1 Help Similar ranking mismatch. Root causes verified against actual CI logs and repository write cooldown.
+- **Targeted correction** committed to Draft #359 exact `9776fc58aa59dcfd4b5b02f4b901caa2cd5b3685`: 3 test files, mock parameters cleaned; history SQL Hide/Restore state tuple complete; Popular future times restored via finally; Similar now asserts public Hide before rank. No production code changed. 10/10 static assertions PASS; actual revised tests and CI **not verified**.
+- New auto-triggered exact-head [CI 44821692942](https://github.com/iliya1947/vico-forum/actions/runs/44821692942) has both jobs queued, first 15 other workflows queued as observed.
+- Next owner `...` continue **F5 exact-head CI gate**, investigate remaining Help Similar if still fails, then author PASS → Mira bounded coordinator review only after full applicable checks PASS. NO B4/merge; STOP.
 
 ## Cadence
 
