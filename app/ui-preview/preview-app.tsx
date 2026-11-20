@@ -4392,6 +4392,9 @@ function previewFiltersData(
         name: interactions.topicTitleEdits.get(id)?.originalContent ?? topic.title.originalContent,
         createdAt: new Date(Date.UTC(2026, 10, 20, 6, 0, index)).toISOString(),
         authorName: topic.authorName,
+        ...(topic.authorIdentityKind === "deleted"
+          ? { authorIdentityKind: "deleted" as const }
+          : {}),
         category: { name: topic.section.category.name },
         section: { name: topic.section.name },
       }];
@@ -4404,6 +4407,9 @@ function previewFiltersData(
         id,
         name,
         createdAt: new Date(Date.UTC(2026, 10, 20, 6, 0, index)).toISOString(),
+        ...(interactions.ownerDeactivations.has(id)
+          ? { identityKind: "deleted" as const }
+          : {}),
       }] : [];
     });
   }
