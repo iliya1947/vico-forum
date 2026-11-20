@@ -1475,7 +1475,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       expect(current).not.toBeNull();
       return current!;
     });
-    expect(within(complaintCase).getByText("High")).toBeInTheDocument();
+    expect(within(complaintCase).getByText("High priority")).toBeInTheDocument();
   });
 
   it("opens and resolves a complaint appeal", async () => {
