@@ -413,7 +413,8 @@ export interface ForumSectionPage {
   topics: ForumTopicSummary[];
 }
 
-export interface ForumThreadPost extends ForumPost {
+export interface ForumVisibleThreadPost extends ForumPost {
+  kind?: "visible";
   authorIdentityKind?: "deleted";
   attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
@@ -421,6 +422,17 @@ export interface ForumThreadPost extends ForumPost {
   createdAt: Date;
   editedAt?: Date | null;
 }
+
+/** A public tombstone must never contain author identity, revision, body or assets. */
+export interface ForumHiddenThreadPost {
+  kind: "hidden";
+  id: string;
+  topicId: string;
+  parentPostId: string | null;
+  createdAt: Date;
+}
+
+export type ForumThreadPost = ForumVisibleThreadPost | ForumHiddenThreadPost;
 
 export interface ForumTopicPage extends ForumTopic {
   authorIdentityKind?: "deleted";
@@ -3075,6 +3087,7 @@ export class DrizzleForumRepository {
 
   private async readHelpDuplicatePresentations(
     topicIds: readonly string[],
+    queryDb: Pick<NodePgDatabase, "select"> = this.database,
   ): Promise<Map<string, {
     duplicateOf: ForumHelpDuplicateReference;
     duplicateRelationshipId: string;
@@ -3084,7 +3097,7 @@ export class DrizzleForumRepository {
     const originalTopic = alias(forumTopics, "help_duplicate_original_topic");
     const originalTitle = alias(forumTopicTitleRevisions, "help_duplicate_original_title");
     const pendingAppeal = alias(forumHelpDuplicateAppeals, "help_duplicate_pending_appeal");
-    const rows = await this.database
+    const rows = await queryDb
       .select({
         relationshipId: forumHelpDuplicateRelationships.id,
         duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
@@ -3402,7 +3415,8 @@ export class DrizzleForumRepository {
   }
 
   async readTopicPage(id: string): Promise<ForumTopicPage | undefined> {
-    const [topic] = await this.database
+    return this.database.transaction(async (tx) => {
+    const [topic] = await tx
       .select({
         id: forumTopics.id, sectionId: forumSections.id, sectionName: forumSections.name,
         categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
@@ -3428,11 +3442,12 @@ export class DrizzleForumRepository {
       .where(and(eq(forumTopics.id, id), eq(forumTopics.isHidden, false)));
     if (!topic) return undefined;
     const topicAuthor = projectForumPublicAuthor(topic);
-    const tags = await this.readTagsForTopics([id]);
-    const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
-    const posts = await this.database
+    const tags = await this.readTagsForTopics([id], tx);
+    const duplicatePresentation = (await this.readHelpDuplicatePresentations([id], tx)).get(id);
+    const posts = await tx
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
+        isHidden: forumPosts.isHidden,
         parentPostId: forumPosts.parentPostId,
         authorName: user.name, authorImage: user.image,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
@@ -3445,13 +3460,16 @@ export class DrizzleForumRepository {
       })
       .from(forumPosts)
       .innerJoin(user, eq(user.id, forumPosts.authorId))
-      .innerJoin(forumPostRevisions, and(
+      .leftJoin(forumPostRevisions, and(
         eq(forumPostRevisions.postId, forumPosts.id),
         eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+        eq(forumPosts.isHidden, false),
       ))
       .where(eq(forumPosts.topicId, id))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
-    const attached = posts.length === 0 ? [] : await this.database.select({
+    // A hidden post must never join attachment metadata into the public snapshot.
+    const visiblePostIds = posts.filter((post) => !post.isHidden).map((post) => post.id);
+    const attached = visiblePostIds.length === 0 ? [] : await tx.select({
       postId: forumPostAttachments.postId,
       id: forumAttachments.id,
       fileName: forumAttachments.fileName,
@@ -3459,7 +3477,7 @@ export class DrizzleForumRepository {
       detectedType: forumAttachments.detectedType,
     }).from(forumPostAttachments).innerJoin(forumAttachments,
       eq(forumAttachments.id, forumPostAttachments.attachmentId),
-    ).where(inArray(forumPostAttachments.postId, posts.map((post) => post.id)))
+    ).where(inArray(forumPostAttachments.postId, visiblePostIds))
       .orderBy(asc(forumPostAttachments.createdAt), asc(forumAttachments.id));
     const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>>();
     for (const attachment of attached) {
@@ -3481,7 +3499,17 @@ export class DrizzleForumRepository {
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
-      posts: posts.map((post) => {
+      posts: posts.map((post): ForumThreadPost => {
+        if (post.isHidden) {
+          return {
+            kind: "hidden",
+            id: post.id, topicId: post.topicId,
+            parentPostId: post.parentPostId, createdAt: post.createdAt,
+          };
+        }
+        if (!post.revisionId || post.originalContent === null || !post.sourceLocale) {
+          throw new Error("visible published post revision is missing");
+        }
         const postAuthor = projectForumPublicAuthor(post);
         return {
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
@@ -3496,6 +3524,7 @@ export class DrizzleForumRepository {
       };
       }),
     };
+    }, { isolationLevel: "repeatable read", readOnly: true });
   }
 
   async readPostLocation(postId: string) {
@@ -3530,9 +3559,12 @@ export class DrizzleForumRepository {
     });
   }
 
-  private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
+  private async readTagsForTopics(
+    topicIds: readonly string[],
+    queryDb: Pick<NodePgDatabase, "select"> = this.database,
+  ): Promise<Map<string, ForumTag[]>> {
     if (topicIds.length === 0) return new Map();
-    const rows = await this.database
+    const rows = await queryDb
       .select({
         topicId: forumTopicTags.topicId,
         key: forumTags.key,
