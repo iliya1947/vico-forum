@@ -35,10 +35,10 @@ import { DELETED_USER_NAME } from "../../db/public-identity";
 
 export { topicAction as action } from "../forum/actions.server";
 
-/** React Router does not forward action/data cache headers to document or
- * single-fetch responses without the matching route-module headers export.
- * Keep public GET and parent headers unchanged; propagate only the action's
- * cache policy and retry advice, leaving framework cookies untouched. */
+/** React Router does not forward loader/action cache headers to document or
+ * single-fetch responses without this route-module headers export.
+ * Public topic/404 responses must not be cached; preserve private action
+ * policies, retry advice and unrelated parent headers. */
 export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
   // A hidden topic becomes 404 immediately; neither its previous public
