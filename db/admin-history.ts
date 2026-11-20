@@ -16,6 +16,18 @@ export type HelpSignalHistoryEffect =
   | { action: "help.needsDetailsChanged"; context: { before: false; after: true } }
   | { action: "help.solutionModerationChanged"; context: { postId: string; before: string | null; after: string } }
   | { action: "help.duplicateConfirmed"; context: { relationshipId: string; originalTopicId: string } };
+export interface VisibilityHistoryContext {
+  topicId: string; before: boolean; after: boolean;
+  previousVersion: number; version: number; observedRevisionId: string;
+}
+export type VisibilityHistoryChange =
+  | (TopicTarget & { action: "topic.hidden" | "topic.restored"; reason: string; context: VisibilityHistoryContext })
+  | { targetType: "post"; targetId: string; targetLabel: string; reason: string;
+      action: "post.hidden" | "post.restored"; context: VisibilityHistoryContext & { postId: string } };
+/** Visibility event labels use neutral target identity, never hidden title/body. */
+export function visibilityHistoryLabel(kind: "topic" | "post", id: string): string {
+  return historyLabel(kind + ":" + id);
+}
 export type ForumHistoryChange =
   | (TopicTarget & { action: "help.signalReviewed"; context: { signalId: string; kind: string; resolution: "accepted" | "rejected" | "superseded"; effect?: HelpSignalHistoryEffect } })
   | (TopicTarget & { action: "topic.pinned" | "topic.unpinned" | "topic.solved"; context: { before: boolean; after: boolean } })
@@ -50,7 +62,7 @@ export type RegistrationSettingsHistoryChange = {
     after: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
   };
 };
-export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange | RegistrationSettingsHistoryChange;
+export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | VisibilityHistoryChange | UserMeasureHistoryChange | RegistrationSettingsHistoryChange;
 // Database-scoped transaction advisory lock shared by the actual pg/Drizzle producers.
 export const ADMIN_HISTORY_ORDER_LOCK_SQL = "select pg_advisory_xact_lock(1447641935, 1)";
 export interface AdminHistoryEvent {

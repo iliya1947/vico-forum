@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0070_personal_filters",
+  "targetMigration": "0071_moderation_visibility_foundation",
   "tables": {
     "account": {
       "columns": [
@@ -211,7 +211,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "c7a1abca6c837c455ef9ad17956a9c333f90156996253d61881752c7bb89503e"
+          "definitionSha256": "a0eb51aae7e727c5f8392c800bedb94b82023be7a27193b315820d15338d30f7"
         },
         {
           "name": "admin_history_context_check",
@@ -234,6 +234,14 @@
             "reason"
           ],
           "definitionSha256": "55220f569b0309129fcb88100790160ed6baa5f63740dc36e3a3ba8ab446b676"
+        },
+        {
+          "name": "admin_history_visibility_reason_check",
+          "columns": [
+            "action",
+            "reason"
+          ],
+          "definitionSha256": "1872062326764a0b5e008a2e592bb5037c0a57223f4e8a05209844d94ed148a1"
         }
       ],
       "indexes": [
@@ -394,7 +402,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "ae0d36b2a23ceb4594d7f64bfe6b1bf0a8ace0a1d20955ca4c8a7037a82211d2"
+          "definitionSha256": "29330a5f8b9b674039d73e3ee67aba4a7c3ec7bbb3f345338709412192b3d9ff"
         }
       ],
       "indexes": []
@@ -5018,6 +5026,24 @@
           "type": "timestamp with time zone",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "is_hidden",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "visibility_version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "visibility_changed_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -5131,6 +5157,15 @@
             "solution_outdated_reason_kind"
           ],
           "definitionSha256": "c757a8f693d55337ceec18ab6d3f94aabe605c48c9e505709316c6da1d41810c"
+        },
+        {
+          "name": "forum_posts_visibility_state_check",
+          "columns": [
+            "is_hidden",
+            "visibility_changed_at",
+            "visibility_version"
+          ],
+          "definitionSha256": "743c6a65a61ea53591da758a56b0755e5e087f0d4581c33dab903eb825b5adf2"
         }
       ],
       "indexes": [
@@ -5145,6 +5180,24 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "forum_posts_hidden_queue_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "visibility_changed_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": "3a06896ddaeafab3373d658090efdf65fb8d2e5cab8defd973a71da12a24b8c6"
         },
         {
           "name": "forum_posts_parent_post_id_idx",
@@ -6724,6 +6777,24 @@
           "type": "integer",
           "nullable": false,
           "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "is_hidden",
+          "type": "boolean",
+          "nullable": false,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "visibility_version",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        },
+        {
+          "name": "visibility_changed_at",
+          "type": "timestamp(3) with time zone",
+          "nullable": true,
+          "defaultSha256": null
         }
       ],
       "primaryKeys": [
@@ -6804,6 +6875,15 @@
             "closure_version"
           ],
           "definitionSha256": "9491d6e43c450af20799a9ae8324870c053b2bb1254af6daae644f251d3f77df"
+        },
+        {
+          "name": "forum_topics_visibility_state_check",
+          "columns": [
+            "is_hidden",
+            "visibility_changed_at",
+            "visibility_version"
+          ],
+          "definitionSha256": "743c6a65a61ea53591da758a56b0755e5e087f0d4581c33dab903eb825b5adf2"
         }
       ],
       "indexes": [
@@ -6818,6 +6898,24 @@
               "nulls": "last"
             }
           ]
+        },
+        {
+          "name": "forum_topics_hidden_queue_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "visibility_changed_at",
+              "order": "desc",
+              "nulls": "last"
+            },
+            {
+              "name": "id",
+              "order": "desc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": "3a06896ddaeafab3373d658090efdf65fb8d2e5cab8defd973a71da12a24b8c6"
         },
         {
           "name": "forum_topics_section_id_idx",

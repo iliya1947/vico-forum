@@ -95,6 +95,16 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       // This deliberately tests pre-0055 notification history, while fixture topics
       // are created by the current Forum writer (AP-08 + SA04-J2 expectations).
       await upgrade.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await upgrade.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
+
       await upgrade.query(`alter table "user"
         add column deactivated_at timestamptz,
         add column deactivated_by_user_id text,

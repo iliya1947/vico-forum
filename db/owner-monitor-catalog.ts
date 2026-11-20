@@ -49,5 +49,6 @@ export const ADMIN_MONITOR_SCOPES_SQL = `case
   when a.action in ('measure.created','measure.changed','measure.lifted','measure.appealResolved') then ARRAY['administration.measures']::text[]
   when a.action like 'help.%' or a.action in ('topic.solved','topic.bestAnswerChanged') then ARRAY['moderation.help','forum.state']::text[]
   when a.action in ('topic.sourceLocaleCorrected','post.sourceLocaleCorrected') then ARRAY['forum.content','localization.content']::text[]
+  when a.action in ('topic.hidden','topic.restored','post.hidden','post.restored') then ARRAY['forum.content','forum.state']::text[]
   when a.action in ('topic.pinned','topic.unpinned','topic.closed','topic.reopened') then ARRAY['forum.state']::text[]
   else ARRAY[]::text[] end`;

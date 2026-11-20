@@ -39,6 +39,7 @@ describe("AP-10 raw authority and owner binding", () => {
   it("recognizes hierarchy by raw effective administrative permissions, never by role labels", () => {
     expect(rawUserMeasureAuthorityLevel("target", ordinary, "owner")).toBe(0);
     expect(rawUserMeasureAuthorityLevel("target", privilegedTarget, "owner")).toBe(1);
+    expect(rawUserMeasureAuthorityLevel("target", perms("forum.content.visibility.manage"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", perms("forum.attachmentSecurity.read"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", perms("access.authorization.manage"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", elevatedTarget, "owner")).toBe(2);
@@ -78,6 +79,8 @@ describe("AP-10 raw authority and owner binding", () => {
     expect(() => check({ actorId: "target" })).toThrow(UserMeasureForbiddenError);
     expect(() => check({ targetUserId: "owner" })).toThrow(UserMeasureForbiddenError);
     expect(() => check({ targetRawPermissions: privilegedTarget })).toThrow(UserMeasureForbiddenError);
+    expect(() => check({ targetRawPermissions: perms("forum.content.visibility.manage") }))
+      .toThrow(UserMeasureForbiddenError);
     expect(() => check({ targetRawPermissions: elevatedTarget })).toThrow(UserMeasureForbiddenError);
     expect(check({ actorRawPermissions: elevatedManager, targetRawPermissions: privilegedTarget })).toBe(2);
     expect(() => check({ actorRawPermissions: elevatedManager, targetRawPermissions: elevatedTarget })).toThrow(UserMeasureForbiddenError);

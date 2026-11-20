@@ -81,6 +81,9 @@ function ChangeDetails({change,locale}: {change: AdminHistoryChange;locale:strin
         {effect?.action==="help.duplicateConfirmed" ? <p><code dir="ltr">{effect.context.originalTopicId}</code>{" · "}<code dir="ltr">{effect.context.relationshipId}</code></p> : null}
       </>;
     }
+    case "topic.hidden": case "topic.restored": case "post.hidden": case "post.restored":
+      return <p>{t("measuresVersion")}: {change.context.previousVersion} → {change.context.version}
+        {" · "}<code dir="ltr">{change.context.observedRevisionId}</code></p>;
     case "topic.pinned": case "topic.unpinned": case "topic.solved": return null;
     case "topic.bestAnswerChanged": return <p><code dir="ltr">{change.context.before ?? t("historyNoValue")}</code> → <code dir="ltr">{change.context.after}</code></p>;
     case "help.solutionModerationChanged": return <ModerationDetails context={change.context}/>;

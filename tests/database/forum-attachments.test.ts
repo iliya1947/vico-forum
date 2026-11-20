@@ -149,6 +149,15 @@ beforeAll(async () => {
   for (const tag of migrations) {
     await client.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await client.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
 
   for (const id of [ownerId, otherId]) {
     await client.query('insert into "user" (id, name, email) values ($1, $2, $3)', [
