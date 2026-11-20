@@ -965,6 +965,46 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(document.querySelector(".owner-deactivate-button")).toBeNull();
   });
 
+  it("deactivates another account through the exact-Owner profile flow", async () => {
+    if (typeof HTMLDialogElement.prototype.showModal !== "function") {
+      Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+        configurable: true,
+        value: function(this: HTMLDialogElement) { this.open = true; },
+      });
+    }
+    if (typeof HTMLDialogElement.prototype.close !== "function") {
+      Object.defineProperty(HTMLDialogElement.prototype, "close", {
+        configurable: true,
+        value: function(this: HTMLDialogElement) { this.open = false; },
+      });
+    }
+
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-public" identity="owner" />);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Maya Cohen" })).toBeInTheDocument();
+    const account = document.querySelector("#owner-account") as HTMLElement;
+    expect(account).not.toBeNull();
+    expect(within(account).getByText("maya@example.test")).toBeInTheDocument();
+
+    await user.click(within(account).getByRole("button", { name: "Deactivate account" }));
+    expect(await screen.findByRole("heading", { level: 2, name: "Deactivate this account?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Confirm deactivation" }));
+
+    await waitFor(() => {
+      expect(within(account).getByText("Deactivated")).toBeInTheDocument();
+    });
+    expect(await screen.findByRole("heading", { level: 1, name: "Deleted user" })).toBeInTheDocument();
+    expect(document.querySelector(".owner-deactivate-button")).toBeNull();
+
+    const history = document.querySelector("#owner-history") as HTMLElement;
+    expect(within(history).getByRole("heading", {
+      level: 3,
+      name: "Account deactivated",
+    })).toBeInTheDocument();
+    expect(within(history).getByText("preview-account-deactivated-maya")).toBeInTheDocument();
+  });
+
   it("shows Owner-self active and retained session details", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="profile-owner-self" identity="owner" />);
 
