@@ -306,6 +306,8 @@ export type ForumAttentionQueueGroup = "needs-details" | "needs-review" | "solut
 
 export interface ForumAttentionQueueCase {
   type: "signal" | "appeal" | "review-status";
+  /** Retained appeal keeps its server-only action topicId even when no public topic link exists. */
+  topicUnavailable?: boolean;
   id: string;
   kind: HelpSignalKind | "appeal" | "review-status";
   topicId: string;
@@ -2641,8 +2643,10 @@ export class DrizzleForumRepository {
       const rows = await this.database.select({
         id: forumHelpDuplicateAppeals.id,
         topicId: forumHelpDuplicateRelationships.duplicateTopicId,
+        topicHidden: forumTopics.isHidden,
         topicTitle: forumTopicTitleRevisions.originalContent,
-        originalId: duplicate.id, originalTitle: duplicateTitle.originalContent,
+        originalId: duplicate.id, originalHidden: duplicate.isHidden,
+        originalTitle: duplicateTitle.originalContent,
         submittedByUserId: forumHelpDuplicateAppeals.appellantUserId,
         submittedByName: user.name, explanation: forumHelpDuplicateAppeals.explanation,
         createdAt: forumHelpDuplicateAppeals.createdAt,
@@ -2650,9 +2654,15 @@ export class DrizzleForumRepository {
         .innerJoin(forumHelpDuplicateRelationships,
           eq(forumHelpDuplicateRelationships.id, forumHelpDuplicateAppeals.relationshipId))
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpDuplicateRelationships.duplicateTopicId))
-        .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
+        .leftJoin(forumTopicTitleRevisions, and(
+          eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+          eq(forumTopics.isHidden, false),
+        ))
         .innerJoin(duplicate, eq(duplicate.id, forumHelpDuplicateRelationships.originalTopicId))
-        .innerJoin(duplicateTitle, eq(duplicateTitle.id, duplicate.currentTitleRevisionId))
+        .leftJoin(duplicateTitle, and(
+          eq(duplicateTitle.id, duplicate.currentTitleRevisionId),
+          eq(duplicate.isHidden, false),
+        ))
         .innerJoin(user, eq(user.id, forumHelpDuplicateAppeals.appellantUserId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -2663,10 +2673,13 @@ export class DrizzleForumRepository {
       return {
         cases: rows.slice(0, pageSize).map((row): ForumAttentionQueueCase => ({
           type: "appeal", id: row.id, kind: "appeal",
-          topicId: row.topicId, topicTitle: row.topicTitle,
+          topicId: row.topicId, topicTitle: row.topicHidden ? "" : row.topicTitle ?? "",
+          ...(row.topicHidden ? { topicUnavailable: true } : {}),
           submittedByUserId: row.submittedByUserId, submittedByName: row.submittedByName,
           explanation: row.explanation, createdAt: row.createdAt,
-          targetPostId: null, original: { id: row.originalId, title: row.originalTitle },
+          targetPostId: null,
+          original: row.originalHidden || !row.originalTitle
+            ? null : { id: row.originalId, title: row.originalTitle },
         })),
         hasMore: rows.length > pageSize, page,
       };
