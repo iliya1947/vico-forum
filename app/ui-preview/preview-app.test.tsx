@@ -3392,6 +3392,25 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await waitFor(() => expect(postReply).toBeEnabled());
   });
 
+  it("lets an ordinary topic author correct the topic source language", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    const question = document.querySelector("#post-question") as HTMLElement | null;
+    expect(question).not.toBeNull();
+    const summary = question!.querySelector(".topic-question-tools > summary") as HTMLElement | null;
+    expect(summary).not.toBeNull();
+    await user.click(summary!);
+
+    const tools = within(summary!.closest("details") as HTMLElement);
+    const sourceLocale = tools.getByRole("textbox", { name: "Correct source language" });
+    await user.clear(sourceLocale);
+    await user.type(sourceLocale, "he");
+    await user.click(tools.getByRole("button", { name: "Correct language" }));
+
+    expect(await tools.findByText("Source language: he")).toBeInTheDocument();
+  });
+
   it("lets the bound Owner correct topic and post source language", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
