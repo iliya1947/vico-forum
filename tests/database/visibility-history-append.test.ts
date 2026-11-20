@@ -19,7 +19,7 @@ const reader = new PostgresAdminHistoryReader(pool);
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
-  for (const filename of (await readdir("drizzle")).filter(name => /^\\d{4}_.+\\.sql$/.test(name)).sort()) {
+  for (const filename of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
     await client.query((await readFile("drizzle/" + filename, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
   await client.query(`insert into "user"(id,name,email)
