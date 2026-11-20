@@ -10,6 +10,10 @@ import {
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { DrizzleContentTopicTitlePlanningStore } from "../../db/content-topic-title-task-store";
+import { DrizzleContentPostBodyPlanningStore } from "../../db/content-post-body-task-store";
+import { contentPostBodyTaskSpecification } from "../../app/localization/content-post-body-planning";
+import { CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION, protectMarkdownForTranslation } from "../../app/localization/content-markdown-translation";
+import { DrizzleComplaintsRepository } from "../../db/complaints-repository";
 import { contentTopicTitleTaskSpecification } from "../../app/localization/content-translation-planning";
 import { CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH } from "../../app/localization/content-request-budget.server";
 import { withOwnerUserMeasureAdmission, UserMeasureRestrictedError } from "../../db/user-measure-policy";
@@ -1646,4 +1650,221 @@ describe("V4 real PostgreSQL title planning versus topic Hide/Restore", () => {
     },
     30_000,
   );
+});
+
+describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edit and protected Complaint", () => {
+  type Kind = "body-plan" | "reply" | "edit" | "complaint-post" | "complaint-title";
+  type Transition = "Hide" | "Restore";
+  async function connection() {
+    const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await c.connect();
+    await c.query("set statement_timeout='25000ms'");
+    const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { c, pid };
+  }
+  async function blocked(waiter: number, owner: number) {
+    const end = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < end) {
+      const a = await client.query<{ blockers: number[]; wait_event_type: string | null }>(
+        "select pg_blocking_pids(pid) as blockers, wait_event_type from pg_stat_activity where pid=$1",
+        [waiter],
+      );
+      last = a.rows[0];
+      if (a.rows[0]?.wait_event_type === "Lock" && a.rows[0].blockers.includes(owner)) return;
+      await new Promise(done => setTimeout(done, 25));
+    }
+    throw new Error("PG race lock wait not observed: " +
+      JSON.stringify({ waiter, owner, last }));
+  }
+  function forum(c: Client) {
+    return new DrizzleForumRepository(drizzle(c),
+      { cooldownMs: 0, now: () => new Date() },
+      withOwnerUserMeasureAdmission("owner"), undefined, "owner");
+  }
+  const cases = [
+    { transition: "Hide", writerFirst: true, initialHidden: false },
+    { transition: "Hide", writerFirst: false, initialHidden: false },
+    { transition: "Restore", writerFirst: true, initialHidden: true },
+    { transition: "Restore", writerFirst: false, initialHidden: true },
+  ] as const;
+
+  for (const kind of ["body-plan", "reply", "edit", "complaint-post", "complaint-title"] as const) {
+    it.each(cases)(
+      kind + " $transition writerFirst=$writerFirst: committed order and state",
+      async ({ transition, writerFirst, initialHidden }) => {
+        const f = await fixture();
+        if (initialHidden) await service.setTopicVisibility(topicCommand(f));
+        const revision = {
+          contentType: "post-body" as const, contentId: f.postId,
+          revisionId: f.bodyRevisionId, originalContent: "PRIVATE POST", sourceLocale: "en",
+        };
+        const scope = "visibility-" + f.postId.slice(0, 12);
+        const admission = {
+          subjectKey: "P".repeat(CONTENT_TRANSLATION_REQUESTER_SUBJECT_KEY_LENGTH),
+          cost: 1, windowSeconds: 60,
+          global: { name: scope + "-global", version: "race-v1", limit: 100 },
+          requester: { name: scope + "-requester", version: "race-v1", limit: 100 },
+        };
+        const specification = kind === "body-plan"
+          ? await contentPostBodyTaskSpecification(
+            revision,
+            { kind: "revision", mayProceed: true, sourceLocale: "en",
+              resolutionOrigin: "revision-metadata" },
+            "en", "he", CONTENT_MARKDOWN_PROTECTION_POLICY_VERSION,
+            "visibility-race-v1", protectMarkdownForTranslation(revision.originalContent),
+          )
+          : undefined;
+        const replyId = randomUUID(), replyRevisionId = randomUUID();
+        const changedDraft = randomUUID();
+        const complaintOperationId = randomUUID();
+        const [holder, writer, manager] = await Promise.all([
+          connection(), connection(), connection(),
+        ]);
+        let held = false;
+        let write: Promise<unknown> | undefined;
+        let change: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+        const moderation = new ForumService(forum(manager.c));
+        const endingHidden = transition === "Hide";
+        const command = topicCommand(
+          f, "moderator1", endingHidden, initialHidden ? 1 : 0,
+          transition + " PostgreSQL race",
+        );
+        try {
+          await holder.c.query("begin");
+          held = true;
+          // FOR UPDATE blocks even complaint's compatible FK KEY SHARE,
+          // allowing both real contenders to queue against the same topic.
+          await holder.c.query(
+            "select id from forum_topics where id=$1 for update", [f.topicId],
+          );
+          const startWriter = async () => {
+            switch (kind) {
+              case "body-plan":
+                write = new DrizzleContentPostBodyPlanningStore(drizzle(writer.c))
+                  .upsertPending(specification!, revision, admission, "author");
+                break;
+              case "reply":
+                write = forum(writer.c).createPost({
+                  id: replyId, topicId: f.topicId, authorId: "author",
+                  bodyRevision: { id: replyRevisionId, originalContent: "Raced reply", sourceLocale: "en" },
+                });
+                break;
+              case "edit":
+                write = new ForumService(forum(writer.c)).editPublishedPost({
+                  topicId: f.topicId, postId: f.postId, actorId: "author",
+                  expectedRevisionId: f.bodyRevisionId, body: "Raced edit",
+                  draftId: changedDraft, attachmentIds: [],
+                });
+                break;
+              case "complaint-post":
+              case "complaint-title":
+                write = new DrizzleComplaintsRepository(
+                  drizzle(writer.c), { tenMinutes: 10_000, day: 10_000 },
+                  async () => {},
+                ).submit("ordinary", {
+                  target: kind === "complaint-title"
+                    ? { kind: "topic-title", topicId: f.topicId, revisionId: f.titleRevisionId }
+                    : { kind: "post", topicId: f.topicId, postId: f.postId, revisionId: f.bodyRevisionId },
+                  operationId: complaintOperationId,
+                  reason: "spam", explanation: "Submitted against observed revision",
+                });
+                break;
+            }
+            void write.catch(() => undefined);
+            await blocked(writer.pid, holder.pid);
+          };
+          const startVisibility = async () => {
+            change = moderation.setTopicVisibility(command);
+            void change.catch(() => undefined);
+            await blocked(manager.pid, holder.pid);
+          };
+          if (writerFirst) {
+            await startWriter();
+            await startVisibility();
+          } else {
+            await startVisibility();
+            await startWriter();
+          }
+          await holder.c.query("commit");
+          held = false;
+          const [writeResult, visibilityResult] = await Promise.allSettled([write!, change!]);
+          expect(visibilityResult.status).toBe("fulfilled");
+          if (visibilityResult.status === "fulfilled") {
+            expect(visibilityResult.value).toMatchObject({ hidden: endingHidden, changed: true });
+          }
+
+          const alwaysAllowed = kind.startsWith("complaint-");
+          const allowed = alwaysAllowed || (transition === "Hide" ? writerFirst : !writerFirst);
+          if (allowed) {
+            expect(writeResult.status).toBe("fulfilled");
+            if (writeResult.status === "fulfilled" && kind === "body-plan") {
+              expect(writeResult.value).toMatchObject({ outcome: "task", created: true });
+            }
+          } else if (kind === "body-plan") {
+            expect(writeResult).toMatchObject({
+              status: "fulfilled", value: { outcome: "revision-changed" },
+            });
+          } else {
+            expect(writeResult.status).toBe("rejected");
+            if (writeResult.status === "rejected") {
+              expect(writeResult.reason).toBeInstanceOf(ForumEntityNotFoundError);
+            }
+          }
+
+          const observed = (await client.query<{
+            hidden: boolean; version: number; posts: number; postRevisions: number;
+            heads: number; tasks: number; budget: number; complaints: number;
+          }>(`
+            select
+              (select is_hidden from forum_topics where id=$1) as hidden,
+              (select visibility_version from forum_topics where id=$1) as version,
+              (select count(*)::int from forum_posts where topic_id=$1) as posts,
+              (select count(*)::int from forum_post_revisions where post_id=$2) as "postRevisions",
+              (select count(*)::int from translation_task_generation_heads
+                 where source_namespace='post-body' and source_key=$2) as heads,
+              (select count(*)::int from translation_tasks
+                 where source_namespace='post-body' and source_key=$2) as tasks,
+              (select coalesce(sum(used_units),0)::int from content_translation_request_budget_counters
+                 where scope in ($3,$4)) as budget,
+              (select count(*)::int from forum_complaints c
+                 join forum_complaint_targets t on t.id=c.target_id
+                 where t.topic_id=$1) as complaints
+          `, [f.topicId, f.postId,
+            admission.global.name + "@race-v1", admission.requester.name + "@race-v1"])).rows[0]!;
+          expect(observed).toEqual({
+            hidden: endingHidden, version: initialHidden ? 2 : 1,
+            posts: 1 + (kind === "reply" && allowed ? 1 : 0),
+            postRevisions: 1 + (kind === "edit" && allowed ? 1 : 0),
+            heads: kind === "body-plan" && allowed ? 1 : 0,
+            tasks: kind === "body-plan" && allowed ? 1 : 0,
+            budget: kind === "body-plan" && allowed ? 2 : 0,
+            complaints: alwaysAllowed ? 1 : 0,
+          });
+          expect((await events(f.topicId)).map(e => e.action)).toEqual(
+            initialHidden ? ["topic.hidden", "topic.restored"] : ["topic.hidden"],
+          );
+          if (endingHidden) {
+            await moderation.setTopicVisibility(
+              topicCommand(f, "moderator1", false, 1, "Restore after race"),
+            );
+          }
+          expect((await client.query(
+            "select is_hidden from forum_topics where id=$1", [f.topicId],
+          )).rows[0]?.is_hidden).toBe(false);
+          if (kind === "body-plan" && allowed) {
+            expect((await client.query(
+              "select status from translation_tasks where source_namespace='post-body' and source_key=$1",
+              [f.postId],
+            )).rows).toEqual([{ status: "pending" }]);
+          }
+        } finally {
+          if (held) await holder.c.query("rollback");
+          await Promise.allSettled([write, change]);
+          await Promise.all([holder.c.end(), writer.c.end(), manager.c.end()]);
+        }
+      },
+      30_000,
+    );
+  }
 });
