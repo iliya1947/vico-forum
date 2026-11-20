@@ -2,7 +2,7 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g author PASS; Лира STOP before B2.3d1.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g/B2.3d1 author PASS; Лира STOP before B2.3d2.**
 
 ## Подтверждённое B2
 
@@ -23,11 +23,12 @@ Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-
 - B2.3c3e exact `d51659b01db7b3c55111616010f760ed5e3b9b6d`: `removeHelpDuplicate` pre-reads active original relationship identity before topic locks, locks duplicate/original sorted NO KEY UPDATE, generic not-found if hidden/missing, rechecks identity under relationship lock before appeal/actor/History. +2 real PG tests: both topic lock orders, hidden duplicate/original, Owner/moderator, pending appeal preserved, Restore resolves appeal/relationship; repeat post-remove conflict. [Exact-head CI 44726577837](https://github.com/iliya1947/vico-forum/actions/runs/44726577837) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1522 PG17 (36 visibility).
 - B2.3c3f exact `86ac06b7a9c71e285b5efe258701866419d112a4`: protected own duplicate appeal V6 exception verified. Existing `appealHelpDuplicate` allows exact active own appeal while duplicate or canonical original is hidden, with author/actor checks, pending uniqueness and no relation/History edits; no production code change. +2 real PG regressions in dedicated visibility suite; [exact-head CI 44737362429](https://github.com/iliya1947/vico-forum/actions/runs/44737362429) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1524 PG17 (38 visibility).
 - B2.3c3g exact `562147fdd0b8d82e04847b0becb0bed554567e08`: `resolveHelpDuplicateAppeal` retains protected pending-appeal decision eligibility across Hide for accepted/rejected, with unchanged exact pending/actor/AP-10 checks, accepted link removal vs rejected retained, single History and no visibility change. +2 PG tests, no production code change. [Exact-head CI 44738934867](https://github.com/iliya1947/vico-forum/actions/runs/44738934867) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1526 PG17 (40 visibility).
+- B2.3d1 exact `acd402a3f74d5fabb9f8ad627277877ea44e4c96`: no separate recovery write path; conflict/rebase sends a fresh `editPublishedPost` request, guarded by topic and post visibility before revision/receipt mutations. Existing matching committed receipt remains idempotently replayable when hidden. +2 PG tests for hidden post exact/changed receipt and new Save, hidden topic stale/rebased Save, Restore; no production change. [Exact-head CI 44744285347](https://github.com/iliya1947/vico-forum/actions/runs/44744285347) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1528 PG17 (42 visibility).
 - Work confined to Draft #357; no B3+.
 
 ## Следующий шаг только по явной команде владельца
 
-**B2.3d1: remaining recovery writer admission only** per `stages/moderation-visibility/PLAN.md`. On owner continuation, inspect actual recovery/edit/receipt paths and current visibility contract; identify the smallest current-scope missing gate, add focused real PG regressions and exact-head CI as applicable, then STOP. Do not combine with new translation planning, PG two-way races or unrelated recovery subsystems.
+**B2.3d2: new translation planning visibility admission only** per `stages/moderation-visibility/PLAN.md` V4/V6. On owner continuation, inspect title and body planner topic/post visibility prerequisites in existing task→topic→post/revision→translation→actor→budget lock order. Require new plans to fail closed on hidden unit/parent, while accepted tasks can continue private revision-bound execution; add focused PG regressions and exact-head CI. Stop before real PG two-order races and B3+.
 
 B2 overall not complete or ready for Mira checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 

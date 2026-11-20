@@ -30,7 +30,9 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 **B2.3c3g author PASS** — existing `resolveHelpDuplicateAppeal` correctly permits administrative accepted/rejected decisions on exact pending protected appeals while duplicate and/or canonical original is hidden. Its actor/measure admission, expected appeal, relationship effects and History are retained; no ordinary content edits or visibility state changes. No production code change required. +2 real PG regressions test both outcomes, wrong/stale appeal, replay, retained relationship vs accepted removal, single History and Restore. Exact `562147fdd0b8d82e04847b0becb0bed554567e08`; [CI 44738934867](https://github.com/iliya1947/vico-forum/actions/runs/44738934867): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1526/1526 PostgreSQL17 (40/40 visibility)**.
 
-**Лира STOP перед B2.3d1.** Next owner continuation only: inspect the remaining recovery writer admission seams and isolate the smallest bounded correction/test, without planning or PG race expansion. Whole B2 incomplete, no Mira checkpoint; B1/B2 Draft/unmerged, no B3+.
+**B2.3d1 author PASS** — recovery after published-post edit conflict uses existing `editPublishedPost`: new operations are already denied at topic→post visibility lock gates; immutable matching committed receipt replay remains inert after Hide. No new writer or production-code change required. +2 real PG regressions: hidden edited post and exact/changed receipt, fresh save denied until Restore; stale edit/rebase under hidden topic denied with no mutations, Restore restores revision CAS. Initial test fixture CAS corrected to current edited revision before final head. Exact `acd402a3f74d5fabb9f8ad627277877ea44e4c96`; [CI 44744285347](https://github.com/iliya1947/vico-forum/actions/runs/44744285347): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1528/1528 PG17 (42/42 visibility)**.
+
+**Лира STOP перед B2.3d2.** Next owner continuation only: new translation planning visibility admission (title vs body), preserve accepted-task execution and existing task→topic→post lock graph. B2 incomplete, no Mira checkpoint; B1/B2 Draft/unmerged, no B3+.
 
 ## Baseline
 
@@ -54,7 +56,7 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g author PASS
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g/B2.3d1 author PASS
 
 - B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
 - B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
@@ -83,8 +85,10 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 - [Exact-head CI 44737362429](https://github.com/iliya1947/vico-forum/actions/runs/44737362429): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1524/1524 PG17 (38/38 visibility)**.
 - B2.3c3g exact `562147fdd0b8d82e04847b0becb0bed554567e08`: verified existing admin `resolveHelpDuplicateAppeal` preserves the pending appeal's own protected lifecycle across Hide; accepted outcome removes relationship, rejected keeps it, both append one original History, keep visibility untouched, exact expected appeal and replay conflict. +2 real PG tests in `tests/database/moderation-visibility-commands.test.ts`; no production code or lock changes.
 - [Exact-head CI 44738934867](https://github.com/iliya1947/vico-forum/actions/runs/44738934867): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1526/1526 PostgreSQL17 (40/40 visibility)**.
-- B2 remaining: B2.3d1 recovery writer admission, then planning/new translation admission and real PostgreSQL two-order races/deactivation/lock compatibility. Whole B2 not complete.
-- **B2.3c3g author PASS / Lira STOP before B2.3d1.** Continue only on owner command. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; no Leva until folded final feature. B1/B2 Draft/unmerged.
+- B2.3d1 exact `acd402a3f74d5fabb9f8ad627277877ea44e4c96`: no separate recovery writer; published-post edit Save/rebase reuse the existing transactionally gated `editPublishedPost`. Matching durable receipt replay after Hide is inert; fresh/changed operations preserve original conflicts/visibility gate. +2 real PG tests for hidden post receipt/Restore and hidden topic stale-revision rebase/Restore, no new production code. Only `tests/database/moderation-visibility-commands.test.ts` changed.
+- [Exact-head CI 44744285347](https://github.com/iliya1947/vico-forum/actions/runs/44744285347): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit and 1528/1528 PG17 (42/42 visibility)**.
+- B2 remaining: B2.3d2 new translation planning admission, then real PostgreSQL two-order races/deactivation/lock compatibility. Whole B2 not complete.
+- **B2.3d1 author PASS / Lira STOP before B2.3d2.** Continue only on owner command. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; no Leva until folded final feature. B1/B2 Draft/unmerged.
 
 ## Process follow-up
 
