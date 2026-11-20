@@ -1660,7 +1660,7 @@ describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edi
     const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
     return { c, pid };
   }
-  async function blocked(waiter: number, owner: number) {
+  async function blocked(waiter: number, possibleBlockers: number[]) {
     const end = Date.now() + 8_000;
     let last: unknown;
     while (Date.now() < end) {
@@ -1669,11 +1669,14 @@ describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edi
         [waiter],
       );
       last = a.rows[0];
-      if (a.rows[0]?.wait_event_type === "Lock" && a.rows[0].blockers.includes(owner)) return;
+      // PostgreSQL reports the first queued waiter as a soft blocker of the
+      // second, rather than always reporting the original row-lock holder.
+      if (a.rows[0]?.wait_event_type === "Lock"
+        && a.rows[0].blockers.some(pid => possibleBlockers.includes(pid))) return;
       await new Promise(done => setTimeout(done, 25));
     }
     throw new Error("PG race lock wait not observed: " +
-      JSON.stringify({ waiter, owner, last }));
+      JSON.stringify({ waiter, possibleBlockers, last }));
   }
   function forum(c: Client) {
     return new DrizzleForumRepository(drizzle(c),
@@ -1770,12 +1773,12 @@ describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edi
                 break;
             }
             void write.catch(() => undefined);
-            await blocked(writer.pid, holder.pid);
+            await blocked(writer.pid, [holder.pid, manager.pid]);
           };
           const startVisibility = async () => {
             change = moderation.setTopicVisibility(command);
             void change.catch(() => undefined);
-            await blocked(manager.pid, holder.pid);
+            await blocked(manager.pid, [holder.pid, writer.pid]);
           };
           if (writerFirst) {
             await startWriter();
