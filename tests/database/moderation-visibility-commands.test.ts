@@ -1638,9 +1638,7 @@ describe("V4 real PostgreSQL title planning versus topic Hide/Restore", () => {
         if (result.outcome === "task") expect(tasks.rows[0].id).toBe(result.task.id);
       } finally {
         if (held) await holder.connection.query("rollback");
-        await Promise.allSettled([planned, changed].filter(
-          (p): p is Promise<unknown> => p !== undefined,
-        ));
+        await Promise.allSettled([planned, changed]);
         await Promise.all([
           holder.connection.end(), planner.connection.end(), writer.connection.end(),
         ]);
