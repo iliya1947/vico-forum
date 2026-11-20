@@ -2486,6 +2486,69 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     expect((await repository.readTopicReadState("ordinary",f.topicId))?.firstUnreadPostId).toBe(childId);
   });
 
+  it("preserves a hidden middle parent and visible descendant without manufacturing unread on Restore", async () => {
+    const f=await fixture("B3_VISIBLE_ROOT_BEFORE_HIDDEN_PARENT_3146");
+    const middleId=randomUUID(),middleRevisionId=randomUUID();
+    const childId=randomUUID(),childRevisionId=randomUUID();
+    await repository.createPost({
+      id:middleId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:middleRevisionId,originalContent:"B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146",sourceLocale:"en",
+      },
+    });
+    await repository.createPost({
+      id:childId,topicId:f.topicId,authorId:"author",parentPostId:middleId,
+      bodyRevision:{id:childRevisionId,originalContent:"B3_VISIBLE_DESCENDANT_3146",sourceLocale:"en"},
+    });
+    const original=await repository.readTopicPage(f.topicId);
+    expect(original?.posts.map(p=>p.id)).toEqual([f.postId,middleId,childId]);
+    expect(original?.posts[2]).toMatchObject({parentPostId:middleId});
+    await repository.advanceTopicReadState("ordinary",f.topicId,f.postId);
+    expect((await repository.readUnreadForUser("ordinary")).find(x=>x.id===f.topicId))
+      .toMatchObject({firstUnreadPostId:middleId,latestPostId:childId,unreadCount:2});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:middleRevisionId,
+      reason:"Hide intermediate parent",
+    });
+    const hidden=await repository.readTopicPage(f.topicId);
+    expect(hidden?.posts.map(p=>p.id)).toEqual([f.postId,middleId,childId]);
+    expect(hidden?.posts[1]).toEqual({
+      kind:"hidden",id:middleId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    expect(hidden?.posts[2]).toMatchObject({
+      id:childId,parentPostId:middleId,
+      body:{id:childRevisionId,originalContent:"B3_VISIBLE_DESCENDANT_3146"},
+    });
+    expect(JSON.stringify(hidden)).not.toContain("B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146");
+    expect(JSON.stringify(hidden)).not.toContain(middleRevisionId);
+    expect(await repository.readPost(middleId)).toBeUndefined();
+    expect(await repository.readPostLocation(middleId)).toBeUndefined();
+    expect(await repository.readPostHistory(middleId,f.topicId)).toEqual([]);
+    expect((await repository.readTopicReadState("ordinary",f.topicId)))
+      .toMatchObject({lastReadPostId:f.postId,firstUnreadPostId:childId,latestPostId:childId,state:"unread"});
+    expect((await repository.readUnreadForUser("ordinary")).find(x=>x.id===f.topicId))
+      .toMatchObject({firstUnreadPostId:childId,latestPostId:childId,unreadCount:1});
+
+    await repository.advanceTopicReadState("ordinary",f.topicId,childId);
+    expect((await repository.readTopicReadState("ordinary",f.topicId)))
+      .toMatchObject({lastReadPostId:childId,firstUnreadPostId:null,state:"read"});
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:middleRevisionId,
+      reason:"Restore intermediate parent",
+    });
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toMatchObject({
+      id:middleId,body:{
+        id:middleRevisionId,originalContent:"B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146",
+      },
+    });
+    expect(await repository.readTopicReadState("ordinary",f.topicId))
+      .toMatchObject({lastReadPostId:childId,firstUnreadPostId:null,state:"read"});
+    expect((await repository.readUnreadForUser("ordinary")).map(x=>x.id)).not.toContain(f.topicId);
+  });
+
   it("preserves retained duplicate state but removes a hidden canonical original's ID/title/link data", async () => {
     const makeQuestion=async(title:string)=>{
       const topicId=randomUUID(),postId=randomUUID(),titleRevisionId=randomUUID(),bodyRevisionId=randomUUID();
