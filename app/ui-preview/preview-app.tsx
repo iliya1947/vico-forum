@@ -1505,13 +1505,17 @@ const previewTagDefinitions = [
 ] as const;
 
 function previewTagTopics(locale: PreviewLocale, interactions: PreviewInteractionState) {
+  const authorProjection = (authorId: string, authorName: string) =>
+    interactions.ownerDeactivations.has(authorId)
+      ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+      : { authorName };
   const primarySection = previewSection(locale, sectionId);
   const regularTopics = primarySection.topics.map((topic) => {
     const editedTitle = interactions.topicTitleEdits.get(topic.id);
     return {
       id: topic.id,
       title: editedTitle?.originalContent ?? topic.title.originalContent,
-      authorName: topic.authorName,
+      ...authorProjection(previewProfileIdForName(topic.authorName), topic.authorName),
       postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
       createdAt: topic.createdAt,
       category: primarySection.category,
@@ -1524,7 +1528,7 @@ function previewTagTopics(locale: PreviewLocale, interactions: PreviewInteractio
   const helpTopics = help.questions.map((question) => ({
     id: question.id,
     title: interactions.topicTitleEdits.get(question.id)?.originalContent ?? question.title,
-    authorName: question.authorName,
+    ...authorProjection(previewProfileIdForName(question.authorName), question.authorName),
     postCount: question.replyCount + 1 + (interactions.replies.get(question.id)?.length ?? 0),
     createdAt: new Date(question.createdAt),
     category: { id: HELP_SOLUTIONS_CATEGORY_ID, name: help.name },
@@ -1537,7 +1541,7 @@ function previewTagTopics(locale: PreviewLocale, interactions: PreviewInteractio
     return {
       id: topic.id,
       title: interactions.topicTitleEdits.get(topic.id)?.originalContent ?? topic.title,
-      authorName: topic.authorName,
+      ...authorProjection(topic.authorId, topic.authorName),
       postCount: 1 + (interactions.replies.get(topic.id)?.length ?? 0),
       createdAt: topic.createdAt,
       category: section.category,
