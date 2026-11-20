@@ -3399,6 +3399,31 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(await messageTools.findByText("Source language: ru")).toBeInTheDocument();
   });
 
+  it("lets the bound Owner manage an ordinary topic solution without author confirmation", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-unsolved" identity="owner" />);
+
+    let quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+    let tools = within(quickActions!.closest("details") as HTMLElement);
+
+    await owner.click(tools.getByRole("button", { name: "Message #2" }));
+    expect(await screen.findByText("Best answer")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Problem solved?" })).not.toBeInTheDocument();
+
+    quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    const details = quickActions!.closest("details") as HTMLDetailsElement | null;
+    expect(details).not.toBeNull();
+    if (!details!.open) await owner.click(quickActions!);
+    tools = within(details!);
+
+    await owner.click(tools.getByRole("button", { name: "Mark solved" }));
+    await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
+    expect(screen.getByText("Best answer")).toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
