@@ -4335,8 +4335,9 @@ async function previewTopicAction(
   }
 
   if (intent === "correctTitleSourceLocale") {
-    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
-      return { error: "forbidden" as const };
+    const scopeValues = form.getAll("operationScope");
+    if (scopeValues.length > 1 || (scopeValues[0] !== undefined && scopeValues[0] !== "own" && scopeValues[0] !== "any")) {
+      return { error: "invalid" as const };
     }
     const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
     const sourceLocale = String(form.get("sourceLocale") ?? "").trim();
@@ -4344,6 +4345,20 @@ async function previewTopicAction(
 
     const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
     if (!currentPage) return { error: "notFound" as const };
+
+    const requestedScope = scopeValues[0] === "own" || scopeValues[0] === "any" ? scopeValues[0] : null;
+    const canCorrectAny = scenario.identity === "manager" || scenario.identity === "owner";
+    const canCorrectOwn = currentPage.topic.authorId === actor.id;
+    const scope = requestedScope === "own"
+      ? (canCorrectOwn ? "own" : null)
+      : requestedScope === "any"
+        ? (canCorrectAny ? "any" : null)
+        : canCorrectAny
+          ? "any"
+          : canCorrectOwn
+            ? "own"
+            : null;
+    if (!scope) return { error: "forbidden" as const };
     if (currentPage.topic.title.id !== expectedRevisionId) {
       return { error: "conflict" as const };
     }
@@ -4789,7 +4804,9 @@ function previewCreatedTopicData(
     canManageAnySolution: scenario.identity === "manager" || scenario.identity === "owner",
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
-    canCorrectTitleSourceLocale: scenario.identity === "manager" || scenario.identity === "owner",
+    canCorrectTitleSourceLocale: scenario.identity === "manager"
+      || scenario.identity === "owner"
+      || previewUser(scenario)?.id === topic.authorId,
     canCorrectAnySourceLocale: scenario.identity === "manager" || scenario.identity === "owner",
     canManagePin: scenario.identity === "manager" || scenario.identity === "owner",
     canManageClosure: scenario.identity === "manager" || scenario.identity === "owner",
@@ -7281,7 +7298,9 @@ function PreviewTopicRoute({ scenario, interactions }: {
             }
           : null}
         isTopicAuthor={scenario.identity === "user"}
-        canCorrectTitleSourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
+        canCorrectTitleSourceLocale={scenario.identity === "manager"
+          || scenario.identity === "owner"
+          || previewUser(scenario)?.id === interactiveHelpTopic.authorId}
         canCorrectAnySourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
         canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
         canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7837,7 +7856,9 @@ function topicData(
     canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canConfirmOwnSolution: solutionAuthor,
-    canCorrectTitleSourceLocale: showSecondaryControls || identity === "owner",
+    canCorrectTitleSourceLocale: identity === "manager"
+      || identity === "owner"
+      || (identity === "user" && translatedTopic.authorId === "alex"),
     canCorrectAnySourceLocale: identity === "manager" || identity === "owner",
     canManagePin: identity === "manager" || identity === "owner",
     canManageClosure: identity === "manager" || identity === "owner",
