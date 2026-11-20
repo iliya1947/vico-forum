@@ -41,8 +41,8 @@ describe("unread route", () => {
     const result = await loader({ params: { locale: "ru" }, context: value });
 
     expect(readUnreadForUser).toHaveBeenCalledWith("user-1");
-    expect(result.locale).toBe("ru");
-    expect(result.topics[0]).toMatchObject({
+    expect(result.data.locale).toBe("ru");
+    expect(result.data.topics[0]).toMatchObject({
       id: "topic-1",
       state: "unread",
       firstUnreadPostId: "post-2",
