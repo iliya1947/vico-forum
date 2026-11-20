@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- F5 Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9` base B2 unchanged. Current [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290): `database` job now **IN_PROGRESS** at Initialize containers; `checks` still **QUEUED**. No current exact-head PG or typecheck result available.
-- Exact-head workflows at observation: 4 SUCCESS (SA04-S, SA04-K5, SA08, SA06), 4 IN_PROGRESS (Bookmarks, SA07, SA-01, Mute/Block), 7 QUEUED. No code/CI config changes or reruns. Initial F5 lint and 13 PG failures addressed by targeted B3 tests; Help Similar ranking mismatch still must be checked on actual new PG.
-- Next owner `...`: F5 only; on full exact-head applicable CI PASS, author PASS → **Мира** bounded B3 checkpoint; otherwise correct confirmed current defect and re-gate. No B4. STOP.
+- B3 F5 stacked Draft #359 exact **`0b797d95135ece2b981628dd13a59abb36c4d7fa`**, base B2 unchanged. Initial revised [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) finished FAIL: `checks` Typecheck missing `attentionCaseTopicUnavailable` in reviewed ru/he translation values/fingerprints, plus 4 loader test access TS2339; PG 1598 PASS / 1 FAIL Help Similar hidden exact-title returned under ungrouped OR predicates.
+- Current corrective packet: `db/forum-repository.ts` parenthesized Help Similar OR chain behind is_hidden=false (confirmed SQL boolean-precedence leak), `app/forum/public-authz-degradation.test.ts` and `app/routes/unread.test.ts` read data-return payload via `.data`. 3 files, 7/7 source checks PASS; runtime not yet verified; current exact-head workflows queued.
+- **Next `...`: localization parity `attentionCaseTopicUnavailable`: review correct ru/he translations and canonical fingerprint from repo's real mechanism, avoid fabricated hash; then applicable exact-head CI.** Author PASS not granted and no Mira handoff until all checks PASS. No B4/merge. STOP.
 
 ## Cadence
 
