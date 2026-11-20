@@ -1401,11 +1401,60 @@ function previewUnreadTopics(
 ) {
   const actor = previewUser(scenario);
   if (!actor) return [];
-  return unreadTopics(scenario.locale).filter((topic) => {
-    const currentPage = previewAdminTopicData(scenario, interactions, topic.id);
-    const deliveredLatestPostId = currentPage?.topic.posts.at(-1)?.id ?? topic.latestPostId;
-    return interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, topic.id)) !== deliveredLatestPostId;
-  });
+
+  const initialById = new Map(unreadTopics(scenario.locale).map((topic) => [topic.id, topic]));
+  const candidateIds = new Set<string>([
+    ...initialById.keys(),
+    ...interactions.createdTopics.keys(),
+    ...interactions.replies.keys(),
+  ]);
+
+  return [...candidateIds].flatMap((candidateId) => {
+    const page = previewAdminTopicData(scenario, interactions, candidateId);
+    if (!page) return [];
+    const topic = page.topic;
+    const posts = topic.posts;
+    const latestPost = posts.at(-1);
+    const firstPost = posts[0];
+    if (!latestPost || !firstPost) return [];
+
+    const marker = interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, candidateId));
+    if (marker === latestPost.id) return [];
+
+    const initial = initialById.get(candidateId);
+    const markerIndex = marker ? posts.findIndex((post) => post.id === marker) : -1;
+    const initialFirstUnreadIndex = initial
+      ? posts.findIndex((post) => post.id === initial.firstUnreadPostId)
+      : -1;
+
+    const state = marker
+      ? "unread" as const
+      : initial?.state ?? ("new" as const);
+    const firstUnreadIndex = marker
+      ? (markerIndex >= 0 ? markerIndex + 1 : 0)
+      : state === "unread" && initialFirstUnreadIndex >= 0
+        ? initialFirstUnreadIndex
+        : 0;
+    const firstUnreadPost = posts[firstUnreadIndex] ?? firstPost;
+    const unreadCount = Math.max(1, posts.length - firstUnreadIndex);
+
+    return [{
+      id: candidateId,
+      title: topic.title.originalContent,
+      authorName: topic.authorName,
+      ...(topic.authorIdentityKind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+      state,
+      firstUnreadPostId: firstUnreadPost.id,
+      latestPostId: latestPost.id,
+      unreadCount,
+      activityAt: latestPost.createdAt,
+      category: topic.section.category,
+      section: { id: topic.section.id, name: topic.section.name },
+    }];
+  }).sort((left, right) =>
+    right.activityAt.getTime() - left.activityAt.getTime()
+    || (right.id < left.id ? -1 : right.id > left.id ? 1 : 0)
+  );
 }
 
 function PreviewUnreadRoute({ scenario, interactions }: {
