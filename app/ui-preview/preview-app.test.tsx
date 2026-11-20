@@ -1749,6 +1749,29 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
   });
 
+  it("edits an authenticated author's own Help question post", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-current" identity="user" />);
+
+    const question = document.querySelector("#post-help-cloudflare-cache-post-1") as HTMLElement | null;
+    expect(question).not.toBeNull();
+    await user.click(within(question!).getByRole("button", { name: "Edit" }));
+
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+    const body = form.querySelector("textarea") as HTMLTextAreaElement;
+    expect(body).toHaveValue("Representative technical question from Help & solutions.");
+
+    fireEvent.change(body, { target: { value: "Edited Help question post." } });
+    const save = within(form).getByRole("button", { name: "Save changes" });
+    await waitFor(() => expect(save).toBeEnabled());
+    await user.click(save);
+
+    expect(await screen.findByText("Edited Help question post.")).toBeInTheDocument();
+    expect(within(document.querySelector("#post-help-cloudflare-cache-post-1") as HTMLElement)
+      .getByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
+
   it("edits only the authenticated author's own published post in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
