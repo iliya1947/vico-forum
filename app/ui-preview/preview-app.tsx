@@ -4971,7 +4971,11 @@ function previewSectionWithInteractions(
         sourceLocale: topic.sourceLocale,
       },
     }));
-  return { ...base, topics: [...created, ...base.topics] };
+  const existing = base.topics.map((topic) => ({
+    ...topic,
+    postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
+  }));
+  return { ...base, topics: [...created, ...existing] };
 }
 
 function previewCreatedTopicData(
