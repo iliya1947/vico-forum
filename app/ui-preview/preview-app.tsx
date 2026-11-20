@@ -371,6 +371,7 @@ type PreviewInteractionState = {
   topicWatches: Set<string>;
   topicBookmarks: Set<string>;
   topicMutes: Set<string>;
+  userBlocks: Set<string>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -437,6 +438,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     topicWatches: new Set(),
     topicBookmarks: new Set(),
     topicMutes: new Set(),
+    userBlocks: new Set(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -1260,6 +1262,25 @@ function previewTopicMuteProps(
   };
 }
 
+function previewUserBlockKey(actorId: string, targetId: string) {
+  return JSON.stringify([actorId, targetId]);
+}
+
+function previewUserBlockProps(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  targetId: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor || actor.id === targetId) return { blockActorId: actor?.id ?? null, blockState: null };
+  return {
+    blockActorId: actor.id,
+    blockState: interactions.userBlocks.has(previewUserBlockKey(actor.id, targetId))
+      ? "on" as const
+      : "off" as const,
+  };
+}
+
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
@@ -1445,6 +1466,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
         || (intent === "setTopicBookmark" && Boolean(form.closest(".topic-bookmark-control")))
         || (intent === "setTopicMute" && Boolean(form.closest(".personal-filter-control")))
+        || (intent === "setUserBlock" && Boolean(form.closest(".personal-filter-control")))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
@@ -3534,10 +3556,35 @@ async function previewProfileAction(
   const effectiveUserId = scenario.id.startsWith("profile-") && scenario.allowedIdentities && routeUserId === "alex"
     ? actor.id
     : routeUserId;
-  if (effectiveUserId !== actor.id) return null;
 
   const form = await request.formData();
-  if (String(form.get("intent") ?? "") !== "save-profile") return null;
+  const intent = String(form.get("intent") ?? "");
+  if (intent === "setUserBlock") {
+    const editorActorId = String(form.get("editorActorId") ?? "").trim();
+    const requested = String(form.get("blocked") ?? "");
+    if (!editorActorId || (requested !== "true" && requested !== "false")) {
+      return { operation: "userBlock" as const, error: "invalid" as const };
+    }
+    if (editorActorId !== actor.id) {
+      return { operation: "userBlock" as const, error: "conflict" as const };
+    }
+    if (effectiveUserId === actor.id) {
+      return { operation: "userBlock" as const, error: "invalid" as const };
+    }
+    const key = previewUserBlockKey(actor.id, effectiveUserId);
+    const blocked = requested === "true";
+    if (blocked) interactions.userBlocks.add(key);
+    else interactions.userBlocks.delete(key);
+    return {
+      operation: "userBlock" as const,
+      ok: true as const,
+      actorId: actor.id,
+      targetId: effectiveUserId,
+      blocked,
+    };
+  }
+
+  if (effectiveUserId !== actor.id || intent !== "save-profile") return null;
   const bio = String(form.get("bio") ?? "");
   const githubUrl = String(form.get("githubUrl") ?? "");
   const websiteUrl = String(form.get("websiteUrl") ?? "");
@@ -6553,6 +6600,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
   };
   return <ProfileView locale={scenario.locale} isSelf={identity?.id === id}
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
+    {...previewUserBlockProps(scenario, interactions, id)}
     privileged={previewProfilePrivilegedSections(scenario, interactions, id)}
     profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: profileRole.slug, displayName: profileRole.displayName, isSystem: profileRole.isSystem },
