@@ -118,7 +118,7 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## B3 batch: search/count and unanswered boundary regressions
 
-- Stacked Draft #359 updated with test-only commit `9e5a77a0dd33abf05a0b930cea7950f545628fb5` (parent `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`).
+- Stacked Draft #359 updated with test-only commit `8e98af76772a88b0c767d240e49105c65f447937` (test-only correction after `9e5a77a0`: search exposes `postCount`, not `replyCount`) (parent `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`).
 - Two related real PostgreSQL tests added to `tests/database/moderation-visibility-commands.test.ts`: hidden non-root reply is excluded from body search and replyCount and restored afterwards; Unanswered tracks visible non-root replies correctly when the chronological root is hidden, including hiding and restoring the only answer.
 - No production/schema/other-stage changes. Existing B3 remains partial; other B3 acceptance gaps remain.
 - GitHub automatically triggered CI on the new head; capture its actual result before marking this batch author PASS. No separate repeat of the old exact-head CI is needed.
