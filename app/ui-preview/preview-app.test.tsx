@@ -3121,8 +3121,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       "appeal-77777777-7777-4777-8777-777777777777",
     );
     expect(resolvedAppeal).not.toBeNull();
-    expect(within(resolvedAppeal!).getByText("Appeal 1")).toBeInTheDocument();
-    expect(within(resolvedAppeal!).getByText("Appeal upheld")).toBeInTheDocument();
+    expect(within(resolvedAppeal!).getByText("Appeal #1")).toBeInTheDocument();
+    expect(within(resolvedAppeal!).getByText("Upheld")).toBeInTheDocument();
     expect(within(resolvedAppeal!).getByText(
       "The original decision remains in effect after appeal review.",
     )).toBeInTheDocument();
