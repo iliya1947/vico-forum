@@ -41,10 +41,13 @@ export { topicAction as action } from "../forum/actions.server";
  * cache policy and retry advice, leaving framework cookies untouched. */
 export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
-  for (const name of ["Cache-Control", "Retry-After"] as const) {
-    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
-    if (value !== null) result.set(name, value);
-  }
+  // A hidden topic becomes 404 immediately; neither its previous public
+  // document nor the neutral negative response may be cached.
+  result.set("Cache-Control", errorHeaders?.get("Cache-Control")
+    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control") ?? "no-store");
+  const retry = errorHeaders?.get("Retry-After")
+    ?? actionHeaders.get("Retry-After") ?? loaderHeaders.get("Retry-After");
+  if (retry !== null) result.set("Retry-After", retry);
   return result;
 }
 
@@ -296,7 +299,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint,
     topicReadState,
   };
-  return session ? data(page, { headers: { "Cache-Control": "private, no-store" } }) : page;
+  return data(page, { headers: { "Cache-Control": session ? "private, no-store" : "no-store" } });
 });
 
 export default function TopicRoute() {
