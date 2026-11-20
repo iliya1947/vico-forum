@@ -2549,6 +2549,7 @@ describe("B3 Help similar-question visible-only ranking", () => {
       id:hidden.topicId,matchSource:"title",
     });
     await service.setTopicVisibility(topicCommand(hidden));
+    expect(await repository.readTopicPage(hidden.topicId)).toBeUndefined();
     expect((await similar(token,1))[0]).toMatchObject({
       id:visible.topicId,matchSource:"body",
     });
@@ -2669,30 +2670,41 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
       id:replyId,topicId:first.topicId,authorId:"ordinary",parentPostId:first.postId,
       bodyRevision:{id:revisionId,originalContent:"B3_POPULAR_REPLY_2926",sourceLocale:"en"},
     });
-    // An isolated future window excludes all existing test fixtures regardless of suite order.
+    // The future reference isolates Popular ranking, but temporary future post dates
+    // must not poison the per-author write cooldown for later tests in this shared schema.
     const reference=new Date("2035-05-01T12:00:00.000Z");
-    for(const [id,time] of [
-      [first.postId,"2035-05-01T07:00:00.000Z"],
-      [second.postId,"2035-05-01T08:00:00.000Z"],
-      [replyId,"2035-05-01T09:00:00.000Z"],
-    ]){
-      await client.query("update forum_posts set created_at=$1 where id=$2",[new Date(time),id]);
+    const originalDates=await client.query<{id:string;created_at:Date}>(
+      "select id,created_at from forum_posts where id in ($1,$2,$3)",
+      [first.postId,second.postId,replyId],
+    );
+    try {
+      for(const [id,time] of [
+        [first.postId,"2035-05-01T07:00:00.000Z"],
+        [second.postId,"2035-05-01T08:00:00.000Z"],
+        [replyId,"2035-05-01T09:00:00.000Z"],
+      ]){
+        await client.query("update forum_posts set created_at=$1 where id=$2",[new Date(time),id]);
+      }
+      const top=async() => {
+        const popular=await repository.readPopular(reference,1);
+        return ["24h","7d","30d"].map(period=>popular[period as "24h"|"7d"|"30d"][0]?.id);
+      };
+      expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+      await service.setPostVisibility({
+        topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide ranked Popular reply",
+      });
+      expect(await top()).toEqual([second.topicId,second.topicId,second.topicId]);
+      await service.setPostVisibility({
+        topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked Popular reply",
+      });
+      expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+    } finally {
+      for(const row of originalDates.rows){
+        await client.query("update forum_posts set created_at=$1 where id=$2",[row.created_at,row.id]);
+      }
     }
-    const top=async() => {
-      const popular=await repository.readPopular(reference,1);
-      return ["24h","7d","30d"].map(period=>popular[period as "24h"|"7d"|"30d"][0]?.id);
-    };
-    expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
-    await service.setPostVisibility({
-      topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:true,
-      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide ranked Popular reply",
-    });
-    expect(await top()).toEqual([second.topicId,second.topicId,second.topicId]);
-    await service.setPostVisibility({
-      topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:false,
-      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked Popular reply",
-    });
-    expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
   });
 
 
