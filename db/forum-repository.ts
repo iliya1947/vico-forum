@@ -268,6 +268,7 @@ export type HelpSolutionOutdatedReasonKind = "best-answer-replaced";
 export interface ForumHelpDuplicateReference {
   id: string;
   title: string;
+  unavailable?: boolean;
 }
 
 export interface ForumHelpDuplicateAppeal {
@@ -2290,6 +2291,7 @@ export class DrizzleForumRepository {
               on ${forumPostRevisions.postId} = ${forumPosts.id}
               and ${forumPostRevisions.id} = ${forumPosts.currentRevisionId}
             where ${forumPosts.topicId} = ${forumTopics.id}
+              and not ${forumPosts.isHidden}
               and ${forumPostRevisions.originalContent} ilike ${patterns[index]!} escape '!'
           )`
         : sql<boolean>`false`,
@@ -2386,6 +2388,12 @@ export class DrizzleForumRepository {
       select count(*)::int
       from ${forumPosts}
       where ${forumPosts.topicId} = ${forumTopics.id}
+        and not ${forumPosts.isHidden}
+        and ${forumPosts.id} <> (
+          select root.id from forum_posts root
+          where root.topic_id = ${forumTopics.id}
+          order by root.created_at, root.id limit 1
+        )
     )`;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
@@ -2393,7 +2401,7 @@ export class DrizzleForumRepository {
         (
           select max(${forumPosts.createdAt})
           from ${forumPosts}
-          where ${forumPosts.topicId} = ${forumTopics.id}
+          where ${forumPosts.topicId} = ${forumTopics.id} and not ${forumPosts.isHidden}
         ),
         ${forumTopics.createdAt}
       )
@@ -2420,14 +2428,14 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .where(sql`
+      .where(and(eq(forumTopics.isHidden, false), sql`
         ${exactTitleMatch}
         or ${exactTagMatch}
         or ${strongTitleMatch}
         or ${tagMatchCount} > 0
         or ${bodyMatchCount} > 0
         or ${titleMatchCount} > 0
-      `)
+      `))
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
@@ -2441,7 +2449,7 @@ export class DrizzleForumRepository {
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
-      replyCount: Math.max(0, row.postCount - 1),
+      replyCount: row.postCount,
       isSolved: row.isSolved,
       tags: tagsByTopic.get(row.id) ?? [],
       matchSource: row.matchSource,
@@ -3102,14 +3110,16 @@ export class DrizzleForumRepository {
         relationshipId: forumHelpDuplicateRelationships.id,
         duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
         originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+        originalHidden: originalTopic.isHidden,
         originalTitle: originalTitle.originalContent,
         pendingAppealId: pendingAppeal.id,
       })
       .from(forumHelpDuplicateRelationships)
       .innerJoin(originalTopic, eq(originalTopic.id, forumHelpDuplicateRelationships.originalTopicId))
-      .innerJoin(originalTitle, and(
+      .leftJoin(originalTitle, and(
         eq(originalTitle.topicId, originalTopic.id),
         eq(originalTitle.id, originalTopic.currentTitleRevisionId),
+        eq(originalTopic.isHidden, false),
       ))
       .leftJoin(pendingAppeal, and(
         eq(pendingAppeal.relationshipId, forumHelpDuplicateRelationships.id),
@@ -3123,7 +3133,9 @@ export class DrizzleForumRepository {
     return new Map(rows.map((row) => [
       row.duplicateTopicId,
       {
-        duplicateOf: { id: row.originalTopicId, title: row.originalTitle },
+        duplicateOf: row.originalHidden
+          ? { id: "", title: "", unavailable: true }
+          : { id: row.originalTopicId, title: row.originalTitle! },
         duplicateRelationshipId: row.relationshipId,
         duplicateDisputed: row.pendingAppealId !== null,
       },
@@ -3529,7 +3541,10 @@ export class DrizzleForumRepository {
 
   async readPostLocation(postId: string) {
     const [post] = await this.database.select({ topicId: forumPosts.topicId, authorId: forumPosts.authorId })
-      .from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+      .from(forumPosts)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
+      .where(and(eq(forumPosts.id, postId), eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false)))
+      .limit(1);
     return post;
   }
 
@@ -3546,8 +3561,12 @@ export class DrizzleForumRepository {
       createdAt: forumPostRevisions.createdAt,
     }).from(forumPostRevisions)
       .innerJoin(forumPosts, eq(forumPosts.id, forumPostRevisions.postId))
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
       .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
-      .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
+      .where(and(
+        eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId),
+        eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false),
+      ))
       .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
     return rows.map(row => {
       const author = projectForumPublicAuthor(row);
@@ -4814,11 +4833,12 @@ export class DrizzleForumRepository {
         sourceLocale: forumPostRevisions.sourceLocale,
       })
       .from(forumPosts)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
       .innerJoin(
         forumPostRevisions,
         and(eq(forumPostRevisions.postId, forumPosts.id), eq(forumPostRevisions.id, forumPosts.currentRevisionId)),
       )
-      .where(eq(forumPosts.id, id));
+      .where(and(eq(forumPosts.id, id), eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false)));
     return row && {
       id: row.id,
       topicId: row.topicId,
