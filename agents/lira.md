@@ -1,20 +1,37 @@
 # agents/lira.md — персональная рабочая память Лиры по #342
 
-## Текущее назначение
+## Текущее состояние
 
-Moderation visibility stacked B1 — **VIS-B1-MIRA-01 author correction PASS**. Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`; **Лира STOP, Мира bounded coordinator review NEXT**.
+Moderation visibility stacked delivery — **B1 bounded PASS**.
 
-## B1 correction evidence
+- Draft PR #355 stays open/unmerged.
+- Stable exact head: `704d5a46d59841538524424296ac28eaa39aa5e6`.
+- Mira closed `VIS-B1-MIRA-01`; no confirmed B1 blocker remains.
+- Exact-head CI/workflows green.
 
-- Confirmed omission of `forum.content.visibility.manage` from Admin Forum admission, locale-boundary header projection and shared AP-10 administrative family; DB wrapper already included it.
-- Updated three existing permission projections and four focused regression suites in one B1-only correction commit, `704d5a46d59841538524424296ac28eaa39aa5e6` (7 files; no schema, public Hide/Restore commands/routes or unrelated changes).
-- Exact diff/self-check PASS; Admin/locale/AP-10/DB-wrapper permission projections have parity. CI 17/17 check-runs and 13/13 workflows SUCCESS, including CI checks+PG17 and AP-10 browser.
-- Active handoff and evidence are in `WORKFLOW.md`; next Mira whole-B1 checkpoint on this exact head. B2 remains blocked pending Mira PASS and developer continuation.
+## Следующий возможный этап — B2 (не активирован)
+
+Upon explicit owner continuation, create a **new stacked implementation PR** for **B2 — transactional commands and writer admission** with base branch:
+
+`feature/moderation-visibility-b1-foundation`
+
+B2 scope from `stages/moderation-visibility/PLAN.md`:
+- desired-state topic/post visibility commands;
+- expected visibility version + current revision CAS;
+- mandatory reason / admitted no-op semantics;
+- active actor + fresh permission + AP-10 admission;
+- topic→post→actor lock order and History append-last atomicity;
+- local writer/parent/receipt/recovery visibility admission;
+- real PG stale/no-op/overflow/two-moderator/deactivation/History-failure/lock-order coverage.
+
+Do not implement B3 public projections/discovery, B4 assets/translations, B5 own-state/inbox, or later UI/private surfaces.
+
+After B2 self-check/applicable checks → STOP Mira for bounded checkpoint. Do not merge B1/B2 to main.
 
 ## Delivery model
 
-Owner-approved stacked B1→B9: each bounded PR bases on preceding stage head; no intermediate merges. After B9 fold stack into B1, final stable author self-check → Mira whole-feature → Leva independent → owner merge.
+Owner-approved stacked B1→B9. Each next PR bases on the previous rung. After B9 fold final head into B1; close upper rungs superseded; final Mira→Leva whole-feature review; owner merge.
 
 ## Границы
 
-B1 #355 stays Draft/unmerged. #342 never merge. Product V-P1–V-P3 accepted, V-T1/V-T2 PASS. No Stage6/#300/general UI/UX scope.
+V-P1/V-P2/V-P3 accepted; V-T1/V-T2 PASS. #342 never merge. Stage6/#300/general UI/UX outside scope.
