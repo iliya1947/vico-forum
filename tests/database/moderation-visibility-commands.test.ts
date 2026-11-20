@@ -250,3 +250,146 @@ describe("V4 reply admission: hidden topic and direct parent", () => {
     } })).rejects.toBeInstanceOf(ForumEntityNotFoundError);
   });
 });
+
+describe("V4 content writer admission: published edit, title and source locale", () => {
+  function edit(f: Fixture, draftId = randomUUID()) {
+    return {
+      topicId: f.topicId, postId: f.postId, actorId: "author",
+      expectedRevisionId: f.bodyRevisionId, body: "Edited content",
+      draftId, attachmentIds: [] as string[],
+    };
+  }
+  async function revisionState(f: Fixture) {
+    const [post] = (await client.query(
+      "select current_revision_id,edited_at from forum_posts where id=$1", [f.postId],
+    )).rows;
+    const count = await client.query(
+      "select count(*)::int as n from forum_post_revisions where post_id=$1", [f.postId],
+    );
+    const receipts = await client.query(
+      "select count(*)::int as n from forum_publication_receipts where post_id=$1", [f.postId],
+    );
+    const mentions = await client.query(
+      "select count(*)::int as n from forum_reply_notifications where post_id=$1 and kind='mention'", [f.postId],
+    );
+    return { post, revisions: count.rows[0].n, receipts: receipts.rows[0].n, mentions: mentions.rows[0].n };
+  }
+  const titleSource = (f: Fixture, sourceLocale = "en", scope: "own" | "any" = "own") => ({
+    topicId: f.topicId, expectedRevisionId: f.titleRevisionId,
+    sourceLocale, scope, actorId: scope === "own" ? "author" : "moderator1",
+  });
+  const postSource = (f: Fixture, sourceLocale = "en", scope: "own" | "any" = "own") => ({
+    topicId: f.topicId, postId: f.postId, expectedRevisionId: f.bodyRevisionId,
+    sourceLocale, scope, actorId: scope === "own" ? "author" : "moderator1",
+  });
+
+  it("rejects new published edits under hidden topic/post without mutating revision or receipt", async () => {
+    const f = await fixture(), input = edit(f), before = await revisionState(f);
+    await service.setTopicVisibility(topicCommand(f));
+    await expect(service.editPublishedPost(input)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await revisionState(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore topic"));
+
+    await service.setPostVisibility(postCommand(f));
+    await expect(service.editPublishedPost(input)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await revisionState(f)).toEqual(before);
+    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Restore post"));
+
+    await service.editPublishedPost(input);
+    const after = await revisionState(f);
+    expect(after.revisions).toBe(before.revisions + 1);
+    expect(after.receipts).toBe(before.receipts + 1);
+    expect(after.post.current_revision_id).not.toBe(f.bodyRevisionId);
+  });
+
+  it("keeps exact published edit receipt replay inert after Hide", async () => {
+    const f = await fixture(), input = edit(f);
+    await service.editPublishedPost(input);
+    const before = await revisionState(f);
+    await service.setTopicVisibility(topicCommand(f));
+    await service.editPublishedPost(input);
+    expect(await revisionState(f)).toEqual(before);
+    await expect(service.editPublishedPost({ ...input, draftId: randomUUID() }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await revisionState(f)).toEqual(before);
+  });
+
+  it("denies changed and unchanged own title edits for hidden topic, restores admissibility", async () => {
+    const f = await fixture();
+    await service.setTopicVisibility(topicCommand(f));
+    for (const title of ["PRIVATE TOPIC", "Changed title"]) {
+      await expect(service.editOwnTopicTitle({
+        topicId: f.topicId, actorId: "author", expectedRevisionId: f.titleRevisionId, title,
+      })).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    }
+    expect((await client.query(
+      "select current_title_revision_id from forum_topics where id=$1", [f.topicId],
+    )).rows[0].current_title_revision_id).toBe(f.titleRevisionId);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore topic"));
+    const updated = await service.editOwnTopicTitle({
+      topicId: f.topicId, actorId: "author", expectedRevisionId: f.titleRevisionId, title: "Changed title",
+    });
+    expect(updated.originalContent).toBe("Changed title");
+    expect(updated.id).not.toBe(f.titleRevisionId);
+  });
+
+  it("gates own/any title locale change and same-locale no-op on hidden topic", async () => {
+    const f = await fixture();
+    await service.setTopicVisibility(topicCommand(f));
+    for (const scope of ["own", "any"] as const) {
+      for (const locale of ["en", "he"]) {
+        await expect(service.correctTopicTitleSourceLocale(titleSource(f, locale, scope)))
+          .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      }
+    }
+    await expect(repository.reviseTopicTitle(f.topicId, f.titleRevisionId, {
+      id: randomUUID(), originalContent: "PRIVATE TOPIC", sourceLocale: "he",
+    }, "moderator1", "any")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect((await client.query(
+      "select count(*)::int as n from forum_topic_title_revisions where topic_id=$1", [f.topicId],
+    )).rows[0].n).toBe(1);
+
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore topic"));
+    const noOp = await service.correctTopicTitleSourceLocale(titleSource(f));
+    expect(noOp).toBeUndefined();
+    const updated = await service.correctTopicTitleSourceLocale(titleSource(f, "he", "own"));
+    expect(updated?.sourceLocale).toBe("he");
+  });
+
+  it("gates own/any post locale change/no-op behind topic and post visibility", async () => {
+    const f = await fixture();
+    await service.setPostVisibility(postCommand(f));
+    const assertDenied = async () => {
+      for (const scope of ["own", "any"] as const) {
+        for (const locale of ["en", "he"]) {
+          await expect(service.correctPostBodySourceLocale(postSource(f, locale, scope)))
+            .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+        }
+      }
+      await expect(repository.revisePostBody(f.postId, f.bodyRevisionId, {
+        id: randomUUID(), originalContent: "PRIVATE POST", sourceLocale: "he",
+      }, "moderator1", "any")).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect((await client.query(
+        "select count(*)::int as n from forum_post_revisions where post_id=$1", [f.postId],
+      )).rows[0].n).toBe(1);
+    };
+    await assertDenied();
+    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Restore post"));
+    await service.setTopicVisibility(topicCommand(f));
+    await assertDenied();
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore topic"));
+    expect(await service.correctPostBodySourceLocale(postSource(f))).toBeUndefined();
+    const changed = await service.correctPostBodySourceLocale(postSource(f, "he", "own"));
+    expect(changed?.sourceLocale).toBe("he");
+  });
+
+  it("enforces AP-10 admin.forum for same-locale any correction before no-op", async () => {
+    const f = await fixture(), measureId = randomUUID();
+    await client.query("insert into user_measures(id,target_user_id,issuer_user_id,issuer_authority_floor,create_fingerprint,initial_reason) values ($1,'moderator1','owner',3,$2,'Test violation')", [measureId, "f".repeat(64)]);
+    await client.query("insert into user_measure_restrictions(measure_id,restriction_key) values ($1,'admin.forum')", [measureId]);
+    await expect(service.correctTopicTitleSourceLocale(titleSource(f, "en", "any")))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+    await expect(service.correctPostBodySourceLocale(postSource(f, "en", "any")))
+      .rejects.toBeInstanceOf(UserMeasureRestrictedError);
+  });
+});
