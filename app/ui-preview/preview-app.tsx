@@ -1296,6 +1296,13 @@ function previewUnreadTopics(
   );
 }
 
+function PreviewUnreadRoute({ scenario, interactions }: {
+  scenario: Scenario;
+  interactions: PreviewInteractionState;
+}) {
+  return <UnreadView locale={scenario.locale} topics={previewUnreadTopics(scenario, interactions)} />;
+}
+
 function previewSearchResults(locale: PreviewLocale) {
   const rtl = locale === "he";
   const russian = locale === "ru";
@@ -3383,7 +3390,7 @@ function previewRouter(
     },
     {
       path: "/:locale/unread",
-      element: <UnreadView locale={scenario.locale} topics={previewUnreadTopics(scenario, interactions)} />,
+      element: <PreviewUnreadRoute scenario={scenario} interactions={interactions} />,
       loader: () => previewAuthenticatedRouteData(scenario),
       ErrorBoundary: ForumRouteError,
     },
