@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 F5 stacked Draft #359 exact **`0b797d95135ece2b981628dd13a59abb36c4d7fa`**, base B2 unchanged. Initial revised [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) finished FAIL: `checks` Typecheck missing `attentionCaseTopicUnavailable` in reviewed ru/he translation values/fingerprints, plus 4 loader test access TS2339; PG 1598 PASS / 1 FAIL Help Similar hidden exact-title returned under ungrouped OR predicates.
-- Current corrective packet: `db/forum-repository.ts` parenthesized Help Similar OR chain behind is_hidden=false (confirmed SQL boolean-precedence leak), `app/forum/public-authz-degradation.test.ts` and `app/routes/unread.test.ts` read data-return payload via `.data`. 3 files, 7/7 source checks PASS; runtime not yet verified; current exact-head workflows queued.
-- **Next `...`: localization parity `attentionCaseTopicUnavailable`: review correct ru/he translations and canonical fingerprint from repo's real mechanism, avoid fabricated hash; then applicable exact-head CI.** Author PASS not granted and no Mira handoff until all checks PASS. No B4/merge. STOP.
+- B3 F5 Draft #359 observed head `7182e10e458a0203fd5564b6af8219d8fa1e1cc6`, base B2 unchanged. During corrective packet #359 received two overlapping commits `bdc51094...` / `7182e10e...` after Lira's `0b797d95...`. Must refresh latest exact head before further edits.
+- Initial revised CI #44822128290 FAILED: lint PASS, Typecheck localization `attentionCaseTopicUnavailable` ru/he + fingerprint and loader test TS2339 errors, PG 1598 PASS / 1 FAIL Help Similar. Production Help Similar predicate grouping fix `113e2ace...` still present on latest observed branch; runtime after fix not verified. Current `unread.test.ts` unwraps `{data:result}` correctly, but current `public-authz-degradation.test.ts` again reads `sectionResult.section` directly (Typecheck issue still present). No new CI PASS.
+- Next owner `...`: only F5 reconcile simultaneous head updates, fix remaining typed loader and reviewed translation key, then exact-head CI and author PASS→Mira checkpoint if fully green. No B4/merge. STOP.
 
 ## Cadence
 
