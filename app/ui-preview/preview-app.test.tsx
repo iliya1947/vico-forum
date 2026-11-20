@@ -1344,6 +1344,31 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     })).toBeInTheDocument();
   });
 
+  it("marks an opened Unread topic read and removes it from the Unread list", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="unread-user" identity="user" />);
+
+    await user.click(await screen.findByRole("link", {
+      name: /How should context be passed between several AI agents\?/,
+    }));
+    expect(await screen.findByRole("heading", {
+      level: 1,
+      name: "How should context be passed between several AI agents?",
+    })).toBeInTheDocument();
+
+    const unreadLink = document.querySelector('a[href="/en/unread"]') as HTMLElement | null;
+    expect(unreadLink).not.toBeNull();
+    await user.click(unreadLink!);
+
+    await waitFor(() => expect(document.querySelector(".unread-topic-groups")).not.toBeNull());
+    expect(screen.queryByRole("link", {
+      name: /How should context be passed between several AI agents\?/,
+    })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", {
+      name: /How should session and permissions be separated in a Worker\?/,
+    })).toBeInTheDocument();
+  });
+
   it("opens the real section view directly from the homepage category map", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="home-guest" />);
 
