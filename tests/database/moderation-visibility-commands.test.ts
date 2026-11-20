@@ -115,12 +115,12 @@ describe("V4 topic/post authoritative visibility commands", () => {
   it("validates reasons/versions and requires nonblank reason for actual transitions", async () => {
     const f = await fixture();
     for (const reason of ["\0", "x".repeat(2001)]) {
-      await expect(service.setTopicVisibility(topicCommand(f, "moderator1", true, 0, reason)))
-        .rejects.toBeInstanceOf(InvalidForumContentError);
+      expect(() => service.setTopicVisibility(topicCommand(f, "moderator1", true, 0, reason)))
+        .toThrow(InvalidForumContentError);
     }
     for (const version of [-1, 1.1, 2_147_483_648]) {
-      await expect(service.setTopicVisibility(topicCommand(f, "moderator1", true, version)))
-        .rejects.toBeInstanceOf(InvalidForumContentError);
+      expect(() => service.setTopicVisibility(topicCommand(f, "moderator1", true, version)))
+        .toThrow(InvalidForumContentError);
     }
     await expect(service.setTopicVisibility(topicCommand(f, "moderator1", true, 0, "  ")))
       .rejects.toBeInstanceOf(ForumVisibilityReasonError);
@@ -166,7 +166,9 @@ describe("V4 topic/post authoritative visibility commands", () => {
     await client.query("create function fail_visibility_history() returns trigger language plpgsql as $$ begin raise exception 'visibility history rejected'; end; $$");
     await client.query("create trigger fail_visibility_history before insert on admin_history for each row when (new.action='topic.hidden') execute function fail_visibility_history()");
     try {
-      await expect(service.setTopicVisibility(topicCommand(g))).rejects.toThrow("visibility history rejected");
+      await expect(service.setTopicVisibility(topicCommand(g))).rejects.toMatchObject({
+        cause: expect.objectContaining({ message: "visibility history rejected" }),
+      });
       expect((await client.query("select is_hidden,visibility_version from forum_topics where id=$1", [g.topicId])).rows[0])
         .toEqual({ is_hidden: false, visibility_version: 0 });
       expect(await events(g.topicId)).toHaveLength(0);
