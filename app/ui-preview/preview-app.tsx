@@ -5329,11 +5329,16 @@ function previewCategoryWithInteractions(
         interactions.topicTitleEdits.get(topicIdValue)?.originalContent ?? fallback;
       const latestReplyAt = (topicIdValue: string) =>
         interactions.replies.get(topicIdValue)?.at(-1)?.createdAt ?? null;
+      const authorProjection = (authorId: string, authorName: string) =>
+        interactions.ownerDeactivations.has(authorId)
+          ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+          : { authorName };
 
       const latestById = new Map(sectionSummary.latestTopics.map((topic) => [
         topic.id,
         {
           ...topic,
+          ...authorProjection(previewProfileIdForName(topic.authorName), topic.authorName),
           title: currentTitle(topic.id, topic.title),
           activityAt: (latestReplyAt(topic.id) ?? new Date(topic.activityAt)).toISOString(),
         },
@@ -5345,7 +5350,7 @@ function previewCategoryWithInteractions(
         latestById.set(topicIdValue, {
           id: topicIdValue,
           title: currentTitle(topicIdValue, topic.title.originalContent),
-          authorName: topic.authorName,
+          ...authorProjection(previewProfileIdForName(topic.authorName), topic.authorName),
           activityAt: replyAt.toISOString(),
         });
       }
@@ -5354,7 +5359,7 @@ function previewCategoryWithInteractions(
         latestById.set(topic.id, {
           id: topic.id,
           title: currentTitle(topic.id, topic.title),
-          authorName: topic.authorName,
+          ...authorProjection(topic.authorId, topic.authorName),
           activityAt: (latestReplyAt(topic.id) ?? topic.createdAt).toISOString(),
         });
       }
@@ -5370,6 +5375,7 @@ function previewCategoryWithInteractions(
         .filter((topic) => interactions.topicOverrides.get(topic.id)?.isPinned !== false)
         .map((topic) => ({
           ...topic,
+          ...authorProjection(previewProfileIdForName(topic.authorName), topic.authorName),
           title: currentTitle(topic.id, topic.title),
           activityAt: (latestReplyAt(topic.id) ?? new Date(topic.activityAt)).toISOString(),
         }));
@@ -5379,12 +5385,14 @@ function previewCategoryWithInteractions(
         ...sectionPage.topics.map((topic) => ({
           id: topic.id,
           title: topic.title.originalContent,
+          authorId: previewProfileIdForName(topic.authorName),
           authorName: topic.authorName,
           createdAt: topic.createdAt,
         })),
         ...created.map((topic) => ({
           id: topic.id,
           title: topic.title,
+          authorId: topic.authorId,
           authorName: topic.authorName,
           createdAt: topic.createdAt,
         })),
@@ -5394,7 +5402,7 @@ function previewCategoryWithInteractions(
         pinnedTopics.unshift({
           id: topic.id,
           title: currentTitle(topic.id, topic.title),
-          authorName: topic.authorName,
+          ...authorProjection(topic.authorId, topic.authorName),
           activityAt: (latestReplyAt(topic.id) ?? topic.createdAt).toISOString(),
         });
         pinnedIds.add(topic.id);
