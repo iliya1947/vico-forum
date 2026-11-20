@@ -3532,7 +3532,7 @@ function previewRouter(
       element: <PreviewAdminUsersRoute />,
       loader: ({ request }) => {
         previewAdminSurfaceAccessData(scenario);
-        return previewAdminUsersData(scenario, request);
+        return previewAdminUsersData(scenario, interactions, request);
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -7211,7 +7211,11 @@ function previewAdminOverviewData(
   };
 }
 
-function previewAdminUsersData(scenario: Scenario, request: Request) {
+function previewAdminUsersData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
   const query = previewAdminBrowseQuery(request);
   const users = [
     { id: "owner", name: "Forum Owner", image: null, joinedAt: "2026-08-15T00:00:00.000Z" },
@@ -7220,7 +7224,17 @@ function previewAdminUsersData(scenario: Scenario, request: Request) {
     { id: "sam", name: "Sam Chen", image: null, joinedAt: "2026-09-04T00:00:00.000Z" },
     { id: "noa", name: "Noa Levi", image: null, joinedAt: "2026-09-07T00:00:00.000Z" },
   ];
-  const items = previewAdminFilter(users, query.search);
+  const filtered = previewAdminFilter(users, query.search);
+  const items = filtered.map((item) =>
+    interactions.ownerDeactivations.has(item.id)
+      ? {
+          ...item,
+          name: DELETED_USER_NAME,
+          image: null,
+          identityKind: "deleted" as const,
+        }
+      : item
+  );
   return {
     locale: scenario.locale,
     access: previewAdminAccess,
