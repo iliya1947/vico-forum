@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 F5, Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9`, B2 base unchanged. Author PASS not verified. Current [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290): `checks` and `database` still queued, no steps/logs. Across 15 exact-head workflows, SA04-S `completion_browser` job SUCCESS, SA04-K5 `attachments_browser` and SA08 `sa08_browser` IN_PROGRESS, 12 other workflow runs QUEUED. No code changes or reruns.
-- Comparison: PR #360 older [CI #44820552112](https://github.com/iliya1947/vico-forum/actions/runs/44820552112) both jobs SUCCESS; previous #359 head has one workflow in progress but CI queued, #342 service head CI queued. Real runner queue reason UNKNOWN, so no speculative YAML/quota changes. Previous B3 ESLint/PG fixes test-only and Help Similar needs real PostgreSQL verification.
-- Next owner `...` resume F5 exact-head CI. If full PASS, author self-check → **Мира** bounded B3 coordinator checkpoint; else diagnose current-B3 failures. No B4/merge. STOP.
+- F5 Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9` base B2 unchanged. Current [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290): `database` job now **IN_PROGRESS** at Initialize containers; `checks` still **QUEUED**. No current exact-head PG or typecheck result available.
+- Exact-head workflows at observation: 4 SUCCESS (SA04-S, SA04-K5, SA08, SA06), 4 IN_PROGRESS (Bookmarks, SA07, SA-01, Mute/Block), 7 QUEUED. No code/CI config changes or reruns. Initial F5 lint and 13 PG failures addressed by targeted B3 tests; Help Similar ranking mismatch still must be checked on actual new PG.
+- Next owner `...`: F5 only; on full exact-head applicable CI PASS, author PASS → **Мира** bounded B3 checkpoint; otherwise correct confirmed current defect and re-gate. No B4. STOP.
 
 ## Cadence
 
