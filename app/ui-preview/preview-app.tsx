@@ -1291,9 +1291,11 @@ function previewUnreadTopics(
 ) {
   const actor = previewUser(scenario);
   if (!actor) return [];
-  return unreadTopics(scenario.locale).filter((topic) =>
-    interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, topic.id)) !== topic.latestPostId
-  );
+  return unreadTopics(scenario.locale).filter((topic) => {
+    const currentPage = previewAdminTopicData(scenario, interactions, topic.id);
+    const deliveredLatestPostId = currentPage?.topic.posts.at(-1)?.id ?? topic.latestPostId;
+    return interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, topic.id)) !== deliveredLatestPostId;
+  });
 }
 
 function PreviewUnreadRoute({ scenario, interactions }: {
