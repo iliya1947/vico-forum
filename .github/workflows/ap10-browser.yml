@@ -2,6 +2,8 @@ name: AP-10 isolated browser acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/ap10-browser.yml"
@@ -42,11 +44,14 @@ on:
       - "app/routes/admin-measure*.tsx"
       - "db/user-measure*.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
