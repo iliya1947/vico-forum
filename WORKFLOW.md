@@ -34,11 +34,11 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 **B2.3d2 author PASS** — new title plans check `forumTopics.isHidden` at existing locked title revision; body plans snapshot immutable post→topic ID then lock parent topic NO KEY UPDATE before post UPDATE, denying hidden parent/post and stale binding. All gates occur after head/task locks, before translation/actor/budget/task write; aborted plans roll back provisional generation head. Previously accepted tasks remain stored and execution path unchanged. Three real PG regressions cover hidden title, hidden parent/post, no head/task/budget effects, pending task preservation, Restore reuse; historical selective fixture adds `is_hidden` columns. Exact `19f2bdaa80b244093f37424a955a18acc3e572f9`; [CI 44746654595](https://github.com/iliya1947/vico-forum/actions/runs/44746654595): **22/22 checks, 18/18 workflows SUCCESS; 2758 unit, 1531 PostgreSQL17**.
 
-**Лира STOP перед B2.3e1.** Next owner continuation only: real PostgreSQL lock-barrier race Hide/Restore × title translation planning, both orders. Do not mix body planning race, reply/edit/Complaint or actor deactivation. B2 incomplete; no Mira checkpoint, B1/B2 Draft/unmerged.
+**Лира продолжает B2 без промежуточного STOP.** Старт с B2.3e1, затем весь оставшийся B2 race/writer/deactivation/lock-compatibility tail по принятому плану. Между внутренними микрошагами — targeted checks; полный repository CI не гонять рутинно после каждого микрошагa. После завершения всего bounded B2: author self-check + один full exact-head CI/check set → STOP Мире на B2 checkpoint. Раньше останавливаться только при реальном blocker/plan conflict. B1/B2 Draft/unmerged.
 
 ## Baseline
 
-- Current main: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- Current main: `f15b90826f8241d337b1cf6068d879b1a7310f56`.
 - #354 corrective package merged and closed.
 - V-P1/V-P2/V-P3 — ранее приняты и не переоткрываются.
 - V-T1/V-T2 — technical fit PASS на current main.
