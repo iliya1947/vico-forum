@@ -28,14 +28,14 @@ const repository = new DrizzleForumRepository(
   drizzle(pool), { cooldownMs: 0, now: () => new Date() }, withOwnerUserMeasureAdmission("owner"), undefined, "owner",
 );
 const service = new ForumService(repository);
-async function fixture() {
+async function fixture(bodyContent = "PRIVATE POST") {
   const topicId = randomUUID(), postId = randomUUID(), titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
   await repository.createTopicWithInitialPost({
     id: topicId, sectionId: "visibility-section", authorId: "author",
     titleRevision: { id: titleRevisionId, originalContent: "PRIVATE TOPIC", sourceLocale: "en" },
     initialPost: {
       id: postId, topicId, authorId: "author",
-      bodyRevision: { id: bodyRevisionId, originalContent: "PRIVATE POST", sourceLocale: "en" },
+      bodyRevision: { id: bodyRevisionId, originalContent: bodyContent, sourceLocale: "en" },
     },
   });
   return { topicId, postId, titleRevisionId, bodyRevisionId };
@@ -1694,11 +1694,13 @@ describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edi
     it.each(cases)(
       kind + " $transition writerFirst=$writerFirst: committed order and state",
       async ({ transition, writerFirst, initialHidden }) => {
-        const f = await fixture();
+        const bodyContent = kind === "body-plan"
+          ? "A regular question body with several readable words." : "PRIVATE POST";
+        const f = await fixture(bodyContent);
         if (initialHidden) await service.setTopicVisibility(topicCommand(f));
         const revision = {
           contentType: "post-body" as const, contentId: f.postId,
-          revisionId: f.bodyRevisionId, originalContent: "PRIVATE POST", sourceLocale: "en",
+          revisionId: f.bodyRevisionId, originalContent: bodyContent, sourceLocale: "en",
         };
         const scope = "visibility-" + f.postId.slice(0, 12);
         const admission = {
@@ -2091,11 +2093,13 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
     it.each(cases)(
       kind + " $transition writerFirst=$writerFirst: locked post and real CAS",
       async ({transition,writerFirst,initiallyHidden}) => {
-        const f = await fixture();
+        const bodyContent = kind === "body-plan"
+          ? "A regular question body with several readable words." : "PRIVATE POST";
+        const f = await fixture(bodyContent);
         if (initiallyHidden) await service.setPostVisibility(postCommand(f));
         const revision = {
           contentType: "post-body" as const, contentId: f.postId,
-          revisionId: f.bodyRevisionId, originalContent: "PRIVATE POST", sourceLocale: "en",
+          revisionId: f.bodyRevisionId, originalContent: bodyContent, sourceLocale: "en",
         };
         const prefix = "post-race-" + f.postId.slice(0, 12);
         const admission = {
