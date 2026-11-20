@@ -4956,6 +4956,14 @@ function previewSectionWithInteractions(
   interactions: PreviewInteractionState,
 ) {
   const base = previewSection(locale, routeSectionId);
+  const currentTitle = (
+    topicId: string,
+    title: { id: string; originalContent: string; sourceLocale: string },
+  ) => {
+    const edited = interactions.topicTitleEdits.get(topicId) ?? title;
+    const sourceLocale = interactions.topicTitleSourceLocales.get(topicId);
+    return sourceLocale ? { ...edited, sourceLocale } : edited;
+  };
   const created = [...interactions.createdTopics.values()]
     .filter((topic) => topic.sectionId === base.id)
     .map((topic) => ({
@@ -4965,14 +4973,15 @@ function previewSectionWithInteractions(
       createdAt: topic.createdAt,
       isPinned: false,
       tags: topic.tags,
-      title: {
+      title: currentTitle(topic.id, {
         id: `${topic.id}-title-r1`,
         originalContent: topic.title,
         sourceLocale: topic.sourceLocale,
-      },
+      }),
     }));
   const existing = base.topics.map((topic) => ({
     ...topic,
+    title: currentTitle(topic.id, topic.title),
     postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
   }));
   return { ...base, topics: [...created, ...existing] };
