@@ -63,7 +63,7 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
   }
   if(input.canCorrectAnySourceLocale)add("correctTitleSourceLocale","sourceLocaleCorrectionSubmit",{expectedRevisionId:topic.title.id});
   const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
-  if(input.canModerateHelpSolution&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID&&topic.isSolved&&best&&best.kind!=="hidden"){
+  if(input.canModerateHelpSolution&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID&&topic.isSolved&&best){
     const fields={expectedBestAnswerPostId:topic.bestAnswerPostId??""};
     if(best?.solutionModerationStatus!=="needs-review")add("markSolutionNeedsReview","helpSolutionMarkNeedsReview",fields);
     add("markSolutionOutdated","helpSolutionMarkOutdated",fields);
@@ -80,7 +80,7 @@ export function QuickActions({children}: {children:ReactNode}){
 /** All consumers submit existing intents to the canonical topic endpoint, never an admin-only API. */
 
 function TopicQuickActionForm({locale,topic,action,best,inline}:{locale:string;topic:QuickTopic;
- action:TopicQuickActionDescriptor;best:QuickTopic["posts"][number]|undefined;inline:boolean}){
+ action:TopicQuickActionDescriptor;best:Extract<QuickPost,{kind?:"visible"}>|undefined;inline:boolean}){
  const {t}=useTranslation("common");
  const fetcher=useFetcher<{ok?:boolean;error?:string}>();
  const FormComponent=inline?fetcher.Form:Form;

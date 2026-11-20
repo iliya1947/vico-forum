@@ -269,7 +269,8 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const publicTopic = await forum.readTopicPage(topicId);
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
-    expect(publicTopic?.posts.find((post) => post.id === reply.id && post.kind !== "hidden")?.body?.originalContent).toBe("Connected reply");
+    const visibleReply = publicTopic?.posts.find((post) => post.id === reply.id);
+    expect(visibleReply?.kind !== "hidden" ? visibleReply?.body.originalContent : undefined).toBe("Connected reply");
 
     const newerTopicId = await createTopic("e2e-author", "Author", "Newer but inactive topic");
     await client.query(

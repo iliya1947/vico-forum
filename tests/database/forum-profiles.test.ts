@@ -235,7 +235,6 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
     await topic("profile-c1-topic");
     await reply("profile-c1-helper", "profile-c1-topic", "profile-helper");
     await reply("profile-c1-active", "profile-c1-topic", "profile-newcomer");
-    await client.query("begin");
     try {
       await client.query('update "user" set name=$2, image=$3 where id=$1', [
         "profile-owner", "SECRET_C1_TOPIC_AUTHOR", "https://images.example.test/SECRET_C1_TOPIC_AVATAR.png",
@@ -302,7 +301,9 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
       expect(Object.keys(result.posts[0]!)).not.toContain("authorDeactivatedAt");
       expect(Object.keys(result)).not.toContain("authorRetainAtLeastUntil");
     } finally {
-      await client.query("rollback");
+      await client.query('update "user" set name=id,image=$1,deactivated_at=null,' +
+        'deactivated_by_user_id=null,retain_at_least_until=null where id in ($2,$3)',
+        ["https://example.com/avatar.png", "profile-owner", "profile-helper"]);
     }
   });
 });
