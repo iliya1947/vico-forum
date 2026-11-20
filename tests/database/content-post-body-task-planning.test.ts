@@ -1409,6 +1409,37 @@ describe("content post-body durable planning", () => {
 
 
 describe("visibility-gated post-body planning", () => {
+  it("completes an accepted private body task under both Hide flags and reuses translation after Restore", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client,enqueuer).planAndDispatch(
+      requestRevision(),"he",budgetAdmission(),"author-a",
+    );
+    if(planned.kind!=="queued")throw new Error("expected accepted body task");
+    await client.query("update forum_topics set is_hidden=true where id='topic-a'");
+    await client.query("update forum_posts set is_hidden=true where id='post-a'");
+    const translate = vi.fn(async (request:MachineTranslationRequest)=>
+      machineResultForRequest(request));
+    await expect(createBodyExecutor(client,{supports:()=>true,translate})
+      .execute(enqueuer.messages[0]!)).resolves.toEqual({
+        outcome:"published",delivery:"ack",
+      });
+    expect(translate).toHaveBeenCalled();
+    expect(await new DrizzleContentTranslationStore(drizzle(client)).read({
+      contentType:"post-body",contentId:"post-a",revisionId:"post-a-r1",targetLocale:"he",
+    })).toMatchObject({contentId:"post-a",revisionId:"post-a-r1",provenance:{origin:"machine"}});
+    expect((await client.query(
+      "select is_hidden,current_revision_id from forum_posts where id='post-a'",
+    )).rows[0]).toEqual({is_hidden:true,current_revision_id:"post-a-r1"});
+    await client.query("update forum_posts set is_hidden=false where id='post-a'");
+    await client.query("update forum_topics set is_hidden=false where id='topic-a'");
+    await expect(createPlanner(client,new FakeTranslationTaskEnqueuer()).planAndDispatch(
+      requestRevision(),"he",budgetAdmission(),"author-a",
+    )).resolves.toMatchObject({kind:"original",reason:"translation-current"});
+    expect((await client.query(
+      "select status from translation_tasks where id=$1",[planned.task.id],
+    )).rows).toEqual([{status:"completed"}]);
+  });
+
   async function counts() {
     const result = await client.query(`
       select

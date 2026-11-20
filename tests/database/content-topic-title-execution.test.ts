@@ -130,6 +130,40 @@ afterAll(async () => {
 });
 
 describe("content topic-title execution and publication", () => {
+  it("lets an accepted title translation finish privately after Hide and reuse result on Restore", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planned = await createPlanner(client,enqueuer).planAndDispatch(
+      requestRevision(),"he",budgetAdmission(),"author-a",
+    );
+    if(planned.kind!=="queued")throw new Error("expected accepted title task");
+    await client.query("update forum_topics set is_hidden=true where id='topic-a'");
+    const translate = vi.fn(async ():Promise<MachineTranslationResult>=>({
+      value:"כותרת מתורגמת",
+      provenance:{provider:"fake",model:"fake-v1",origin:"machine"},
+    }));
+    await expect(createDispatcher(client,{supports:()=>true,translate})
+      .execute(enqueuer.messages[0]!)).resolves.toEqual({
+        outcome:"published",delivery:"ack",
+      });
+    expect(translate).toHaveBeenCalledTimes(1);
+    const stored = await new DrizzleContentTranslationStore(drizzle(client)).read({
+      contentType:"topic-title",contentId:"topic-a",revisionId:"title-a-r1",targetLocale:"he",
+    });
+    expect(stored).toMatchObject({
+      translatedContent:"כותרת מתורגמת",provenance:{origin:"machine"},
+    });
+    expect((await client.query(
+      "select is_hidden,current_title_revision_id from forum_topics where id='topic-a'",
+    )).rows[0]).toEqual({is_hidden:true,current_title_revision_id:"title-a-r1"});
+    await client.query("update forum_topics set is_hidden=false where id='topic-a'");
+    await expect(createPlanner(client,new FakeTranslationTaskEnqueuer()).planAndDispatch(
+      requestRevision(),"he",budgetAdmission(),"author-a",
+    )).resolves.toMatchObject({kind:"original",reason:"translation-current"});
+    expect((await client.query(
+      "select status from translation_tasks where id=$1",[planned.task.id],
+    )).rows).toEqual([{status:"completed"}]);
+  });
+
   it("dispatches by persisted kind, publishes atomically, and makes duplicate delivery provider-free", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
