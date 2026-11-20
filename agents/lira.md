@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `b0977950b8792b2bbdad1715e004c4d48980120b`; base B2 #357 unchanged; B3 remains partial.
-- Latest two-route B3 microbatch: Popular (`app/routes/popular.tsx`) and Unanswered (`app/routes/unanswered.tsx`) now enforce `no-store` in public loader data and document/error response headers, overriding cacheable parents. Two regression tests in `app/forum/public-read.test.tsx` verify positive payloads, headers and dependency503; prior direct tests unwrap `data()`. No SQL/schema changes.
-- Targeted **static** source checks 14/14 passed; **Vitest/HTTP/PostgreSQL execution not verified** (no local checkout/test runtime). Do not claim runtime acceptance.
-- Next `...`: one 2–3-related-microstep B3 batch from verified remaining gaps, available targeted checks, update WORKFLOW/#342, STOP. **Do not inspect any GitHub Actions/CI until entire B3 completed.** No B4, Mira or merge.
+- Active stacked Draft #359 exact `7f8b17dbd887a8ac470dfcbe6e2d69c1c591f48b` (B2 base unchanged). B3 remains partial.
+- Current 2-route B3 microbatch: Section and Category/Help now enforce `no-store` on anonymous loader data/document/errors/404; signed-in Section read-state and Help user-specific data use `private, no-store`. Action privacy and retry headers preserved. Three targeted `public-read.test.tsx` regressions added and existing direct loader tests adapted to unwrap `data()`.
+- Targeted **static** source checks 15/15 passed; **Vitest/HTTP/PG execution not verified**, no local runtime. Do not claim runtime PASS.
+- On next `...`: small B3 package selected from remaining verified gaps (public error/meta/data leak sentinels, unread/parent relationships, outstanding cache routes), available targeted checks, update service handoff, STOP. Do not inspect GitHub Actions/CI until whole B3 completed; no B4/Mira/merge.
 
 ## Cadence
 
