@@ -5191,6 +5191,45 @@ describe("personal Block presentation in ordinary TopicView", () => {
     expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
     expect(screen.getByText("Visible answer remains.")).toBeInTheDocument();
   });
+  it("renders a hidden middle parent with stable message numbers and bidirectional descendant anchors", async () => {
+    const root = {
+      ...topic.posts[0]!, id: "tree-root", parentPostId: null,
+      body: { id: "tree-root-revision", originalContent: "Visible root remains.", sourceLocale: "en" },
+    };
+    const hiddenMiddle = {
+      kind: "hidden" as const, id: "tree-middle", topicId: topic.id,
+      parentPostId: "tree-root", createdAt: new Date("2026-01-03"),
+    };
+    const child = {
+      ...topic.posts[0]!, id: "tree-leaf", parentPostId: "tree-middle",
+      body: { id: "tree-leaf-revision", originalContent: "Visible descendant remains.", sourceLocale: "en" },
+    };
+    const page: ForumTopicPage = {
+      ...topic, bestAnswerPostId: null, posts: [root, hiddenMiddle, child],
+    };
+    const rendered = renderRoute(TopicRoute, topicRenderData(page, {
+      canReply: true, canManageAnySolution: true,
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    }), forumTopicPath("en", topic.id), "en", "ltr", { id: "viewer-a", name: "Viewer" });
+    expect(await screen.findByText("This message is unavailable.")).toBeInTheDocument();
+    expect(rendered.container.querySelector("#post-tree-root")).not.toBeNull();
+    expect(rendered.container.querySelector("#post-tree-middle[data-moderation-hidden-post]")).not.toBeNull();
+    expect(rendered.container.querySelector("#post-tree-leaf")).not.toBeNull();
+    const middle = rendered.container.querySelector("#post-tree-middle")!;
+    expect(middle.querySelector('a[href="#post-tree-middle"]')).not.toBeNull();
+    expect(middle.querySelector('a[href="#post-tree-root"]')).not.toBeNull();
+    expect(middle.querySelector('a[href="#post-tree-leaf"]')).not.toBeNull();
+    expect(rendered.container.querySelector('#post-tree-leaf a[href="#post-tree-middle"]')).not.toBeNull();
+    expect(middle.querySelector(".topic-message-author-number")).toHaveTextContent("2");
+    expect(rendered.container.querySelector('#post-tree-leaf .topic-message-author-number')).toHaveTextContent("3");
+    expect(middle.querySelector("[data-message-body]")).toBeNull();
+    expect(middle.querySelector(".topic-message-profile-link")).toBeNull();
+    expect(middle.querySelector(".message-quick-actions")).toBeNull();
+    expect(middle.querySelector("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Visible descendant remains.")).toBeInTheDocument();
+  });
+
 });
 
 
