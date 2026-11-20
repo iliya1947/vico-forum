@@ -24,11 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F3 complete at source/test level**, stacked Draft #359 exact `7213401d62f380321b8f62cc950bbab028717e83`; B3 remains partial and not runtime-verified.
-- Legacy `posts/:postId/edit` alias now sends `private, no-store` for authenticated 404/403/401, visible redirect and document headers. Verified existing reader gates hidden post/topic before author permission; added hidden/absent alias and normal redirect tests.
-- Existing SQL `readPostLocation`/`readPostHistory` and `editPost` conflict path guard hidden source. Added PG regression for hidden post/topic history+location denial/Restore and action 404 regressions. Existing mounted recovery already requires visible loader baseline; added Hide/revalidation test removing editor/source.
-- **12/12 targeted static cross-file assertions PASS** on exact head. **Vitest, PostgreSQL and HTTP/browser runtime NOT VERIFIED** without checkout/runtime. No GitHub Actions inspected.
-- Next owner `...`: **F4 only**, 2–3 related microsteps on SQL filter-before-rank/count/LIMIT, pagination and root/parent edge cases, then targeted checks, handoff and STOP. F5 whole-B3 author check + one allowed full exact-head CI follows only on later continuation; no B4 or Mira checkpoint yet.
+- **B3 F4 source/test-level package complete** in stacked Draft #359 exact `8a907374c797a33b233b6f244d090aa0725862fb`; base B2 #357 unchanged. F1–F4 done at source level, **not runtime verified**.
+- Added 3 PG regression definitions in `tests/database/moderation-visibility-commands.test.ts`: (1) hidden exact title must not consume Search LIMIT; visible title and tag match with zero visible posts and zero postCount; (2) isolated 8-topic Category latest/pin bounded windows fill after Hide, ignore hidden reply latest activity, counts and Restore; (3) Help answers/unanswered counts with hidden immutable root and middle parent, visible then hidden descendant, restored parent, stable anchors. No production edits; Search/Popular/Category/Help/Unread/Tag/Profile SQL gates already present.
+- Source-level assertion set **20/20 PASS** at exact head; **Vitest/PostgreSQL17/HTTP/browser NOT VERIFIED**; no GitHub Actions/CI inspection.
+- **Next owner `...`: F5 only** — whole-B3 author self-check, address confirmed bounded defects if encountered, then full exact-head CI/check gate once and Mira coordinator checkpoint handoff if PASS. No B4/merge; STOP.
 
 ## Cadence
 
