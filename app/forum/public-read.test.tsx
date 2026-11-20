@@ -5233,6 +5233,52 @@ describe("personal Block presentation in ordinary TopicView", () => {
 });
 
 
+describe("B3 protected Help appeal masked card", () => {
+  it("renders hidden source placeholders without public links and retains exact resolution form IDs", async () => {
+    const hiddenId = "b3-hidden-duplicate-6132";
+    const hiddenOriginalId = "b3-hidden-original-6132";
+    const payload = {
+      locale: "en", accountId: "moderator1", mode: "signals" as const, group: "appeals" as const,
+      queue: {
+        cases: [{
+          type: "appeal" as const, kind: "appeal" as const, id: "b3-appeal-6132",
+          topicId: hiddenId, topicTitle: "", topicUnavailable: true,
+          original: null,
+          submittedByUserId: "author", submittedByName: "Author",
+          explanation: "Appeal remains available", createdAt: new Date("2026-01-20").toISOString(),
+          targetPostId: null,
+        }],
+        hasMore: false, page: 0,
+      },
+      securityQueue: null, counts: {
+        "needs-details": 0, "needs-review": 0, "solution-outdated": 0,
+        duplicate: 0, appeals: 1, mixed: 0,
+      },
+      canViewHelpAttention: true, canReadSecurityAttachments: false,
+      canReviewComplaints: false, canReviewAppeals: false,
+    };
+    const rendered=renderRoute(AttentionRoute,payload,
+      "/en/attention?mode=signals&group=appeals","en","ltr",
+      {id:"moderator1",name:"Moderator"});
+    expect(await screen.findByText("Topic unavailable")).toBeInTheDocument();
+    expect(rendered.container.querySelector(".attention-case-topic")).toHaveTextContent("Topic unavailable");
+    expect(rendered.container.querySelector(".attention-case-topic")?.tagName).toBe("SPAN");
+    expect(rendered.container.querySelector(`a[href="/en/topics/${hiddenId}"]`)).toBeNull();
+    expect(rendered.container.querySelector(`a[href="/en/topics/${hiddenOriginalId}"]`)).toBeNull();
+    expect(rendered.container.querySelector(".attention-case-original"))
+      .toHaveTextContent("Original topic unavailable");
+    expect(rendered.container.querySelector('input[name="topicId"]'))
+      .toHaveValue(hiddenId);
+    expect(rendered.container.querySelector('input[name="caseId"]'))
+      .toHaveValue("b3-appeal-6132");
+    expect(rendered.container.querySelector('button[name="intent"][value="rejectHelpDuplicateAppeal"]'))
+      .not.toBeNull();
+    expect(rendered.container.querySelector('button[name="intent"][value="acceptHelpDuplicateAppeal"]'))
+      .not.toBeNull();
+    expect(rendered.container.innerHTML).not.toContain("B3_SECRET_TITLE_6132");
+  });
+});
+
 describe("B3 public source and negative-response sentinels", () => {
   it("excludes hidden revisions and unsolicited translations from topic data and rendered HTML", async () => {
     const hiddenId = "b3-hidden-middle";
