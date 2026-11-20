@@ -4055,7 +4055,8 @@ function PreviewSearchRoute({ scenario, interactions }: {
       category: localizedSection.category,
       section: { id: localizedSection.id, name: localizedSection.name },
       tags: created.tags,
-      searchBodies: [created.body, ...replies.map((reply) => reply.body)],
+      searchBodies: previewAdminTopicData(scenario, interactions, created.id)?.topic.posts
+        .map((post) => post.body.originalContent) ?? [created.body, ...replies.map((reply) => reply.body)],
     };
   });
   const fixtureResults = previewSearchResults(scenario.locale).map((item) => {
@@ -4073,7 +4074,8 @@ function PreviewSearchRoute({ scenario, interactions }: {
       title: editedTitle?.originalContent ?? item.title,
       postCount: item.postCount + replies.length,
       activityAt: replies.at(-1)?.createdAt ?? item.activityAt,
-      searchBodies: replies.map((reply) => reply.body),
+      searchBodies: previewAdminTopicData(scenario, interactions, item.id)?.topic.posts
+        .map((post) => post.body.originalContent) ?? replies.map((reply) => reply.body),
     };
   });
   const results = query
