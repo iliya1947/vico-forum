@@ -8,6 +8,7 @@ import {
   ForumStateConflictError, ForumVisibilityReasonError,
 } from "../../db/forum-repository";
 import { ForumService, InvalidForumContentError } from "../../db/forum-service";
+import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { withOwnerUserMeasureAdmission, UserMeasureRestrictedError } from "../../db/user-measure-policy";
 
 const url = process.env.DATABASE_URL!;
@@ -464,5 +465,138 @@ describe("V4 topic closure and pin admission under visibility", () => {
         "topic.unpinned", "topic.reopened",
       ],
     });
+  });
+});
+
+describe("V4 Help signal admission under hidden topics and answer", () => {
+  async function helpFixture(): Promise<Fixture> {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question details", sourceLocale: "en" },
+      },
+    });
+    return { topicId, postId, titleRevisionId, bodyRevisionId };
+  }
+  const details = (f: Fixture) => ({
+    kind: "needs-details" as const, topicId: f.topicId, actorId: "ordinary",
+    explanation: "Question needs details", proposedOriginalTopicId: null,
+  });
+  const duplicate = (f: Fixture, original: Fixture) => ({
+    kind: "duplicate" as const, topicId: f.topicId, actorId: "ordinary",
+    explanation: null, proposedOriginalTopicId: original.topicId,
+  });
+  async function facts(f: Fixture) {
+    const [topic, signals, relationships, history] = await Promise.all([
+      client.query("select needs_details from forum_topics where id=$1", [f.topicId]),
+      client.query("select id,kind,status,resolved_by_user_id from forum_help_signals where topic_id=$1 order by id", [f.topicId]),
+      client.query("select id,duplicate_topic_id,original_topic_id from forum_help_duplicate_relationships where duplicate_topic_id=$1 order by id", [f.topicId]),
+      client.query("select action,reason from admin_history where target_id=$1 order by position", [f.topicId]),
+    ]);
+    return { needsDetails: topic.rows[0]?.needs_details, signals: signals.rows,
+      relationships: relationships.rows, history: history.rows };
+  }
+
+  it("denies new Help signal under hidden topic and restores submission", async () => {
+    const f = await helpFixture();
+    await service.setTopicVisibility(topicCommand(f));
+    const before = await facts(f);
+    await expect(service.createHelpSignal(details(f))).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
+    const signal = await service.createHelpSignal(details(f));
+    expect(signal.status).toBe("pending");
+  });
+
+  it("blocks signal withdrawal and both review outcomes on hidden topic; pending remains intact", async () => {
+    const f = await helpFixture();
+    const signal = await service.createHelpSignal(details(f));
+    await service.setTopicVisibility(topicCommand(f));
+    const before = await facts(f);
+    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
+    expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
+    expect((await facts(f)).needsDetails).toBe(true);
+  });
+
+  it("permits withdrawal after Restore with no ordinary History changes", async () => {
+    const f = await helpFixture();
+    const signal = await service.createHelpSignal(details(f));
+    await service.setTopicVisibility(topicCommand(f));
+    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
+    const beforeHistory = (await facts(f)).history;
+    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    const after = await facts(f);
+    expect(after.signals[0]).toMatchObject({ id: signal.id, status: "withdrawn" });
+    expect(after.history).toEqual(beforeHistory);
+  });
+
+  it("denies duplicate submission and accepted review if either locked topic is hidden", async () => {
+    const f = await helpFixture(), original = await helpFixture();
+    await service.setTopicVisibility(topicCommand(original));
+    const before = await facts(f);
+    await expect(service.createHelpSignal(duplicate(f, original)))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(original, "moderator1", false, 1, "Reviewed original"));
+    const signal = await service.createHelpSignal(duplicate(f, original));
+    await service.setTopicVisibility(topicCommand(f));
+    const hiddenCandidate = await facts(f);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(hiddenCandidate);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
+    await service.setTopicVisibility(topicCommand(original, "moderator1", true, 2));
+    const hiddenOriginal = await facts(f);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(hiddenOriginal);
+    await service.setTopicVisibility(topicCommand(original, "moderator1", false, 3, "Reviewed original"));
+    expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
+    expect((await facts(f)).relationships).toHaveLength(1);
+  });
+
+  it("denies solution signal submission and accepted review while the selected answer is hidden", async () => {
+    const f = await helpFixture(), answerId = randomUUID(), answerRevisionId = randomUUID();
+    await repository.createPost({
+      id: answerId, topicId: f.topicId, authorId: "ordinary",
+      bodyRevision: { id: answerRevisionId, originalContent: "Helpful answer", sourceLocale: "en" },
+    });
+    await repository.selectBestAnswer(f.topicId, answerId, "author", "own");
+    await repository.markTopicSolved(f.topicId, "author", "own");
+    const answerCommand = (hidden: boolean, version: number, reason: string) => ({
+      topicId: f.topicId, postId: answerId, actorId: "moderator1",
+      hidden, expectedVisibilityVersion: version, expectedRevisionId: answerRevisionId, reason,
+    });
+    const submission = {
+      kind: "needs-review" as const, topicId: f.topicId, actorId: "ordinary",
+      explanation: "Review the answer", proposedOriginalTopicId: null,
+    };
+    await service.setPostVisibility(answerCommand(true, 0, "Review answer visibility"));
+    const before = await facts(f);
+    await expect(service.createHelpSignal(submission)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(before);
+    await service.setPostVisibility(answerCommand(false, 1, "Restore answer visibility"));
+    const signal = await service.createHelpSignal(submission);
+    await service.setPostVisibility(answerCommand(true, 2, "Review answer visibility"));
+    const pending = await facts(f);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(pending);
+    await service.setPostVisibility(answerCommand(false, 3, "Restore answer visibility"));
+    expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
+    expect((await facts(f)).signals[0]?.status).toBe("accepted");
   });
 });
