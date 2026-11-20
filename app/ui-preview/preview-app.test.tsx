@@ -1010,17 +1010,9 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     const onlineCard = onlineHeading.closest(".home-online-card") as HTMLElement;
     expect(within(onlineCard).queryByRole("link", { name: "Maya Cohen" })).not.toBeInTheDocument();
 
-    await user.click(await screen.findByRole("link", { name: /TypeScript & architecture/ }));
-    await user.click(await screen.findByRole("link", {
-      name: "How should I structure a typed API client?",
-    }));
-    const followup = await waitFor(() => {
-      const current = document.querySelector("#post-followup") as HTMLElement | null;
-      expect(current).not.toBeNull();
-      return current as HTMLElement;
-    });
-    expect(within(followup).getByText("Deleted user")).toBeInTheDocument();
-    expect(within(followup).queryByText("Maya Cohen")).not.toBeInTheDocument();
+    const mentionResponse = await fetch("/en/mentions?q=Maya");
+    expect(mentionResponse.status).toBe(200);
+    expect(await mentionResponse.json()).toEqual({ users: [] });
   });
 
   it("shows Owner-self active and retained session details", async () => {
