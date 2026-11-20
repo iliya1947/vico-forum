@@ -3280,9 +3280,16 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(document.querySelector(".help-solutions-page")).toBeNull();
   });
 
-  it("keeps the Needs review filter available to Manager", async () => {
+  it("keeps the Needs review filter available to Manager and bound Owner", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-filters-manager" />);
 
+    expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
+    expect(screen.getByRole("option", { name: "Needs review" })).toBeInTheDocument();
+
+    cleanup();
+
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-filters-manager" identity="owner" />);
     expect(await screen.findByRole("heading", { level: 1, name: "Help & solutions" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Solution" })).toHaveValue("needs-review");
     expect(screen.getByRole("option", { name: "Needs review" })).toBeInTheDocument();

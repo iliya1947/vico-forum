@@ -214,7 +214,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
   { id: "help-solutions-filters-needs-review-guest", label: "Help & solutions · Needs review filter · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["guest"] },
   { id: "help-solutions-filters-needs-review-user", label: "Help & solutions · Needs review filter · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["user"] },
-  { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager"] },
+  { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager", "owner"] },
   { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
   { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
@@ -5610,8 +5610,8 @@ function PreviewCategoryRoute({ scenario, interactions }: {
         referenceTime={previewReferenceTime}
         isAuthenticated={scenario.identity !== "guest"}
         canAskQuestion={scenario.identity !== "guest"}
-        canViewSolutionModeration={scenario.identity === "manager"}
-        canViewDuplicateDispute={scenario.identity === "manager"}
+        canViewSolutionModeration={scenario.identity === "manager" || scenario.identity === "owner"}
+        canViewDuplicateDispute={scenario.identity === "manager" || scenario.identity === "owner"}
         actionData={routeActionData ?? fixtureActionData}
       />
     );
