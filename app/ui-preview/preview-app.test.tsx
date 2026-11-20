@@ -1449,6 +1449,35 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("combobox", { name: "Processing priority" })).toHaveValue("3");
   });
 
+  it("opens complaint reason priorities, saves them, and updates automatic case priority", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview
+      scenarioId="attention-complaints"
+      identity="manager"
+    />);
+
+    const settingsLink = await screen.findByRole("link", { name: "Reason priorities" });
+    expect(settingsLink).toHaveAttribute("href", "/en/attention/complaints/settings");
+    await user.click(settingsLink);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Reason priorities" })).toBeInTheDocument();
+    const harassment = screen.getByRole("combobox", { name: "Insults / harassment" });
+    expect(harassment).toHaveValue("2");
+    await user.selectOptions(harassment, "3");
+    await user.click(screen.getByRole("button", { name: "Save priority" }));
+
+    expect(await screen.findByText("Reason priorities saved.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Insults / harassment" })).toHaveValue("3");
+
+    await user.click(screen.getByRole("link", { name: "Queue" }));
+    const complaintCase = await waitFor(() => {
+      const current = document.querySelector(".complaint-case") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    expect(within(complaintCase).getByText("High")).toBeInTheDocument();
+  });
+
   it("opens and resolves a complaint appeal", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview

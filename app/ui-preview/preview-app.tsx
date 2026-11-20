@@ -14,7 +14,8 @@ import { COMPLAINT_REASONS } from "../../db/complaints-domain";
 import type { ProfilePrivilegedSections } from "../profile/sections";
 import type { OwnerUserProfileSnapshot } from "../../db/owner-user-profile";
 import type { OwnerHistoryEntry, OwnerHistoryOptions } from "../../db/owner-sa02-history";
-import type { ComplaintPriority, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
+import { DEFAULT_COMPLAINT_REASON_PRIORITY } from "../complaints/queue-contract";
+import type { ComplaintPriority, ComplaintPrioritySettings, ComplaintQueueCase, ComplaintQueuePage } from "../complaints/queue-contract";
 import type { ReviewCase } from "../complaints/review-contract";
 import type { ComplaintSubmissionResponse } from "../complaints/response";
 import type { AppealReviewPage, PendingAppealsPage } from "../../db/complaint-appeal-read";
@@ -33,6 +34,7 @@ import { ComplaintReviewView } from "../complaints/review-view";
 import { ComplaintTriageView } from "../complaints/queue-view";
 import { ComplaintAppealReviewView } from "../complaints/appeal-review-view";
 import { ComplaintTimelineView } from "../complaints/history-view";
+import { ComplaintPrioritySettingsView } from "../complaints/priority-settings-view";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { SuperAdminSa02Current } from "../super-admin/current-route";
 import { SuperAdminBackground } from "../super-admin/task-current";
@@ -400,6 +402,7 @@ type PreviewInteractionState = {
   complaintDecision: ReviewCase["decision"];
   complaintPriorityOverride: ComplaintPriority | null;
   complaintVersion: number;
+  complaintPrioritySettings: ComplaintPrioritySettings;
   complaintAppealResolution: { outcome: "upheld" | "overturned"; reasoning: string } | null;
   preferredLocale: PreviewLocale | null;
   localeSaved: boolean;
@@ -469,6 +472,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     complaintDecision: null,
     complaintPriorityOverride: null,
     complaintVersion: 1,
+    complaintPrioritySettings: { version: 1, weights: { ...DEFAULT_COMPLAINT_REASON_PRIORITY } },
     complaintAppealResolution: null,
     preferredLocale: null,
     localeSaved: false,
@@ -2818,6 +2822,14 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/attention/complaints/settings",
+      element: <PreviewComplaintPrioritySettingsRoute />,
+      loader: () => previewComplaintPrioritySettingsData(scenario, interactions),
+      action: ({ request }) =>
+        previewComplaintPrioritySettingsAction(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/attention/complaints/:caseId",
       element: <PreviewComplaintTriageRoute />,
       loader: ({ params }) => {
@@ -4606,8 +4618,81 @@ const PREVIEW_COMPLAINT_CASE_ID = "22222222-2222-4222-8222-222222222222";
 const PREVIEW_COMPLAINT_APPEAL_CASE_ID = "33333333-3333-4333-8333-333333333333";
 const PREVIEW_COMPLAINT_APPEAL_ID = "44444444-4444-4444-8444-444444444444";
 
+function previewComplaintPrioritySettingsAccessData(scenario: Scenario) {
+  previewAuthenticatedRouteData(scenario);
+  if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+    throw new Response("Forbidden", { status: 403 });
+  }
+}
+
+function previewComplaintPrioritySettingsData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  previewComplaintPrioritySettingsAccessData(scenario);
+  return {
+    locale: scenario.locale,
+    settings: interactions.complaintPrioritySettings,
+    canReview: scenario.identity === "manager" || scenario.identity === "owner",
+  };
+}
+
+async function previewComplaintPrioritySettingsAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  previewComplaintPrioritySettingsAccessData(scenario);
+  const form = await request.formData();
+  const allowed = new Set(["expectedVersion", ...COMPLAINT_REASONS]);
+  if ([...form.keys()].some((key) => !allowed.has(key))) {
+    return { error: "invalid" as const };
+  }
+
+  const expectedVersion = String(form.get("expectedVersion") ?? "");
+  if (!/^[1-9]\d{0,9}$/.test(expectedVersion) || Number(expectedVersion) > 2147483647) {
+    return { error: "invalid" as const };
+  }
+
+  const weights = {} as ComplaintPrioritySettings["weights"];
+  for (const reason of COMPLAINT_REASONS) {
+    const value = String(form.get(reason) ?? "");
+    if (value !== "1" && value !== "2" && value !== "3") {
+      return { error: "invalid" as const };
+    }
+    weights[reason] = Number(value) as ComplaintPriority;
+  }
+
+  if (Number(expectedVersion) !== interactions.complaintPrioritySettings.version) {
+    return { error: "conflict" as const };
+  }
+  interactions.complaintPrioritySettings = {
+    version: interactions.complaintPrioritySettings.version + 1,
+    weights,
+  };
+  return { ok: true as const };
+}
+
+function PreviewComplaintPrioritySettingsRoute() {
+  return <ComplaintPrioritySettingsView
+    {...useLoaderData() as ReturnType<typeof previewComplaintPrioritySettingsData>}
+  />;
+}
+
+function previewComplaintAutomaticPriority(
+  interactions: PreviewInteractionState,
+  reasons: Partial<Record<(typeof COMPLAINT_REASONS)[number], number>>,
+): ComplaintPriority {
+  const priorities = COMPLAINT_REASONS
+    .filter((reason) => Boolean(reasons[reason]))
+    .map((reason) => interactions.complaintPrioritySettings.weights[reason]);
+  return (priorities.length ? Math.max(...priorities) : 1) as ComplaintPriority;
+}
+
 function previewComplaintQueue(interactions: PreviewInteractionState): ComplaintQueuePage {
   if (interactions.complaintDecision) return { cases: [], total: 0, page: 0, hasMore: false };
+  const reasons = { spam: 1, harassment: 1 } as const;
+  const automaticPriority = previewComplaintAutomaticPriority(interactions, reasons);
   return {
     cases: [{
       id: PREVIEW_COMPLAINT_CASE_ID,
@@ -4623,13 +4708,13 @@ function previewComplaintQueue(interactions: PreviewInteractionState): Complaint
       sourceLocale: "en",
       topicDirection: "ltr",
       excerptDirection: "ltr",
-      reasons: { spam: 1, harassment: 1 },
+      reasons,
       reportCount: 2,
       firstReportedAt: "2026-11-18T09:10:00.000Z",
       lastReportedAt: "2026-11-18T09:42:00.000Z",
-      automaticPriority: 2,
+      automaticPriority,
       priorityOverride: interactions.complaintPriorityOverride,
-      priority: interactions.complaintPriorityOverride ?? 2,
+      priority: interactions.complaintPriorityOverride ?? automaticPriority,
       activeElsewhere: false,
     }],
     total: 1,
@@ -4639,6 +4724,10 @@ function previewComplaintQueue(interactions: PreviewInteractionState): Complaint
 }
 
 function previewComplaintReview(interactions: PreviewInteractionState): ReviewCase {
+  const automaticPriority = previewComplaintAutomaticPriority(
+    interactions,
+    { spam: 1, harassment: 1 },
+  );
   const topicTitle = {
     revisionId: "title-r1",
     originalContent: "How should I structure a typed API client?",
@@ -4667,9 +4756,9 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
     current: reported,
     currentTopicTitle: topicTitle,
     targetPresent: true,
-    automaticPriority: 2,
+    automaticPriority,
     priorityOverride: interactions.complaintPriorityOverride,
-    priority: interactions.complaintPriorityOverride ?? 2,
+    priority: interactions.complaintPriorityOverride ?? automaticPriority,
     reports: {
       items: [{
         id: "preview-report-1",
@@ -5090,6 +5179,7 @@ function PreviewAttentionRoute({ scenario, interactions }: {
     canReadSecurityAttachments={scenario.identity === "manager" || scenario.identity === "owner"}
     canReviewComplaints={scenario.identity === "manager" || scenario.identity === "owner"}
     canReviewAppeals={scenario.identity === "manager" || scenario.identity === "owner"}
+    canManageComplaintPriorities={scenario.identity === "manager" || scenario.identity === "owner"}
     referenceTime={previewReferenceTime}
   />;
 }
