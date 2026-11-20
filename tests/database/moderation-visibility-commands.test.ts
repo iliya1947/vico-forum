@@ -645,3 +645,99 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     expect((await facts(f)).signals[0]?.status).toBe("withdrawn");
   });
 });
+
+describe("V4 solution moderation admission under topic and answer visibility", () => {
+  async function solvedQuestion() {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    const answerId = randomUUID(), answerRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Help body", sourceLocale: "en" },
+      },
+    });
+    await repository.createPost({
+      id: answerId, topicId, authorId: "ordinary",
+      bodyRevision: { id: answerRevisionId, originalContent: "Selected answer", sourceLocale: "en" },
+    });
+    await repository.selectBestAnswer(topicId, answerId, "author", "own");
+    await repository.markTopicSolved(topicId, "author", "own");
+    return { topicId, postId, titleRevisionId, bodyRevisionId, answerId, answerRevisionId };
+  }
+  async function state(f: Awaited<ReturnType<typeof solvedQuestion>>) {
+    const [post, signals, history] = await Promise.all([
+      client.query(
+        "select solution_moderation_status,solution_outdated_reason,solution_outdated_reason_kind from forum_posts where id=$1",
+        [f.answerId],
+      ),
+      client.query(
+        "select id,kind,status,resolved_by_user_id from forum_help_signals where topic_id=$1 order by id",
+        [f.topicId],
+      ),
+      client.query("select action,reason,context from admin_history where target_id=$1 order by position", [f.topicId]),
+    ]);
+    return { post: post.rows[0], signals: signals.rows, history: history.rows };
+  }
+  const moderate = (f: Awaited<ReturnType<typeof solvedQuestion>>,
+    status: "needs-review" | "outdated" | null, actorId = "moderator1") =>
+    service.setHelpSolutionModeration(
+      f.topicId, status, status === "outdated" ? "Answer is stale" : null, actorId, f.answerId,
+    );
+  const hideTopic = (f: Awaited<ReturnType<typeof solvedQuestion>>, hidden: boolean, version: number) =>
+    service.setTopicVisibility({
+      topicId: f.topicId, actorId: "moderator1", hidden,
+      expectedVisibilityVersion: version, expectedRevisionId: f.titleRevisionId, reason: "Visibility review",
+    });
+  const hideAnswer = (f: Awaited<ReturnType<typeof solvedQuestion>>, hidden: boolean, version: number) =>
+    service.setPostVisibility({
+      topicId: f.topicId, postId: f.answerId, actorId: "moderator1", hidden,
+      expectedVisibilityVersion: version, expectedRevisionId: f.answerRevisionId, reason: "Answer review",
+    });
+
+  it("rejects all moderation states, including unchanged clear, while topic hidden", async () => {
+    const f = await solvedQuestion();
+    const signal = await service.createHelpSignal({
+      kind: "needs-review", topicId: f.topicId, actorId: "ordinary",
+      explanation: "Please check", proposedOriginalTopicId: null,
+    });
+    await hideTopic(f, true, 0);
+    const before = await state(f);
+    for (const actor of ["moderator1", "owner"]) {
+      for (const status of ["needs-review", "outdated", null] as const) {
+        await expect(moderate(f, status, actor)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+        expect(await state(f)).toEqual(before);
+      }
+    }
+    await hideTopic(f, false, 1);
+    await moderate(f, "needs-review");
+    const after = await state(f);
+    expect(after.post.solution_moderation_status).toBe("needs-review");
+    expect(after.signals.find(s => s.id === signal.id)?.status).toBe("superseded");
+    expect(after.history.filter(e => e.action === "help.solutionModerationChanged")).toHaveLength(1);
+  });
+
+  it("rejects hidden selected answer on changed/no-op moderation without touching signals or History", async () => {
+    const f = await solvedQuestion();
+    await moderate(f, "needs-review");
+    await hideAnswer(f, true, 0);
+    const before = await state(f);
+    for (const actor of ["moderator1", "owner"]) {
+      for (const status of ["needs-review", "outdated", null] as const) {
+        await expect(moderate(f, status, actor)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+        expect(await state(f)).toEqual(before);
+      }
+    }
+    await hideAnswer(f, false, 1);
+    await moderate(f, "outdated");
+    expect((await state(f)).post).toMatchObject({
+      solution_moderation_status: "outdated", solution_outdated_reason: "Answer is stale",
+    });
+    await moderate(f, null);
+    const restored = await state(f);
+    expect(restored.post.solution_moderation_status).toBeNull();
+    expect(restored.history.filter(e => e.action === "help.solutionModerationChanged")).toHaveLength(3);
+  });
+});

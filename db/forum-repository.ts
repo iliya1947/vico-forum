@@ -4211,11 +4211,12 @@ export class DrizzleForumRepository {
           sectionId: forumTopics.sectionId,
           isSolved: forumTopics.isSolved,
           bestAnswerPostId: forumTopics.bestAnswerPostId,
+          isHidden: forumTopics.isHidden,
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("solution moderation is only available for Help & solutions questions");
       }
@@ -4235,6 +4236,7 @@ export class DrizzleForumRepository {
           status: forumPosts.solutionModerationStatus,
           reason: forumPosts.solutionOutdatedReason,
           kind: forumPosts.solutionOutdatedReasonKind,
+          isHidden: forumPosts.isHidden,
         })
         .from(forumPosts)
         .where(and(
@@ -4242,6 +4244,8 @@ export class DrizzleForumRepository {
           eq(forumPosts.id, topic.bestAnswerPostId),
         ))
         .for("no key update");
+      if (!previous || previous.isHidden)
+        throw new ForumEntityNotFoundError("selected solution does not exist");
       if (status !== null) {
         const staleKinds: HelpSignalKind[] = status === "outdated"
           ? ["needs-review", "solution-outdated"]
