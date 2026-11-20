@@ -1003,6 +1003,24 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       name: "Account deactivated",
     })).toBeInTheDocument();
     expect(within(history).getByText("preview-account-deactivated-maya")).toBeInTheDocument();
+
+    const profileBreadcrumb = document.querySelector(".profile-breadcrumb") as HTMLElement;
+    await user.click(within(profileBreadcrumb).getByRole("link", { name: "Home" }));
+    const onlineHeading = await screen.findByRole("heading", { level: 2, name: "Who's online" });
+    const onlineCard = onlineHeading.closest(".home-online-card") as HTMLElement;
+    expect(within(onlineCard).queryByRole("link", { name: "Maya Cohen" })).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole("link", { name: /TypeScript & architecture/ }));
+    await user.click(await screen.findByRole("link", {
+      name: "How should I structure a typed API client?",
+    }));
+    const followup = await waitFor(() => {
+      const current = document.querySelector("#post-followup") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current as HTMLElement;
+    });
+    expect(within(followup).getByText("Deleted user")).toBeInTheDocument();
+    expect(within(followup).queryByText("Maya Cohen")).not.toBeInTheDocument();
   });
 
   it("shows Owner-self active and retained session details", async () => {
