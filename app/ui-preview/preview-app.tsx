@@ -3191,7 +3191,7 @@ function previewRouter(
     {
       path: "/:locale/users/:userId",
       element: <PreviewProfileRoute scenario={scenario} interactions={interactions} />,
-      loader: ({ params }) => previewProfileAccessData(scenario, params.userId),
+      loader: ({ params }) => previewProfileAccessData(scenario, interactions, params.userId),
       action: ({ request, params }) => previewProfileAction(
         scenario, interactions, request, params.locale, params.userId,
       ),
@@ -6895,7 +6895,11 @@ function previewProfileIdForName(name: string): string {
   return "preview-member";
 }
 
-function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
+function previewProfileAccessData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeUserId?: string,
+) {
   const actor = previewUser(scenario);
   const effectiveUserId = scenario.id.startsWith("profile-")
     && scenario.allowedIdentities
@@ -6905,7 +6909,7 @@ function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
   if (!effectiveUserId || !previewProfileNames[effectiveUserId]) {
     throw new Response("Not Found", { status: 404 });
   }
-  return null;
+  return { revision: interactions.sequence };
 }
 
 function previewOwnerAccountSnapshot(
@@ -7051,6 +7055,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
 }) {
+  useLoaderData<{ revision: number }>();
   const { userId = "alex" } = useParams();
   const [query] = useSearchParams();
   const actionData = useActionData() as { error: "invalid"; draft: { bio: string; githubUrl: string; websiteUrl: string } } | undefined;
