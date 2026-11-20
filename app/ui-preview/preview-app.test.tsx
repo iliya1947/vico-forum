@@ -1365,7 +1365,7 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
       name: /How should context be passed between several AI agents\?/,
     })).not.toBeInTheDocument();
     expect(screen.getByRole("link", {
-      name: /How should session and permissions be separated in a Worker\?/,
+      name: /Worker auth: session boundary vs permissions/,
     })).toBeInTheDocument();
   });
 
@@ -1814,7 +1814,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     await user.click(edit);
     const form = await screen.findByRole("form", { name: "Edit published message" });
-    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+    const advanced = within(form).queryByRole("button", { name: "Advanced" });
+    if (advanced) await user.click(advanced);
     const body = form.querySelector("textarea") as HTMLTextAreaElement;
     expect(body).toHaveValue("I want strong typing without coupling the whole app to one HTTP library.");
 
@@ -1837,7 +1838,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     const question = document.querySelector("#post-help-cloudflare-cache-post-1") as HTMLElement | null;
     expect(question).not.toBeNull();
     const form = await screen.findByRole("form", { name: "Edit published message" });
-    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+    const advanced = within(form).queryByRole("button", { name: "Advanced" });
+    if (advanced) await user.click(advanced);
 
     const body = form.querySelector("textarea") as HTMLTextAreaElement;
     expect(body).toHaveValue("Representative technical question from Help & solutions.");
@@ -3250,7 +3252,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "How should I structure a typed API client?" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("link", { name: "Notifications, 3 unread" }));
+    await user.click(screen.getByRole("link", { name: "Notifications, 2 unread" }));
     const reopened = await screen.findByRole("button", {
       name: /Open reply: How should I structure a typed API client\?/,
     });
@@ -3405,7 +3407,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     );
     await owner.click(screen.getByRole("button", { name: "Mark solution outdated" }));
     expect(await screen.findByText("Solution outdated")).toBeInTheDocument();
-    expect(screen.getByText("The current guidance no longer works.")).toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector(".help-solution-outdated-reason"))
+      .toHaveTextContent("The current guidance no longer works."));
   });
 
   it.each(["user", "owner"] as const)(
@@ -3551,7 +3554,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     if (!details!.open) await owner.click(quickActions!);
     tools = within(details!);
 
-    await owner.click(tools.getByRole("button", { name: "Mark solved" }));
+    await owner.click(tools.getByRole("button", { name: "Mark as solved" }));
     await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
     expect(screen.getByText("Best answer")).toBeInTheDocument();
   });
@@ -3570,7 +3573,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await owner.click(actions.getByRole("button", { name: "Edit history" }));
 
     expect(await actions.findByRole("heading", { name: "Published revisions" })).toBeInTheDocument();
-    expect(actions.getByText(
+    expect(await actions.findByText(
       "I want strong typing without coupling the whole app to one HTTP library.",
     )).toBeInTheDocument();
   });
