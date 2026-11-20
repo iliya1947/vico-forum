@@ -329,9 +329,7 @@ type PreviewPostEditRevision = {
   id: string;
   originalContent: string;
   sourceLocale: string;
-  editedAt: string;
-  authorId: string;
-  authorName: string;
+  editedAt: Date;
 };
 
 type PreviewTopicOverride = {
@@ -3910,14 +3908,12 @@ async function previewTopicAction(
     if (currentPost.body.id !== expectedRevisionId) {
       return { intent: "editPost" as const, error: "conflict" as const };
     }
-    const editedAt = new Date(Date.UTC(2026, 10, 11, 8, 0, ++interactions.sequence)).toISOString();
+    const editedAt = new Date(Date.UTC(2026, 10, 11, 8, 0, ++interactions.sequence));
     const revision: PreviewPostEditRevision = {
       id: `${postId}-preview-r${interactions.sequence}`,
       originalContent: body,
       sourceLocale: "und",
       editedAt,
-      authorId: actor.id,
-      authorName: actor.name,
     };
     const revisions = interactions.postEdits.get(postId) ?? [];
     interactions.postEdits.set(postId, [...revisions, revision]);
