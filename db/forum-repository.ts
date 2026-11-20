@@ -1731,11 +1731,19 @@ export class DrizzleForumRepository {
     return rows.length > 0;
   }
 
-  /** Only block matches among this topic's authors; never load a user's full block graph. */
+  /** Only match blocked authors of visible posts in a visible topic; hidden
+   * authors must not leak indirectly through the personalized loader DTO. */
   async readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]> {
     const rows = await this.database.select({ id: forumUserBlocks.blockedUserId })
       .from(forumUserBlocks)
-      .innerJoin(forumPosts, eq(forumPosts.authorId, forumUserBlocks.blockedUserId))
+      .innerJoin(forumPosts, and(
+        eq(forumPosts.authorId, forumUserBlocks.blockedUserId),
+        eq(forumPosts.isHidden, false),
+      ))
+      .innerJoin(forumTopics, and(
+        eq(forumTopics.id, forumPosts.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
       .where(and(eq(forumUserBlocks.userId, userId), eq(forumPosts.topicId, topicId)))
       .groupBy(forumUserBlocks.blockedUserId);
     return rows.map(row => row.id);
