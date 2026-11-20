@@ -3295,6 +3295,36 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("option", { name: "Needs review" })).toBeInTheDocument();
   });
 
+  it("lets the bound Owner moderate Help solution status", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-outdated" identity="owner" />);
+
+    expect(await screen.findByText("Solution outdated")).toBeInTheDocument();
+
+    let quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+    await owner.click(screen.getByRole("button", { name: "Clear solution status" }));
+    await waitFor(() => expect(screen.queryByText("Solution outdated")).not.toBeInTheDocument());
+
+    quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+    await owner.click(screen.getByRole("button", { name: "Mark as needs review" }));
+    expect(await screen.findByText("Needs review")).toBeInTheDocument();
+
+    quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+    await owner.type(
+      screen.getByRole("textbox", { name: "Reason the solution is outdated" }),
+      "The current guidance no longer works.",
+    );
+    await owner.click(screen.getByRole("button", { name: "Mark solution outdated" }));
+    expect(await screen.findByText("Solution outdated")).toBeInTheDocument();
+    expect(screen.getByText("The current guidance no longer works.")).toBeInTheDocument();
+  });
+
   it("checks similar Help questions and publishes a new Help question", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);

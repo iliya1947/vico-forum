@@ -215,9 +215,9 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-filters-needs-review-guest", label: "Help & solutions · Needs review filter · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["guest"] },
   { id: "help-solutions-filters-needs-review-user", label: "Help & solutions · Needs review filter · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?solution=needs-review", view: "category", allowedIdentities: ["user"] },
   { id: "help-solutions-filters-manager", label: "Help & solutions · Needs review filter", locale: "en", direction: "ltr", identity: "manager", path: "/en/categories/help-solutions?solution=needs-review&answers=has&quality=normal&relation=standalone", view: "category", allowedIdentities: ["manager", "owner"] },
-  { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
-  { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager"] },
-  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager"] },
+  { id: "help-solution-current", label: "Help solution · current", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-cloudflare-cache", view: "topic", allowedIdentities: ["guest", "user", "manager", "owner"] },
+  { id: "help-solution-needs-review", label: "Help solution · needs review", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-neon-pooling", view: "topic", allowedIdentities: ["guest", "user", "manager", "owner"] },
+  { id: "help-solution-outdated", label: "Help solution · outdated", locale: "en", direction: "ltr", identity: "manager", path: "/en/topics/help-postgres-timeout", view: "topic", variant: "help-solution-outdated", allowedIdentities: ["guest", "user", "manager", "owner"] },
   { id: "help-solutions-mine", label: "Help & solutions · My questions", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-empty", label: "Help & solutions · My questions · empty", locale: "en", direction: "ltr", identity: "user", path: "/en/categories/help-solutions?mode=mine", view: "category", variant: "help-solutions-mine-empty", allowedIdentities: ["user", "manager"] },
   { id: "help-solutions-mine-guest", label: "Help & solutions · My questions · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=mine", view: "category", allowedIdentities: ["guest"] },
@@ -341,6 +341,8 @@ type PreviewPostEditRevision = {
 type PreviewTopicOverride = {
   isSolved?: boolean;
   bestAnswerPostId?: string | null;
+  solutionModerationStatus?: "needs-review" | "outdated" | null;
+  solutionOutdatedReason?: string | null;
   isPinned?: boolean;
   isClosed?: boolean;
   closureVersion?: number;
@@ -534,14 +536,28 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     },
   }));
   const override = interactions.topicOverrides.get(topic.id);
+  const bestAnswerPostId = override?.bestAnswerPostId === undefined
+    ? topic.bestAnswerPostId
+    : override.bestAnswerPostId;
   const posts = [...topic.posts, ...replies].map((post) => {
     const edit = interactions.postEdits.get(post.id)?.at(-1);
     const sourceLocale = interactions.postSourceLocales.get(post.id)
       ?? edit?.sourceLocale
       ?? post.body.sourceLocale;
     const deactivatedAuthor = interactions.ownerDeactivations.has(post.authorId);
+    const solutionOverride = post.id === bestAnswerPostId
+      && override?.solutionModerationStatus !== undefined
+      ? {
+          solutionModerationStatus: override.solutionModerationStatus,
+          solutionOutdatedReason: override.solutionModerationStatus === "outdated"
+            ? override.solutionOutdatedReason ?? null
+            : null,
+          solutionOutdatedReasonKind: null,
+        }
+      : {};
     return {
       ...post,
+      ...solutionOverride,
       ...(deactivatedAuthor ? { authorIdentityKind: "deleted" as const, authorImage: null } : {}),
       ...(edit ? { editedAt: edit.editedAt } : {}),
       body: {
@@ -559,9 +575,7 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
       : {}),
     title: titleSourceLocale ? { ...editedTitle, sourceLocale: titleSourceLocale } : editedTitle,
     isSolved: override?.isSolved ?? topic.isSolved,
-    bestAnswerPostId: override?.bestAnswerPostId === undefined
-      ? topic.bestAnswerPostId
-      : override.bestAnswerPostId,
+    bestAnswerPostId,
     isPinned: override?.isPinned ?? topic.isPinned,
     isClosed: override?.isClosed ?? topic.isClosed,
     closureVersion: override?.closureVersion ?? topic.closureVersion,
@@ -4335,6 +4349,43 @@ async function previewTopicAction(
     return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
+  if (
+    intent === "markSolutionNeedsReview"
+    || intent === "markSolutionOutdated"
+    || intent === "clearSolutionModeration"
+  ) {
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const helpQuestion = previewHelpSolutions(scenario.locale).questions
+      .find((question) => question.id === routeTopicId);
+    if (!helpQuestion?.isSolved || !helpQuestion.hasBestAnswer) {
+      return { error: "notFound" as const };
+    }
+    const postCount = helpQuestion.replyCount + 1;
+    const bestAnswerPostId = `${helpQuestion.id}-post-${Math.min(5, postCount)}`;
+    if (String(form.get("expectedBestAnswerPostId") ?? "") !== bestAnswerPostId) {
+      return { error: "conflict" as const };
+    }
+    const outdatedReason = intent === "markSolutionOutdated"
+      ? String(form.get("outdatedReason") ?? "").trim()
+      : "";
+    if (intent === "markSolutionOutdated" && (!outdatedReason || [...outdatedReason].length > 1000)) {
+      return { error: "invalid" as const };
+    }
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+    interactions.topicOverrides.set(routeTopicId, {
+      ...current,
+      solutionModerationStatus: intent === "markSolutionNeedsReview"
+        ? "needs-review"
+        : intent === "markSolutionOutdated"
+          ? "outdated"
+          : null,
+      solutionOutdatedReason: intent === "markSolutionOutdated" ? outdatedReason : null,
+    });
+    return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
+  }
+
   if (intent === "pinTopic" || intent === "unpinTopic") {
     if (scenario.identity !== "manager") return null;
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
@@ -6955,8 +7006,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canSubmitComplaint={scenario.identity !== "guest"}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
-        canManageAnySolution={scenario.identity === "manager"}
-        canModerateHelpSolution={scenario.identity === "manager"}
+        canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
+        canModerateHelpSolution={scenario.identity === "manager" || scenario.identity === "owner"}
         canManageHelpDuplicate={scenario.identity === "manager"}
         pendingDuplicateAppeal={helpQuestion.duplicateDisputed && scenario.identity !== "guest"
           ? {
@@ -6974,7 +7025,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canCorrectTitleSourceLocale={scenario.identity === "manager"}
         canCorrectAnySourceLocale={scenario.identity === "manager"}
         canManagePin={scenario.identity === "manager"}
-        canUseAdminPanel={scenario.identity === "manager"}
+        canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
         topicReadState={null}
       />
     );
