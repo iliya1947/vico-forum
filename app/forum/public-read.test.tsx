@@ -5233,6 +5233,100 @@ describe("personal Block presentation in ordinary TopicView", () => {
 });
 
 
+describe("B3 public source and negative-response sentinels", () => {
+  it("excludes hidden revisions and unsolicited translations from topic data and rendered HTML", async () => {
+    const hiddenId = "b3-hidden-middle";
+    const hidden = {
+      kind: "hidden" as const, id: hiddenId, topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const visible = {
+      ...topic.posts[0]!, id: "b3-visible-descendant", parentPostId: hiddenId,
+      authorId: "ada", authorName: "Ada",
+      body: { id: "b3-visible-revision", originalContent: "B3_VISIBLE_DESCENDANT_6021", sourceLocale: "en" },
+    };
+    const hiddenRevision = "B3_SECRET_HIDDEN_REVISION_6021";
+    const hiddenTranslation = "B3_SECRET_HIDDEN_TRANSLATION_6021";
+    const rogueTranslation: StoredContentTranslation = {
+      contentType: "post-body", contentId: hiddenId, revisionId: hiddenRevision,
+      targetLocale: "he", sourceLocale: "en", translatedContent: hiddenTranslation,
+      provenance: { origin: "persistent_manual" },
+    };
+    const readBatch = vi.fn(async (_identities: readonly { contentId: string; revisionId: string }[]) =>
+      ({ translations: [rogueTranslation] }));
+    const ctx = context("he", "rtl");
+    ctx.set(forumReaderContext, {
+      ...reader, readTopicPage: async () => ({ ...topic, posts: [hidden, visible] }),
+    });
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+
+    const loaded = await rawTopicLoader({
+      params: { locale: "he", topicId: topic.id }, context: ctx,
+    });
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    expect(loaded.data.topic.posts[0]).toEqual(hidden);
+    expect(loaded.data.topic.posts[1]).toMatchObject({ id: visible.id, parentPostId: hiddenId });
+    expect(loaded.data.postPresentations.map((item) => item.contentId)).toEqual([visible.id]);
+    expect(readBatch).toHaveBeenCalledTimes(1);
+    expect(readBatch.mock.calls[0]![0].map((item) => item.contentId))
+      .toEqual([topic.id, visible.id]);
+    expect(readBatch.mock.calls[0]![0].map((item) => item.revisionId))
+      .not.toContain(hiddenRevision);
+    const serialized = JSON.stringify(loaded.data);
+    for (const secret of [hiddenRevision, hiddenTranslation]) {
+      expect(serialized).not.toContain(secret);
+    }
+
+    const rendered = renderRoute(TopicRoute, loaded.data,
+      forumTopicPath("he", topic.id), "he", "rtl");
+    expect(await screen.findByText("B3_VISIBLE_DESCENDANT_6021")).toBeInTheDocument();
+    expect(rendered.container.querySelector("#post-b3-hidden-middle[data-moderation-hidden-post]"))
+      .not.toBeNull();
+    expect(rendered.container.querySelector('#post-b3-visible-descendant a[href="#post-b3-hidden-middle"]'))
+      .not.toBeNull();
+    for (const secret of [hiddenRevision, hiddenTranslation]) {
+      expect(rendered.container.innerHTML).not.toContain(secret);
+    }
+    expect(rendered.container.querySelector("#post-b3-hidden-middle [data-message-body]"))
+      .toBeNull();
+  });
+
+  it("gives missing and hidden topics the same neutral 404 before translations or metadata", async () => {
+    const ctx = context("he", "rtl");
+    const readTopicPage = vi.fn(async (_id: string) => undefined);
+    const registry = vi.fn(async () => ({
+      registry: localeRegistry, semanticIdentity: "test",
+      health: { status: "healthy" as const },
+    }));
+    const readBatch = vi.fn(async () => ({ translations: [] }));
+    ctx.set(forumReaderContext, { ...reader, readTopicPage });
+    ctx.set(registryLoaderContext, registry);
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+
+    const responses: Response[] = [];
+    for (const id of ["b3-secret-hidden-topic", "b3-nonexistent-topic"]) {
+      const response = await rawTopicLoader({
+        params: { locale: "he", topicId: id }, context: ctx,
+      }).catch((error: unknown) => error);
+      expect(response).toBeInstanceOf(Response);
+      responses.push(response as Response);
+    }
+    expect(readTopicPage).toHaveBeenCalledTimes(2);
+    expect(registry).not.toHaveBeenCalled();
+    expect(readBatch).not.toHaveBeenCalled();
+    expect(responses.map((response) => response.status)).toEqual([404, 404]);
+    expect(await Promise.all(responses.map((response) => response.text())))
+      .toEqual(["Not Found", "Not Found"]);
+    const documentHeaders = topicHeaders({
+      parentHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+      loaderHeaders: new Headers(),
+      actionHeaders: new Headers(),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(documentHeaders.get("Cache-Control")).toBe("no-store");
+  });
+});
+
 describe("B3 public content cache policy", () => {
 
   it("does not cache the tag index even with cacheable parent or error headers", async () => {
