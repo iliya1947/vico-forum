@@ -324,6 +324,15 @@ type PreviewReply = {
   createdAt: Date;
 };
 
+type PreviewPostEditRevision = {
+  id: string;
+  originalContent: string;
+  sourceLocale: string;
+  editedAt: string;
+  authorId: string;
+  authorName: string;
+};
+
 type PreviewTopicOverride = {
   isSolved?: boolean;
   bestAnswerPostId?: string | null;
@@ -370,6 +379,7 @@ type PreviewInteractionState = {
   replies: Map<string, PreviewReply[]>;
   topicOverrides: Map<string, PreviewTopicOverride>;
   topicTitleEdits: Map<string, { id: string; originalContent: string; sourceLocale: string }>;
+  postEdits: Map<string, PreviewPostEditRevision[]>;
   topicWatches: Set<string>;
   topicBookmarks: Set<string>;
   topicMutes: Set<string>;
@@ -437,6 +447,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     replies: new Map(),
     topicOverrides: new Map(),
     topicTitleEdits: new Map(),
+    postEdits: new Map(),
     topicWatches: new Set(),
     topicBookmarks: new Set(),
     topicMutes: new Set(),
@@ -507,8 +518,18 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
   }));
   const override = interactions.topicOverrides.get(topic.id);
   const posts = [...topic.posts, ...replies].map((post) => {
-    const sourceLocale = interactions.postSourceLocales.get(post.id);
-    return sourceLocale ? { ...post, body: { ...post.body, sourceLocale } } : post;
+    const edit = interactions.postEdits.get(post.id)?.at(-1);
+    const sourceLocale = interactions.postSourceLocales.get(post.id)
+      ?? edit?.sourceLocale
+      ?? post.body.sourceLocale;
+    return {
+      ...post,
+      ...(edit ? { editedAt: edit.editedAt } : {}),
+      body: {
+        ...(edit ? { id: edit.id, originalContent: edit.originalContent } : post.body),
+        sourceLocale,
+      },
+    };
   });
   const editedTitle = interactions.topicTitleEdits.get(topic.id) ?? topic.title;
   const titleSourceLocale = interactions.topicTitleSourceLocales.get(topic.id);
@@ -524,6 +545,12 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     closureVersion: override?.closureVersion ?? topic.closureVersion,
     posts,
   };
+}
+
+function previewEditablePostIds(scenario: Scenario, topic: PreviewTopicPage): string[] {
+  const actor = previewUser(scenario);
+  if (!actor) return [];
+  return topic.posts.filter((post) => post.authorId === actor.id).map((post) => post.id);
 }
 
 function previewPresentationsForTopic(
@@ -1462,7 +1489,8 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         : null;
       const intent = submitterIntent ?? String(new FormData(form).get("intent") ?? "");
       const allowed =
-        (intent === "createTopic" && form.classList.contains("section-create-form"))
+        (intent === "editPost" && form.classList.contains("topic-post-edit-form"))
+        || (intent === "createTopic" && form.classList.contains("section-create-form"))
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
@@ -2697,6 +2725,13 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/posts/:postId/edit",
+      loader: ({ params }) => previewPostEditRedirect(
+        scenario, interactions, params.locale, params.postId,
+      ),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/super-admin",
       element: <PreviewSuperAdminOverviewRoute />,
       loader: () => {
@@ -3854,6 +3889,37 @@ async function previewTopicAction(
     };
   }
 
+  if (intent === "editPost") {
+    const postId = String(form.get("postId") ?? "").trim();
+    const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
+    const body = form.get("body");
+    const currentTopic = previewEditableTopicForAction(scenario, interactions, routeTopicId);
+    const currentPost = currentTopic?.posts.find((post) => post.id === postId);
+    if (!postId || !expectedRevisionId || typeof body !== "string") {
+      return { intent: "editPost" as const, error: "invalid" as const };
+    }
+    if (!currentPost) return { intent: "editPost" as const, error: "notFound" as const };
+    if (currentPost.authorId !== actor.id) {
+      return { intent: "editPost" as const, error: "forbidden" as const };
+    }
+    if (currentPost.body.id !== expectedRevisionId) {
+      return { intent: "editPost" as const, error: "conflict" as const };
+    }
+    const editedAt = new Date(Date.UTC(2026, 10, 11, 8, 0, ++interactions.sequence)).toISOString();
+    const revision: PreviewPostEditRevision = {
+      id: `${postId}-preview-r${interactions.sequence}`,
+      originalContent: body,
+      sourceLocale: "und",
+      editedAt,
+      authorId: actor.id,
+      authorName: actor.name,
+    };
+    const revisions = interactions.postEdits.get(postId) ?? [];
+    interactions.postEdits.set(postId, [...revisions, revision]);
+    interactions.postSourceLocales.delete(postId);
+    return redirect(`${forumTopicPath(locale, routeTopicId)}#post-${encodeURIComponent(postId)}`);
+  }
+
   if (intent === "reply") {
     const body = String(form.get("body") ?? "").trim();
     if (!body) return null;
@@ -3986,6 +4052,43 @@ async function previewTopicAction(
   return null;
 }
 
+function previewEditableTopicForAction(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeTopicId: string,
+): PreviewTopicPage | null {
+  if (routeTopicId === topicId) {
+    return previewApplyTopicState(primaryTopicScenarioData(scenario).topic, interactions);
+  }
+  const created = interactions.createdTopics.get(routeTopicId);
+  return created ? previewCreatedTopicData(scenario, created, interactions).topic : null;
+}
+
+function previewPostEditRedirect(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  routeLocale?: string,
+  postId?: string,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) throw new Response("Unauthorized", { status: 401 });
+  if (!postId) throw new Response("Not Found", { status: 404 });
+
+  const primary = previewApplyTopicState(primaryTopicScenarioData(scenario).topic, interactions);
+  const createdTopics = [...interactions.createdTopics.values()]
+    .map((created) => previewCreatedTopicData(scenario, created, interactions).topic);
+  const topicPage = [primary, ...createdTopics]
+    .find((candidate) => candidate.posts.some((post) => post.id === postId));
+  const post = topicPage?.posts.find((candidate) => candidate.id === postId);
+  if (!topicPage || !post) throw new Response("Not Found", { status: 404 });
+  if (post.authorId !== actor.id) throw new Response("Forbidden", { status: 403 });
+
+  const locale = previewMutationLocale(routeLocale, scenario.locale);
+  return redirect(
+    `${forumTopicPath(locale, topicPage.id)}?editPost=${encodeURIComponent(postId)}#post-${encodeURIComponent(postId)}`,
+  );
+}
+
 function previewSectionWithInteractions(
   locale: PreviewLocale,
   routeSectionId: string | undefined,
@@ -4073,6 +4176,7 @@ function previewCreatedTopicData(
     postPresentations: previewPresentationsForTopic([], topic),
     generationUnits: [],
     canReply: scenario.identity !== "guest",
+    editablePostIds: previewEditablePostIds(scenario, topic),
     canManageSolution: scenario.identity !== "guest",
     canConfirmOwnSolution: scenario.identity !== "guest",
     canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
@@ -6272,6 +6376,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         )}
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
+        editablePostIds={previewEditablePostIds(scenario, interactiveHelpTopic)}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager"}
@@ -6438,6 +6543,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       )}
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
+      editablePostIds={previewEditablePostIds(scenario, interactiveTopic)}
       canManageSolution={scenario.identity === "manager"}
       canManageAnySolution={scenario.identity === "manager"}
       canModerateHelpSolution={false}
@@ -6786,6 +6892,11 @@ function topicData(
       ? topicToolsGenerationUnits(locale)
       : [],
     canReply: identity !== "guest",
+    editablePostIds: identity === "guest"
+      ? []
+      : translatedTopic.posts
+          .filter((post) => post.authorId === (identity === "user" ? "alex" : identity === "manager" ? "maya" : "owner"))
+          .map((post) => post.id),
     canEditOwnTitle: identity === "user" && translatedTopic.authorId === "alex",
     canManageSolution: showSecondaryControls || solutionAuthor,
     canManageAnySolution: identity === "manager",
