@@ -2966,8 +2966,8 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore canonical"));
     expect((await repository.readTopicPage(duplicate.topicId))?.duplicateOf?.title)
       .toBe("B3_SECRET_CANONICAL_8472");
-  });});
-
+  });
+});
 
 describe("B3 F4 SQL page boundaries and persisted root chronology", () => {
   it("matches title and tag without visible bodies, excluding hidden stronger matches before search LIMIT", async () => {
