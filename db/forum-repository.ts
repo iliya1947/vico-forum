@@ -2946,6 +2946,16 @@ export class DrizzleForumRepository {
         ? isNotNull(activeDuplicate.id)
         : undefined;
     const visibleSignalKinds = filter.mode === "attention" ? [...(attentionVisibility?.signalKinds ?? [])] : [];
+    // Match the same public visibility gate as the Attention queue, including
+    // targetless signals. The predicate also applies to the later badge count.
+    const visibleSignalTarget = sql`(
+      ${forumHelpSignals.targetPostId} is null or exists (
+        select 1 from ${forumPosts}
+        where ${forumPosts.id} = ${forumHelpSignals.targetPostId}
+          and ${forumPosts.topicId} = ${forumHelpSignals.topicId}
+          and not ${forumPosts.isHidden}
+      )
+    )`;
     // Correlated EXISTS selects actionable cases before applying the 100-question bound.
     // A denied signal/appeal capability must not leak its cases into this private queue.
     const signalAttentionCondition = visibleSignalKinds.length
@@ -2954,6 +2964,7 @@ export class DrizzleForumRepository {
           where ${forumHelpSignals.topicId} = ${forumTopics.id}
           and ${forumHelpSignals.status} = 'pending'
           and ${inArray(forumHelpSignals.kind, visibleSignalKinds)}
+          and ${visibleSignalTarget}
         )`
       : sql`false`;
     const appealAttentionCondition = attentionVisibility?.appeals
@@ -3086,6 +3097,7 @@ export class DrizzleForumRepository {
                 inArray(forumHelpSignals.topicId, topicIds),
                 eq(forumHelpSignals.status, "pending"),
                 inArray(forumHelpSignals.kind, visibleSignalKinds),
+                visibleSignalTarget,
               ))
           : Promise.resolve([]),
         attentionVisibility?.appeals
