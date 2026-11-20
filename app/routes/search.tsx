@@ -12,10 +12,9 @@ export function meta() {
 }
 
 /** Search results change as soon as a topic/post is hidden or restored. */
-export function headers({ parentHeaders, loaderHeaders, errorHeaders }: HeadersArgs): Headers {
+export function headers({ parentHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
-  result.set("Cache-Control", errorHeaders?.get("Cache-Control")
-    ?? loaderHeaders.get("Cache-Control") ?? "no-store");
+  result.set("Cache-Control", "no-store");
   return result;
 }
 
