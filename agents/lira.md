@@ -24,10 +24,11 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `7f8b17dbd887a8ac470dfcbe6e2d69c1c591f48b` (B2 base unchanged). B3 remains partial.
-- Current 2-route B3 microbatch: Section and Category/Help now enforce `no-store` on anonymous loader data/document/errors/404; signed-in Section read-state and Help user-specific data use `private, no-store`. Action privacy and retry headers preserved. Three targeted `public-read.test.tsx` regressions added and existing direct loader tests adapted to unwrap `data()`.
-- Targeted **static** source checks 15/15 passed; **Vitest/HTTP/PG execution not verified**, no local runtime. Do not claim runtime PASS.
-- On next `...`: small B3 package selected from remaining verified gaps (public error/meta/data leak sentinels, unread/parent relationships, outstanding cache routes), available targeted checks, update service handoff, STOP. Do not inspect GitHub Actions/CI until whole B3 completed; no B4/Mira/merge.
+- Active stacked Draft #359 exact `a86cf854cfbe51696f17dacc6b74094a55cf57fc`, B2 base unchanged, B3 partial.
+- Current two-microstep B3 batch: Unread route now returns `private, no-store` on authenticated loader/data/document and 401/503 negative responses; one focused `public-read.test.tsx` regression verifies guest no-reader, success and outage boundaries; direct-call test adapter unwraps `data()`.
+- Profile route has already-correct private no-store headers on successful and error/action paths; no changes made. Unread SQL still uses existing hidden-content predicate.
+- **14/14 static contract checks PASS** at exact head; **Vitest/HTTP/PG execution unverified** (no local runtime). Do not assert a runtime PASS.
+- Next `...`: one 2–3 related microstep B3 package (leak sentinels/remaining aliases, root-parent/unread boundary), available targeted checks, update #342 and STOP. Do not open GitHub Actions/CI until **entire** B3 ready; no B4/Mira/merge.
 
 ## Cadence
 
