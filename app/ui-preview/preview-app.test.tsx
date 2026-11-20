@@ -3343,6 +3343,25 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(await screen.findByText("Pinned")).toBeInTheDocument();
   });
 
+  it("lets the bound Owner close and reopen a public topic", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
+
+    expect(screen.queryByText("Closed")).not.toBeInTheDocument();
+
+    const quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+
+    await owner.click(screen.getByRole("button", { name: "Close topic" }));
+    expect(await screen.findByText("Closed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reopen topic" })).toBeInTheDocument();
+
+    await owner.click(screen.getByRole("button", { name: "Reopen topic" }));
+    await waitFor(() => expect(screen.queryByText("Closed")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Close topic" })).toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
