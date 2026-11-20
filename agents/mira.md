@@ -92,3 +92,8 @@ Reviewed exact `736da519e3f3fcae716ec5fb1b81886cdac63a6e`. One current-scope blo
 ## 2026-11-20 — B1 bounded PASS
 
 Fresh review of #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: VIS-B1-MIRA-01 corrected across Admin admission, locale projection and AP-10 family map; focused regressions added; correction limited to seven files. Exact-head CI and all 13 associated workflows SUCCESS. No new B1 blocker. B1 PASS, remains Draft/unmerged. B2 only on explicit owner continuation, stacked from B1 branch.
+
+
+## 2026-11-20 — B2 bounded PASS
+
+Reviewed #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` as local B1→B2 stacked diff. Commands/CAS/reason/no-op, fresh actor/AP-10/direct RBAC, append-last History/rollback, writer gates, receipt/recovery semantics and real PG races/deactivation/lock compatibility satisfy the B2 checkpoint. Final 22/22 checks and 18/18 workflows SUCCESS; no current-B2 blocker. Translation planning overlap with B4 is not a defect by itself. B3 next only on owner continuation.
