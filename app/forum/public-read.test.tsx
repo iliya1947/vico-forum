@@ -33,14 +33,17 @@ import CategoryRoute, { loader as categoryLoader } from "../routes/category";
 import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as popularLoader } from "../routes/popular";
-import SearchRoute, { loader as searchLoader } from "../routes/search";
+import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders } from "../routes/search";
+async function searchLoader(args: Parameters<typeof rawSearchLoader>[0]) {
+  return (await rawSearchLoader(args)).data;
+}
 import TagsRoute, { loader as tagsLoader } from "../routes/tags";
 import TagRoute, { loader as tagLoader } from "../routes/tag";
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as sectionLoader } from "../routes/section";
-import TopicRoute, { loader as rawTopicLoader } from "../routes/topic";
+import TopicRoute, { loader as rawTopicLoader, headers as topicHeaders } from "../routes/topic";
 async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
   const result = await rawTopicLoader(args);
   return "data" in result && "init" in result ? result.data : result;
@@ -5166,5 +5169,66 @@ describe("personal Block presentation in ordinary TopicView", () => {
     expect(document.querySelector("#post-answer button")).toBeNull();
     expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
     expect(screen.getByText("Visible answer remains.")).toBeInTheDocument();
+  });
+});
+
+
+describe("B3 public content cache policy", () => {
+  const routeHeaders = (parentCache: string) => ({
+    parentHeaders: new Headers({ "Cache-Control": parentCache, "X-Parent-Test": "retained" }),
+    loaderHeaders: new Headers(),
+    actionHeaders: new Headers(),
+    errorHeaders: undefined,
+  });
+
+  it("sets no-store on anonymous topic loader data and document responses", async () => {
+    const result = await rawTopicLoader({
+      params: { locale: "en", topicId: topic.id }, context: context(),
+    });
+    expect(result.data.topic.id).toBe(topic.id);
+    expect(new Headers(result.init.headers).get("Cache-Control")).toBe("no-store");
+
+    const headers = topicHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const action = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders: new Headers({ "Cache-Control": "private, no-store", "Retry-After": "60" }),
+    });
+    expect(action.get("Cache-Control")).toBe("private, no-store");
+    expect(action.get("Retry-After")).toBe("60");
+  });
+
+  it("returns neutral topic 404 without retaining a cacheable document", async () => {
+    const ctx = context();
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => undefined });
+    await expect(rawTopicLoader({
+      params: { locale: "en", topicId: "hidden-topic" }, context: ctx,
+    })).rejects.toMatchObject({ status: 404 });
+    const headers = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers(),
+    });
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+  });
+
+  it("sets no-store on search hits and misses in loader data and documents", async () => {
+    const hits = await rawSearchLoader({
+      request: new Request("https://forum.example/en/search?q=TypeScript"),
+      params: { locale: "en" }, context: context(),
+    });
+    expect(hits.data.results).toHaveLength(1);
+    expect(new Headers(hits.init.headers).get("Cache-Control")).toBe("no-store");
+    const misses = await rawSearchLoader({
+      request: new Request("https://forum.example/en/search?q=NoSuchTopic"),
+      params: { locale: "en" }, context: context(),
+    });
+    expect(misses.data.results).toEqual([]);
+    expect(new Headers(misses.init.headers).get("Cache-Control")).toBe("no-store");
+    const headers = searchHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
   });
 });
