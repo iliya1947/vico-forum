@@ -3542,6 +3542,23 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     )).toBeInTheDocument();
   });
 
+  it("lets a Help duplicate author submit a dispute", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-appealable" identity="user" />);
+
+    const explanation = screen.getByRole("textbox", { name: "Why is this not a duplicate?" });
+    const form = explanation.closest("form") as HTMLFormElement | null;
+    expect(form).not.toBeNull();
+    expect(form!.querySelector('input[name="expectedRelationshipId"]')).toHaveValue("help-worker-session-duplicate");
+
+    await user.type(explanation, "Different   root cause");
+    await user.click(within(form!).getByRole("button", { name: "Submit dispute" }));
+
+    expect(await screen.findByText("This duplicate status is disputed.")).toBeInTheDocument();
+    expect(screen.getByText("Different root cause")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Submit dispute" })).not.toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
