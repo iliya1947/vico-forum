@@ -2,7 +2,7 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1 through B2.3d2 author PASS. B2 race/deactivation/lock-compatibility tail author-tested at 282ca141 (87 visibility / 1576 real PG17). Final B2 candidate 778568e pending exact-head CI #44753654036; no Mira checkpoint yet.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **Whole B2 author PASS on exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` — 22/22 checks, 18/18 workflows SUCCESS; 2758 unit, 1578 real PG17, 87 visibility. Лира STOP; следующий исполнитель Мира — bounded B2 checkpoint на Draft #357.**
 
 ## Подтверждённое B2
 
@@ -27,20 +27,13 @@ Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-
 - B2.3d2 exact `19f2bdaa80b244093f37424a955a18acc3e572f9`: locked title topic gate rejects hidden; body planner pre-reads immutable post→topic, then locks topic NO KEY UPDATE before existing post UPDATE; hidden topic/post or stale membership aborts after head/task, before translation/actor/budget with full rollback. Existing accepted task execution unchanged. +3 PG regressions for Hide/Restore, pending task retention and no head/task/budget on refusal; partial test fixture `is_hidden` columns added. [CI 44746654595](https://github.com/iliya1947/vico-forum/actions/runs/44746654595) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1531 PostgreSQL17.
 - Work confined to Draft #357; no B3+.
 
-## Активный маршрут — завершить оставшийся B2 tail без микростопов
+## Текущий handoff — whole B2 author PASS, STOP Мире
 
-Continue from **B2.3e1** through the remaining B2 race/writer/deactivation/lock-compatibility scope defined by the accepted plan.
+Whole B2 implemented in stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`, base B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`. Deterministic real PostgreSQL barriers verified both orders Hide/Restore with title/body planning, replies, direct-parent replies, published edits, Complaint protected submissions, actor deactivation and FK KEY SHARE; accepted title/body translation tasks complete privately after Hide and their stored results survive Restore. No production changes after B2.3d2.
 
-Cadence:
-1. For each internal microstep, run only focused/targeted tests/checks appropriate to the changed seam.
-2. Do **not** STOP for owner continuation between B2 microsteps.
-3. Do **not** run the full repository CI after every microstep unless a concrete cross-cutting risk makes it necessary.
-4. If a real blocker, unexpected architecture/lock conflict, or plan defect appears, stop and hand it back explicitly.
-5. When the **entire bounded B2 scope** is complete, perform one author self-check and one full exact-head CI/check set, then STOP Mira for the B2 bounded checkpoint.
+[Final exact-head CI 44753654036](https://github.com/iliya1947/vico-forum/actions/runs/44753654036): **22/22 check-runs, 18/18 workflows SUCCESS; 2758/2758 unit, 1578/1578 PG17 (87/87 visibility)**. Author self-check complete. Earlier intermediate failures were corrected within test fixtures/barriers; no open B2 author finding.
 
-B2.3e1 and remaining writer/race/deactivation/lock compatibility covered by deterministic real PG lock barriers; last verified head `282ca1417e721b766e12488539a8d93dec4a1258` **PASS**: 1576/1576 PG17, 87/87 visibility, checks success. Final `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` adds title/body accepted task private execution under Hide + Restore reuse (2 PG tests). [CI 44753654036](https://github.com/iliya1947/vico-forum/actions/runs/44753654036) **pending**. No B3+ work.
-
-B2 ready for author PASS only after final exact-head CI succeeds; then STOP Mira B2 checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
+**Мира next: bounded B2 coordinator checkpoint on exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`, comparing #357 diff to B1 and accepted V4/V6 plan.** On coordinator PASS the next stacked B3 can be assigned. No B3/Stage6/other modules yet. B1/B2 Draft/unmerged, no Leva before folded final feature; service #342 never merge.
 
 ## Границы
 
