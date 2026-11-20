@@ -5297,8 +5297,10 @@ describe("B3 public source and negative-response sentinels", () => {
       targetLocale: "he", sourceLocale: "en", translatedContent: hiddenTranslation,
       provenance: { origin: "persistent_manual" },
     };
-    const readBatch = vi.fn(async (_identities: readonly { contentId: string; revisionId: string }[]) =>
-      ({ translations: [rogueTranslation] }));
+    const readBatch = vi.fn(async (identities: readonly { contentId: string; revisionId: string }[]) => {
+      void identities;
+      return { translations: [rogueTranslation] };
+    });
     const ctx = context("he", "rtl");
     ctx.set(forumReaderContext, {
       ...reader, readTopicPage: async () => ({ ...topic, posts: [hidden, visible] }),
@@ -5338,7 +5340,7 @@ describe("B3 public source and negative-response sentinels", () => {
 
   it("gives missing and hidden topics the same neutral 404 before translations or metadata", async () => {
     const ctx = context("he", "rtl");
-    const readTopicPage = vi.fn(async (_id: string) => undefined);
+    const readTopicPage = vi.fn(async () => undefined);
     const registry = vi.fn(async () => ({
       registry: localeRegistry, semanticIdentity: "test",
       health: { status: "healthy" as const },
@@ -5423,8 +5425,8 @@ describe("B3 public document error and metadata sentinels", () => {
   it("renders identical neutral 404 HTML for hidden and absent topics and a hidden-only tag", async () => {
     const secret = "B3_SECRET_HIDDEN_TITLE_IN_URL_7331";
     const ctx = context("en", "ltr");
-    const readTopicPage = vi.fn(async (_id: string) => undefined);
-    const readTag = vi.fn(async (_key: string) => undefined);
+    const readTopicPage = vi.fn(async () => undefined);
+    const readTag = vi.fn(async () => undefined);
     ctx.set(forumReaderContext, { ...reader, readTopicPage, readTag });
 
     const snapshots: string[] = [];
