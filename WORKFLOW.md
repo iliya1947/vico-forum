@@ -26,7 +26,9 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 **B2.3c3e author PASS** — `removeHelpDuplicate` reads immutable active relationship identity before locks, locks duplicate+canonical original topics in ID order, denies hidden/missing topic before relationship/appeal/actor/History changes, then revalidates relationship identity under lock. Two PG regressions verify both lock orders, hidden duplicate/original, moderator/Owner, preserved appeal/History and Restore. Exact `d51659b01db7b3c55111616010f760ed5e3b9b6d`; [CI 44726577837](https://github.com/iliya1947/vico-forum/actions/runs/44726577837): **22/22 checks, 18/18 workflows, 2758/2758 unit, 1522/1522 PostgreSQL17 (36/36 visibility) SUCCESS**.
 
-**Лира STOP перед B2.3c3f.** Next owner continuation: `appealHelpDuplicate` visibility handling, respecting existing protected appeal exceptions. Whole B2 incomplete, no Mira checkpoint; B1/B2 Draft/unmerged, no B3+.
+**B2.3c3f author PASS** — V6 protected own-appeal exception confirmed: `appealHelpDuplicate` legitimately permits author-only exact active relationship appeal when duplicate and/or canonical original is hidden. No production code change required. +2 real PG regressions for hidden candidate/original, author-only, stale expected ID, pending uniqueness, retained link/History and Restore. Exact `86ac06b7a9c71e285b5efe258701866419d112a4`; [CI 44737362429](https://github.com/iliya1947/vico-forum/actions/runs/44737362429): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1524/1524 PG17 (38/38 visibility)**.
+
+**Лира STOP перед B2.3c3g.** Next owner continuation only: `resolveHelpDuplicateAppeal` visibility admission (accepted and rejected outcomes), inspect protected appeal exception vs administrative decision semantics before modification. Whole B2 incomplete, no Mira checkpoint; B1/B2 Draft/unmerged, no B3+.
 
 ## Baseline
 
@@ -50,7 +52,7 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e author PASS
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f author PASS
 
 - B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
 - B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
@@ -75,8 +77,10 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 - [Exact-head CI 44721618584](https://github.com/iliya1947/vico-forum/actions/runs/44721618584): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS; 2758/2758 unit, 1520/1520 PG17 (34/34 visibility)**.
 - B2.3c3e exact `d51659b01db7b3c55111616010f760ed5e3b9b6d`: `removeHelpDuplicate` pre-reads immutable active original identity, takes sorted duplicate/original topic NO KEY UPDATE locks and denies hidden before relationship/appeal/actor/History; rechecks active relation identity under lock to prevent stale pre-read effects. +2 real PG tests for both topic lock orders, hidden duplicate/original, pending appeal/History preservation, Restore and stale-repeat conflict. Only `db/forum-repository.ts` and `tests/database/moderation-visibility-commands.test.ts`.
 - [Exact-head CI 44726577837](https://github.com/iliya1947/vico-forum/actions/runs/44726577837): **22/22 checks SUCCESS, 18/18 workflows SUCCESS; 2758/2758 unit and 1522/1522 PostgreSQL17 (36/36 visibility)**.
-- B2 remaining: B2.3c3f `appealHelpDuplicate` visibility handling (preserve explicit protected appeal exceptions), then duplicate appeal resolution, recovery/planning and real PG two-order races and deactivation/lock compatibility. Whole B2 not complete.
-- **B2.3c3e author PASS / Lira STOP before B2.3c3f.** Continue only on owner command. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; no Leva until folded final feature. B1/B2 Draft/unmerged.
+- B2.3c3f exact `86ac06b7a9c71e285b5efe258701866419d112a4`: `appealHelpDuplicate` intentionally remains available to the authoritative author under hidden duplicate and/or original per V6 protected own-appeal exception. Current repo already checks topic membership, active relationship/exact expected ID, pending uniqueness, author and active account. +2 real PG regressions in `tests/database/moderation-visibility-commands.test.ts`; no production code changed, no schema/lock changes.
+- [Exact-head CI 44737362429](https://github.com/iliya1947/vico-forum/actions/runs/44737362429): **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1524/1524 PG17 (38/38 visibility)**.
+- B2 remaining: B2.3c3g `resolveHelpDuplicateAppeal` visibility admission, then recovery/planning and real PG two-order races and deactivation/lock compatibility. Whole B2 not complete.
+- **B2.3c3f author PASS / Lira STOP before B2.3c3g.** Continue only on owner command. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; no Leva until folded final feature. B1/B2 Draft/unmerged.
 
 ## Process follow-up
 
