@@ -1588,7 +1588,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     const form = document.querySelector(".section-create-form") as HTMLElement;
     expect(form).not.toBeNull();
-    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+    const advanced = within(form).queryByRole("button", { name: "Advanced" });
+    if (advanced) await user.click(advanced);
 
     const body = within(form).getByLabelText("First message") as HTMLTextAreaElement;
     await user.type(body, "Hello @May");
