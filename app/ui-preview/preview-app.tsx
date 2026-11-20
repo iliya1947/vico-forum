@@ -5085,7 +5085,7 @@ function previewSectionWithInteractions(
       authorName: topic.authorName,
       postCount: 1 + (interactions.replies.get(topic.id)?.length ?? 0),
       createdAt: topic.createdAt,
-      isPinned: false,
+      isPinned: interactions.topicOverrides.get(topic.id)?.isPinned ?? false,
       tags: topic.tags,
       title: currentTitle(topic.id, {
         id: `${topic.id}-title-r1`,
@@ -5097,6 +5097,7 @@ function previewSectionWithInteractions(
     ...topic,
     title: currentTitle(topic.id, topic.title),
     postCount: topic.postCount + (interactions.replies.get(topic.id)?.length ?? 0),
+    isPinned: interactions.topicOverrides.get(topic.id)?.isPinned ?? topic.isPinned,
   }));
   return { ...base, topics: [...created, ...existing] };
 }
