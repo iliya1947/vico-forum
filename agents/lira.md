@@ -8,8 +8,8 @@ Moderation visibility B2 started after Mira **B1 PASS**. Draft [#357](https://gi
 
 - Added transaction-owned `appendVisibilityHistory`: ID-only label, no source title/body read, shared History ordering lock, typed topic/post context and reason; no B2 public route.
 - New PG test: typed topic/post neutral labels, required reason rejection, rollback. PostgreSQL17 full suite 1486/1486 PASS (3/3 new), 111 test files.
-- Initial exact-head unit `checks` FAIL from unrelated content-generation-navigation waitFor assertion. Rerun of **only checks** started on unchanged SHA; result unverified at handoff. Verify rerun outcome before declaring B2.1 complete.
-- Next small slice when authorized after B2.1: B2 desired-state transactional commands, fresh actor/capability/AP-10 checks and current revision/version CAS. Stay inside B2; no B3+ read/UI.
+- Initial exact-head unit `checks` FAIL from unrelated content-generation-navigation waitFor assertion. Rerun of **only checks** on unchanged SHA passed 2758/2758; database 1486/1486, final 6/6 check-runs and 5/5 workflows SUCCESS. B2.1 author PASS; nonrelated test was unchanged.
+- Лира STOP after B2.1. Next small slice only on owner continuation: B2 desired-state transactional commands, fresh actor/capability/AP-10 checks and current revision/version CAS. Stay inside B2; no B3+ read/UI.
 
 ## Workflow
 
