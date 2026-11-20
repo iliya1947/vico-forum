@@ -60,6 +60,7 @@ async function unreadLoader(args: Parameters<typeof rawUnreadLoader>[0]) {
   return (await rawUnreadLoader(args)).data;
 }
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
+import { ForumRouteError } from "./ui";
 import SectionRoute, { loader as rawSectionLoader, headers as sectionHeaders } from "../routes/section";
 async function sectionLoader(args: Parameters<typeof rawSectionLoader>[0]) {
   return (await rawSectionLoader(args)).data;
@@ -5368,6 +5369,53 @@ describe("B3 public source and negative-response sentinels", () => {
       errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
     });
     expect(documentHeaders.get("Cache-Control")).toBe("no-store");
+  });
+});
+
+describe("B3 neutral public document-error presentation", () => {
+  it.each([
+    { status: 404, expected: "Forum page not found" },
+    { status: 503, expected: "Service temporarily unavailable" },
+  ])("hides raw title, body and revision in a mounted $status boundary", async ({ status, expected }) => {
+    const secrets = [
+      "B3_SECRET_ERROR_TITLE_6240",
+      "B3_SECRET_ERROR_BODY_6240",
+      "B3_SECRET_ERROR_REVISION_6240",
+    ];
+    const raw = secrets.join(" ");
+    const response = new Response(raw, {
+      status,
+      headers: { "X-Hidden-Metadata": raw, "Cache-Control": "public, max-age=3600" },
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "/:locale/topics/:topicId",
+      Component: TopicRoute,
+      loader: async () => { throw response; },
+      ErrorBoundary: ForumRouteError,
+    }], { initialEntries: ["/en/topics/b3-hidden-6240"] });
+
+    const rendered = render(
+      <I18nextProvider i18n={runtime("en", "ltr")}>
+        <HeaderAuthProvider initialUser={null}>
+          <RouterProvider router={router} />
+        </HeaderAuthProvider>
+      </I18nextProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: expected })).toBeInTheDocument();
+    expect(rendered.container.querySelector("[data-status]")).toHaveAttribute("data-status", String(status));
+    for (const secret of secrets) expect(rendered.container.innerHTML).not.toContain(secret);
+    expect(rendered.container.innerHTML).not.toContain("X-Hidden-Metadata");
+    expect(screen.queryByText(raw)).not.toBeInTheDocument();
+
+    const documentHeaders = topicHeaders({
+      parentHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+      loaderHeaders: new Headers(),
+      actionHeaders: new Headers(),
+      errorHeaders: response.headers,
+    });
+    expect(documentHeaders.get("Cache-Control")).toBe("no-store");
+    expect(documentHeaders.get("X-Hidden-Metadata")).toBeNull();
   });
 });
 
