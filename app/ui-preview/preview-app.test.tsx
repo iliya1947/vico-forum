@@ -1582,6 +1582,26 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(document.querySelector("#post-question .topic-message-edited")).toBeNull();
   });
 
+  it("suggests and inserts mentions through the static preview lookup", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
+
+    const form = document.querySelector(".section-create-form") as HTMLElement;
+    expect(form).not.toBeNull();
+    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+
+    const body = within(form).getByLabelText("First message") as HTMLTextAreaElement;
+    await user.type(body, "Hello @May");
+
+    const suggestions = await screen.findByRole("group", { name: "Mention a member" });
+    const maya = within(suggestions).getByRole("button", { name: "Maya Cohen" });
+    expect(within(suggestions).queryByRole("button", { name: "Sam Chen" })).not.toBeInTheDocument();
+
+    await user.click(maya);
+    expect(body).toHaveValue("Hello [Maya Cohen](/en/users/maya)");
+    expect(screen.queryByRole("group", { name: "Mention a member" })).not.toBeInTheDocument();
+  });
+
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
