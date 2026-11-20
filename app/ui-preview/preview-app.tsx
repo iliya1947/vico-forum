@@ -4362,22 +4362,59 @@ async function previewTopicAction(
   }
 
   if (intent === "readPostHistory") {
-    if (scenario.identity !== "manager") return { error: "forbidden" };
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const actorExpectation = String(form.get("editorActorId") ?? "").trim();
     const postId = String(form.get("postId") ?? "").trim();
-    const page = primaryTopicScenarioData(scenario).topic;
-    const post = page.id === routeTopicId ? page.posts.find((candidate) => candidate.id === postId) : undefined;
-    if (!post) return { error: "notFound" };
-    return {
-      operation: "postHistory" as const,
-      postId,
-      revisions: [{
-        id: post.body.id,
-        authorName: post.authorName,
-        originalContent: post.body.originalContent,
-        sourceLocale: interactions.postSourceLocales.get(post.id) ?? post.body.sourceLocale,
-        createdAt: post.createdAt.toISOString(),
-      }],
+    if (!postId) return { error: "invalid" as const };
+    if (actorExpectation && actorExpectation !== actor.id) return { error: "conflict" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    const currentPost = currentPage?.topic.posts.find((candidate) => candidate.id === postId);
+    if (!currentPost) return { error: "notFound" as const };
+
+    const baselineInteractions: PreviewInteractionState = {
+      ...interactions,
+      postEdits: new Map(),
+      postSourceLocales: new Map(),
     };
+    const baselinePost = previewAdminTopicData(scenario, baselineInteractions, routeTopicId)
+      ?.topic.posts.find((candidate) => candidate.id === postId);
+    if (!baselinePost) return { error: "notFound" as const };
+
+    const edits = interactions.postEdits.get(postId) ?? [];
+    const correctedCurrentLocale = interactions.postSourceLocales.get(postId);
+    const revisions = [
+      ...edits.map((edit, index) => ({
+        id: edit.id,
+        authorId: currentPost.authorId,
+        authorName: currentPost.authorName,
+        ...("authorIdentityKind" in currentPost && currentPost.authorIdentityKind === "deleted"
+          ? { authorIdentityKind: "deleted" as const }
+          : {}),
+        originalContent: edit.originalContent,
+        sourceLocale: index === edits.length - 1
+          ? correctedCurrentLocale ?? edit.sourceLocale
+          : edit.sourceLocale,
+        createdAt: edit.editedAt.toISOString(),
+      })).reverse(),
+      {
+        id: baselinePost.body.id,
+        authorId: baselinePost.authorId,
+        authorName: baselinePost.authorName,
+        ...("authorIdentityKind" in baselinePost && baselinePost.authorIdentityKind === "deleted"
+          ? { authorIdentityKind: "deleted" as const }
+          : {}),
+        originalContent: baselinePost.body.originalContent,
+        sourceLocale: edits.length === 0
+          ? correctedCurrentLocale ?? baselinePost.body.sourceLocale
+          : baselinePost.body.sourceLocale,
+        createdAt: baselinePost.createdAt.toISOString(),
+      },
+    ];
+
+    return { operation: "postHistory" as const, postId, revisions };
   }
 
   if (intent === "selectBestAnswer" || intent === "markSolved") {
@@ -4731,6 +4768,7 @@ function previewCreatedTopicData(
     canReply: scenario.identity !== "guest",
     canSubmitComplaint: scenario.identity !== "guest",
     editablePostIds: previewEditablePostIds(scenario, topic),
+    canReadPostHistory: scenario.identity === "manager" || scenario.identity === "owner",
     canManageSolution: scenario.identity !== "guest",
     canConfirmOwnSolution: scenario.identity !== "guest",
     canEditOwnTitle: previewUser(scenario)?.id === topic.authorId,
@@ -7211,6 +7249,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         generationUnits={[]}
         canReply={scenario.identity !== "guest"}
         canSubmitComplaint={scenario.identity !== "guest"}
+        canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7384,6 +7423,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
       canSubmitComplaint={scenario.identity !== "guest"}
+      canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageSolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canModerateHelpSolution={false}
@@ -7774,6 +7814,7 @@ function topicData(
       : [],
     canReply: identity !== "guest",
     canSubmitComplaint: identity !== "guest",
+    canReadPostHistory: identity === "manager" || identity === "owner",
     editablePostIds: identity === "guest"
       ? []
       : translatedTopic.posts
