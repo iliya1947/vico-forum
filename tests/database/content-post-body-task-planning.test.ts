@@ -95,6 +95,9 @@ beforeAll(async () => {
       .replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // This focused historical schema fixture predates the visibility migration.
+  await client.query("alter table forum_topics add column is_hidden boolean not null default false");
+  await client.query("alter table forum_posts add column is_hidden boolean not null default false");
 });
 
 beforeEach(async () => {
@@ -1403,6 +1406,65 @@ describe("content post-body durable planning", () => {
     expect(deleted.rows[0]?.count).toBe(0);
   });
 });
+
+
+describe("visibility-gated post-body planning", () => {
+  async function counts() {
+    const result = await client.query(`
+      select
+        (select count(*)::int from translation_task_generation_heads) as heads,
+        (select count(*)::int from translation_tasks) as tasks,
+        (select count(*)::int from content_translation_request_budget_counters) as budget
+    `);
+    return result.rows[0] as { heads: number; tasks: number; budget: number };
+  }
+
+  it("denies planning while parent topic is hidden and admits after Restore", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planner = createPlanner(client, enqueuer);
+    await client.query("update forum_topics set is_hidden=true where id='topic-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+    expect(await counts()).toEqual({ heads: 0, tasks: 0, budget: 0 });
+    expect(enqueuer.messages).toHaveLength(0);
+
+    await client.query("update forum_topics set is_hidden=false where id='topic-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "queued", taskCreated: true });
+    expect(await counts()).toEqual({ heads: 1, tasks: 1, budget: 2 });
+    expect(enqueuer.messages).toHaveLength(1);
+  });
+
+  it("denies hidden post planning, preserves previously planned task, then resumes after Restore", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planner = createPlanner(client, enqueuer);
+    await client.query("update forum_posts set is_hidden=true where id='post-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+    expect(await counts()).toEqual({ heads: 0, tasks: 0, budget: 0 });
+    expect(enqueuer.messages).toHaveLength(0);
+
+    await client.query("update forum_posts set is_hidden=false where id='post-a'");
+    const accepted = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
+    expect(accepted).toMatchObject({ kind: "queued", taskCreated: true });
+    const acceptedState = await counts();
+    expect(acceptedState).toEqual({ heads: 1, tasks: 1, budget: 2 });
+
+    await client.query("update forum_posts set is_hidden=true where id='post-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+    expect(await counts()).toEqual(acceptedState);
+    const rows = await client.query("select status from translation_tasks where id=$1", [accepted.kind==="queued"?accepted.task.id:""]);
+    expect(rows.rows[0]?.status).toBe("pending");
+    expect(enqueuer.messages).toHaveLength(1);
+
+    await client.query("update forum_posts set is_hidden=false where id='post-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "queued", taskCreated: false });
+    expect(enqueuer.messages).toHaveLength(2);
+  });
+});
+
 
 function createPlanner(
   connection: Client,
