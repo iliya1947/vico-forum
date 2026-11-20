@@ -164,10 +164,16 @@ describe("UI preview state catalog", () => {
     ]));
   });
 
-  it("keeps dedicated editor states for create-topic, reply, and Help draft review", () => {
+  it("keeps dedicated editor states for create-topic, reply, published edit, and Help draft review", () => {
     expect(scenarios).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "editor-create-topic", view: "section" }),
       expect.objectContaining({ id: "editor-reply", view: "topic" }),
+      expect.objectContaining({
+        id: "editor-published-post",
+        view: "topic",
+        path: "/en/posts/question/edit",
+        allowedIdentities: ["user"],
+      }),
       expect.objectContaining({
         id: "editor-help-draft",
         view: "category",
@@ -1526,6 +1532,53 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Edited preview topic title" })).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
+  });
+
+  it("edits only the authenticated author's own published post in the preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    const question = document.querySelector("#post-question") as HTMLElement;
+    const followup = document.querySelector("#post-followup") as HTMLElement;
+    const answer = document.querySelector("#post-answer") as HTMLElement;
+    expect(question).not.toBeNull();
+    expect(followup).not.toBeNull();
+    expect(answer).not.toBeNull();
+
+    const edit = within(question).getByRole("button", { name: "Edit" });
+    expect(within(followup).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(within(answer).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+
+    await user.click(edit);
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    await user.click(within(form).getByRole("button", { name: "Advanced" }));
+    const body = form.querySelector("textarea") as HTMLTextAreaElement;
+    expect(body).toHaveValue("I want strong typing without coupling the whole app to one HTTP library.");
+
+    fireEvent.change(body, { target: { value: "Edited preview published post." } });
+    const save = within(form).getByRole("button", { name: "Save changes" });
+    await waitFor(() => expect(save).toBeEnabled());
+    await user.click(save);
+
+    expect(await screen.findByText("Edited preview published post.")).toBeInTheDocument();
+    await waitFor(() => expect(form.isConnected).toBe(false));
+    expect(document.querySelector("#post-question .topic-message-edited")).not.toBeNull();
+    expect(within(document.querySelector("#post-question") as HTMLElement)
+      .getByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
+
+  it("opens the own published-post editor through the direct edit route and cancels without publishing", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="editor-published-post" identity="user" />);
+
+    const form = await screen.findByRole("form", { name: "Edit published message" });
+    expect(document.querySelector("#post-question")).not.toBeNull();
+    expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
+
+    await user.click(within(form).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(form.isConnected).toBe(false));
+    expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
+    expect(document.querySelector("#post-question .topic-message-edited")).toBeNull();
   });
 
   it("creates a topic, posts a reply, selects it as best answer, and marks the topic solved", async () => {
