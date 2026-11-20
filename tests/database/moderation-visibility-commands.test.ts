@@ -2352,6 +2352,90 @@ describe("B3 Help attention public-safe projection", () => {
   });
 });
 
+describe("B3 retained Help duplicate appeal visibility projection", () => {
+  it("retains a protected pending appeal with hidden current titles redacted and resolves it", async () => {
+    const duplicate=await fixture(
+      "B3_APPEAL_DUPLICATE_BODY_6132", "B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const original=await fixture(
+      "B3_APPEAL_ORIGINAL_BODY_6132", "B3_APPEAL_SECRET_ORIGINAL_TITLE_6132",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    await service.confirmHelpDuplicate(duplicate.topicId,original.topicId,"owner");
+    const relation=await client.query<{id:string}>(
+      "select id from forum_help_duplicate_relationships where duplicate_topic_id=$1 and removed_at is null",
+      [duplicate.topicId],
+    );
+    const relationshipId=relation.rows[0]?.id;
+    if (!relationshipId) throw new Error("missing confirmed duplicate relationship");
+    await service.appealHelpDuplicate(duplicate.topicId,"author","Retained appeal explanation",relationshipId);
+    const appeal=await client.query<{id:string}>(
+      "select id from forum_help_duplicate_appeals where relationship_id=$1 and status='pending'",
+      [relationshipId],
+    );
+    const appealId=appeal.rows[0]?.id;
+    if (!appealId) throw new Error("missing pending appeal");
+
+    const visibility={signalKinds:[] as const,appeals:true};
+    const count=async()=>(await repository.readHelpAttentionCounts(visibility)).appeals;
+    const findCase=async()=>{
+      for(let page=0;page<100;page++){
+        const result=await repository.readHelpAttentionCases("appeals",visibility,page);
+        const item=result.cases.find(item=>item.id===appealId);
+        if(item)return item;
+        if(!result.hasMore)break;
+      }
+      throw new Error("pending appeal missing from retained Attention queue");
+    };
+    const initialCount=await count();
+    expect(await findCase()).toMatchObject({
+      id:appealId,topicId:duplicate.topicId,
+      topicTitle:"B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      original:{id:original.topicId,title:"B3_APPEAL_SECRET_ORIGINAL_TITLE_6132"},
+    });
+
+    await service.setTopicVisibility(topicCommand(original));
+    const hiddenOriginal=await findCase();
+    expect(hiddenOriginal.original).toBeNull();
+    expect(hiddenOriginal.topicTitle).toBe("B3_APPEAL_SECRET_DUPLICATE_TITLE_6132");
+    expect(JSON.stringify(hiddenOriginal)).not.toContain("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(JSON.stringify(hiddenOriginal)).not.toContain(original.topicId);
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(duplicate));
+    const bothHidden=await findCase();
+    expect(bothHidden).toMatchObject({
+      id:appealId,topicId:duplicate.topicId,
+      topicTitle:"",topicUnavailable:true,original:null,
+    });
+    expect(JSON.stringify(bothHidden)).not.toContain("B3_APPEAL_SECRET_DUPLICATE_TITLE_6132");
+    expect(JSON.stringify(bothHidden)).not.toContain("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(JSON.stringify(bothHidden)).not.toContain(original.topicId);
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore original"));
+    const restoredOriginal=await findCase();
+    expect(restoredOriginal.original?.title).toBe("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(restoredOriginal.topicUnavailable).toBe(true);
+    expect(restoredOriginal.topicTitle).toBe("");
+    await service.setTopicVisibility(topicCommand(duplicate,"moderator1",false,1,"Restore duplicate"));
+    expect(await findCase()).toMatchObject({
+      topicTitle:"B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      original:{id:original.topicId,title:"B3_APPEAL_SECRET_ORIGINAL_TITLE_6132"},
+    });
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(duplicate,"moderator1",true,2,"Hide duplicate for resolution"));
+    await service.resolveHelpDuplicateAppeal(duplicate.topicId,"moderator1","rejected",appealId);
+    expect(await count()).toBe(initialCount-1);
+    const resolved=await client.query<{status:string}>(
+      "select status from forum_help_duplicate_appeals where id=$1",[appealId],
+    );
+    expect(resolved.rows[0]?.status).toBe("rejected");
+  });
+});
+
 describe("B3 public visibility projection and leak-safe discovery", () => {
   it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
     const f=await fixture(
