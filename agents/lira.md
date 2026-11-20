@@ -24,11 +24,12 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Cadence
 
-- Work through related internal B3 microsteps continuously.
-- Use targeted checks while iterating.
-- No routine owner STOP or full repository CI after each internal microstep.
-- Stop early only for a real blocker, contradictory source-of-truth, or technical-plan defect.
-- When the entire bounded B3 scope is complete: author self-check + one full exact-head CI/check set → STOP Mira for B3 checkpoint.
+- Work continuously only across implementation microsteps that are **inside the currently active bounded stage B3**.
+- Use targeted checks while iterating inside B3.
+- No routine owner STOP or full repository CI after each internal B3 microstep.
+- Stop early for a real blocker, contradictory source-of-truth, or technical-plan defect.
+- **Bounded-stage boundary remains mandatory:** when the entire B3 scope is complete, author self-check + one full exact-head CI/check set → STOP Mira for the B3 coordinator checkpoint. Do not begin B4 or any later bounded stage before Mira B3 PASS and a new owner continuation.
+- Do not paraphrase this rule as "no STOP between blocks"; the no-STOP rule applies only to internal microsteps within B3.
 
 ## Hard boundary
 
