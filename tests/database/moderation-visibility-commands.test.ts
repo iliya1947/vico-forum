@@ -1398,3 +1398,86 @@ describe("V4 protected duplicate appeal decisions across Hide and Restore", () =
     expect(restored.appeals).toEqual(after.appeals);
   });
 });
+
+describe("V4 published edit recovery admission after Hide", () => {
+  const edit = (f: Fixture, expectedRevisionId = f.bodyRevisionId, draftId = randomUUID(), body = "Recovered edit") => ({
+    topicId: f.topicId, postId: f.postId, actorId: "author",
+    expectedRevisionId, draftId, body, attachmentIds: [] as string[],
+  });
+  async function facts(f: Fixture) {
+    const [post, revisions, receipts, notifications] = await Promise.all([
+      client.query(
+        "select current_revision_id,is_hidden from forum_posts where id=$1", [f.postId],
+      ),
+      client.query(
+        "select id,original_content from forum_post_revisions where post_id=$1 order by created_at,id",
+        [f.postId],
+      ),
+      client.query(
+        "select owner_id,context_key,draft_id,fingerprint,post_id " +
+          "from forum_publication_receipts where post_id=$1 order by draft_id", [f.postId],
+      ),
+      client.query(
+        "select id,kind from forum_reply_notifications where post_id=$1 order by id", [f.postId],
+      ),
+    ]);
+    return {
+      post: post.rows[0], revisions: revisions.rows,
+      receipts: receipts.rows, notifications: notifications.rows,
+    };
+  }
+
+  it("retains committed edit replay on hidden post, but refuses changed replay and new save until Restore", async () => {
+    const f = await fixture(), committed = edit(f, f.bodyRevisionId, randomUUID(), "Already saved");
+    await service.editPublishedPost(committed);
+    await service.setPostVisibility(postCommand(f));
+    const hidden = await facts(f);
+
+    await service.editPublishedPost(committed);
+    expect(await facts(f)).toEqual(hidden);
+    await expect(service.editPublishedPost({ ...committed, body: "Changed after commit" }))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await facts(f)).toEqual(hidden);
+    const newSave = edit(f, hidden.post.current_revision_id, randomUUID(), "Fresh save");
+    await expect(service.editPublishedPost(newSave))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(hidden);
+
+    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Restore post"));
+    await service.editPublishedPost(newSave);
+    const restored = await facts(f);
+    expect(restored.revisions).toHaveLength(hidden.revisions.length + 1);
+    expect(restored.receipts).toHaveLength(hidden.receipts.length + 1);
+    expect(restored.post.current_revision_id).not.toBe(hidden.post.current_revision_id);
+    expect(restored.notifications).toEqual(hidden.notifications);
+  });
+
+  it("never rebases a stale published edit while topic hidden; Restore keeps normal CAS", async () => {
+    const f = await fixture();
+    const concurrent = edit(f, f.bodyRevisionId, randomUUID(), "Someone saved first");
+    await service.editPublishedPost(concurrent);
+    const committed = await facts(f);
+    const stale = edit(f, f.bodyRevisionId, randomUUID(), "Conflicted user buffer");
+    await expect(service.editPublishedPost(stale))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await facts(f)).toEqual(committed);
+
+    await service.setTopicVisibility(topicCommand(f));
+    const hidden = await facts(f);
+    await expect(service.editPublishedPost(stale))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    const rebased = edit(f, committed.post.current_revision_id, randomUUID(), "Rebased user buffer");
+    await expect(service.editPublishedPost(rebased))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await facts(f)).toEqual(hidden);
+
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore topic"));
+    await expect(service.editPublishedPost(stale))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    await service.editPublishedPost(rebased);
+    const recovered = await facts(f);
+    expect(recovered.revisions).toHaveLength(hidden.revisions.length + 1);
+    expect(recovered.receipts).toHaveLength(hidden.receipts.length + 1);
+    expect(recovered.post.current_revision_id).not.toBe(committed.post.current_revision_id);
+  });
+});
