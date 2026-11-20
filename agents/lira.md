@@ -24,11 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `a86cf854cfbe51696f17dacc6b74094a55cf57fc`, B2 base unchanged, B3 partial.
-- Current two-microstep B3 batch: Unread route now returns `private, no-store` on authenticated loader/data/document and 401/503 negative responses; one focused `public-read.test.tsx` regression verifies guest no-reader, success and outage boundaries; direct-call test adapter unwraps `data()`.
-- Profile route has already-correct private no-store headers on successful and error/action paths; no changes made. Unread SQL still uses existing hidden-content predicate.
-- **14/14 static contract checks PASS** at exact head; **Vitest/HTTP/PG execution unverified** (no local runtime). Do not assert a runtime PASS.
-- Next `...`: one 2–3 related microstep B3 package (leak sentinels/remaining aliases, root-parent/unread boundary), available targeted checks, update #342 and STOP. Do not open GitHub Actions/CI until **entire** B3 ready; no B4/Mira/merge.
+- Active stacked Draft #359 exact `353837590bf4f585bd3d0856400b01bdcdc808cf`, B2 base unchanged; B3 remains partial.
+- Latest B3 **two-test-only** batch: PostgreSQL regression for hidden intermediate parent with visible descendant and chronology, sanitized DTO, denied hidden post/history/location, Unread 2→1 and no false unread after advance-marker/Restore; React public-read regression for stable numbered HTML tombstone, parent/descendant anchors and absence of Reveal/hidden author/action controls.
+- **17/17 static source-contract checks PASS**, but **PostgreSQL/Vitest/HTTP execution unverified** due to unavailable local checkout/test runtime; do not claim runtime PASS. No production code/schema changes.
+- Next owner `...`: a small 2–3-related-microstep B3 batch addressing remaining public projection/response leaks or discovery boundaries; targeted checks and #342 handoff, then STOP. Never open GitHub Actions/CI until entire B3 complete; no B4/Mira/merge.
 
 ## Cadence
 
