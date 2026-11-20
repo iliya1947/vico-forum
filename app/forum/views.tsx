@@ -2690,9 +2690,11 @@ export function TopicView({
               <strong>{t("helpDuplicateBadge")}</strong>
               <span>
                 {t("helpDuplicateOf")}{" "}
-                <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
-                  {topic.duplicateOf.title}
-                </Link>
+                {topic.duplicateOf.unavailable
+                  ? <span>{t("helpDuplicateOriginalUnavailable")}</span>
+                  : <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
+                      {topic.duplicateOf.title}
+                    </Link>}
               </span>
               {canManageHelpDuplicate && topic.duplicateDisputed ? (
                 <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>

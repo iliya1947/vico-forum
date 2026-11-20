@@ -1573,6 +1573,7 @@ export const canonicalEnglishCatalog = {
     topicsEmpty: message("topicsEmpty", "There are no topics in this section yet.", "Empty topic list message."),
     postsEmpty: message("postsEmpty", "There are no messages in this topic yet.", "Empty post list message."),
     moderationHiddenPostNotice: message("moderationHiddenPostNotice", "This message is unavailable.", "Notice for a moderation-hidden post tombstone; no hidden source or reveal controls."),
+    helpDuplicateOriginalUnavailable: message("helpDuplicateOriginalUnavailable", "Original topic unavailable", "Neutral unavailable original topic in a retained Help duplicate relationship; no link or hidden title."),
     breadcrumbsLabel: message("breadcrumbsLabel", "Breadcrumbs", "Accessible label for forum breadcrumbs."),
     categoryLabel: message("categoryLabel", "Category", "Category page type label."),
     sectionLabel: message("sectionLabel", "Section", "Section page type label."),
