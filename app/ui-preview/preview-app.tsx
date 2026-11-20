@@ -203,12 +203,12 @@ export const scenarios: readonly Scenario[] = [
   { id: "help-solutions-for-me-guest", label: "Help & solutions · For me · unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=for-me", view: "category", allowedIdentities: ["guest"] },
   { id: "help-solutions-active", label: "Help & solutions · Active", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category" },
   { id: "help-solutions-active-empty", label: "Help & solutions · Active · empty", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active", view: "category", variant: "help-solutions-active-empty" },
-  { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager"] },
+  { id: "attention-signals", label: "Moderation · Signals", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["manager", "owner"] },
   { id: "attention-guest-unauthenticated", label: "Moderation · guest unauthenticated", locale: "en", direction: "ltr", identity: "guest", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["guest"] },
   { id: "attention-user-forbidden", label: "Moderation · ordinary user forbidden", locale: "en", direction: "ltr", identity: "user", path: "/en/attention?mode=signals", view: "attention", allowedIdentities: ["user"] },
   { id: "attention-complaints", label: "Moderation · Complaints queue", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=complaints", view: "attention", allowedIdentities: ["manager", "owner"] },
-  { id: "attention-security", label: "Moderation · Security attachments", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager"] },
-  { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager"] },
+  { id: "attention-security", label: "Moderation · Security attachments", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=security", view: "attention", allowedIdentities: ["manager", "owner"] },
+  { id: "attention-empty", label: "Moderation · Signals · empty", locale: "en", direction: "ltr", identity: "manager", path: "/en/attention?mode=signals", view: "attention", variant: "attention-empty", allowedIdentities: ["manager", "owner"] },
   { id: "help-solutions-solutions", label: "Help & solutions · Solutions", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=solutions", view: "category" },
   { id: "help-solutions-filters", label: "Help & solutions · Combined filters", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?mode=active&solution=outdated&answers=has&quality=normal&relation=standalone", view: "category" },
   { id: "help-solutions-filters-needs-details", label: "Help & solutions · Needs details filter", locale: "en", direction: "ltr", identity: "guest", path: "/en/categories/help-solutions?answers=has&quality=needs-details&relation=standalone", view: "category" },
@@ -4631,7 +4631,7 @@ async function previewAttentionAction(
   interactions: PreviewInteractionState,
   request: Request,
 ) {
-  if (scenario.identity !== "manager") return null;
+  if (scenario.identity !== "manager" && scenario.identity !== "owner") return null;
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
   const caseId = String(form.get("caseId") ?? "");

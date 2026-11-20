@@ -3334,6 +3334,32 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("link", { name: "Appeals (0)" })).toBeInTheDocument();
   });
 
+  it("lets the bound Owner use Help moderation and Security Attention surfaces", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="owner" />);
+
+    expect(screen.getByText("#signal-142")).toBeInTheDocument();
+    await owner.click(screen.getByRole("button", { name: "Accept signal" }));
+    await waitFor(() => expect(screen.queryByText("#signal-142")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "Needs details (0)" })).toBeInTheDocument();
+
+    await owner.click(screen.getByRole("link", { name: "Appeals (1)" }));
+    expect(await screen.findByText("#appeal-146")).toBeInTheDocument();
+    await owner.click(screen.getByRole("button", { name: "Reject dispute" }));
+    await waitFor(() => expect(screen.queryByText("#appeal-146")).not.toBeInTheDocument());
+
+    cleanup();
+
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-security" identity="owner" />);
+    const event = await waitFor(() => {
+      const current = document.querySelector(".attention-security-attachment-event") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    expect(event).toHaveTextContent("diagnostics.zip");
+    expect(event).toHaveTextContent("executable-signature");
+  });
+
   it("runs admin topic quick actions and keeps their local state", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="admin-topic" identity="manager" />);
