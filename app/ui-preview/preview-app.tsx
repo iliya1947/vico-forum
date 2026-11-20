@@ -5194,6 +5194,111 @@ function previewCategory(locale: PreviewLocale, routeCategoryId: string | undefi
   };
 }
 
+function previewCategoryWithInteractions(
+  locale: PreviewLocale,
+  routeCategoryId: string | undefined,
+  interactions: PreviewInteractionState,
+) {
+  const base = previewCategory(locale, routeCategoryId);
+
+  return {
+    ...base,
+    sections: base.sections.map((sectionSummary) => {
+      const sectionPage = previewSection(locale, sectionSummary.id);
+      const existingById = new Map(sectionPage.topics.map((topic) => [topic.id, topic]));
+      const created = [...interactions.createdTopics.values()]
+        .filter((topic) => topic.sectionId === sectionSummary.id);
+      const topicIds = new Set([...existingById.keys(), ...created.map((topic) => topic.id)]);
+      const replyCount = [...interactions.replies.entries()]
+        .filter(([candidateId]) => topicIds.has(candidateId))
+        .reduce((sum, [, replies]) => sum + replies.length, 0);
+
+      const currentTitle = (topicIdValue: string, fallback: string) =>
+        interactions.topicTitleEdits.get(topicIdValue)?.originalContent ?? fallback;
+      const latestReplyAt = (topicIdValue: string) =>
+        interactions.replies.get(topicIdValue)?.at(-1)?.createdAt ?? null;
+
+      const latestById = new Map(sectionSummary.latestTopics.map((topic) => [
+        topic.id,
+        {
+          ...topic,
+          title: currentTitle(topic.id, topic.title),
+          activityAt: (latestReplyAt(topic.id) ?? new Date(topic.activityAt)).toISOString(),
+        },
+      ]));
+
+      for (const [topicIdValue, topic] of existingById) {
+        const replyAt = latestReplyAt(topicIdValue);
+        if (!replyAt) continue;
+        latestById.set(topicIdValue, {
+          id: topicIdValue,
+          title: currentTitle(topicIdValue, topic.title.originalContent),
+          authorName: topic.authorName,
+          activityAt: replyAt.toISOString(),
+        });
+      }
+
+      for (const topic of created) {
+        latestById.set(topic.id, {
+          id: topic.id,
+          title: currentTitle(topic.id, topic.title),
+          authorName: topic.authorName,
+          activityAt: (latestReplyAt(topic.id) ?? topic.createdAt).toISOString(),
+        });
+      }
+
+      const latestTopics = [...latestById.values()]
+        .sort((left, right) =>
+          new Date(right.activityAt).getTime() - new Date(left.activityAt).getTime()
+          || (right.id < left.id ? -1 : right.id > left.id ? 1 : 0)
+        )
+        .slice(0, 6);
+
+      const pinnedTopics = sectionSummary.pinnedTopics
+        .filter((topic) => interactions.topicOverrides.get(topic.id)?.isPinned !== false)
+        .map((topic) => ({
+          ...topic,
+          title: currentTitle(topic.id, topic.title),
+          activityAt: (latestReplyAt(topic.id) ?? new Date(topic.activityAt)).toISOString(),
+        }));
+
+      const pinnedIds = new Set(pinnedTopics.map((topic) => topic.id));
+      const pinCandidates = [
+        ...sectionPage.topics.map((topic) => ({
+          id: topic.id,
+          title: topic.title.originalContent,
+          authorName: topic.authorName,
+          createdAt: topic.createdAt,
+        })),
+        ...created.map((topic) => ({
+          id: topic.id,
+          title: topic.title,
+          authorName: topic.authorName,
+          createdAt: topic.createdAt,
+        })),
+      ];
+      for (const topic of pinCandidates) {
+        if (pinnedIds.has(topic.id) || interactions.topicOverrides.get(topic.id)?.isPinned !== true) continue;
+        pinnedTopics.unshift({
+          id: topic.id,
+          title: currentTitle(topic.id, topic.title),
+          authorName: topic.authorName,
+          activityAt: (latestReplyAt(topic.id) ?? topic.createdAt).toISOString(),
+        });
+        pinnedIds.add(topic.id);
+      }
+
+      return {
+        ...sectionSummary,
+        topicCount: sectionSummary.topicCount + created.length,
+        postCount: sectionSummary.postCount + created.length + replyCount,
+        latestTopics,
+        pinnedTopics,
+      };
+    }),
+  };
+}
+
 
 function previewAttentionSamples() {
   return [
@@ -6275,7 +6380,11 @@ function PreviewCategoryRoute({ scenario, interactions }: {
     );
   }
 
-  const baseCategoryPage = previewCategory(scenario.locale, routeCategoryId);
+  const baseCategoryPage = previewCategoryWithInteractions(
+    scenario.locale,
+    routeCategoryId,
+    interactions,
+  );
   const categoryPage = scenario.variant === "category-no-pins"
     ? {
         ...baseCategoryPage,
