@@ -5193,7 +5193,7 @@ describe("personal Block presentation in ordinary TopicView", () => {
   });
   it("renders a hidden middle parent with stable message numbers and bidirectional descendant anchors", async () => {
     const root = {
-      ...topic.posts[0]!, id: "tree-root", parentPostId: null,
+      ...topic.posts[0]!, id: "tree-root", authorId: "ada", authorName: "Ada", parentPostId: null,
       body: { id: "tree-root-revision", originalContent: "Visible root remains.", sourceLocale: "en" },
     };
     const hiddenMiddle = {
@@ -5201,7 +5201,7 @@ describe("personal Block presentation in ordinary TopicView", () => {
       parentPostId: "tree-root", createdAt: new Date("2026-01-03"),
     };
     const child = {
-      ...topic.posts[0]!, id: "tree-leaf", parentPostId: "tree-middle",
+      ...topic.posts[0]!, id: "tree-leaf", authorId: "ada", authorName: "Ada", parentPostId: "tree-middle",
       body: { id: "tree-leaf-revision", originalContent: "Visible descendant remains.", sourceLocale: "en" },
     };
     const page: ForumTopicPage = {
