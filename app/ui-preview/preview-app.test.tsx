@@ -3362,6 +3362,43 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByRole("button", { name: "Close topic" })).toBeInTheDocument();
   });
 
+  it("lets the bound Owner correct topic and post source language", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
+
+    let topicSummary = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(topicSummary).not.toBeNull();
+    await owner.click(topicSummary!);
+    let topicTools = within(topicSummary!.closest("details") as HTMLElement);
+
+    const titleSourceLocale = topicTools.getByRole("textbox", { name: "Correct source language" });
+    await owner.clear(titleSourceLocale);
+    await owner.type(titleSourceLocale, "he");
+    await owner.click(topicTools.getByRole("button", { name: "Correct language" }));
+
+    topicSummary = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(topicSummary).not.toBeNull();
+    const topicDetails = topicSummary!.closest("details") as HTMLDetailsElement | null;
+    expect(topicDetails).not.toBeNull();
+    if (!topicDetails!.open) await owner.click(topicSummary!);
+    topicTools = within(topicDetails!);
+    expect(await topicTools.findByText("Source language: he")).toBeInTheDocument();
+
+    const question = document.querySelector("#post-question") as HTMLElement | null;
+    expect(question).not.toBeNull();
+    const messageSummary = question!.querySelector(".message-admin-tools > summary") as HTMLElement | null;
+    expect(messageSummary).not.toBeNull();
+    await owner.click(messageSummary!);
+
+    const messageTools = within(messageSummary!.closest("details") as HTMLElement);
+    const postSourceLocale = messageTools.getByRole("textbox", { name: "Correct source language" });
+    await owner.clear(postSourceLocale);
+    await owner.type(postSourceLocale, "ru");
+    await owner.click(messageTools.getByRole("button", { name: "Correct language" }));
+
+    expect(await messageTools.findByText("Source language: ru")).toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
