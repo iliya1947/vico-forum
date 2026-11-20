@@ -1335,6 +1335,41 @@ function previewUser(scenario: Scenario): HeaderAuthUser | null {
   return { id: "alex", name: "Alex Rivera", unreadNotificationCount };
 }
 
+function previewMentionResponse(
+  scenario: Scenario,
+  input: RequestInfo | URL,
+): Response | null {
+  const rawUrl = typeof input === "string"
+    ? input
+    : input instanceof URL
+      ? input.toString()
+      : input.url;
+  const url = new URL(rawUrl, window.location.origin);
+  if (url.pathname !== `/${encodeURIComponent(scenario.locale)}/mentions`) return null;
+
+  const headers = {
+    "Cache-Control": "private, no-store",
+    "Content-Type": "application/json; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+  };
+  if (!previewUser(scenario)) {
+    return new Response(JSON.stringify({ error: "unauthenticated" }), { status: 401, headers });
+  }
+
+  const query = url.searchParams.get("q")?.trim() ?? "";
+  if (query.length > 64) {
+    return new Response(JSON.stringify({ error: "invalid" }), { status: 400, headers });
+  }
+  const foldedQuery = query.toLocaleLowerCase();
+  const users = !query ? [] : Object.entries(previewProfileNames)
+    .filter(([, name]) => name.toLocaleLowerCase().includes(foldedQuery))
+    .sort(([leftId, leftName], [rightId, rightName]) =>
+      leftName.localeCompare(rightName) || leftId.localeCompare(rightId))
+    .slice(0, 8)
+    .map(([id, name]) => ({ id, name }));
+  return new Response(JSON.stringify({ users }), { status: 200, headers });
+}
+
 function previewNotifications(locale: PreviewLocale) {
   const russian = locale === "ru";
   const hebrew = locale === "he";
@@ -1486,6 +1521,19 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     () => previewRouter(activeScenario, interactions, changePreviewLocale),
     [activeScenario, interactions, changePreviewLocale],
   );
+
+  useEffect(() => {
+    const originalFetch = globalThis.fetch;
+    const previewFetch: typeof fetch = (input, init) => {
+      const mentionResponse = previewMentionResponse(activeScenario, input);
+      if (mentionResponse) return Promise.resolve(mentionResponse);
+      return originalFetch(input, init);
+    };
+    globalThis.fetch = previewFetch;
+    return () => {
+      if (globalThis.fetch === previewFetch) globalThis.fetch = originalFetch;
+    };
+  }, [activeScenario]);
 
   useEffect(() => {
     document.documentElement.lang = activeScenario.locale;
