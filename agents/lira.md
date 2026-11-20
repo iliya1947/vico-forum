@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `353837590bf4f585bd3d0856400b01bdcdc808cf`, B2 base unchanged; B3 remains partial.
-- Latest B3 **two-test-only** batch: PostgreSQL regression for hidden intermediate parent with visible descendant and chronology, sanitized DTO, denied hidden post/history/location, Unread 2→1 and no false unread after advance-marker/Restore; React public-read regression for stable numbered HTML tombstone, parent/descendant anchors and absence of Reveal/hidden author/action controls.
-- **17/17 static source-contract checks PASS**, but **PostgreSQL/Vitest/HTTP execution unverified** due to unavailable local checkout/test runtime; do not claim runtime PASS. No production code/schema changes.
-- Next owner `...`: a small 2–3-related-microstep B3 batch addressing remaining public projection/response leaks or discovery boundaries; targeted checks and #342 handoff, then STOP. Never open GitHub Actions/CI until entire B3 complete; no B4/Mira/merge.
+- Active stacked Draft #359 exact `24163066159fddd4edb62fd6bc337e2607728d56`, B2 base unchanged; B3 incomplete.
+- Latest two-test B3 microbatch (`app/forum/public-read.test.tsx` only): (1) hidden-post revision and unsolicited hidden translation excluded from public topic loader JSON/HTML and translation batch identities while visible descendant/anchor remain; (2) hidden and missing topic give identical neutral 404 before registry/translation work, error headers `no-store`.
+- **15/15 static source-contract checks passed**, but **Vitest/actual HTTP/PG execution not verified** due to unavailable local checkout/test runtime; never claim runtime PASS. No production/schema changes.
+- Next owner `...`: one small 2–3-related-microstep B3 batch for remaining verified discovery/response/leak edges; focused checks and #342 handoff, then STOP. Never inspect GitHub Actions/CI until entire B3 complete, no B4/Mira/merge.
 
 ## Cadence
 
