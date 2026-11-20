@@ -1735,6 +1735,20 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(await screen.findByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
   });
 
+  it("edits an authenticated author's own Help topic title", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-current" identity="user" />);
+
+    await user.click(screen.getByRole("button", { name: "Edit topic title" }));
+    const title = screen.getByRole("textbox", { name: "Topic title" });
+    await user.clear(title);
+    await user.type(title, "Edited Help topic title");
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Edited Help topic title" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
+  });
+
   it("edits only the authenticated author's own published post in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
