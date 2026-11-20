@@ -2270,19 +2270,19 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
       id:postId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
       bodyRevision:{id:revisionId,originalContent:"B3_UNIQUE_SEARCH_REPLY_20261120",sourceLocale:"en"},
     });
-    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(1);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(1);
     expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
     await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:true,
       expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide search reply"});
     expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).not.toContain(f.topicId);
-    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(0);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(0);
     expect((await repository.readTopicPage(f.topicId))?.posts[1]).toEqual({
       kind:"hidden",id:postId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
     });
     await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:false,
       expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore search reply"});
     expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
-    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.replyCount).toBe(1);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(1);
   });
 
   it("classifies unanswered using visible non-root replies with a hidden root", async () => {
