@@ -696,8 +696,8 @@ export class DrizzleForumRepository {
       bio: sql<string>`coalesce(${forumProfiles.bio}, '')`,
       githubUrl: forumProfiles.githubUrl, websiteUrl: forumProfiles.websiteUrl,
       role: { slug: authzRoles.slug, displayName: authzRoles.displayName, isSystem: authzRoles.isSystem },
-      messageCount: sql<number>`(select count(*) from ${forumPosts} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
-      bestAnswerCount: sql<number>`(select count(*) from ${forumTopics} join ${forumPosts} on ${forumPosts.id} = ${forumTopics.bestAnswerPostId} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
+      messageCount: sql<number>`(select count(*) from ${forumPosts} join ${forumTopics} on ${forumTopics.id} = ${forumPosts.topicId} where ${forumPosts.authorId} = ${user.id} and not ${forumTopics.isHidden} and not ${forumPosts.isHidden})`.mapWith(Number),
+      bestAnswerCount: sql<number>`(select count(*) from ${forumTopics} join ${forumPosts} on ${forumPosts.id} = ${forumTopics.bestAnswerPostId} where ${forumPosts.authorId} = ${user.id} and not ${forumTopics.isHidden} and not ${forumPosts.isHidden})`.mapWith(Number),
     }).from(user)
       .leftJoin(forumProfiles, eq(forumProfiles.userId, user.id))
       .leftJoin(authzUserRoles, eq(authzUserRoles.userId, user.id))
@@ -1208,8 +1208,8 @@ export class DrizzleForumRepository {
       })
       .from(forumCategories)
       .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(
         sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
@@ -1226,8 +1226,8 @@ export class DrizzleForumRepository {
         messageCount: sql<number>`count(distinct ${forumPosts.id})::int`,
       })
       .from(forumSections)
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID))
       .groupBy(
         forumSections.id,
@@ -1299,7 +1299,7 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(gte(forumPosts.createdAt, cutoff30d))
+      .where(and(gte(forumPosts.createdAt, cutoff30d), eq(forumTopics.isHidden, false), eq(forumPosts.isHidden, false)))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, forumTopics.authorId, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil);
 
@@ -1359,7 +1359,7 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(eq(forumTopics.isSolved, false))
+      .where(and(eq(forumTopics.isSolved, false), eq(forumTopics.isHidden, false)))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1369,7 +1369,14 @@ export class DrizzleForumRepository {
         forumCategories.id,
         forumCategories.name,
       )
-      .having(sql`count(${forumPosts.id}) = 1`)
+      .having(sql`count(${forumPosts.id}) filter (
+        where not ${forumPosts.isHidden}
+          and ${forumPosts.id} <> (
+            select root.id from forum_posts root
+            where root.topic_id = ${forumTopics.id}
+            order by root.created_at, root.id limit 1
+          )
+      ) = 0`)
       .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id));
 
     return rows.map((row) => {
@@ -1391,10 +1398,13 @@ export class DrizzleForumRepository {
       .select({
         key: forumTags.key,
         name: forumTags.name,
-        topicCount: sql<number>`count(distinct ${forumTopicTags.topicId})::int`,
+        topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
       })
       .from(forumTags)
       .leftJoin(forumTopicTags, eq(forumTopicTags.tagKey, forumTags.key))
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicTags.topicId), eq(forumTopics.isHidden, false),
+      ))
       .groupBy(forumTags.key, forumTags.name, forumTags.createdAt)
       .orderBy(asc(forumTags.name), asc(forumTags.key));
   }
@@ -1421,7 +1431,7 @@ export class DrizzleForumRepository {
         categoryName: forumCategories.name,
       })
       .from(forumTopicTags)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicTags.topicId))
+      .innerJoin(forumTopics, and(eq(forumTopics.id, forumTopicTags.topicId), eq(forumTopics.isHidden, false)))
       .innerJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
@@ -1429,7 +1439,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(eq(forumTopicTags.tagKey, key))
       .groupBy(
         forumTopics.id,
@@ -1511,13 +1521,14 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumPostRevisions, and(
         eq(forumPostRevisions.postId, forumPosts.id),
         eq(forumPostRevisions.id, forumPosts.currentRevisionId),
       ))
       .leftJoin(forumTopicTags, eq(forumTopicTags.topicId, forumTopics.id))
       .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
+      .where(eq(forumTopics.isHidden, false))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1580,7 +1591,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .innerJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumTopicReadStates, and(
         eq(forumTopicReadStates.userId, userId),
         eq(forumTopicReadStates.topicId, forumTopics.id),
@@ -1589,10 +1600,13 @@ export class DrizzleForumRepository {
         eq(lastReadPost.topicId, forumTopicReadStates.topicId),
         eq(lastReadPost.id, forumTopicReadStates.lastReadPostId),
       ))
-      .where(or(
-        isNull(forumTopicReadStates.userId),
-        gt(forumPosts.createdAt, lastReadPost.createdAt),
-        and(eq(forumPosts.createdAt, lastReadPost.createdAt), gt(forumPosts.id, lastReadPost.id)),
+      .where(and(
+        eq(forumTopics.isHidden, false),
+        or(
+          isNull(forumTopicReadStates.userId),
+          gt(forumPosts.createdAt, lastReadPost.createdAt),
+          and(eq(forumPosts.createdAt, lastReadPost.createdAt), gt(forumPosts.id, lastReadPost.id)),
+        ),
       ))
       .groupBy(
         forumTopics.id,
@@ -3148,8 +3162,8 @@ export class DrizzleForumRepository {
           ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
         ),
       )
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(eq(forumCategories.id, id))
       .groupBy(forumCategories.id, forumCategories.name, forumSections.id, forumSections.name, forumSections.createdAt)
       .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
@@ -3176,10 +3190,11 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(and(
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
       ))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil)
@@ -3254,10 +3269,11 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(and(
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
       ))
       .groupBy(
         forumTopics.id,
@@ -3358,9 +3374,9 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
-      .where(eq(forumTopics.sectionId, id))
+      .where(and(eq(forumTopics.sectionId, id), eq(forumTopics.isHidden, false)))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
@@ -3409,7 +3425,7 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
-      .where(eq(forumTopics.id, id));
+      .where(and(eq(forumTopics.id, id), eq(forumTopics.isHidden, false)));
     if (!topic) return undefined;
     const topicAuthor = projectForumPublicAuthor(topic);
     const tags = await this.readTagsForTopics([id]);
