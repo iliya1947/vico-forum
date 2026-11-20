@@ -4082,7 +4082,9 @@ function PreviewSearchRoute({ scenario, interactions }: {
   interactions: PreviewInteractionState;
 }) {
   const [params] = useSearchParams();
-  const query = (params.get("q") ?? "").trim();
+  const normalizedQuery = (params.get("q") ?? "").normalize("NFKC").trim().replace(/\s+/gu, " ");
+  const queryTooLong = normalizedQuery.length > 200;
+  const query = queryTooLong ? normalizedQuery.slice(0, 200) : normalizedQuery;
   const normalized = query.toLocaleLowerCase(scenario.locale);
   const createdResults = [...interactions.createdTopics.values()].map((created) => {
     const localizedSection = previewSectionPresentation(scenario.locale, created.sectionId);
@@ -4127,7 +4129,7 @@ function PreviewSearchRoute({ scenario, interactions }: {
         .map((post) => post.body.originalContent) ?? replies.map((reply) => reply.body),
     };
   });
-  const results = query
+  const results = query && !queryTooLong
     ? [...createdResults, ...fixtureResults].filter((item) => [
         item.title,
         item.authorName,
@@ -4135,7 +4137,12 @@ function PreviewSearchRoute({ scenario, interactions }: {
         ...item.searchBodies,
       ].some((value) => value.toLocaleLowerCase(scenario.locale).includes(normalized)))
     : [];
-  return <SearchView locale={scenario.locale} query={query} results={results} />;
+  return <SearchView
+    locale={scenario.locale}
+    query={query}
+    queryTooLong={queryTooLong}
+    results={results}
+  />;
 }
 
 async function previewCategoryAction(
