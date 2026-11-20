@@ -6293,13 +6293,15 @@ function PreviewTopicRoute({ scenario, interactions }: {
 }) {
   useLoaderData<{ revision: number }>();
   const { topicId: routeTopicId } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestedEditPostId = searchParams.get("editPost") ?? "";
 
   const createdTopic = routeTopicId ? interactions.createdTopics.get(routeTopicId) : undefined;
   if (createdTopic) {
     const data = previewCreatedTopicData(scenario, createdTopic, interactions);
     return (
       <TopicView
-        key={previewPostEditRenderKey(data.topic, interactions)}
+        key={`${previewPostEditRenderKey(data.topic, interactions)}:${requestedEditPostId}`}
         {...data}
         canUploadAttachments={false}
       />
@@ -6425,7 +6427,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const data = primaryTopicScenarioData(scenario);
     const interactiveTopic = previewApplyTopicState(data.topic, interactions);
     return <TopicView
-      key={previewPostEditRenderKey(interactiveTopic, interactions)}
+      key={`${previewPostEditRenderKey(interactiveTopic, interactions)}:${requestedEditPostId}`}
       {...data}
       canUploadAttachments={false}
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
