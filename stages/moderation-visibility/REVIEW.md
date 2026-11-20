@@ -1,32 +1,40 @@
-# Moderation visibility — B1 review
+# Moderation visibility — bounded reviews
 
-## Status
+## B1 — schema/catalog/History foundation
 
-**HOLD** — one confirmed current-scope blocker on Draft PR #355.
+### Final status
 
-Reviewed exact head: `736da519e3f3fcae716ec5fb1b81886cdac63a6e`.
+**PASS**
 
-## Evidence checked
+Final reviewed exact head: `704d5a46d59841538524424296ac28eaa39aa5e6`.
 
-- full B1 changed-file set (24 paths);
-- migration 0071, Drizzle schema/manifest, permission catalog/default grants;
-- Admin History actions/constraints/labels/Owner monitor classification;
-- AP-10 `admin.forum` enforcement/projection seams;
-- existing Admin Forum admission and locale/header projection seams;
-- exact-head workflow state: 13/13 SUCCESS; CI unit 2752/2752, PG17 1483/1483.
+### Previous finding
 
-## VIS-B1-MIRA-01 — incomplete visibility permission integration
+`VIS-B1-MIRA-01` on `736da519e3f3fcae716ec5fb1b81886cdac63a6e`:
+new `forum.content.visibility.manage` was missing from:
+1. Admin Forum admission;
+2. locale/header Admin projection;
+3. shared AP-10 `admin.forum` family map.
 
-The new `forum.content.visibility.manage` capability is present in catalog/schema/default moderator+admin grants and in `db/user-measure-admin-forum.ts`, but B1 missed three existing maps that must remain in parity:
+### Correction verification
 
-1. `app/admin/access.ts::ADMIN_FORUM_PERMISSIONS` does not contain the capability. A user whose only Admin Forum capability is visibility management is therefore rejected by `requireAdminForumAccess`.
-2. `app/routes/locale-boundary.tsx` manually resolves/builds Admin permissions and omits the capability, so the header/Admin destination projection remains hidden for that same valid actor.
-3. `app/admin/user-measure-restrictions.ts::USER_MEASURE_ADMIN_PERMISSION_FAMILIES["admin.forum"]` omits the capability although the DB authorization wrapper includes it. Consumers such as raw AP-10 authority/floor logic therefore classify visibility-only administrative authority inconsistently.
+Correction commit changed exactly seven scoped files:
+- added capability to `ADMIN_FORUM_PERMISSIONS`;
+- added it to locale-boundary authorization resolution/Admin projection;
+- added it to `USER_MEASURE_ADMIN_PERMISSION_FAMILIES["admin.forum"]`;
+- added focused route/AP-10/raw-authority/real-PG regressions.
 
-This is a B1 defect, not future B2+: the accepted B1 contract includes Admin Forum admission/workspace hints and AP-10 `admin.forum` mapping.
+The existing DB restriction wrapper already contained the capability, so correction restores parity rather than introducing a new policy.
 
-## Required correction boundary
+No B2 command, route-exposed Hide/Restore, schema, grant, dependency or unrelated change was added by the correction.
 
-Restore parity in the existing maps/projections and add focused regressions for visibility-only Admin admission/projection and AP-10 family behavior. Do not expose Hide/Restore routes and do not begin B2.
+### Exact-head evidence
 
-After a fresh author self-check/checks, Mira repeats the bounded B1 checkpoint on the new exact head.
+- CI run `44691969348`: `checks` SUCCESS; `database` SUCCESS.
+- 13/13 associated workflows completed SUCCESS.
+- PR remains Draft/unmerged.
+- No confirmed current-B1 blocker remains.
+
+### Next boundary
+
+B2 may start only as a new stacked PR based on B1 head branch after explicit owner continuation. This PASS is an intermediate bounded checkpoint, not final whole-feature acceptance.
