@@ -43,8 +43,10 @@ export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHead
   const result = new Headers(parentHeaders);
   // A hidden topic becomes 404 immediately; neither its previous public
   // document nor the neutral negative response may be cached.
-  result.set("Cache-Control", errorHeaders?.get("Cache-Control")
-    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control") ?? "no-store");
+  const cachePolicy = errorHeaders?.get("Cache-Control")
+    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control");
+  result.set("Cache-Control", cachePolicy?.split(",").some((part) => part.trim().toLowerCase() === "no-store")
+    ? cachePolicy : "no-store");
   const retry = errorHeaders?.get("Retry-After")
     ?? actionHeaders.get("Retry-After") ?? loaderHeaders.get("Retry-After");
   if (retry !== null) result.set("Retry-After", retry);
