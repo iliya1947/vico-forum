@@ -4399,11 +4399,27 @@ export class DrizzleForumRepository {
 
   async removeHelpDuplicate(topicId: string, actorId: string, expectedRelationshipId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx
-        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId })
+      // The relationship's original topic is immutable. Read its identity before
+      // acquiring locks so both topic mutexes can be taken in sorted order.
+      const [identity] = await tx
+        .select({ originalTopicId: forumHelpDuplicateRelationships.originalTopicId })
+        .from(forumHelpDuplicateRelationships)
+        .where(and(
+          eq(forumHelpDuplicateRelationships.duplicateTopicId, topicId),
+          isNull(forumHelpDuplicateRelationships.removedAt),
+        ))
+        .limit(1);
+      const lockedIds = [topicId, ...(identity ? [identity.originalTopicId] : [])].sort();
+      const topics = await tx
+        .select({ id: forumTopics.id, sectionId: forumTopics.sectionId, isHidden: forumTopics.isHidden })
         .from(forumTopics)
-        .where(eq(forumTopics.id, topicId))
+        .where(inArray(forumTopics.id, lockedIds))
+        .orderBy(asc(forumTopics.id))
         .for("no key update");
+      if (topics.length !== lockedIds.length || topics.some((topic) => topic.isHidden)) {
+        throw new ForumEntityNotFoundError("topic does not exist");
+      }
+      const topic = topics.find((row) => row.id === topicId);
       if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
         throw new ForumStateConflictError("duplicate relationships are only available for Help & solutions questions");
@@ -4417,7 +4433,7 @@ export class DrizzleForumRepository {
         ))
         .for("no key update");
       if (!relationship) throw new ForumStateConflictError("question is not a confirmed duplicate");
-      if (relationship.id !== expectedRelationshipId) {
+      if (relationship.id !== expectedRelationshipId || relationship.originalTopicId !== identity?.originalTopicId) {
         throw new ForumStateConflictError("duplicate relationship is no longer the expected relationship");
       }
       // Removal may accept the current pending appeal as part of the same effect.

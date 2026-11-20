@@ -1051,3 +1051,111 @@ describe("V4 duplicate confirmation under hidden topic or canonical original", (
       .rejects.toBeInstanceOf(ForumStateConflictError);
   });
 });
+
+describe("V4 duplicate removal under hidden topic or canonical original", () => {
+  async function question() {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question body", sourceLocale: "en" },
+      },
+    });
+    return { topicId, postId, titleRevisionId, bodyRevisionId };
+  }
+  type Question = Awaited<ReturnType<typeof question>>;
+  const visibility = (f: Question, hidden: boolean, version: number) =>
+    service.setTopicVisibility(topicCommand(f, "moderator1", hidden, version, "Visibility review"));
+  async function relationshipId(duplicate: Question) {
+    const result = await client.query(
+      "select id from forum_help_duplicate_relationships where duplicate_topic_id=$1 and removed_at is null",
+      [duplicate.topicId],
+    );
+    const id = result.rows[0]?.id as string | undefined;
+    if (!id) throw new Error("missing confirmed duplicate relationship");
+    return id;
+  }
+  async function facts(duplicate: Question, original: Question) {
+    const ids = [duplicate.topicId, original.topicId];
+    const [relationships, appeals, signals, history] = await Promise.all([
+      client.query(
+        "select id,duplicate_topic_id,original_topic_id,removed_by_user_id,removed_at " +
+          "from forum_help_duplicate_relationships where duplicate_topic_id=$1 order by id",
+        [duplicate.topicId],
+      ),
+      client.query(
+        "select id,relationship_id,status,resolved_by_user_id,resolved_at " +
+          "from forum_help_duplicate_appeals where relationship_id in " +
+          "(select id from forum_help_duplicate_relationships where duplicate_topic_id=$1) order by id",
+        [duplicate.topicId],
+      ),
+      client.query(
+        "select id,topic_id,kind,status,resolved_by_user_id from forum_help_signals " +
+          "where topic_id in ($1,$2) order by id", ids,
+      ),
+      client.query(
+        "select action,target_id,actor_id,context from admin_history " +
+          "where target_id in ($1,$2) order by position", ids,
+      ),
+    ]);
+    return {
+      relationships: relationships.rows, appeals: appeals.rows,
+      signals: signals.rows, history: history.rows,
+    };
+  }
+
+  it("denies removal with hidden duplicate and pending appeal; Restore admits and resolves appeal", async () => {
+    const pair = [await question(), await question()].sort((a, b) => a.topicId.localeCompare(b.topicId));
+    const [duplicate, original] = pair as [Question, Question];
+    await service.confirmHelpDuplicate(duplicate.topicId, original.topicId, "owner");
+    const expectedRelationshipId = await relationshipId(duplicate);
+    await service.appealHelpDuplicate(duplicate.topicId, "author", "Incorrect duplicate", expectedRelationshipId);
+    await visibility(duplicate, true, 0);
+    const before = await facts(duplicate, original);
+    expect(before.appeals).toHaveLength(1);
+    expect(before.appeals[0]?.status).toBe("pending");
+
+    for (const actorId of ["moderator1", "owner"]) {
+      await expect(service.removeHelpDuplicate(duplicate.topicId, actorId, expectedRelationshipId))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await facts(duplicate, original)).toEqual(before);
+    }
+    await visibility(duplicate, false, 1);
+    await service.removeHelpDuplicate(duplicate.topicId, "moderator1", expectedRelationshipId);
+    const after = await facts(duplicate, original);
+    expect(after.relationships[0]).toMatchObject({
+      id: expectedRelationshipId, removed_by_user_id: "moderator1",
+    });
+    expect(after.relationships[0].removed_at).toBeInstanceOf(Date);
+    expect(after.appeals[0]).toMatchObject({ status: "accepted", resolved_by_user_id: "moderator1" });
+    expect(after.history.filter((event) => event.action === "help.duplicateRemoved")).toHaveLength(1);
+    expect(after.signals).toEqual(before.signals);
+  });
+
+  it("denies removal while canonical original hidden, preserving relationship and History until Restore", async () => {
+    const pair = [await question(), await question()].sort((a, b) => a.topicId.localeCompare(b.topicId));
+    const [original, duplicate] = pair as [Question, Question];
+    await service.confirmHelpDuplicate(duplicate.topicId, original.topicId, "owner");
+    const expectedRelationshipId = await relationshipId(duplicate);
+    await visibility(original, true, 0);
+    const before = await facts(duplicate, original);
+    for (const actorId of ["moderator1", "owner"]) {
+      await expect(service.removeHelpDuplicate(duplicate.topicId, actorId, expectedRelationshipId))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await facts(duplicate, original)).toEqual(before);
+    }
+    await visibility(original, false, 1);
+    await service.removeHelpDuplicate(duplicate.topicId, "owner", expectedRelationshipId);
+    const after = await facts(duplicate, original);
+    expect(after.relationships[0]).toMatchObject({
+      id: expectedRelationshipId, removed_by_user_id: "owner",
+    });
+    expect(after.history.filter((event) => event.action === "help.duplicateRemoved")).toHaveLength(1);
+    await expect(service.removeHelpDuplicate(duplicate.topicId, "owner", expectedRelationshipId))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await facts(duplicate, original)).toEqual(after);
+  });
+});
