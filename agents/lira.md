@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active Draft #359 B3 exact `96a9376f78eb5eb5f0b0edb4bfbf40ad5263ffb7`, B2 base unchanged; B3 incomplete.
-- Latest two-test B3 Help similar-question search batch: confirmed existing SQL filters hidden topics/post bodies, reply counts and recent activity before ranking/LIMIT; no production defect confirmed. Added two PG regression definitions for hidden answer body matching Hide/Restore and hidden exact-topic-title exclusion before top-1 rank, with Restore.
-- **20/20 targeted static source-contract checks PASS** on exact head. **Vitest/PostgreSQL/HTTP execution NOT VERIFIED** (no test checkout/runtime); do not call runtime PASS. No GitHub Actions/CI inspection.
-- Next owner `...`: one new small 2–3-related-step B3 package based on a verified remaining current-stage issue; available focused checks, update #342 and STOP. Do not open Actions/CI before *entire* B3 finished. No B4/Mira/merge.
+- Active stacked Draft #359 exact `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`; base B2 unchanged, B3 incomplete.
+- Latest B3 tag-name leak fix: user-defined `forumTags` whose associated topics are all hidden were still listed publicly (count zero), and `readTag` exposed the label on direct navigation. `readTags` now excludes zero-visible-membership tags; `readTag` joins visible topic membership before revealing tag metadata, returning the same `undefined` as nonexistent tags. Shared tags with visible members remain; no schema/data changes.
+- One actual-PG regression definition checks unique/shared tags, visible counts, hidden name absence from index/direct Tag, and Hide/Restore for one/both topics. **22/22 targeted static checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** (no checkout/runtime). GitHub Actions/CI not inspected.
+- Next owner `...`: one small related B3 microbatch based on verified outstanding public projection/response gaps; targeted checks, update #342 and STOP. **Never open Actions/CI before entire B3 completed.** No B4/Mira/merge.
 
 ## Cadence
 
