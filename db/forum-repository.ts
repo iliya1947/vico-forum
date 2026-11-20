@@ -2928,10 +2928,16 @@ export class DrizzleForumRepository {
     const reviewAttentionCondition = visibleSignalKinds.includes("needs-review")
       ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
       : sql`false`;
+    const visibleReplyCount = sql<number>`count(distinct ${forumPosts.id}) filter (
+      where ${forumPosts.id} <> (
+        select root.id from forum_posts root where root.topic_id = ${forumTopics.id}
+        order by root.created_at, root.id limit 1
+      )
+    )::int`;
     const answersCondition = filters.answers === "none"
-      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      ? sql`${visibleReplyCount} = 0`
       : filters.answers === "has"
-        ? sql`count(distinct ${forumPosts.id}) > 1`
+        ? sql`${visibleReplyCount} > 0`
         : sql`true`;
 
     const questionQuery = this.database
@@ -2941,7 +2947,7 @@ export class DrizzleForumRepository {
         authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        postCount: visibleReplyCount,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
@@ -2957,16 +2963,18 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(currentBestAnswer, and(
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+        eq(currentBestAnswer.isHidden, false),
       ))
       .leftJoin(activeDuplicate, and(
         eq(activeDuplicate.duplicateTopicId, forumTopics.id),
         isNull(activeDuplicate.removedAt),
       ))
       .where(and(
+        eq(forumTopics.isHidden, false),
         filter.mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -3009,7 +3017,7 @@ export class DrizzleForumRepository {
       )
       .having(and(
         filter.mode === "active"
-          ? sql`count(distinct ${forumPosts.id}) > 1`
+          ? sql`${visibleReplyCount} > 0`
           : sql`true`,
         answersCondition,
       ))
@@ -3086,7 +3094,7 @@ export class DrizzleForumRepository {
         title: row.title,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        replyCount: Math.max(0, row.postCount - 1),
+        replyCount: row.postCount,
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
