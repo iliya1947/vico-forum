@@ -3975,24 +3975,51 @@ function PreviewSearchRoute({ scenario, interactions }: {
   const normalized = query.toLocaleLowerCase(scenario.locale);
   const createdResults = [...interactions.createdTopics.values()].map((created) => {
     const localizedSection = previewSectionPresentation(scenario.locale, created.sectionId);
+    const editedTitle = interactions.topicTitleEdits.get(created.id);
+    const sourceLocale = interactions.topicTitleSourceLocales.get(created.id)
+      ?? editedTitle?.sourceLocale
+      ?? created.sourceLocale;
+    const replies = interactions.replies.get(created.id) ?? [];
     return {
       id: created.id,
-      sourceLocale: created.sourceLocale,
-      titleDirection: previewDirectionForLocale(created.sourceLocale),
-      title: created.title,
+      sourceLocale,
+      titleDirection: sourceLocale === "und"
+        ? ("auto" as const)
+        : (localeRegistry.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
+      title: editedTitle?.originalContent ?? created.title,
       authorName: created.authorName,
-      postCount: 1 + (interactions.replies.get(created.id)?.length ?? 0),
-      activityAt: created.createdAt,
+      postCount: 1 + replies.length,
+      activityAt: replies.at(-1)?.createdAt ?? created.createdAt,
       category: localizedSection.category,
       section: { id: localizedSection.id, name: localizedSection.name },
       tags: created.tags,
+      searchBodies: [created.body, ...replies.map((reply) => reply.body)],
+    };
+  });
+  const fixtureResults = previewSearchResults(scenario.locale).map((item) => {
+    const editedTitle = interactions.topicTitleEdits.get(item.id);
+    const sourceLocale = interactions.topicTitleSourceLocales.get(item.id)
+      ?? editedTitle?.sourceLocale
+      ?? item.sourceLocale;
+    const replies = interactions.replies.get(item.id) ?? [];
+    return {
+      ...item,
+      sourceLocale,
+      titleDirection: sourceLocale === "und"
+        ? ("auto" as const)
+        : (localeRegistry.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
+      title: editedTitle?.originalContent ?? item.title,
+      postCount: item.postCount + replies.length,
+      activityAt: replies.at(-1)?.createdAt ?? item.activityAt,
+      searchBodies: replies.map((reply) => reply.body),
     };
   });
   const results = query
-    ? [...createdResults, ...previewSearchResults(scenario.locale)].filter((item) => [
+    ? [...createdResults, ...fixtureResults].filter((item) => [
         item.title,
         item.authorName,
         ...item.tags.map((tag) => tag.name),
+        ...item.searchBodies,
       ].some((value) => value.toLocaleLowerCase(scenario.locale).includes(normalized)))
     : [];
   return <SearchView locale={scenario.locale} query={query} results={results} />;
