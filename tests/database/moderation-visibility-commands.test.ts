@@ -867,3 +867,80 @@ describe("V4 best-answer selection under hidden topic and answer", () => {
     expect(after.history.filter(e => e.action === "topic.bestAnswerChanged")).toHaveLength(1);
   });
 });
+
+describe("V4 solved-state writer admission under hidden topic", () => {
+  async function helpQuestion() {
+    const topicId = randomUUID(), postId = randomUUID(), titleRevisionId = randomUUID();
+    const bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Help body", sourceLocale: "en" },
+      },
+    });
+    return { topicId, postId, titleRevisionId, bodyRevisionId };
+  }
+  type HelpQuestion = Awaited<ReturnType<typeof helpQuestion>>;
+  const solve = (f: HelpQuestion, scope: "own" | "any") =>
+    service.markTopicSolved(f.topicId, scope === "own" ? "author" : "owner", scope);
+  const visibility = (f: HelpQuestion, hidden: boolean, expectedVisibilityVersion: number) =>
+    service.setTopicVisibility(topicCommand(f, "moderator1", hidden, expectedVisibilityVersion, "Visibility review"));
+  async function state(f: HelpQuestion) {
+    const [topic, signals, history] = await Promise.all([
+      client.query("select is_solved,best_answer_post_id from forum_topics where id=$1", [f.topicId]),
+      client.query(
+        "select id,kind,status,resolved_by_user_id from forum_help_signals where topic_id=$1 order by id",
+        [f.topicId],
+      ),
+      client.query(
+        "select action,actor_id,context from admin_history where target_id=$1 order by position",
+        [f.topicId],
+      ),
+    ]);
+    return { topic: topic.rows[0], signals: signals.rows, history: history.rows };
+  }
+
+  it("denies own/any solving of hidden Help question without superseding pending duplicate or History", async () => {
+    const question = await helpQuestion(), original = await helpQuestion();
+    const pending = await service.createHelpSignal({
+      kind: "duplicate", topicId: question.topicId, actorId: "ordinary",
+      explanation: null, proposedOriginalTopicId: original.topicId,
+    });
+    await visibility(question, true, 0);
+    const before = await state(question);
+    for (const scope of ["own", "any"] as const) {
+      await expect(solve(question, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(question)).toEqual(before);
+    }
+
+    await visibility(question, false, 1);
+    await solve(question, "any");
+    const after = await state(question);
+    expect(after.topic.is_solved).toBe(true);
+    expect(after.signals.find(s => s.id === pending.id)).toMatchObject({
+      status: "superseded", resolved_by_user_id: "owner",
+    });
+    expect(after.history.filter(e => e.action === "topic.solved")).toHaveLength(1);
+  });
+
+  it("returns generic not-found for already solved hidden topic, preserving conflict after Restore", async () => {
+    const question = await helpQuestion();
+    await solve(question, "own");
+    await visibility(question, true, 0);
+    const before = await state(question);
+    for (const scope of ["own", "any"] as const) {
+      await expect(solve(question, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(question)).toEqual(before);
+    }
+
+    await visibility(question, false, 1);
+    for (const scope of ["own", "any"] as const) {
+      await expect(solve(question, scope)).rejects.toBeInstanceOf(ForumStateConflictError);
+    }
+    const restored = await state(question);
+    expect(restored.topic.is_solved).toBe(true);
+    expect(restored.history.filter(e => e.action === "topic.solved")).toHaveLength(0);
+  });
+});

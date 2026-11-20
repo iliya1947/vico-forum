@@ -4547,9 +4547,10 @@ export class DrizzleForumRepository {
         authorId: forumTopics.authorId,
         sectionId: forumTopics.sectionId,
         isSolved: forumTopics.isSolved,
+        isHidden: forumTopics.isHidden,
       }).from(forumTopics)
         .where(eq(forumTopics.id, topicId)).for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may solve it");
       if (topic.isSolved) throw new ForumStateConflictError("topic is already solved");
       const [activeDuplicate] = await tx
