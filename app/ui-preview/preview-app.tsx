@@ -4682,11 +4682,7 @@ function previewEditableTopicForAction(
   interactions: PreviewInteractionState,
   routeTopicId: string,
 ): PreviewTopicPage | null {
-  if (routeTopicId === topicId) {
-    return previewApplyTopicState(primaryTopicScenarioData(scenario).topic, interactions);
-  }
-  const created = interactions.createdTopics.get(routeTopicId);
-  return created ? previewCreatedTopicData(scenario, created, interactions).topic : null;
+  return previewAdminTopicData(scenario, interactions, routeTopicId)?.topic ?? null;
 }
 
 function previewPostEditRedirect(
@@ -6821,10 +6817,12 @@ function previewAdminTopicData(
     const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
       ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
       : null;
+    const topicAuthorName = scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName;
+    const topicAuthorId = previewProfileIdForName(topicAuthorName);
     const posts = Array.from({ length: postCount }, (_, index) => {
       const id = `${helpQuestion.id}-post-${index + 1}`;
       const authorName = index === 0
-        ? helpQuestion.authorName
+        ? topicAuthorName
         : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!;
       return {
         id,
@@ -6848,8 +6846,8 @@ function previewAdminTopicData(
     const baseTopic: PreviewTopicPage = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-      authorId: previewProfileIdForName(helpQuestion.authorName),
-      authorName: helpQuestion.authorName,
+      authorId: topicAuthorId,
+      authorName: topicAuthorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
@@ -7196,16 +7194,17 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const bestAnswerPostId = helpQuestion.hasBestAnswer && postCount > 1
       ? `${helpQuestion.id}-post-${Math.min(5, postCount)}`
       : null;
+    const topicAuthorName = scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName;
+    const topicAuthorId = previewProfileIdForName(topicAuthorName);
     const posts = Array.from({ length: postCount }, (_, index) => {
       const id = `${helpQuestion.id}-post-${index + 1}`;
       const isBestAnswer = id === bestAnswerPostId;
+      const authorName = index === 0 ? topicAuthorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!;
       return {
         id,
         topicId: helpQuestion.id,
-        authorId: previewProfileIdForName(
-          index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
-        ),
-        authorName: index === 0 ? helpQuestion.authorName : ["Sam Chen", "Maya Cohen", "Noa Levi"][index % 3]!,
+        authorId: previewProfileIdForName(authorName),
+        authorName,
         parentPostId: index === 0 ? null : `${helpQuestion.id}-post-1`,
         solutionModerationStatus: isBestAnswer ? helpQuestion.solutionModerationStatus : null,
         solutionOutdatedReason: isBestAnswer ? helpQuestion.solutionOutdatedReason : null,
@@ -7231,10 +7230,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
     const helpTopic = {
       id: helpQuestion.id,
       sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID,
-      authorId: previewProfileIdForName(
-        scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
-      ),
-      authorName: scenario.identity === "user" ? "Alex Rivera" : helpQuestion.authorName,
+      authorId: topicAuthorId,
+      authorName: topicAuthorName,
       createdAt: new Date(helpQuestion.createdAt),
       isPinned: false,
       isSolved: helpQuestion.isSolved,
@@ -7287,6 +7284,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canReply={scenario.identity !== "guest"}
         canSubmitComplaint={scenario.identity !== "guest"}
         canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
+        editablePostIds={previewEditablePostIds(scenario, interactiveHelpTopic)}
         canEditOwnTitle={previewUser(scenario)?.id === interactiveHelpTopic.authorId}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
@@ -7464,6 +7462,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canReply={scenario.identity !== "guest"}
       canSubmitComplaint={scenario.identity !== "guest"}
       canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
+      editablePostIds={previewEditablePostIds(scenario, interactiveTopic)}
       canEditOwnTitle={previewUser(scenario)?.id === interactiveTopic.authorId}
       canManageSolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
