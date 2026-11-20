@@ -2,6 +2,8 @@ name: SA04-K5 connected attachment Worker R2 Chromium acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-k5-attachments-browser.yml"
@@ -20,11 +22,14 @@ on:
       - "workers/attachment-storage.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   attachments_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
