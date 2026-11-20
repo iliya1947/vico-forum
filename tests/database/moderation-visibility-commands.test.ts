@@ -1430,7 +1430,8 @@ describe("V4 published edit recovery admission after Hide", () => {
   it("retains committed edit replay on hidden post, but refuses changed replay and new save until Restore", async () => {
     const f = await fixture(), committed = edit(f, f.bodyRevisionId, randomUUID(), "Already saved");
     await service.editPublishedPost(committed);
-    await service.setPostVisibility(postCommand(f));
+    const currentRevisionId = (await facts(f)).post.current_revision_id;
+    await service.setPostVisibility({ ...postCommand(f), expectedRevisionId: currentRevisionId });
     const hidden = await facts(f);
 
     await service.editPublishedPost(committed);
@@ -1443,7 +1444,9 @@ describe("V4 published edit recovery admission after Hide", () => {
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     expect(await facts(f)).toEqual(hidden);
 
-    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Restore post"));
+    await service.setPostVisibility({
+      ...postCommand(f, "moderator1", false, 1, "Restore post"), expectedRevisionId: currentRevisionId,
+    });
     await service.editPublishedPost(newSave);
     const restored = await facts(f);
     expect(restored.revisions).toHaveLength(hidden.revisions.length + 1);
