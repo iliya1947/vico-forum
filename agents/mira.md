@@ -82,3 +82,8 @@ Previous correction to force per-stage merge was superseded by owner process dec
 ## 2026-11-20 — proactive tooling rule
 
 Owner requires proactive discovery of useful GitHub/tool capabilities. I must not wait for the developer to discover workflow features accidentally. When a native tool capability materially simplifies or improves current work, I should identify it, check constraints, and propose it before cementing a worse process. Mandatory AGENTS.md follow-up after #342 together with stacked PR workflow.
+
+
+## 2026-11-20 — B1 checkpoint HOLD on #355
+
+Reviewed exact `736da519e3f3fcae716ec5fb1b81886cdac63a6e`. One current-scope blocker: VIS-B1-MIRA-01, incomplete integration of `forum.content.visibility.manage` across Admin Forum admission/header projection and shared AP-10 admin.forum family map. The DB wrapper already includes it, creating parity drift. No B2 until Lira corrects B1 and returns a fresh exact head.
