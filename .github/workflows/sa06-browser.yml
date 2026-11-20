@@ -2,6 +2,8 @@ name: SA06 native monitoring connected Chromium acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - ".github/workflows/sa06-browser.yml"
       - "tests/browser/sa06/**"
@@ -21,11 +23,14 @@ on:
       - "workers/app.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   sa06_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
