@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `9c3c6cba930ee5e00ef4c622f001f4441c327a89`, based on B2 #357. B3 partial; B1/B2/B3 Draft/unmerged.
-- Latest small B3 batch: public tag-index (`app/routes/tags.tsx`) and tagged-topic page (`app/routes/tag.tsx`) now return `no-store` in loader data and route document/error headers, including missing-tag neutral 404. Updated `app/forum/public-read.test.tsx` with two focused cache regressions and unwrapping adapters for existing direct tests.
-- Targeted static contract checks **13/13 passed**. Vitest/HTTP/PG execution **not verified**, because no local checkout/test runtime. Previously added regression tests in B3 also remain without local execution.
-- On next `...`: one 2–3-related-microstep B3 batch selected from remaining verified gaps, available targeted checks and #342 handoff, then STOP. Do not inspect any GitHub Actions/CI until whole B3 is complete; no B4, coordinator checkpoint or merge.
+- Active stacked Draft #359 exact `b0977950b8792b2bbdad1715e004c4d48980120b`; base B2 #357 unchanged; B3 remains partial.
+- Latest two-route B3 microbatch: Popular (`app/routes/popular.tsx`) and Unanswered (`app/routes/unanswered.tsx`) now enforce `no-store` in public loader data and document/error response headers, overriding cacheable parents. Two regression tests in `app/forum/public-read.test.tsx` verify positive payloads, headers and dependency503; prior direct tests unwrap `data()`. No SQL/schema changes.
+- Targeted **static** source checks 14/14 passed; **Vitest/HTTP/PostgreSQL execution not verified** (no local checkout/test runtime). Do not claim runtime acceptance.
+- Next `...`: one 2–3-related-microstep B3 batch from verified remaining gaps, available targeted checks, update WORKFLOW/#342, STOP. **Do not inspect any GitHub Actions/CI until entire B3 completed.** No B4, Mira or merge.
 
 ## Cadence
 
