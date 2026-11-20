@@ -1427,7 +1427,7 @@ function previewOwnerDeactivationResponse(
   if (scenario.identity !== "owner") return new Response("Forbidden", { status: 403, headers });
 
   const encodedTargetId = url.pathname.slice(prefix.length, -suffix.length);
-  let targetId = "";
+  let targetId: string;
   try {
     targetId = decodeURIComponent(encodedTargetId);
   } catch {
