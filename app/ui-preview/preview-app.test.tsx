@@ -1592,15 +1592,16 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.selectOptions(within(titleForm).getByRole("combobox"), "other");
     await user.type(within(titleForm).getByRole("textbox"), "The title is misleading.");
     await user.click(within(titleForm).getByRole("button", { name: "Submit report" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Your report has been received.");
+    expect(await screen.findByText("Your report has been received.", { selector: ".complaint-confirmation" })).toBeInTheDocument();
 
     const question = document.querySelector("#post-question") as HTMLElement;
     await user.click(within(question).getByRole("button", { name: "Report message" }));
     const postForm = within(question).getByRole("heading", { level: 3, name: "Report message" }).closest("form") as HTMLElement;
     await user.click(within(postForm).getByRole("button", { name: "Submit report" }));
-    await waitFor(() => {
-      expect(within(question).getByRole("status")).toHaveTextContent("Your report has been received.");
-    });
+    expect(await within(question).findByText(
+      "Your report has been received.",
+      { selector: ".complaint-confirmation" },
+    )).toBeInTheDocument();
   });
 
   it("suggests and inserts mentions through the static preview lookup", async () => {
