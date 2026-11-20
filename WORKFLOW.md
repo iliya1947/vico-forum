@@ -10,7 +10,9 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 **B2.3a author PASS:** `createPost` denies new replies under hidden topic or directly hidden parent, preserving generic reply with hidden root and inert matching publication receipt. Exact `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`. [CI run 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502) **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1496/1496 PG17 (10/10 visibility commands)**.
 
-**Лира STOP перед B2.3b.** Next explicit owner continuation: published edit and own title/source writer admission, respecting draft/receipt-first and topic→post→actor lock order. Further B2.3 slices: remaining Help/solution/closure/pin writers; then separate real PG two-order races/lock graph. Whole B2 not complete; no Mira checkpoint yet; B1/B2 remain Draft/unmerged.
+**B2.3b author PASS** — exact `59eb34bd86d31bf00b960b487bed09555bbbe07d`. Published edit denies hidden topic/post, own title denies hidden topic, source-locale own/any change/no-op gates check locked visibility (topic→post→actor) and any no-op retains AP-10 admission. Original edit receipt replay remains inert. Added 6 PG regressions and updated one selective translation test fixture to include the current `is_hidden` column. [Exact-head CI run 44706419635](https://github.com/iliya1947/vico-forum/actions/runs/44706419635): **22/22 check-runs and 18/18 workflows SUCCESS, 2758/2758 unit and 1502/1502 PG17 (16/16 visibility tests)**. First intermediate head failed a synthetic fixture and one unrelated settings UI wait; the fixture was corrected locally, all tests passed on final exact head.
+
+**Лира STOP перед B2.3c1.** Next only on owner continuation: closed/pinned topic-state writers must reject hidden topics and preserve existing lock/admission semantics. Help/solution and other writer/recovery/planning gates plus real PG two-way concurrency remain later bounded slices. Whole B2 not finished, Mira checkpoint not yet requested; B1/B2 Draft/unmerged.
 
 ## Baseline
 
@@ -34,7 +36,7 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a author PASS
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a/B2.3b author PASS
 
 - B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
 - B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
@@ -43,8 +45,10 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 - Exact-head [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485): 2758/2758 unit and 1493/1493 PostgreSQL17 SUCCESS including 7/7 new `moderation-visibility-commands.test.ts` cases. GitHub check-runs 22/22 SUCCESS; associated workflows 18/18 SUCCESS. Earlier red CI attempts on intermediate commits corrected within B2.2; verified evidence is final exact head.
 - B2.3a exact `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`: `createPost` keeps topic NO KEY UPDATE and parent FK KEY SHARE; requires visible topic and visible direct parent before actor/mutation. Missing and hidden share generic not-found; matching receipt replay remains inert/allowed. Exactly two changed files vs B2.2 (`db/forum-repository.ts`, `tests/database/moderation-visibility-commands.test.ts`); +3 PG cases, including hidden root generic reply and Hide/Restore replay boundaries.
 - [Exact-head CI 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS, 2758/2758 unit, 1496/1496 PG17**, 10/10 visibility-commands tests.
-- B2 remaining: B2.3b published edit and own title/source; subsequent Help/solution/closure/pin and local recovery/planning admission; final real PG two-order races, actor deactivation and compatible lock graph. No claim that entire B2 or feature is ready.
-- **B2.3a author PASS / Lira STOP before B2.3b.** Continue only on explicit owner command. After full B2 scope: author exact-head self-check and CI → Mira bounded checkpoint. B1/B2 remain Draft/unmerged; no Leva independent review until final folded feature.
+- B2.3b `59eb34bd86d31bf00b960b487bed09555bbbe07d`: `editPublishedPost` retains draft+receipt-first, uses topic NO KEY UPDATE → post UPDATE → actor admission, denies hidden topic/post before mutation. Own title and all source-locale change/no-op entrypoints reject hidden content under topic→post→actor locks; any source-locale no-op checks `admin.forum` measure. `tests/database/moderation-visibility-commands.test.ts` adds 6 cases, selective legacy `content-topic-title-execution.test.ts` fixture includes visibility column.
+- [Exact-head CI 44706419635](https://github.com/iliya1947/vico-forum/actions/runs/44706419635): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS, 2758/2758 unit, 1502/1502 PG17** including 16/16 visibility commands and 14/14 title-execution tests. Earlier intermediate failures resolved; final source/test scope reverified.
+- B2 remaining: B2.3c1 topic closure/pin guards, then Help/solution writers and local recovery/planning admission, finally real PG two-order races, actor deactivation and lock graph. No claim whole B2 or feature ready.
+- **B2.3b author PASS / Lira STOP before B2.3c1.** Continue only on explicit owner command. After full B2 scope: exact-head author self-check and CI → Mira bounded checkpoint; no Leva review until folded final feature. B1/B2 Draft/unmerged.
 
 ## Process follow-up
 
