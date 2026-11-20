@@ -6376,11 +6376,17 @@ function PreviewCategoryRoute({ scenario, interactions }: {
     const currentHelpQuestion = (question: typeof basePage.questions[number]) => {
       const replies = interactions.replies.get(question.id) ?? [];
       const override = interactions.topicOverrides.get(question.id);
+      const authorId = previewProfileIdForName(question.authorName);
+      const deactivated = interactions.ownerDeactivations.has(authorId);
       const solutionModerationStatus = override?.solutionModerationStatus === undefined
         ? question.solutionModerationStatus
         : override.solutionModerationStatus;
       return {
         ...question,
+        previewAuthorId: authorId,
+        ...(deactivated
+          ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+          : {}),
         title: interactions.topicTitleEdits.get(question.id)?.originalContent ?? question.title,
         replyCount: question.replyCount + replies.length,
         isSolved: override?.isSolved ?? question.isSolved,
@@ -6403,10 +6409,13 @@ function PreviewCategoryRoute({ scenario, interactions }: {
       .map((topic) => {
         const replies = interactions.replies.get(topic.id) ?? [];
         const override = interactions.topicOverrides.get(topic.id);
+        const deactivated = interactions.ownerDeactivations.has(topic.authorId);
         return {
           id: topic.id,
+          previewAuthorId: topic.authorId,
           title: interactions.topicTitleEdits.get(topic.id)?.originalContent ?? topic.title,
-          authorName: topic.authorName,
+          authorName: deactivated ? DELETED_USER_NAME : topic.authorName,
+          ...(deactivated ? { authorIdentityKind: "deleted" as const } : {}),
           replyCount: replies.length,
           isSolved: override?.isSolved ?? false,
           hasBestAnswer: Boolean(override?.bestAnswerPostId),
@@ -6428,6 +6437,10 @@ function PreviewCategoryRoute({ scenario, interactions }: {
       questions: [...createdQuestions, ...basePage.questions.map(currentHelpQuestion)],
     };
     const previewIdentity = previewUser(scenario);
+    const isOwnQuestion = (question: typeof page.questions[number]) =>
+      "previewAuthorId" in question
+        ? question.previewAuthorId === previewIdentity?.id
+        : previewProfileIdForName(question.authorName) === previewIdentity?.id;
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
       : scenario.variant === "help-solutions-want-empty" && mode === "help"
@@ -6441,13 +6454,13 @@ function PreviewCategoryRoute({ scenario, interactions }: {
             : mode === "open"
               ? { ...page, questions: page.questions.filter((question) => !question.isSolved) }
               : mode === "help"
-                ? { ...page, questions: page.questions.filter((question) => !question.isSolved && question.authorName !== previewIdentity?.name) }
+                ? { ...page, questions: page.questions.filter((question) => !question.isSolved && !isOwnQuestion(question)) }
                 : mode === "for-me"
                   ? {
                       ...page,
                       questions: page.questions.filter((question) =>
                         !question.isSolved
-                        && question.authorName !== previewIdentity?.name
+                        && !isOwnQuestion(question)
                         && question.tags.some(({ key }) => key === "better-auth" || key === "workers")
                       ),
                     }
@@ -6456,7 +6469,7 @@ function PreviewCategoryRoute({ scenario, interactions }: {
                 : mode === "solutions"
                   ? { ...page, questions: page.questions.filter((question) => question.isSolved) }
                   : mode === "mine"
-                    ? { ...page, questions: page.questions.filter((question) => question.authorName === previewIdentity?.name) }
+                    ? { ...page, questions: page.questions.filter(isOwnQuestion) }
                     : page;
     const filterQuestion = (question: typeof page.questions[number]) =>
       (!filters.solution
