@@ -24,11 +24,11 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active implementation: stacked Draft #359, exact `7324fd9cfa9e13abdddbf86b352bb977d5cbea3f`, based on B2 #357. B3 still partial.
-- Previous two test regressions on `8e98af76`: hidden non-root search/count and hidden-root Unanswered. Correct `ForumSearchResult` property `postCount`, not `replyCount`.
-- Latest two-microstep test-only commit `7324fd9c`: fixes expected **visible postCount 2→1→2** for root+reply; adds search rank/`LIMIT 1` Hide→Restore with deterministic activity timestamps.
-- Seven targeted **static** checks passed. Real PostgreSQL execution is **not verified** in this environment (no checkout or database); do not report PG PASS.
-- Next `...`: select 2–3 related remaining B3 boundary gaps, work only on them, perform available targeted checks, update WORKFLOW and this file, STOP. Do not inspect GitHub Actions/CI until entire B3 is complete. No B4, Mira checkpoint or merge.
+- Active stacked Draft #359, exact `fd0993af7cdca1aa83e49713146010bb69039370` (B2 base unchanged). B3 incomplete; B1 #355/B2 #357 Draft/unmerged.
+- Existing Search/Unanswered boundary regressions on `8e98af76`/`7324fd9c`, including `ForumSearchResult.postCount` visible root+reply 2→1→2 and search rank before LIMIT.
+- Latest **two-microstep test-only** commit `fd0993af`: hidden selected Help best-answer tombstone, retained solved/selected state, hidden source and Profile/Help visible counts; Popular 24h/7d/30d visible activity ranking under limit 1 and Hide/Restore.
+- Targeted source-contract assertions **11/11 pass**. Real PostgreSQL test execution **not verified** (no local checkout or test PG); never assert PG PASS from static checks.
+- On next `...`: select at most 2–3 verified remaining B3 gaps (e.g. public response leakage/negative reads or remaining discovery boundaries), do available focused checks, update WORKFLOW and this file, STOP. **No GitHub Actions/CI inspection until all B3 is complete**, no B4, Mira or merge.
 
 ## Cadence
 
