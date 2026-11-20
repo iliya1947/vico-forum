@@ -1533,6 +1533,18 @@ function previewNotifications(locale: PreviewLocale) {
       readAt: null,
     },
     {
+      id: "notification-complaint-appeal-result",
+      kind: "complaint-appeal-result" as const,
+      actorName: null,
+      topicId: null,
+      topicTitle: null,
+      postId: null,
+      caseId: PREVIEW_COMPLAINT_RESULT_CASE_ID,
+      appealId: PREVIEW_COMPLAINT_RESULT_RESOLVED_APPEAL_ID,
+      createdAt: "2026-11-18T21:21:00.000Z",
+      readAt: "2026-11-18T21:22:00.000Z",
+    },
+    {
       id: "notification-3",
       kind: "reply" as const,
       actorName: hebrew ? "נועה לוי" : "Noa Levi",
@@ -4002,6 +4014,11 @@ async function previewNotificationsAction(
   if (notification.kind === "complaint-decision") {
     return redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(notification.caseId)}/result`);
   }
+  if (notification.kind === "complaint-appeal-result") {
+    return redirect(
+      `/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(notification.caseId)}/result#appeal-${encodeURIComponent(notification.appealId)}`,
+    );
+  }
   return redirect(
     `${forumTopicPath(locale, notification.topicId)}#post-${encodeURIComponent(notification.postId)}`,
   );
@@ -4646,7 +4663,8 @@ const PREVIEW_COMPLAINT_APPEAL_CASE_ID = "33333333-3333-4333-8333-333333333333";
 const PREVIEW_COMPLAINT_APPEAL_ID = "44444444-4444-4444-8444-444444444444";
 const PREVIEW_COMPLAINT_RESULT_CASE_ID = "55555555-5555-4555-8555-555555555555";
 const PREVIEW_COMPLAINT_RESULT_DECISION_ID = "66666666-6666-4666-8666-666666666666";
-const PREVIEW_COMPLAINT_RESULT_APPEAL_ID = "77777777-7777-4777-8777-777777777777";
+const PREVIEW_COMPLAINT_RESULT_RESOLVED_APPEAL_ID = "77777777-7777-4777-8777-777777777777";
+const PREVIEW_COMPLAINT_RESULT_PENDING_APPEAL_ID = "88888888-8888-4888-8888-888888888888";
 
 function previewComplaintParticipantResultData(
   scenario: Scenario,
@@ -4671,20 +4689,32 @@ function previewComplaintParticipantResultData(
       initialOutcome: "confirmed",
       effectiveOutcome: "confirmed",
       eligibleSide: "author",
-      used: appeal ? 1 : 0,
-      remaining: appeal ? 2 : 3,
+      used: appeal ? 2 : 1,
+      remaining: appeal ? 1 : 2,
       pending: Boolean(appeal),
       canAppeal: !appeal,
-      appeals: appeal ? [{
-        id: appeal.id,
-        ordinal: 1,
-        side: "author",
-        status: "pending",
-        outcome: null,
-        reasoning: null,
-        resolvedAt: null,
-        ownArgument: appeal.argument,
-      }] : [],
+      appeals: [
+        {
+          id: PREVIEW_COMPLAINT_RESULT_RESOLVED_APPEAL_ID,
+          ordinal: 1,
+          side: "author",
+          status: "resolved",
+          outcome: "upheld",
+          reasoning: "The original decision remains in effect after appeal review.",
+          resolvedAt: "2026-11-18T21:20:00.000Z",
+          ownArgument: "The answer was technical criticism, not a personal attack.",
+        },
+        ...(appeal ? [{
+          id: appeal.id,
+          ordinal: 2,
+          side: "author" as const,
+          status: "pending" as const,
+          outcome: null,
+          reasoning: null,
+          resolvedAt: null,
+          ownArgument: appeal.argument,
+        }] : []),
+      ],
     },
   };
 }
@@ -4719,11 +4749,11 @@ async function previewComplaintParticipantResultAction(
       : { error: "conflict" as const };
   }
   interactions.participantComplaintAppeal = {
-    id: PREVIEW_COMPLAINT_RESULT_APPEAL_ID,
+    id: PREVIEW_COMPLAINT_RESULT_PENDING_APPEAL_ID,
     operationId,
     argument,
   };
-  return { ok: true as const, appealId: PREVIEW_COMPLAINT_RESULT_APPEAL_ID, operationId };
+  return { ok: true as const, appealId: PREVIEW_COMPLAINT_RESULT_PENDING_APPEAL_ID, operationId };
 }
 
 function PreviewComplaintResultRoute() {

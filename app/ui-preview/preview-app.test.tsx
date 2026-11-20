@@ -3107,6 +3107,27 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.queryByRole("button", { name: "Submit appeal" })).not.toBeInTheDocument();
   });
 
+  it("opens an Appeal result notification at the resolved Appeal in participant result", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="notifications-user" identity="user" />);
+
+    const appealResult = screen.getByRole("button", { name: /Appeal result/ });
+    expect(appealResult).toHaveClass("is-system");
+    expect(appealResult).not.toHaveClass("is-unread");
+    await user.click(appealResult);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Initial decision" })).toBeInTheDocument();
+    const resolvedAppeal = document.getElementById(
+      "appeal-77777777-7777-4777-8777-777777777777",
+    );
+    expect(resolvedAppeal).not.toBeNull();
+    expect(within(resolvedAppeal!).getByText("Appeal 1")).toBeInTheDocument();
+    expect(within(resolvedAppeal!).getByText("Appeal upheld")).toBeInTheDocument();
+    expect(within(resolvedAppeal!).getByText(
+      "The original decision remains in effect after appeal review.",
+    )).toBeInTheDocument();
+  });
+
   it("requires sign-in for guest direct access to My questions", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-mine-guest" />);
 
