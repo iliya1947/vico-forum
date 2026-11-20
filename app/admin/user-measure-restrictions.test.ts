@@ -51,6 +51,7 @@ describe("AP-10 restriction catalog", () => {
     ]);
     expect(Object.keys(USER_MEASURE_ADMIN_PERMISSION_FAMILIES)).toEqual(USER_MEASURE_ADMIN_RESTRICTIONS);
     const all = Object.values(USER_MEASURE_ADMIN_PERMISSION_FAMILIES).flat();
+    expect(USER_MEASURE_ADMIN_PERMISSION_FAMILIES["admin.forum"]).toContain("forum.content.visibility.manage");
     expect(all).toContain("admin.users.blocks.manage");
     expect(all).toContain("admin.users.blocks.managePrivileged");
     expect(all).not.toContain("forum.topic.create");
