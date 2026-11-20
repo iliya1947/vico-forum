@@ -331,8 +331,8 @@ describe("public forum authorization degradation", () => {
       params: { locale: "en", sectionId: section.id },
       context: contextWithAuthorizationFailure(failure),
     });
-    expect(sectionResult.section).toBe(section);
-    expect(sectionResult.canCreateTopic).toBe(false);
+    expect(sectionResult.data.section).toBe(section);
+    expect(sectionResult.data.canCreateTopic).toBe(false);
 
     const topicResult = await topicLoader({
       params: { locale: "en", topicId: topic.id },
