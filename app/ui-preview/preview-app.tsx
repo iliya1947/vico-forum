@@ -54,6 +54,7 @@ import {
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
+import { FiltersView, type FilterListItem } from "../forum/filters-view";
 import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
 import { ForumRouteError } from "../forum/ui";
@@ -2958,6 +2959,12 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/filters",
+      element: <PreviewFiltersRoute />,
+      loader: ({ request }) => previewFiltersData(scenario, interactions, request),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/users/:userId",
       element: <PreviewProfileRoute scenario={scenario} interactions={interactions} />,
       loader: ({ params }) => previewProfileAccessData(scenario, params.userId),
@@ -3601,6 +3608,67 @@ async function previewProfileAction(
     }
     throw error;
   }
+}
+
+function previewInteractionPairs(values: Set<string>, actorId: string) {
+  return [...values].flatMap((value) => {
+    try {
+      const pair = JSON.parse(value);
+      return Array.isArray(pair) && pair.length === 2
+        && pair[0] === actorId && typeof pair[1] === "string"
+        ? [pair[1]]
+        : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function previewFiltersData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) throw new Response("Unauthorized", { status: 401 });
+  const search = new URL(request.url).searchParams;
+  const tab = search.get("tab") ?? "topics";
+  if (tab !== "topics" && tab !== "users") {
+    throw new Response("Invalid filters query", { status: 400 });
+  }
+
+  let items: FilterListItem[];
+  if (tab === "topics") {
+    items = previewInteractionPairs(interactions.topicMutes, actor.id).flatMap((id, index) => {
+      const page = previewAdminTopicData(scenario, interactions, id);
+      if (!page) return [];
+      const topic = page.topic;
+      return [{
+        kind: "topic" as const,
+        id,
+        name: interactions.topicTitleEdits.get(id)?.originalContent ?? topic.title.originalContent,
+        createdAt: new Date(Date.UTC(2026, 10, 20, 6, 0, index)).toISOString(),
+        authorName: topic.authorName,
+        category: { name: topic.section.category.name },
+        section: { name: topic.section.name },
+      }];
+    });
+  } else {
+    items = previewInteractionPairs(interactions.userBlocks, actor.id).flatMap((id, index) => {
+      const name = previewProfileNames[id];
+      return name ? [{
+        kind: "user" as const,
+        id,
+        name,
+        createdAt: new Date(Date.UTC(2026, 10, 20, 6, 0, index)).toISOString(),
+      }] : [];
+    });
+  }
+  return { locale: scenario.locale, actorId: actor.id, tab, items, next: null };
+}
+
+function PreviewFiltersRoute() {
+  return <FiltersView {...useLoaderData<ReturnType<typeof previewFiltersData>>()} />;
 }
 
 function PreviewNotificationsRoute({ scenario, interactions }: {
