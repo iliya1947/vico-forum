@@ -3367,6 +3367,11 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(screen.queryByText("Closed")).not.toBeInTheDocument();
 
+    const replyBody = screen.getByLabelText("Reply");
+    await owner.type(replyBody, "Draft retained while the topic is closed.");
+    const postReply = screen.getByRole("button", { name: "Post reply" });
+    await waitFor(() => expect(postReply).toBeEnabled());
+
     const quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
     expect(quickActions).not.toBeNull();
     await owner.click(quickActions!);
@@ -3374,10 +3379,17 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await owner.click(screen.getByRole("button", { name: "Close topic" }));
     expect(await screen.findByText("Closed")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reopen topic" })).toBeInTheDocument();
+    expect(screen.getByText(
+      "This topic is closed. Your text and attachments remain in the editor; publishing is disabled.",
+    )).toBeInTheDocument();
+    expect(replyBody).toHaveValue("Draft retained while the topic is closed.");
+    expect(postReply).toBeDisabled();
 
     await owner.click(screen.getByRole("button", { name: "Reopen topic" }));
     await waitFor(() => expect(screen.queryByText("Closed")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Close topic" })).toBeInTheDocument();
+    expect(replyBody).toHaveValue("Draft retained while the topic is closed.");
+    await waitFor(() => expect(postReply).toBeEnabled());
   });
 
   it("lets the bound Owner correct topic and post source language", async () => {
