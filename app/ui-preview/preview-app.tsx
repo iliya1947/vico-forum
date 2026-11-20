@@ -254,6 +254,7 @@ export const scenarios: readonly Scenario[] = [
   { id: "section-form-error", label: "Create topic error", locale: "en", direction: "ltr", identity: "user", path: "/en/sections/typescript", view: "section", variant: "section-form-error", allowedIdentities: ["user", "manager"] },
   { id: "topic-solved-user", label: "Solved topic", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic" },
   { id: "editor-published-post", label: "Editor · Published post", locale: "en", direction: "ltr", identity: "user", path: "/en/posts/question/edit", view: "topic", allowedIdentities: ["user"] },
+  { id: "editor-help-published-post", label: "Editor · Help published post", locale: "en", direction: "ltr", identity: "user", path: "/en/posts/help-cloudflare-cache-post-1/edit", view: "topic", allowedIdentities: ["user"] },
   { id: "editor-reply", label: "Editor · Reply", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-unsolved", allowedIdentities: ["user", "manager"] },
   { id: "topic-best-answer-unsolved", label: "Best answer · confirmation", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api?solutionPrompt=answer#solution-confirmation", view: "topic", variant: "topic-best-answer-unsolved", allowedIdentities: ["user"] },
   { id: "topic-reply-error", label: "Reply error", locale: "en", direction: "ltr", identity: "user", path: "/en/topics/typed-api", view: "topic", variant: "topic-reply-error", allowedIdentities: ["user", "manager"] },
@@ -4685,6 +4686,36 @@ function previewEditableTopicForAction(
   return previewAdminTopicData(scenario, interactions, routeTopicId)?.topic ?? null;
 }
 
+function previewPostEditTopicIds(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+): string[] {
+  const ids = new Set<string>([
+    topicId,
+    ...interactions.createdTopics.keys(),
+    ...previewHelpSolutions(scenario.locale).questions.map((question) => question.id),
+    ...unansweredTopics(scenario.locale).map((topic) => topic.id),
+    ...Object.values(popularPeriods(scenario.locale)).flat().map((topic) => topic.id),
+  ]);
+
+  for (const overview of homepageCategories(scenario.locale)) {
+    for (const sectionSummary of previewCategory(scenario.locale, overview.id).sections) {
+      for (const topic of previewSection(scenario.locale, sectionSummary.id).topics) ids.add(topic.id);
+    }
+    for (const sectionSummary of overview.sections) {
+      const cards = previewCategoryTopics(scenario.locale, sectionSummary.id, sectionSummary.name);
+      for (const topic of [...cards.pinnedTopics, ...cards.latestTopics]) ids.add(topic.id);
+    }
+  }
+
+  for (const item of previewAttentionSamples()) {
+    ids.add(item.topicId);
+    if (item.original) ids.add(item.original.id);
+  }
+
+  return [...ids];
+}
+
 function previewPostEditRedirect(
   scenario: Scenario,
   interactions: PreviewInteractionState,
@@ -4695,11 +4726,11 @@ function previewPostEditRedirect(
   if (!actor) throw new Response("Unauthorized", { status: 401 });
   if (!postId) throw new Response("Not Found", { status: 404 });
 
-  const primary = previewApplyTopicState(primaryTopicScenarioData(scenario).topic, interactions);
-  const createdTopics = [...interactions.createdTopics.values()]
-    .map((created) => previewCreatedTopicData(scenario, created, interactions).topic);
-  const topicPage = [primary, ...createdTopics]
-    .find((candidate) => candidate.posts.some((post) => post.id === postId));
+  const topicPage = previewPostEditTopicIds(scenario, interactions)
+    .map((candidateTopicId) => previewAdminTopicData(scenario, interactions, candidateTopicId)?.topic)
+    .find((candidate): candidate is PreviewTopicPage =>
+      Boolean(candidate?.posts.some((post) => post.id === postId))
+    );
   const post = topicPage?.posts.find((candidate) => candidate.id === postId);
   if (!topicPage || !post) throw new Response("Not Found", { status: 404 });
   if (post.authorId !== actor.id) throw new Response("Forbidden", { status: 403 });
