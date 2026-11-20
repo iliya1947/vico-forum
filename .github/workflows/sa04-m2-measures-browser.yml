@@ -2,6 +2,8 @@ name: SA04-M2 connected AP10 Worker Chromium AccountState acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-m2-measures-browser.yml"
@@ -18,11 +20,14 @@ on:
       - "workers/app.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   measures_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
