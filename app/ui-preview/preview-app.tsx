@@ -1696,6 +1696,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
           && form.id === "help-question-create-form")
         || (!intent && form.classList.contains("complaint-form"))
         || (intent === "save-profile" && form.classList.contains("profile-form"))
+        || (intent === "deactivate" && form.classList.contains("owner-deactivation-form"))
         || (intent === "open" && form.classList.contains("notification-form"))
         || (intent === "save-locale" && form.classList.contains("settings-locale-form"))
         || (intent === "save-online-visibility" && form.classList.contains("settings-privacy-form"))
