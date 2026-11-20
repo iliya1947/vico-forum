@@ -1466,8 +1466,10 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
         || (intent === "setTopicBookmark" && Boolean(form.closest(".topic-bookmark-control")))
-        || (intent === "setTopicMute" && Boolean(form.closest(".personal-filter-control")))
-        || (intent === "setUserBlock" && Boolean(form.closest(".personal-filter-control")))
+        || (intent === "setTopicMute"
+          && (Boolean(form.closest(".personal-filter-control")) || Boolean(form.closest(".bookmarks-row-actions"))))
+        || (intent === "setUserBlock"
+          && (Boolean(form.closest(".personal-filter-control")) || Boolean(form.closest(".bookmarks-row-actions"))))
         || (intent === "selectBestAnswer"
           && (form.classList.contains("topic-best-answer-form") || form.classList.contains("topic-admin-form")))
         || (intent === "markSolved"
