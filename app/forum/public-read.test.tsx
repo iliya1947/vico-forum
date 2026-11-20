@@ -55,7 +55,10 @@ import UnansweredRoute, { loader as rawUnansweredLoader, headers as unansweredHe
 async function unansweredLoader(args: Parameters<typeof rawUnansweredLoader>[0]) {
   return (await rawUnansweredLoader(args)).data;
 }
-import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
+import UnreadRoute, { loader as rawUnreadLoader, headers as unreadHeaders } from "../routes/unread";
+async function unreadLoader(args: Parameters<typeof rawUnreadLoader>[0]) {
+  return (await rawUnreadLoader(args)).data;
+}
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
 import SectionRoute, { loader as rawSectionLoader, headers as sectionHeaders } from "../routes/section";
 async function sectionLoader(args: Parameters<typeof rawSectionLoader>[0]) {
@@ -5360,6 +5363,45 @@ describe("B3 public content cache policy", () => {
       errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
     });
     expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("keeps Unread loader, document and negative responses private no-store", async () => {
+    const guest = context();
+    const readGuest = vi.fn(reader.readUnreadForUser);
+    guest.set(forumReaderContext, { ...reader, readUnreadForUser: readGuest });
+    await expect(rawUnreadLoader({ params: { locale: "en" }, context: guest }))
+      .rejects.toMatchObject({
+        status: 401, headers: expect.objectContaining({}),
+      });
+    expect(readGuest).not.toHaveBeenCalled();
+    try {
+      await rawUnreadLoader({ params: { locale: "en" }, context: guest });
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    }
+
+    const ctx = context();
+    ctx.set(authSessionContext, { user: { id: "reader" } } as never);
+    const loaded = await rawUnreadLoader({ params: { locale: "en" }, context: ctx });
+    expect(loaded.data.topics).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(unreadHeaders()).toEqual({ "Cache-Control": "private, no-store" });
+
+    const unavailable = context();
+    unavailable.set(authSessionContext, { user: { id: "reader" } } as never);
+    unavailable.set(forumReaderContext, {
+      ...reader, readUnreadForUser: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    try {
+      await rawUnreadLoader({ params: { locale: "en" }, context: unavailable });
+      throw new Error("expected storage unavailable");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Response);
+      expect((error as Response).status).toBe(503);
+      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect(await (error as Response).text()).toBe("Unavailable");
+    }
   });
 
   it("sets no-store on anonymous topic loader data and document responses", async () => {
