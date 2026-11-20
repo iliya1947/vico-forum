@@ -2904,7 +2904,7 @@ function previewRouter(
         if (params.caseId !== PREVIEW_COMPLAINT_APPEAL_CASE_ID || params.appealId !== PREVIEW_COMPLAINT_APPEAL_ID) {
           throw new Response("Not Found", { status: 404 });
         }
-        return { locale: scenario.locale, result: previewComplaintAppealReview(interactions) };
+        return { locale: scenario.locale, result: previewComplaintAppealReview(interactions, scenario.identity === "owner") };
       },
       action: ({ request, params }) =>
         previewComplaintAppealAction(scenario, interactions, request, params.caseId, params.appealId),
@@ -2917,7 +2917,7 @@ function previewRouter(
         previewAttentionAccessData(scenario);
         return {
           locale: scenario.locale,
-          timeline: previewComplaintTimeline(interactions, params.caseId),
+          timeline: previewComplaintTimeline(interactions, params.caseId, scenario.identity === "owner"),
         };
       },
       ErrorBoundary: ForumRouteError,
@@ -2934,9 +2934,9 @@ function previewRouter(
       loader: ({ params }) => {
         previewAttentionAccessData(scenario);
         const item = params.caseId === PREVIEW_COMPLAINT_CASE_ID
-          ? previewComplaintReview(interactions)
+          ? previewComplaintReview(interactions, scenario.identity === "owner")
           : params.caseId === PREVIEW_COMPLAINT_APPEAL_CASE_ID
-            ? previewComplaintAppealReview(interactions).caseReview
+            ? previewComplaintAppealReview(interactions, scenario.identity === "owner").caseReview
             : null;
         if (!item) throw new Response("Not Found", { status: 404 });
         return { locale: scenario.locale, item };
@@ -4949,7 +4949,7 @@ function previewComplaintAppealContextData(
   return previewComplaintFullContextPost();
 }
 
-function previewComplaintReview(interactions: PreviewInteractionState): ReviewCase {
+function previewComplaintReview(interactions: PreviewInteractionState, includeIdentity = false): ReviewCase {
   const automaticPriority = previewComplaintAutomaticPriority(
     interactions,
     { spam: 1, harassment: 1 },
@@ -4991,7 +4991,7 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
         reason: "harassment",
         explanation: "Representative complaint report for Pages preview.",
         createdAt: "2026-11-18T09:42:00.000Z",
-        reporter: { id: "sam", name: "Sam Chen" },
+        ...(includeIdentity ? { reporter: { id: "sam", name: "Sam Chen" } } : {}),
       }],
       total: 1,
       page: 0,
@@ -5044,7 +5044,7 @@ function previewComplaintReview(interactions: PreviewInteractionState): ReviewCa
       duplicate: false,
       sourceLocale: false,
       solutionModeration: false,
-      identity: false,
+      identity: includeIdentity,
     },
   };
 }
@@ -5108,9 +5108,9 @@ function previewComplaintAppeals(interactions: PreviewInteractionState): Pending
   };
 }
 
-function previewComplaintAppealReview(interactions: PreviewInteractionState): AppealReviewPage {
+function previewComplaintAppealReview(interactions: PreviewInteractionState, includeIdentity = false): AppealReviewPage {
   const resolution = interactions.complaintAppealResolution;
-  const base = previewComplaintReview(interactions);
+  const base = previewComplaintReview(interactions, includeIdentity);
   const caseReview: ReviewCase = {
     ...base,
     id: PREVIEW_COMPLAINT_APPEAL_CASE_ID,
@@ -5139,7 +5139,7 @@ function previewComplaintAppealReview(interactions: PreviewInteractionState): Ap
     initialOutcome: "confirmed" as const,
     effectiveOutcome: resolution?.outcome === "overturned" ? "not-confirmed" as const : "confirmed" as const,
     ownInitialDecision: false,
-    appellant: { id: "alex", name: "Alex Rivera" },
+    ...(includeIdentity ? { appellant: { id: "alex", name: "Alex Rivera" } } : {}),
   };
   return { appeal, caseReview, appeals: [appeal] };
 }
@@ -5225,6 +5225,7 @@ function previewComplaintTimelineEvent(
 function previewComplaintTimeline(
   interactions: PreviewInteractionState,
   caseId?: string,
+  includeIdentity = false,
 ): ComplaintTimelinePage {
   if (caseId === PREVIEW_COMPLAINT_CASE_ID && interactions.complaintDecision) {
     const events: ComplaintTimelineEvent[] = [
@@ -5234,6 +5235,7 @@ function previewComplaintTimeline(
         createdAt: new Date("2026-11-18T09:42:00.000Z"),
         reason: "harassment",
         explanation: "Representative complaint report for Pages preview.",
+        ...(includeIdentity ? { reporterName: "Sam Chen", reporterId: "sam" } : {}),
       }),
       ...interactions.complaintNotes.map((note) => previewComplaintTimelineEvent({
         id: `preview-history-${note.id}`,
@@ -5270,6 +5272,7 @@ function previewComplaintTimeline(
         createdAt: new Date("2026-11-18T19:45:00.000Z"),
         reason: "harassment",
         explanation: "The answer targeted the author instead of the technical issue.",
+        ...(includeIdentity ? { reporterName: "Sam Chen", reporterId: "sam" } : {}),
       }),
       previewComplaintTimelineEvent({
         id: "preview-appeal-history-decision",
@@ -5286,6 +5289,7 @@ function previewComplaintTimeline(
         appealArgument: "The answer was technical criticism, not a personal attack.",
         appealSide: "author",
         appealOrdinal: 1,
+        ...(includeIdentity ? { appellantName: "Alex Rivera", appellantId: "alex" } : {}),
       }),
     ];
     if (interactions.complaintAppealResolution) {
@@ -5297,6 +5301,7 @@ function previewComplaintTimeline(
         appealArgument: "The answer was technical criticism, not a personal attack.",
         appealSide: "author",
         appealOrdinal: 1,
+        ...(includeIdentity ? { appellantName: "Alex Rivera", appellantId: "alex" } : {}),
         appealOutcome: interactions.complaintAppealResolution.outcome,
         appealReasoning: interactions.complaintAppealResolution.reasoning,
       }));
