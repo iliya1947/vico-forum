@@ -8,7 +8,9 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 
 [Exact-head CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485) **SUCCESS**: 2758/2758 unit, 1493/1493 PG17 (7/7 new B2.2), overall **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS**. All changes B2.2 confined to #357; no public Hide/Restore route, no B3–B9.
 
-**Лира STOP перед B2.3.** Следующий узкий срез B2.3 после явной команды владельца: локальные visibility admission gates существующих content writers (reply/parent/edit/title/source/closure/etc), затем отдельный bounded срез PG race/lock graph. B2 в целом не завершён, checkpoint Миры не запрошен; B1/B2 остаются Draft/unmerged.
+**B2.3a author PASS:** `createPost` denies new replies under hidden topic or directly hidden parent, preserving generic reply with hidden root and inert matching publication receipt. Exact `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`. [CI run 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502) **22/22 checks, 18/18 workflows SUCCESS; 2758/2758 unit, 1496/1496 PG17 (10/10 visibility commands)**.
+
+**Лира STOP перед B2.3b.** Next explicit owner continuation: published edit and own title/source writer admission, respecting draft/receipt-first and topic→post→actor lock order. Further B2.3 slices: remaining Help/solution/closure/pin writers; then separate real PG two-order races/lock graph. Whole B2 not complete; no Mira checkpoint yet; B1/B2 remain Draft/unmerged.
 
 ## Baseline
 
@@ -32,15 +34,17 @@ B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), b
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1/B2.2 author PASS
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2/B2.3a author PASS
 
 - B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
 - B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
 - B2.1 `41f94434e62b59d40d7f7ebd57be5927decb23c9`: neutral ID-only transaction-owned History append and dedicated PG rollback/reason regressions, author PASS.
 - B2.2 exact `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`: `db/forum-repository.ts`, `db/forum-service.ts`, `db/hyperdrive-forum.ts`, `workers/app.ts`, focused test updates. Topic/post transactional Hide/Restore state CAS, current revision and membership checks, active actor, direct RBAC/Owner and AP-10 admission even on no-op, mandatory transition reason, overflow/stale denial, History appended last and transaction rollback. B2.2 changed only backend commands/wiring/tests; no action routes/reader exposure.
 - Exact-head [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485): 2758/2758 unit and 1493/1493 PostgreSQL17 SUCCESS including 7/7 new `moderation-visibility-commands.test.ts` cases. GitHub check-runs 22/22 SUCCESS; associated workflows 18/18 SUCCESS. Earlier red CI attempts on intermediate commits corrected within B2.2; verified evidence is final exact head.
-- B2 remaining: current content writers and parent/recovery admission gates, new planning admission as appropriate to B2 scope, real PostgreSQL two-way races, actor deactivation and lock compatibility; do not claim all B2/whole-feature acceptance from green B2.2 CI.
-- **B2.2 bounded author PASS; Lira STOP.** Next explicit owner continuation activates B2.3 (writer admission). After full B2 scope, final exact-head author self-check + applicable CI → Mira bounded checkpoint; no Leva review until final folded feature.
+- B2.3a exact `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`: `createPost` keeps topic NO KEY UPDATE and parent FK KEY SHARE; requires visible topic and visible direct parent before actor/mutation. Missing and hidden share generic not-found; matching receipt replay remains inert/allowed. Exactly two changed files vs B2.2 (`db/forum-repository.ts`, `tests/database/moderation-visibility-commands.test.ts`); +3 PG cases, including hidden root generic reply and Hide/Restore replay boundaries.
+- [Exact-head CI 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502): **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS, 2758/2758 unit, 1496/1496 PG17**, 10/10 visibility-commands tests.
+- B2 remaining: B2.3b published edit and own title/source; subsequent Help/solution/closure/pin and local recovery/planning admission; final real PG two-order races, actor deactivation and compatible lock graph. No claim that entire B2 or feature is ready.
+- **B2.3a author PASS / Lira STOP before B2.3b.** Continue only on explicit owner command. After full B2 scope: author exact-head self-check and CI → Mira bounded checkpoint. B1/B2 remain Draft/unmerged; no Leva independent review until final folded feature.
 
 ## Process follow-up
 

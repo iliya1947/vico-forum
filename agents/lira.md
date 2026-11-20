@@ -2,18 +2,20 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2 author PASS; Лира STOP before B2.3.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a author PASS; Лира STOP before B2.3b.**
 
 ## Подтверждённое B2
 
 - B2.1 `41f94434e62b59d40d7f7ebd57be5927decb23c9`: `appendVisibilityHistory` neutral ID-only labels, reason/rollback PG regressions.
 - B2.2 exact stable `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`: transactional topic/post Hide/Restore, current version/revision CAS, membership, active actor, direct fresh RBAC+Owner/AP10 admission before no-op; one neutral History event per transition and rollback if append fails. Backend not exposed through public routes.
 - Final [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1493/1493 PG17 incl 7/7 new. No need to recheck same exact head without new cause.
-- B2.2 changes and tests confined to Draft #357; no B3+.
+- B2.3a `355c0a1de2e3032f4b3c88ff996ae680bf2f1fff`: `createPost` rejects new replies under hidden topic / hidden direct parent, allows generic reply when root hidden, preserves already-committed matching receipt replay. Topic lock remains NO KEY UPDATE; parent remains KEY SHARE; no new lock-order edge. Scope: `db/forum-repository.ts` and +3 PG tests in `tests/database/moderation-visibility-commands.test.ts`.
+- [Exact-head CI 44704018502](https://github.com/iliya1947/vico-forum/actions/runs/44704018502) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit, 1496/1496 PG17 including visibility commands 10/10. No repeated CI polling needed.
+- Work confined to Draft #357; no B3+.
 
 ## Следующий шаг только по явной команде владельца
 
-**B2.3: existing writers availability guards** — reply/direct hidden parent, published edit, own title/source, solution/Help/closure/pin and local recovery/admission seams as scoped by `stages/moderation-visibility/PLAN.md`; preserve lock order. Keep PG two-order concurrency/lock graph as separately bounded follow-on. STOP after B2.3.
+**B2.3b: published editing and own title/source writer admission** per `stages/moderation-visibility/PLAN.md`. Preserve draft/receipt-first, topic→post→actor lock order; no UI/public reader changes. Then STOP. Following bounded slices: Help/solution/closure/pin, recovery/planning and real PostgreSQL both-order lock graph.
 
 B2 overall not complete or ready for Mira checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 
