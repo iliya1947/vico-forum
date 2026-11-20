@@ -2,7 +2,7 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g/B2.3d1/B2.3d2 author PASS; Лира STOP before B2.3e1.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g/B2.3d1/B2.3d2 author PASS. Owner authorized continuous completion of the remaining B2 tail starting at B2.3e1.**
 
 ## Подтверждённое B2
 
@@ -27,11 +27,20 @@ Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-
 - B2.3d2 exact `19f2bdaa80b244093f37424a955a18acc3e572f9`: locked title topic gate rejects hidden; body planner pre-reads immutable post→topic, then locks topic NO KEY UPDATE before existing post UPDATE; hidden topic/post or stale membership aborts after head/task, before translation/actor/budget with full rollback. Existing accepted task execution unchanged. +3 PG regressions for Hide/Restore, pending task retention and no head/task/budget on refusal; partial test fixture `is_hidden` columns added. [CI 44746654595](https://github.com/iliya1947/vico-forum/actions/runs/44746654595) **PASS**: 22/22 checks, 18/18 workflows, 2758 unit, 1531 PostgreSQL17.
 - Work confined to Draft #357; no B3+.
 
-## Следующий шаг только по явной команде владельца
+## Активный маршрут — завершить оставшийся B2 tail без микростопов
 
-**B2.3e1: real PostgreSQL race Hide/Restore × topic-title new planning only** per V4 accepted lock graph. Owner continuation: test both actual PG ordering cases using deterministic barriers on independent connections, verifying no deadlock, Hide-before-plan denial/no task/budget, plan-before-Hide committed task retained and unchanged accepted execution, correct Restore behavior. Add only necessary tests/minimal fix and exact-head CI, then STOP before body planning races.
+Continue from **B2.3e1** through the remaining B2 race/writer/deactivation/lock-compatibility scope defined by the accepted plan.
 
-B2 overall not complete or ready for Mira checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
+Cadence:
+1. For each internal microstep, run only focused/targeted tests/checks appropriate to the changed seam.
+2. Do **not** STOP for owner continuation between B2 microsteps.
+3. Do **not** run the full repository CI after every microstep unless a concrete cross-cutting risk makes it necessary.
+4. If a real blocker, unexpected architecture/lock conflict, or plan defect appears, stop and hand it back explicitly.
+5. When the **entire bounded B2 scope** is complete, perform one author self-check and one full exact-head CI/check set, then STOP Mira for the B2 bounded checkpoint.
+
+B2.3e1 starts with the accepted real PostgreSQL Hide/Restore × topic-title planning both-order race coverage; then continue the planned remaining B2 race/writer/deactivation/lock-compatibility tail.
+
+B2 overall is not complete or ready for Mira checkpoint until that whole tail is done. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 
 ## Границы
 
