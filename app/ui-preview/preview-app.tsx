@@ -4351,6 +4351,9 @@ function previewBookmarksData(
         id,
         title: interactions.topicTitleEdits.get(id)?.originalContent ?? topic.title.originalContent,
         authorName: topic.authorName,
+        ...(topic.authorIdentityKind === "deleted"
+          ? { authorIdentityKind: "deleted" as const }
+          : {}),
         category: { name: topic.section.category.name },
         section: { name: topic.section.name },
         savedAt: new Date(Date.UTC(2026, 10, 20, 6, 30, index)).toISOString(),
