@@ -4272,7 +4272,18 @@ async function previewTopicAction(
 
   if (intent === "reply") {
     const body = String(form.get("body") ?? "").trim();
-    if (!body) return null;
+    if (!body) return { error: "invalid" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    if (currentPage.topic.isClosed) return { error: "topicClosed" as const };
+    if (currentPage.topic.duplicateOf) return { error: "conflict" as const };
+
+    const parentPostId = String(form.get("parentPostId") ?? "").trim() || null;
+    if (parentPostId && !currentPage.topic.posts.some((post) => post.id === parentPostId)) {
+      return { error: "notFound" as const };
+    }
+
     const sequence = ++interactions.sequence;
     const reply: PreviewReply = {
       id: `preview-post-${sequence}`,
@@ -4280,7 +4291,7 @@ async function previewTopicAction(
       authorId: actor.id,
       authorName: actor.name,
       body,
-      parentPostId: String(form.get("parentPostId") ?? "").trim() || null,
+      parentPostId,
       sourceLocale: locale,
       createdAt: new Date(Date.UTC(2026, 10, 11, 7, 5, sequence)),
     };
