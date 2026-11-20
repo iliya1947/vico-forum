@@ -1,0 +1,25 @@
+name: Manual PR test controls
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/manual-pr-test-controls.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ensure-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure agent test-control labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create "run:ci" --repo "$GH_REPO" --color "0E8A16" --description "Agent-triggered main CI" --force
+          gh label create "run:acceptance" --repo "$GH_REPO" --color "5319E7" --description "Agent-triggered relevant acceptance checks" --force
