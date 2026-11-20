@@ -1049,6 +1049,65 @@ function homepageCategories(locale: PreviewLocale): HomepageCategoryOverview[] {
   });
 }
 
+function previewHomepageCategories(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+): HomepageCategoryOverview[] {
+  const categories = homepageCategories(scenario.locale);
+  const categoryDeltas = new Map<string, { topicCount: number; messageCount: number }>();
+  const sectionDeltas = new Map<string, { topicCount: number; messageCount: number }>();
+
+  const categoryIdForSection = (sectionIdValue: string) => {
+    if (sectionIdValue === HELP_SOLUTIONS_SERVICE_SECTION_ID) return HELP_SOLUTIONS_CATEGORY_ID;
+    return categories.find((category) =>
+      category.sections.some((section) => section.id === sectionIdValue)
+    )?.id ?? null;
+  };
+
+  const addDelta = (sectionIdValue: string, topicCount: number, messageCount: number) => {
+    const categoryIdValue = categoryIdForSection(sectionIdValue);
+    if (!categoryIdValue) return;
+
+    const categoryDelta = categoryDeltas.get(categoryIdValue) ?? { topicCount: 0, messageCount: 0 };
+    categoryDelta.topicCount += topicCount;
+    categoryDelta.messageCount += messageCount;
+    categoryDeltas.set(categoryIdValue, categoryDelta);
+
+    const sectionDelta = sectionDeltas.get(sectionIdValue) ?? { topicCount: 0, messageCount: 0 };
+    sectionDelta.topicCount += topicCount;
+    sectionDelta.messageCount += messageCount;
+    sectionDeltas.set(sectionIdValue, sectionDelta);
+  };
+
+  for (const created of interactions.createdTopics.values()) {
+    addDelta(created.sectionId, 1, 1);
+  }
+
+  for (const [routeTopicId, replies] of interactions.replies) {
+    if (!replies.length) continue;
+    const sectionIdValue = interactions.createdTopics.get(routeTopicId)?.sectionId
+      ?? previewAdminTopicData(scenario, interactions, routeTopicId)?.topic.sectionId;
+    if (sectionIdValue) addDelta(sectionIdValue, 0, replies.length);
+  }
+
+  return categories.map((category) => {
+    const categoryDelta = categoryDeltas.get(category.id) ?? { topicCount: 0, messageCount: 0 };
+    return {
+      ...category,
+      topicCount: category.topicCount + categoryDelta.topicCount,
+      messageCount: category.messageCount + categoryDelta.messageCount,
+      sections: category.sections.map((section) => {
+        const sectionDelta = sectionDeltas.get(section.id) ?? { topicCount: 0, messageCount: 0 };
+        return {
+          ...section,
+          topicCount: section.topicCount + sectionDelta.topicCount,
+          messageCount: section.messageCount + sectionDelta.messageCount,
+        };
+      }),
+    };
+  });
+}
+
 function previewHelpSolutions(locale: PreviewLocale) {
   const russian = locale === "ru";
   const hebrew = locale === "he";
@@ -3522,7 +3581,7 @@ function PreviewHomeRoute({ scenario, interactions }: {
   return (
     <HomeView
       locale={scenario.locale}
-      categories={homepageCategories(scenario.locale)}
+      categories={previewHomepageCategories(scenario, interactions)}
       onlinePresence={previewOnlinePresence(scenario, interactions)}
     />
   );
