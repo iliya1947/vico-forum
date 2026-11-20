@@ -3403,7 +3403,7 @@ function previewRouter(
       element: <PreviewAdminOverviewRoute />,
       loader: () => {
         previewAdminSurfaceAccessData(scenario);
-        return previewAdminOverviewData(scenario);
+        return previewAdminOverviewData(scenario, interactions);
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -3452,7 +3452,7 @@ function previewRouter(
       element: <PreviewAdminForumRoute />,
       loader: ({ request }) => {
         previewAdminSurfaceAccessData(scenario);
-        return previewAdminForumData(scenario, request);
+        return previewAdminForumData(scenario, interactions, request);
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -3461,7 +3461,7 @@ function previewRouter(
       element: <PreviewAdminCategoryRoute />,
       loader: ({ request, params }) => {
         previewAdminSurfaceAccessData(scenario);
-        return previewAdminCategoryData(scenario, request, params.categoryId);
+        return previewAdminCategoryData(scenario, interactions, request, params.categoryId);
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -3470,7 +3470,7 @@ function previewRouter(
       element: <PreviewAdminSectionRoute />,
       loader: ({ request, params }) => {
         previewAdminSurfaceAccessData(scenario);
-        return previewAdminSectionData(scenario, request, params.sectionId);
+        return previewAdminSectionData(scenario, interactions, request, params.sectionId);
       },
       ErrorBoundary: ForumRouteError,
     },
@@ -6513,8 +6513,11 @@ function previewAdminBrowseQuery(request: Request) {
   return { search: new URL(request.url).searchParams.get("q")?.trim() ?? "" };
 }
 
-function previewAdminCategories(locale: PreviewLocale) {
-  return homepageCategories(locale).map((category) => ({
+function previewAdminCategories(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  return previewHomepageCategories(scenario, interactions).map((category) => ({
     id: category.id,
     name: category.name,
     sectionCount: category.sectionCount,
@@ -6524,8 +6527,12 @@ function previewAdminCategories(locale: PreviewLocale) {
   }));
 }
 
-function previewAdminSections(locale: PreviewLocale, categoryId: string) {
-  const category = previewCategory(locale, categoryId);
+function previewAdminSections(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  categoryId: string,
+) {
+  const category = previewCategoryWithInteractions(scenario.locale, categoryId, interactions);
   return category.sections.map((section) => ({
     id: section.id,
     name: section.name,
@@ -6994,8 +7001,11 @@ function PreviewAdminHistoryRoute({ scenario, interactions }: {
   </AdminShell>;
 }
 
-function previewAdminOverviewData(scenario: Scenario) {
-  const categories = homepageCategories(scenario.locale);
+function previewAdminOverviewData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const categories = previewHomepageCategories(scenario, interactions);
   return {
     locale: scenario.locale,
     access: previewAdminAccess,
@@ -7035,9 +7045,13 @@ function PreviewAdminUsersRoute() {
   return <AdminUsersIndex {...useLoaderData() as ReturnType<typeof previewAdminUsersData>} />;
 }
 
-function previewAdminForumData(scenario: Scenario, request: Request) {
+function previewAdminForumData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  request: Request,
+) {
   const query = previewAdminBrowseQuery(request);
-  const items = previewAdminFilter(previewAdminCategories(scenario.locale), query.search);
+  const items = previewAdminFilter(previewAdminCategories(scenario, interactions), query.search);
   return {
     locale: scenario.locale,
     access: previewAdminAccess,
@@ -7048,15 +7062,16 @@ function previewAdminForumData(scenario: Scenario, request: Request) {
 
 function previewAdminCategoryData(
   scenario: Scenario,
+  interactions: PreviewInteractionState,
   request: Request,
   routeCategoryId?: string,
 ) {
-  const category = previewAdminCategories(scenario.locale)
+  const category = previewAdminCategories(scenario, interactions)
     .find((candidate) => candidate.id === routeCategoryId);
   if (!category) throw new Response("Not Found", { status: 404 });
   const query = previewAdminBrowseQuery(request);
   const items = previewAdminFilter(
-    previewAdminSections(scenario.locale, category.id),
+    previewAdminSections(scenario, interactions, category.id),
     query.search,
   );
   return {
@@ -7070,22 +7085,23 @@ function previewAdminCategoryData(
 
 function previewAdminSectionData(
   scenario: Scenario,
+  interactions: PreviewInteractionState,
   request: Request,
   routeSectionId?: string,
 ) {
-  const category = homepageCategories(scenario.locale)
+  const category = previewHomepageCategories(scenario, interactions)
     .find((candidate) => candidate.sections.some((section) => section.id === routeSectionId));
   if (!category || !routeSectionId) throw new Response("Not Found", { status: 404 });
-  const section = previewAdminSections(scenario.locale, category.id)
+  const section = previewAdminSections(scenario, interactions, category.id)
     .find((candidate) => candidate.id === routeSectionId);
   if (!section) throw new Response("Not Found", { status: 404 });
   const query = previewAdminBrowseQuery(request);
-  const topics = previewSection(scenario.locale, section.id).topics.map((topic) => ({
+  const topics = previewSectionWithInteractions(scenario.locale, section.id, interactions).topics.map((topic) => ({
     id: topic.id,
     title: topic.title.originalContent,
     sourceLocale: topic.title.sourceLocale,
     postCount: topic.postCount,
-    isSolved: false,
+    isSolved: interactions.topicOverrides.get(topic.id)?.isSolved ?? false,
   }));
   const items = previewAdminFilter(topics, query.search);
   return {
