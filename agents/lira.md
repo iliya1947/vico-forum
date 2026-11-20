@@ -24,11 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359, exact `fd0993af7cdca1aa83e49713146010bb69039370` (B2 base unchanged). B3 incomplete; B1 #355/B2 #357 Draft/unmerged.
-- Existing Search/Unanswered boundary regressions on `8e98af76`/`7324fd9c`, including `ForumSearchResult.postCount` visible root+reply 2→1→2 and search rank before LIMIT.
-- Latest **two-microstep test-only** commit `fd0993af`: hidden selected Help best-answer tombstone, retained solved/selected state, hidden source and Profile/Help visible counts; Popular 24h/7d/30d visible activity ranking under limit 1 and Hide/Restore.
-- Targeted source-contract assertions **11/11 pass**. Real PostgreSQL test execution **not verified** (no local checkout or test PG); never assert PG PASS from static checks.
-- On next `...`: select at most 2–3 verified remaining B3 gaps (e.g. public response leakage/negative reads or remaining discovery boundaries), do available focused checks, update WORKFLOW and this file, STOP. **No GitHub Actions/CI inspection until all B3 is complete**, no B4, Mira or merge.
+- Active stacked Draft #359 exact `e62ec37a16797f39f92c0307262716e4f7ada21c`; B2 base unchanged, B3 incomplete.
+- Latest 2-route B3 batch: `app/routes/topic.tsx` and `app/routes/search.tsx` now set `no-store` for public loader document/.data and neutral 404/error paths; topic authenticated data remains `private, no-store`, action/retry headers retained. `public-read.test.tsx` gains 3 focused cache tests and unwraps Search `data()` for existing direct tests.
+- Targeted **static** checks 13/13 passed. **Vitest/real HTTP execution unverified** due to unavailable local checkout/runtime. Earlier real PG regression additions remain unexecuted here. No broader PASS claim.
+- Next owner `...`: one B3 batch of 2–3 related remaining verified gaps; available targeted checks and #342 handoff; STOP. Never inspect GitHub Actions/CI until whole B3 completion; no B4, coordinator or merge.
 
 ## Cadence
 
