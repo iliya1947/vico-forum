@@ -3766,17 +3766,44 @@ export class DrizzleForumRepository {
     });
   }
 
+  /** Lock both signal topic dependencies and the optional answer before signal/actor. */
+  private async lockVisibleHelpSignalDependencies(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
+    identity: { topicId: string; proposedOriginalTopicId: string | null; targetPostId: string | null },
+    message: string,
+  ): Promise<void> {
+    const topicIds = [...new Set([
+      identity.topicId,
+      ...(identity.proposedOriginalTopicId ? [identity.proposedOriginalTopicId] : []),
+    ])].sort();
+    const topics = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden })
+      .from(forumTopics).where(inArray(forumTopics.id, topicIds))
+      .orderBy(asc(forumTopics.id)).for("no key update");
+    if (topics.length !== topicIds.length || topics.some(row => row.isHidden))
+      throw new ForumEntityNotFoundError(message);
+    if (identity.targetPostId) {
+      const [post] = await tx.select({ id: forumPosts.id, isHidden: forumPosts.isHidden })
+        .from(forumPosts)
+        .where(and(
+          eq(forumPosts.id, identity.targetPostId),
+          eq(forumPosts.topicId, identity.topicId),
+        ))
+        .for("no key update");
+      if (!post || post.isHidden) throw new ForumEntityNotFoundError(message);
+    }
+  }
+
   async withdrawHelpSignal(signalId: string, topicId: string, actorId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
       // Resolve immutable signal→topic membership before taking any write lock.
-      const [identity] = await tx.select({ topicId: forumHelpSignals.topicId })
-        .from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
+      const [identity] = await tx.select({
+        topicId: forumHelpSignals.topicId,
+        proposedOriginalTopicId: forumHelpSignals.proposedOriginalTopicId,
+        targetPostId: forumHelpSignals.targetPostId,
+      }).from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
       if (!identity || identity.topicId !== topicId)
         throw new ForumEntityNotFoundError("Help signal does not belong to topic");
-      const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
-        .from(forumTopics).where(eq(forumTopics.id, topicId)).for("no key update");
-      if (!topic || topic.isHidden)
-        throw new ForumEntityNotFoundError("Help signal does not belong to topic");
+      await this.lockVisibleHelpSignalDependencies(tx, identity, "Help signal does not belong to topic");
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,
@@ -3815,13 +3842,13 @@ export class DrizzleForumRepository {
   ): Promise<HelpSignalStatus> {
     if (resolution === "rejected") {
       return this.database.transaction(async (tx) => {
-        const [identity] = await tx.select({ topicId: forumHelpSignals.topicId })
-          .from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
+        const [identity] = await tx.select({
+          topicId: forumHelpSignals.topicId,
+          proposedOriginalTopicId: forumHelpSignals.proposedOriginalTopicId,
+          targetPostId: forumHelpSignals.targetPostId,
+        }).from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
         if (!identity) throw new ForumEntityNotFoundError("Help signal does not exist");
-        const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
-          .from(forumTopics).where(eq(forumTopics.id, identity.topicId)).for("no key update");
-        if (!topic || topic.isHidden)
-          throw new ForumEntityNotFoundError("Help signal does not exist");
+        await this.lockVisibleHelpSignalDependencies(tx, identity, "Help signal does not exist");
         const [signal] = await tx
           .select({
             id: forumHelpSignals.id,
@@ -3892,8 +3919,6 @@ export class DrizzleForumRepository {
       if (
         (kind === "needs-review" || kind === "solution-outdated")
         && snapshot.targetPostId
-        && reviewedTopic?.isSolved
-        && reviewedTopic.bestAnswerPostId === snapshot.targetPostId
       ) {
         const [answer] = await tx.select({
           id: forumPosts.id, isHidden: forumPosts.isHidden,
