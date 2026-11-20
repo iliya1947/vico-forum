@@ -2,7 +2,7 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a/B2.3c3b/B2.3c3c/B2.3c3d/B2.3c3e/B2.3c3f/B2.3c3g/B2.3d1/B2.3d2 author PASS. Owner authorized continuous completion of the remaining B2 tail starting at B2.3e1.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1 through B2.3d2 author PASS. B2 race/deactivation/lock-compatibility tail author-tested at 282ca141 (87 visibility / 1576 real PG17). Final B2 candidate 778568e pending exact-head CI #44753654036; no Mira checkpoint yet.**
 
 ## Подтверждённое B2
 
@@ -38,9 +38,9 @@ Cadence:
 4. If a real blocker, unexpected architecture/lock conflict, or plan defect appears, stop and hand it back explicitly.
 5. When the **entire bounded B2 scope** is complete, perform one author self-check and one full exact-head CI/check set, then STOP Mira for the B2 bounded checkpoint.
 
-B2.3e1 starts with the accepted real PostgreSQL Hide/Restore × topic-title planning both-order race coverage; then continue the planned remaining B2 race/writer/deactivation/lock-compatibility tail.
+B2.3e1 and remaining writer/race/deactivation/lock compatibility covered by deterministic real PG lock barriers; last verified head `282ca1417e721b766e12488539a8d93dec4a1258` **PASS**: 1576/1576 PG17, 87/87 visibility, checks success. Final `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` adds title/body accepted task private execution under Hide + Restore reuse (2 PG tests). [CI 44753654036](https://github.com/iliya1947/vico-forum/actions/runs/44753654036) **pending**. No B3+ work.
 
-B2 overall is not complete or ready for Mira checkpoint until that whole tail is done. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
+B2 ready for author PASS only after final exact-head CI succeeds; then STOP Mira B2 checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 
 ## Границы
 
