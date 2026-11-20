@@ -4702,27 +4702,50 @@ export class DrizzleForumRepository {
     };
   }
 
+  /** Resolve the post's topic first, then lock the topic before the post and actor. */
+  private async lockVisibleSourceLocalePost(
+    tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0], postId: string,
+  ): Promise<{ authorId: string; revisionId: string }> {
+    const [location] = await tx.select({ topicId: forumPosts.topicId })
+      .from(forumPosts).where(eq(forumPosts.id, postId));
+    if (!location) throw new ForumEntityNotFoundError("source locale content does not exist");
+    const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
+      .from(forumTopics).where(eq(forumTopics.id, location.topicId)).for("no key update");
+    if (!topic || topic.isHidden)
+      throw new ForumEntityNotFoundError("source locale content does not exist");
+    const [post] = await tx.select({
+      topicId: forumPosts.topicId, isHidden: forumPosts.isHidden,
+      authorId: forumPosts.authorId, revisionId: forumPosts.currentRevisionId,
+    }).from(forumPosts).where(eq(forumPosts.id, postId)).for("no key update");
+    if (!post || post.isHidden || post.topicId !== location.topicId)
+      throw new ForumEntityNotFoundError("source locale content does not exist");
+    return post;
+  }
+
   /** Same-locale source correction is a success boundary even without a new revision. */
   async admitSourceLocaleNoop(input: {
     kind: "topic" | "post"; contentId: string; expectedRevisionId: string;
     actorId: string; scope: "own" | "any";
   }): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [content] = input.kind === "topic"
-        ? await tx.select({
-          authorId: forumTopics.authorId,
-          revisionId: forumTopics.currentTitleRevisionId,
-        }).from(forumTopics).where(eq(forumTopics.id, input.contentId)).for("no key update")
-        : await tx.select({
-          authorId: forumPosts.authorId,
-          revisionId: forumPosts.currentRevisionId,
-        }).from(forumPosts).where(eq(forumPosts.id, input.contentId)).for("no key update");
-      if (!content) throw new ForumEntityNotFoundError("source locale content does not exist");
+      let content: { authorId: string; revisionId: string };
+      if (input.kind === "topic") {
+        const [topic] = await tx.select({
+          authorId: forumTopics.authorId, revisionId: forumTopics.currentTitleRevisionId,
+          isHidden: forumTopics.isHidden,
+        }).from(forumTopics).where(eq(forumTopics.id, input.contentId)).for("no key update");
+        if (!topic || topic.isHidden)
+          throw new ForumEntityNotFoundError("source locale content does not exist");
+        content = topic;
+      } else {
+        content = await this.lockVisibleSourceLocalePost(tx, input.contentId);
+      }
       if (content.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("source locale current revision changed");
       if (input.scope === "own" && content.authorId !== input.actorId)
         throw new ForumAuthorizationError("actor cannot correct another author's source locale");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
+      if (input.scope === "any") await this.measureAdmission(tx, input.actorId, "admin.forum");
     });
   }
 
@@ -4732,8 +4755,9 @@ export class DrizzleForumRepository {
     return this.database.transaction(async (tx) => {
       const [topic] = await tx.select({
         authorId: forumTopics.authorId, revisionId: forumTopics.currentTitleRevisionId,
+        isHidden: forumTopics.isHidden,
       }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit topic title");
       if (topic.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("topic title current revision changed");
@@ -4760,8 +4784,9 @@ export class DrizzleForumRepository {
 
   async reviseTopicTitle(topicId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
-      await tx.select({ id: forumTopics.id }).from(forumTopics)
+      const [topic] = await tx.select({ isHidden: forumTopics.isHidden }).from(forumTopics)
         .where(eq(forumTopics.id, topicId)).for("no key update");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumTopicTitleRevisions.sourceLocale}).from(forumTopicTitleRevisions).where(eq(forumTopicTitleRevisions.id,expectedRevisionId)):[];
@@ -4778,8 +4803,7 @@ export class DrizzleForumRepository {
 
   async revisePostBody(postId: string, expectedRevisionId: string, revision: ForumRevisionContent, authorId: string, correctionScope?: "own" | "any") {
     return this.database.transaction(async (tx) => {
-      await tx.select({ id: forumPosts.id }).from(forumPosts)
-        .where(eq(forumPosts.id, postId)).for("no key update");
+      await this.lockVisibleSourceLocalePost(tx, postId);
       await assertActiveAccountForDrizzleMutation(tx, authorId);
       if (correctionScope === "any") await this.measureAdmission(tx, authorId, "admin.forum");
       const [previous]=correctionScope==="any"?await tx.select({sourceLocale:forumPostRevisions.sourceLocale}).from(forumPostRevisions).where(eq(forumPostRevisions.id,expectedRevisionId)):[];
@@ -4823,19 +4847,18 @@ export class DrizzleForumRepository {
         await assertActiveAccountForDrizzleMutation(tx, input.actorId);
         return;
       }
-      // Mention notifications have an independent topic FK. Resolve its
-      // KEY SHARE dependency before the post and actor mutexes, so an existing
-      // topic-title Complaint cannot hold topic FOR UPDATE while waiting on
-      // the same actor that a fresh edit already locked.
-      await tx.select({ id: forumTopics.id }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId)).for("key share");
+      // The topic mutex serializes Hide/Restore with edits and resolves the
+      // notification topic FK before the post/actor locks.
+      const [topic] = await tx.select({ isHidden: forumTopics.isHidden }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for("no key update");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       const [post] = await tx.select({
         id: forumPosts.id, authorId: forumPosts.authorId,
-        revisionId: forumPosts.currentRevisionId,
+        revisionId: forumPosts.currentRevisionId, isHidden: forumPosts.isHidden,
       }).from(forumPosts).where(and(
         eq(forumPosts.id, input.postId), eq(forumPosts.topicId, input.topicId),
       )).for("update");
-      if (!post) throw new ForumEntityNotFoundError("post does not exist");
+      if (!post || post.isHidden) throw new ForumEntityNotFoundError("post does not exist");
       if (post.authorId !== input.actorId) throw new ForumAuthorizationError("only author can edit post");
       if (post.revisionId !== input.expectedRevisionId)
         throw new ForumStateConflictError("post revision changed before edit");
