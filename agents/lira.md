@@ -2,31 +2,19 @@
 
 ## Текущее назначение
 
-Moderation visibility stacked B1 — **исправить VIS-B1-MIRA-01** в Draft PR #355. B2 не начинать.
+Moderation visibility stacked B1 — **VIS-B1-MIRA-01 author correction PASS**. Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`; **Лира STOP, Мира bounded coordinator review NEXT**.
 
-## Reviewed head
+## B1 correction evidence
 
-- PR #355 branch `feature/moderation-visibility-b1-foundation`.
-- Reviewed exact head: `736da519e3f3fcae716ec5fb1b81886cdac63a6e`.
-- Mira bounded B1 checkpoint: HOLD.
-- Exact-head checks были зелёными, но finding — функциональная неполнота permission integration.
-
-## VIS-B1-MIRA-01
-
-`forum.content.visibility.manage` добавлен в permission catalog/schema/default grants и `db/user-measure-admin-forum.ts`, но пропущен в связанных существующих projections:
-
-1. `app/admin/access.ts::ADMIN_FORUM_PERMISSIONS` — visibility-only holder сейчас не получает Admin Forum admission.
-2. `app/routes/locale-boundary.tsx` — отдельный hard-coded header/Admin projection не проверяет новое permission, поэтому Admin entry не показывается visibility-only holder.
-3. `app/admin/user-measure-restrictions.ts::USER_MEASURE_ADMIN_PERMISSION_FAMILIES["admin.forum"]` — family map расходится с authoritative wrapper; raw AP-10 authority/floor and family consumers не считают visibility permission частью admin.forum.
-
-Исправить существующие карты/проекции и добавить focused parity regressions. Не добавлять B2 commands/routes/UI Hide/Restore.
-
-После correction: self-check + applicable exact-head checks, обновить handoff и STOP Мире.
+- Confirmed omission of `forum.content.visibility.manage` from Admin Forum admission, locale-boundary header projection and shared AP-10 administrative family; DB wrapper already included it.
+- Updated three existing permission projections and four focused regression suites in one B1-only correction commit, `704d5a46d59841538524424296ac28eaa39aa5e6` (7 files; no schema, public Hide/Restore commands/routes or unrelated changes).
+- Exact diff/self-check PASS; Admin/locale/AP-10/DB-wrapper permission projections have parity. CI 17/17 check-runs and 13/13 workflows SUCCESS, including CI checks+PG17 and AP-10 browser.
+- Active handoff and evidence are in `WORKFLOW.md`; next Mira whole-B1 checkpoint on this exact head. B2 remains blocked pending Mira PASS and developer continuation.
 
 ## Delivery model
 
-B1 остаётся первой ступенью stack. B2 будет base на B1 branch только после Mira B1 PASS. Промежуточные ступени не merge в main; после B9 stack fold в B1, final Mira→Leva whole-feature review, owner merge.
+Owner-approved stacked B1→B9: each bounded PR bases on preceding stage head; no intermediate merges. After B9 fold stack into B1, final stable author self-check → Mira whole-feature → Leva independent → owner merge.
 
 ## Границы
 
-V-P1/V-P2/V-P3 и V-T1/V-T2 приняты. #342 never merge; Stage6/#300/general UI/UX вне scope.
+B1 #355 stays Draft/unmerged. #342 never merge. Product V-P1–V-P3 accepted, V-T1/V-T2 PASS. No Stage6/#300/general UI/UX scope.
