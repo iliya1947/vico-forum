@@ -4094,6 +4094,7 @@ function PreviewSearchRoute({ scenario, interactions }: {
       ?? editedTitle?.sourceLocale
       ?? created.sourceLocale;
     const replies = interactions.replies.get(created.id) ?? [];
+    const deactivated = interactions.ownerDeactivations.has(created.authorId);
     return {
       id: created.id,
       sourceLocale,
@@ -4101,7 +4102,8 @@ function PreviewSearchRoute({ scenario, interactions }: {
         ? ("auto" as const)
         : (localeRegistry.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
       title: editedTitle?.originalContent ?? created.title,
-      authorName: created.authorName,
+      authorName: deactivated ? DELETED_USER_NAME : created.authorName,
+      ...(deactivated ? { authorIdentityKind: "deleted" as const } : {}),
       postCount: 1 + replies.length,
       activityAt: replies.at(-1)?.createdAt ?? created.createdAt,
       category: localizedSection.category,
@@ -4117,6 +4119,8 @@ function PreviewSearchRoute({ scenario, interactions }: {
       ?? editedTitle?.sourceLocale
       ?? item.sourceLocale;
     const replies = interactions.replies.get(item.id) ?? [];
+    const authorId = previewProfileIdForName(item.authorName);
+    const deactivated = interactions.ownerDeactivations.has(authorId);
     return {
       ...item,
       sourceLocale,
@@ -4124,6 +4128,9 @@ function PreviewSearchRoute({ scenario, interactions }: {
         ? ("auto" as const)
         : (localeRegistry.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
       title: editedTitle?.originalContent ?? item.title,
+      ...(deactivated
+        ? { authorName: DELETED_USER_NAME, authorIdentityKind: "deleted" as const }
+        : {}),
       postCount: item.postCount + replies.length,
       activityAt: replies.at(-1)?.createdAt ?? item.activityAt,
       searchBodies: previewAdminTopicData(scenario, interactions, item.id)?.topic.posts
