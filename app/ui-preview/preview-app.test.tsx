@@ -3325,6 +3325,24 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("The current guidance no longer works.")).toBeInTheDocument();
   });
 
+  it.each(["user", "owner"] as const)(
+    "shows topic translation generation status to authenticated %s",
+    async (identity) => {
+      const user = userEvent.setup();
+      await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity={identity} />);
+
+      const language = document.querySelector(".site-header select");
+      expect(language).not.toBeNull();
+      await user.selectOptions(language!, "ru");
+      await waitFor(() => expect(document.documentElement.lang).toBe("ru"));
+
+      await waitFor(() => {
+        expect(document.querySelector(".topic-generation-status .content-generation-status")).not.toBeNull();
+        expect(document.querySelectorAll(".message-generation-status .content-generation-status")).toHaveLength(2);
+      });
+    },
+  );
+
   it("lets the bound Owner pin and unpin a public topic", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
