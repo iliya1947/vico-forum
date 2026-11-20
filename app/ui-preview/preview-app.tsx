@@ -7459,7 +7459,17 @@ async function previewAuthorizationAction(
     const displayName = String(form.get("displayName") ?? "").trim();
     if (!role || role.isSystem) return { error: "notFound" as const };
     if (!displayName) return { error: "invalid" as const };
-    role.displayName = displayName;
+    const before = role.displayName;
+    if (before !== displayName) {
+      role.displayName = displayName;
+      previewAppendAdminHistory(scenario, interactions, {
+        action: "role.renamed",
+        targetType: "role",
+        targetId: role.id,
+        targetLabel: displayName,
+        context: { slug: role.slug, before, after: displayName },
+      });
+    }
     return { ok: true as const };
   }
 
@@ -7467,7 +7477,20 @@ async function previewAuthorizationAction(
     const role = roleById(String(form.get("roleId") ?? ""));
     if (!role) return { error: "notFound" as const };
     const requested = form.getAll("permission").map(String);
-    role.grants = PERMISSION_CATALOG.filter((permission) => requested.includes(permission));
+    const next = PERMISSION_CATALOG.filter((permission) => requested.includes(permission));
+    const before = [...role.grants];
+    const added = next.filter((permission) => !before.includes(permission));
+    const removed = before.filter((permission) => !next.includes(permission));
+    if (added.length || removed.length) {
+      role.grants = next;
+      previewAppendAdminHistory(scenario, interactions, {
+        action: "role.grantsChanged",
+        targetType: "role",
+        targetId: role.id,
+        targetLabel: role.displayName,
+        context: { slug: role.slug, added, removed },
+      });
+    }
     return { ok: true as const };
   }
 
@@ -7477,6 +7500,13 @@ async function previewAuthorizationAction(
     if (!role || role.isSystem) return { error: "notFound" as const };
     if (state.users.some((user) => user.roleId === roleId)) return { error: "conflict" as const };
     state.roles = state.roles.filter((candidate) => candidate.id !== roleId);
+    previewAppendAdminHistory(scenario, interactions, {
+      action: "role.deleted",
+      targetType: "role",
+      targetId: role.id,
+      targetLabel: role.displayName,
+      context: { slug: role.slug },
+    });
     return { ok: true as const };
   }
 
@@ -7484,8 +7514,23 @@ async function previewAuthorizationAction(
     const user = userById(String(form.get("userId") ?? ""));
     const role = roleById(String(form.get("roleId") ?? ""));
     if (!user || !role) return { error: "notFound" as const };
-    user.roleId = role.id;
-    user.explicitAssignment = true;
+    const previousRole = user.explicitAssignment ? roleById(user.roleId) ?? null : null;
+    if (!user.explicitAssignment || user.roleId !== role.id) {
+      user.roleId = role.id;
+      user.explicitAssignment = true;
+      previewAppendAdminHistory(scenario, interactions, {
+        action: "user.roleAssigned",
+        targetType: "user",
+        targetId: user.id,
+        targetLabel: user.name,
+        context: {
+          before: previousRole
+            ? { id: previousRole.id, slug: previousRole.slug, name: previousRole.displayName }
+            : null,
+          after: { id: role.id, slug: role.slug, name: role.displayName },
+        },
+      });
+    }
     return { ok: true as const };
   }
 
@@ -7494,9 +7539,24 @@ async function previewAuthorizationAction(
     const permission = String(form.get("permission") ?? "") as PermissionKey;
     const effect = String(form.get("effect") ?? "");
     if (!user || !PERMISSION_CATALOG.includes(permission)) return { error: "notFound" as const };
-    if (effect === "inherit") delete user.overrides[permission];
-    else if (effect === "allow" || effect === "deny") user.overrides[permission] = effect;
-    else return { error: "invalid" as const };
+    const before = user.overrides[permission] ?? null;
+    const after = effect === "inherit"
+      ? null
+      : effect === "allow" || effect === "deny"
+        ? effect
+        : undefined;
+    if (after === undefined) return { error: "invalid" as const };
+    if (before !== after) {
+      if (after === null) delete user.overrides[permission];
+      else user.overrides[permission] = after;
+      previewAppendAdminHistory(scenario, interactions, {
+        action: "user.overrideChanged",
+        targetType: "user",
+        targetId: user.id,
+        targetLabel: user.name,
+        context: { permission, before, after },
+      });
+    }
     return { ok: true as const };
   }
 
