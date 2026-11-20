@@ -2,11 +2,11 @@
 
 ## Активный этап
 
-Moderation visibility — **B1 author correction PASS; Mira bounded checkpoint NEXT** на Draft [PR #355](https://github.com/iliya1947/vico-forum/pull/355), stable exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
+Moderation visibility — **B1 bounded PASS** на Draft [PR #355](https://github.com/iliya1947/vico-forum/pull/355), exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
 
-**VIS-B1-MIRA-01** исправлен: интеграция visibility permission согласована в Admin Forum admission, header/Admin presentation и AP-10 family/authority. Авторская self-check PASS; новый exact-head CI — 17/17 check-runs и 13/13 workflows SUCCESS.
+`VIS-B1-MIRA-01` CLOSED. Новых подтверждённых B1 blocker не осталось.
 
-**Лира STOP. Мира — следующий исполнитель для fresh bounded B1 review.** B2 не начинать до Mira PASS и отдельного продолжения владельца.
+**#355 остаётся Draft/unmerged. B2 ещё не активирован.** Следующий owner continuation может назначить Лиру на stacked B2 с base = `feature/moderation-visibility-b1-foundation`.
 
 ## Baseline
 
@@ -30,14 +30,18 @@ Moderation visibility — **B1 author correction PASS; Mira bounded checkpoint N
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 correction author PASS / Mira checkpoint NEXT
+## Moderation visibility delivery — B1 bounded PASS
 
-- B1 Draft [#355](https://github.com/iliya1947/vico-forum/pull/355) stays unmerged, branch `feature/moderation-visibility-b1-foundation`, base current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
-- Previous Mira HOLD: `VIS-B1-MIRA-01` on `736da519e3f3fcae716ec5fb1b81886cdac63a6e`. Confirmed that the new `forum.content.visibility.manage` was omitted by three existing projections despite its presence in DB AP-10 wrapper.
-- Narrow correction commit `704d5a46d59841538524424296ac28eaa39aa5e6`: add visibility permission to `app/admin/access.ts::ADMIN_FORUM_PERMISSIONS`, `app/routes/locale-boundary.tsx` resolver/header Admin destinations, and `app/admin/user-measure-restrictions.ts::USER_MEASURE_ADMIN_PERMISSION_FAMILIES["admin.forum"]`. Four scoped test files updated (route-only grant, navigation, AP-10 family/raw authority and PostgreSQL restriction projection). Seven files modified, no B2 command, Hide/Restore route, schema, grants, dependencies or unrelated refactor.
-- Author review verified exact correction diff and parity: Admin Forum admission ⊆ AP-10 family; shared AP-10 family equals DB wrapper; locale projection includes the independent permission. **Lira author self-check PASS** on stable exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
-- [Exact-head CI](https://github.com/iliya1947/vico-forum/actions/runs/44691969348): both `checks` and `database` SUCCESS. Overall **17/17 check-runs SUCCESS, 13/13 associated workflows SUCCESS**, including AP-10 connected browser and Owner suites. No failed/pending on this exact head.
-- **Next Мира / ChatGPT-5.6 Sol**: fresh coordinator bounded whole-B1 checkpoint on `704d5a46d59841538524424296ac28eaa39aa5e6` vs accepted `stages/moderation-visibility/PLAN.md`; determine PASS or independently verified current-B1 blocker. If PASS, developer's next explicit continuation may start separate stacked B2 PR based on `feature/moderation-visibility-b1-foundation` head. Keep B1 Draft/unmerged. **Leva final whole-feature review stays after B9.**
+- B1 Draft #355 base = current main `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- Stable exact head: `704d5a46d59841538524424296ac28eaa39aa5e6`.
+- Previous Mira finding `VIS-B1-MIRA-01` corrected in one narrow commit: Admin Forum admission, locale/header Admin projection and shared AP-10 `admin.forum` family are now aligned with `forum.content.visibility.manage`.
+- Correction diff: exactly seven files, no schema/route/Hide/Restore/B2 expansion.
+- Exact-head CI: `checks` SUCCESS, `database` SUCCESS; 13/13 associated workflows SUCCESS, no failed/pending.
+- Fresh Mira bounded whole-B1 checkpoint on the corrected exact head: **PASS**.
+- Unchanged migration/schema/History/Owner/localization/manifest portions retain prior reviewed result; no new reason to reopen them.
+- #355 remains Draft/unmerged as the first stacked rung.
+- Next potential stage: **B2 — transactional commands and writer admission**, in a new PR whose base is B1 head branch `feature/moderation-visibility-b1-foundation`.
+- B2 is not active until explicit owner continuation.
 
 ## Process follow-up
 
