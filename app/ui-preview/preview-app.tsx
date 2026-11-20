@@ -531,8 +531,10 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     const sourceLocale = interactions.postSourceLocales.get(post.id)
       ?? edit?.sourceLocale
       ?? post.body.sourceLocale;
+    const deactivatedAuthor = interactions.ownerDeactivations.has(post.authorId);
     return {
       ...post,
+      ...(deactivatedAuthor ? { authorIdentityKind: "deleted" as const, authorImage: null } : {}),
       ...(edit ? { editedAt: edit.editedAt } : {}),
       body: {
         ...(edit ? { id: edit.id, originalContent: edit.originalContent } : post.body),
@@ -544,6 +546,9 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
   const titleSourceLocale = interactions.topicTitleSourceLocales.get(topic.id);
   return {
     ...topic,
+    ...(interactions.ownerDeactivations.has(topic.authorId)
+      ? { authorIdentityKind: "deleted" as const }
+      : {}),
     title: titleSourceLocale ? { ...editedTitle, sourceLocale: titleSourceLocale } : editedTitle,
     isSolved: override?.isSolved ?? topic.isSolved,
     bestAnswerPostId: override?.bestAnswerPostId === undefined
@@ -1360,6 +1365,7 @@ function previewUser(scenario: Scenario): HeaderAuthUser | null {
 
 function previewMentionResponse(
   scenario: Scenario,
+  interactions: PreviewInteractionState,
   input: RequestInfo | URL,
 ): Response | null {
   const rawUrl = typeof input === "string"
@@ -1385,7 +1391,9 @@ function previewMentionResponse(
   }
   const foldedQuery = query.toLocaleLowerCase();
   const users = !query ? [] : Object.entries(previewProfileNames)
-    .filter(([, name]) => name.toLocaleLowerCase().includes(foldedQuery))
+    .filter(([id, name]) =>
+      !interactions.ownerDeactivations.has(id)
+      && name.toLocaleLowerCase().includes(foldedQuery))
     .sort(([leftId, leftName], [rightId, rightName]) =>
       leftName.localeCompare(rightName) || leftId.localeCompare(rightId))
     .slice(0, 8)
@@ -1629,7 +1637,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
   useEffect(() => {
     const originalFetch = globalThis.fetch;
     const previewFetch: typeof fetch = (input, init) => {
-      const mentionResponse = previewMentionResponse(activeScenario, input);
+      const mentionResponse = previewMentionResponse(activeScenario, interactions, input);
       if (mentionResponse) return Promise.resolve(mentionResponse);
       const deactivationResponse = previewOwnerDeactivationResponse(
         activeScenario, interactions, input, init,
@@ -3316,7 +3324,9 @@ function previewOnlinePresence(
   const members = [
     { id: "alex", name: "Alex", image: null },
     { id: "maya", name: "Maya Cohen", image: null },
-  ].filter((member) => interactions.showOnline || member.id !== actor?.id);
+  ].filter((member) =>
+    !interactions.ownerDeactivations.has(member.id)
+    && (interactions.showOnline || member.id !== actor?.id));
   return { count: members.length, members };
 }
 
