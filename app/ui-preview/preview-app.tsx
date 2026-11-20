@@ -5089,11 +5089,23 @@ async function previewTopicAction(
     if (scenario.identity !== "manager" && scenario.identity !== "owner") {
       return { error: "forbidden" as const };
     }
-    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
-    interactions.topicOverrides.set(routeTopicId, {
-      ...current,
-      isPinned: intent === "pinTopic",
-    });
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    const before = currentPage.topic.isPinned;
+    const after = intent === "pinTopic";
+    if (before !== after) {
+      const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+      interactions.topicOverrides.set(routeTopicId, {
+        ...current,
+        isPinned: after,
+      });
+      previewAppendAdminHistory(scenario, interactions, {
+        action: after ? "topic.pinned" : "topic.unpinned",
+        targetType: "topic",
+        targetId: routeTopicId,
+        context: { before, after },
+      });
+    }
     return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
@@ -5115,12 +5127,28 @@ async function previewTopicAction(
       return { error: "conflict" as const };
     }
 
-    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
-    interactions.topicOverrides.set(routeTopicId, {
-      ...current,
-      isClosed: intent === "closeTopic",
-      closureVersion: expectedClosureVersion + 1,
-    });
+    const before = currentPage.topic.isClosed;
+    const after = intent === "closeTopic";
+    if (before !== after) {
+      const version = expectedClosureVersion + 1;
+      const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+      interactions.topicOverrides.set(routeTopicId, {
+        ...current,
+        isClosed: after,
+        closureVersion: version,
+      });
+      previewAppendAdminHistory(scenario, interactions, {
+        action: after ? "topic.closed" : "topic.reopened",
+        targetType: "topic",
+        targetId: routeTopicId,
+        context: {
+          before,
+          after,
+          previousVersion: expectedClosureVersion,
+          version,
+        },
+      });
+    }
     return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
