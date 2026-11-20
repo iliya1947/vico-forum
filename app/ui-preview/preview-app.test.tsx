@@ -1931,6 +1931,14 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     await waitFor(() => expect(document.querySelector(".solved-badge")).not.toBeNull());
     expect(screen.getByText("Best answer")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("link", { name: "Vico Forum" }));
+    const developmentHeading = await screen.findByRole("heading", { level: 2, name: "Development" });
+    const developmentCard = developmentHeading.closest(".home-category-card") as HTMLElement;
+    const developmentSummary = within(developmentCard).getByRole("group", { name: "Development" });
+    expect(developmentSummary).toHaveTextContent("11 topics");
+    expect(developmentSummary).toHaveTextContent("78 messages");
+    expect(within(developmentCard).getByRole("group", { name: "4 topics · 25 messages" })).toBeInTheDocument();
   });
 
   it("saves the preferred language from Settings and switches the preview locale", async () => {
