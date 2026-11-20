@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 F5 Draft #359 observed head `7182e10e458a0203fd5564b6af8219d8fa1e1cc6`, base B2 unchanged. During corrective packet #359 received two overlapping commits `bdc51094...` / `7182e10e...` after Lira's `0b797d95...`. Must refresh latest exact head before further edits.
-- Initial revised CI #44822128290 FAILED: lint PASS, Typecheck localization `attentionCaseTopicUnavailable` ru/he + fingerprint and loader test TS2339 errors, PG 1598 PASS / 1 FAIL Help Similar. Production Help Similar predicate grouping fix `113e2ace...` still present on latest observed branch; runtime after fix not verified. Current `unread.test.ts` unwraps `{data:result}` correctly, but current `public-authz-degradation.test.ts` again reads `sectionResult.section` directly (Typecheck issue still present). No new CI PASS.
-- Next owner `...`: only F5 reconcile simultaneous head updates, fix remaining typed loader and reviewed translation key, then exact-head CI and author PASS→Mira checkpoint if fully green. No B4/merge. STOP.
+- B3 F5 Draft #359 exact **`b221da10cb033512d9ab4c03b55b95fbdae952b6`**, base B2 unchanged. Old [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) failed Typecheck (manual locale missing `attentionCaseTopicUnavailable`, incorrect test response access) and PG (one Help Similar ranking failure of 1599); SQL boolean-precedence fix already present from `113e2ace...`.
+- Reconciled overlapping changes: `sectionLoader` test helper and `unread.test.ts` now unwrap data correctly. Added manual neutral ru/he translations and canonical SHA-256 fingerprint for `attentionCaseTopicUnavailable` in commits `ced50d81...` / `b221da10...`; fingerprint computation checked against existing adjacent key. 9/9 source checks PASS, runtime NOT VERIFIED.
+- New auto [CI #44826260876](https://github.com/iliya1947/vico-forum/actions/runs/44826260876) queued, 13 initial workflows queued. Next `...`: only F5 exact-head full CI and applicable acceptance, on PASS author handoff **Мире** bounded B3 checkpoint; else fix confirmed defects. B4/merge forbidden. STOP.
 
 ## Cadence
 
