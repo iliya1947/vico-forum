@@ -2447,14 +2447,14 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .where(and(eq(forumTopics.isHidden, false), sql`
+      .where(and(eq(forumTopics.isHidden, false), sql`(
         ${exactTitleMatch}
         or ${exactTagMatch}
         or ${strongTitleMatch}
         or ${tagMatchCount} > 0
         or ${bodyMatchCount} > 0
         or ${titleMatchCount} > 0
-      `))
+      )`))
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
