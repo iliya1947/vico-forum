@@ -37,8 +37,14 @@ import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders } from
 async function searchLoader(args: Parameters<typeof rawSearchLoader>[0]) {
   return (await rawSearchLoader(args)).data;
 }
-import TagsRoute, { loader as tagsLoader } from "../routes/tags";
-import TagRoute, { loader as tagLoader } from "../routes/tag";
+import TagsRoute, { loader as rawTagsLoader, headers as tagsHeaders } from "../routes/tags";
+async function tagsLoader(args: Parameters<typeof rawTagsLoader>[0]) {
+  return (await rawTagsLoader(args)).data;
+}
+import TagRoute, { loader as rawTagLoader, headers as tagHeaders } from "../routes/tag";
+async function tagLoader(args: Parameters<typeof rawTagLoader>[0]) {
+  return (await rawTagLoader(args)).data;
+}
 import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
@@ -5174,6 +5180,46 @@ describe("personal Block presentation in ordinary TopicView", () => {
 
 
 describe("B3 public content cache policy", () => {
+
+  it("does not cache the tag index even with cacheable parent or error headers", async () => {
+    const index = await rawTagsLoader({
+      params: { locale: "en" }, context: context(),
+    });
+    expect(index.data.tags).toHaveLength(1);
+    expect(new Headers(index.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = tagsHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const errorHeaders = tagsHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("does not cache tagged topics or a neutral missing-tag 404", async () => {
+    const tagged = await rawTagLoader({
+      params: { locale: "en", tagKey: "typescript" }, context: context(),
+    });
+    expect(tagged.data.page.topics).toHaveLength(1);
+    expect(new Headers(tagged.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = tagHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const missing = context();
+    missing.set(forumReaderContext, { ...reader, readTag: async () => undefined });
+    await expect(rawTagLoader({
+      params: { locale: "en", tagKey: "hidden-tag" }, context: missing,
+    })).rejects.toMatchObject({ status: 404 });
+    const errorHeaders = tagHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+
   const routeHeaders = (parentCache: string) => ({
     parentHeaders: new Headers({ "Cache-Control": parentCache, "X-Parent-Test": "retained" }),
     loaderHeaders: new Headers(),
