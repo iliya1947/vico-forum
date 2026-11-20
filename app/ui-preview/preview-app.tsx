@@ -5103,6 +5103,7 @@ async function previewTopicAction(
         action: after ? "topic.pinned" : "topic.unpinned",
         targetType: "topic",
         targetId: routeTopicId,
+        targetLabel: currentPage.topic.title.originalContent,
         context: { before, after },
       });
     }
@@ -5141,6 +5142,7 @@ async function previewTopicAction(
         action: after ? "topic.closed" : "topic.reopened",
         targetType: "topic",
         targetId: routeTopicId,
+        targetLabel: currentPage.topic.title.originalContent,
         context: {
           before,
           after,
