@@ -1,13 +1,13 @@
 import {useEffect,useRef,type ReactNode} from "react";
 import {Form,useFetcher,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
-import type {ForumTopicPage} from "../../db/forum-repository";
+import type {ForumTopicPage,ForumVisibleThreadPost} from "../../db/forum-repository";
 import {useHeaderAuthUser} from "../auth/auth-controls";
 type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> &
   Partial<Pick<ForumTopicPage,"isClosed"|"closureVersion">> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
-  posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
+  posts:Array<Pick<ForumVisibleThreadPost,"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
 };
 import type {UiKey} from "../localization/catalog";
 import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";

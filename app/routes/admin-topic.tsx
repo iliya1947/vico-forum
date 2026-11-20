@@ -71,12 +71,13 @@ export async function loader({ params, context }: {
     }
   }
 
+  const visiblePosts = loaded.posts.filter((post) => post.kind !== "hidden");
   const resolved = context.get(localeContext);
   const registry = await registryForRequest(context);
   const revisions = [
     { contentType: "topic-title" as const, contentId: loaded.id, revisionId: loaded.title.id,
       originalContent: loaded.title.originalContent, sourceLocale: loaded.title.sourceLocale },
-    ...loaded.posts.filter((post) => post.body.originalContent.trim().length > 0).map((post) => ({
+    ...visiblePosts.filter((post) => post.body.originalContent.trim().length > 0).map((post) => ({
       contentType: "post-body" as const, contentId: post.id, revisionId: post.body.id,
       originalContent: post.body.originalContent, sourceLocale: post.body.sourceLocale,
     })),
@@ -87,7 +88,7 @@ export async function loader({ params, context }: {
   );
   const titlePresentation = translated[0]!;
   const translatedPosts = new Map(translated.slice(1).map((presentation) => [presentation.contentId, presentation]));
-  const postPresentations = loaded.posts.map((post): ContentTranslationPresentation => {
+  const postPresentations = visiblePosts.map((post): ContentTranslationPresentation => {
     const presentation = translatedPosts.get(post.id);
     if (presentation) return presentation;
     const originalLocale = post.body.sourceLocale === "und" ? undefined : post.body.sourceLocale;

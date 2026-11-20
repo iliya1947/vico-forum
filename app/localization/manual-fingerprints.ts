@@ -1585,6 +1585,7 @@ export const reviewedCommonFingerprints = {
   sectionsEmpty: "5e4674fab1385f8cf0eb916324e3edd9ab7baf30df564a1bdf946834a21984d4",
   topicsEmpty: "1549dddcb9fabdc3c1b2b117cccfb740445b1549b58b96b568281f5c68ac2289",
   postsEmpty: "40a3b30fa7e652c0ebc9010e7a12b3d7dd9a1be775445efffe46d12bd71afc39",
+  moderationHiddenPostNotice: "ba291d04fb3de7de10d01e184d6759090c55ca2cb0d9c98c6290f03a8ed29bd6",
   breadcrumbsLabel: "c443646cd2863e2a033836207bb079f293c09b33c81122f6f6b1525a373e52d7",
   categoryLabel: "d77e1e9c079ac8f4eac107b84acb9237cad65f826c76933ffb8cbe000f6b2b5f",
   sectionLabel: "9e3766dd9e87122bcbda6b65df2dd61204edb25b69634a990e00e3554b9abd27",
