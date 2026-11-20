@@ -51,7 +51,7 @@ import { SuperAdminMonitoringIndex, SuperAdminShell, SystemMonitorCards, Timelin
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import type { AdminHistoryChange, AdminHistoryEvent } from "../../db/admin-history";
 import { projectAdminTopic } from "../admin/topic-model";
-import type { ForumHelpSolutionsFilters, ForumPopularPage } from "../../db/forum-repository";
+import type { ForumHelpSolutionsFilters, ForumPopularPage, ForumTopicReadState } from "../../db/forum-repository";
 import {
   HELP_SOLUTIONS_CATEGORY_ID,
   HELP_SOLUTIONS_SERVICE_SECTION_ID,
@@ -406,6 +406,7 @@ type PreviewInteractionState = {
   topicBookmarks: Set<string>;
   topicMutes: Set<string>;
   userBlocks: Set<string>;
+  topicReadMarkers: Map<string, string>;
   topicTitleSourceLocales: Map<string, string>;
   postSourceLocales: Map<string, string>;
   profileOverrides: Map<string, ProfileFields>;
@@ -477,6 +478,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     topicBookmarks: new Set(),
     topicMutes: new Set(),
     userBlocks: new Set(),
+    topicReadMarkers: new Map(),
     topicTitleSourceLocales: new Map(),
     postSourceLocales: new Map(),
     profileOverrides: new Map(),
@@ -1228,6 +1230,70 @@ function unreadTopics(locale: PreviewLocale) {
     unreadCount: index === 0 ? 3 : 2,
     activityAt: new Date(index === 0 ? "2026-09-30T16:00:00.000Z" : "2026-09-30T14:00:00.000Z"),
   }));
+}
+
+function previewTopicReadKey(actorId: string, routeTopicId: string) {
+  return JSON.stringify([actorId, routeTopicId]);
+}
+
+function previewTopicReadState(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  topic: PreviewTopicPage,
+): ForumTopicReadState | null {
+  const actor = previewUser(scenario);
+  if (!actor) return null;
+
+  const latestPostId = topic.posts.at(-1)?.id ?? null;
+  const marker = interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, topic.id));
+  if (marker) {
+    const markerIndex = topic.posts.findIndex((post) => post.id === marker);
+    const firstUnreadPostId = markerIndex >= 0 && markerIndex < topic.posts.length - 1
+      ? topic.posts[markerIndex + 1]?.id ?? null
+      : null;
+    return {
+      topicId: topic.id,
+      state: firstUnreadPostId ? "unread" : "read",
+      lastReadPostId: marker,
+      firstUnreadPostId,
+      latestPostId,
+    };
+  }
+
+  const initialUnread = unreadTopics(scenario.locale).find((candidate) => candidate.id === topic.id);
+  if (initialUnread) {
+    const firstUnreadIndex = topic.posts.findIndex((post) => post.id === initialUnread.firstUnreadPostId);
+    return {
+      topicId: topic.id,
+      state: initialUnread.state,
+      lastReadPostId: initialUnread.state === "unread" && firstUnreadIndex > 0
+        ? topic.posts[firstUnreadIndex - 1]!.id
+        : null,
+      firstUnreadPostId: firstUnreadIndex >= 0
+        ? topic.posts[firstUnreadIndex]!.id
+        : topic.posts[0]?.id ?? null,
+      latestPostId,
+    };
+  }
+
+  return {
+    topicId: topic.id,
+    state: "new",
+    lastReadPostId: null,
+    firstUnreadPostId: topic.posts[0]?.id ?? null,
+    latestPostId,
+  };
+}
+
+function previewUnreadTopics(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) return [];
+  return unreadTopics(scenario.locale).filter((topic) =>
+    interactions.topicReadMarkers.get(previewTopicReadKey(actor.id, topic.id)) !== topic.latestPostId
+  );
 }
 
 function previewSearchResults(locale: PreviewLocale) {
@@ -3317,7 +3383,7 @@ function previewRouter(
     },
     {
       path: "/:locale/unread",
-      element: <UnreadView locale={scenario.locale} topics={unreadTopics(scenario.locale)} />,
+      element: <UnreadView locale={scenario.locale} topics={previewUnreadTopics(scenario, interactions)} />,
       loader: () => previewAuthenticatedRouteData(scenario),
       ErrorBoundary: ForumRouteError,
     },
@@ -4198,6 +4264,24 @@ async function previewTopicAction(
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
 
+  if (intent === "markTopicRead") {
+    const postId = String(form.get("postId") ?? "").trim();
+    if (!postId) return { error: "invalid" as const };
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    const targetIndex = currentPage.topic.posts.findIndex((post) => post.id === postId);
+    if (targetIndex < 0) return { error: "notFound" as const };
+
+    const key = previewTopicReadKey(actor.id, routeTopicId);
+    const currentMarker = interactions.topicReadMarkers.get(key);
+    const currentIndex = currentMarker
+      ? currentPage.topic.posts.findIndex((post) => post.id === currentMarker)
+      : -1;
+    if (targetIndex > currentIndex) interactions.topicReadMarkers.set(key, postId);
+    return { ok: true as const };
+  }
+
   if (intent === "setTopicMute") {
     const editorActorId = String(form.get("editorActorId") ?? "").trim();
     const requested = String(form.get("muted") ?? "");
@@ -4904,7 +4988,7 @@ function previewCreatedTopicData(
     canManagePin: scenario.identity === "manager" || scenario.identity === "owner",
     canManageClosure: scenario.identity === "manager" || scenario.identity === "owner",
     canUseAdminPanel: scenario.identity === "manager" || scenario.identity === "owner",
-    topicReadState: null,
+    topicReadState: previewTopicReadState(scenario, interactions, topic),
   };
 }
 
@@ -7409,7 +7493,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
         canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
         canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
-        topicReadState={null}
+        topicReadState={previewTopicReadState(scenario, interactions, interactiveHelpTopic)}
       />
     );
   }
@@ -7425,6 +7509,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       {...previewTopicMuteProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicBlockProps(scenario, interactions)}
       topic={interactiveTopic}
+      topicReadState={previewTopicReadState(scenario, interactions, interactiveTopic)}
       titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
         ? originalPresentation(
             "topic-title",
@@ -7570,7 +7655,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canManagePin={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageClosure={scenario.identity === "manager" || scenario.identity === "owner"}
       canUseAdminPanel={scenario.identity === "manager" || scenario.identity === "owner"}
-      topicReadState={null}
+      topicReadState={previewTopicReadState(scenario, interactions, interactiveTopic)}
     />
   );
 }
