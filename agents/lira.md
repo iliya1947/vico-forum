@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `24163066159fddd4edb62fd6bc337e2607728d56`, B2 base unchanged; B3 incomplete.
-- Latest two-test B3 microbatch (`app/forum/public-read.test.tsx` only): (1) hidden-post revision and unsolicited hidden translation excluded from public topic loader JSON/HTML and translation batch identities while visible descendant/anchor remain; (2) hidden and missing topic give identical neutral 404 before registry/translation work, error headers `no-store`.
-- **15/15 static source-contract checks passed**, but **Vitest/actual HTTP/PG execution not verified** due to unavailable local checkout/test runtime; never claim runtime PASS. No production/schema changes.
-- Next owner `...`: one small 2–3-related-microstep B3 batch for remaining verified discovery/response/leak edges; focused checks and #342 handoff, then STOP. Never inspect GitHub Actions/CI until entire B3 complete, no B4/Mira/merge.
+- Active stacked Draft #359 exact `cc25f9dd826ac0f95a79c3a3a7967198c46428d8`, B2 base unchanged, B3 partial.
+- Latest B3 microbatch fixed a **confirmed indirect public data leak** in `db/forum-repository.ts`: `readTopicBlockedAuthors` used to return matches from hidden-post authors into the signed-in topic loader's `blockedAuthorIds`. SQL now requires visible post and visible topic; no B5 personal-filter graph/list change.
+- One new PostgreSQL regression checks blocked-author projection visible→hidden post→restored post, hidden topic→restored topic; user block removed in `finally`. **17/17 targeted static source checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** (no local checkout/runtime), no runtime PASS.
+- Next owner `...`: one small B3 microbatch from another verified current boundary; focused checks, service handoff and STOP. **Never inspect Actions/CI before whole B3 completes**. No B4/Mira/merge.
 
 ## Cadence
 
