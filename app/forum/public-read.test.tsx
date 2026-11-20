@@ -371,7 +371,7 @@ function topicRenderData(
     locale: "en",
     topic: value,
     titlePresentation: originalPresentation("topic-title", value.id, value.title),
-    postPresentations: value.posts.map((post) =>
+    postPresentations: value.posts.filter((post) => post.kind !== "hidden").map((post) =>
       originalPresentation("post-body", post.id, post.body)
     ),
     generationUnits: [],
@@ -436,7 +436,7 @@ describe.each([
     if (categoryData.kind !== "category") throw new Error("expected regular category page");
     expect(categoryData.category.sections).toHaveLength(1);
     expect(sectionData.section.topics).toHaveLength(1);
-    expect(topicData.topic.posts[0]?.body.originalContent).toBe("Start with an explicit response type.");
+    expect(topicData.topic.posts[0]?.kind !== "hidden" ? topicData.topic.posts[0]?.body.originalContent : undefined).toBe("Start with an explicit response type.");
     expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);

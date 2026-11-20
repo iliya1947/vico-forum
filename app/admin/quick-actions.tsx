@@ -1,13 +1,16 @@
 import {useEffect,useRef,type ReactNode} from "react";
 import {Form,useFetcher,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
-import type {ForumTopicPage,ForumVisibleThreadPost} from "../../db/forum-repository";
+import type {ForumTopicPage,ForumVisibleThreadPost,ForumHiddenThreadPost} from "../../db/forum-repository";
 import {useHeaderAuthUser} from "../auth/auth-controls";
+type QuickPost =
+  | Pick<ForumVisibleThreadPost,"kind"|"id"|"solutionModerationStatus"|"solutionOutdatedReason">
+  | Pick<ForumHiddenThreadPost,"kind"|"id">;
 type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> &
   Partial<Pick<ForumTopicPage,"isClosed"|"closureVersion">> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
-  posts:Array<Pick<ForumVisibleThreadPost,"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
+  posts:QuickPost[];
 };
 import type {UiKey} from "../localization/catalog";
 import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";
@@ -46,7 +49,7 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
     });
   }
   if(input.canManageAnySolution&&!topic.isSolved&&!topic.duplicateOf)add("markSolved","markSolved");
-  if(input.canManageAnySolution&&!topic.duplicateOf)(input.postCandidates??topic.posts.slice(1).map((post,index)=>({id:post.id,number:index+2}))).forEach(post=>{
+  if(input.canManageAnySolution&&!topic.duplicateOf)(input.postCandidates??topic.posts.slice(1).flatMap((post,index)=>post.kind==="hidden"?[]:[{id:post.id,number:index+2}])).forEach(post=>{
     if(post.id!==topic.bestAnswerPostId&&post.number>1)actions.push({key:`selectBestAnswer:${post.id}`,intent:"selectBestAnswer",label:"postNumber",fields:{postId:post.id,operationScope:"any"},postNumber:post.number});
   });
   if(input.canManageHelpDuplicate&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID){
@@ -59,8 +62,8 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
     }else if(!topic.isSolved&&!topic.bestAnswerPostId)add("confirmHelpDuplicate","helpDuplicateConfirm");
   }
   if(input.canCorrectAnySourceLocale)add("correctTitleSourceLocale","sourceLocaleCorrectionSubmit",{expectedRevisionId:topic.title.id});
-  const best=topic.posts.find(p=>p.id===topic.bestAnswerPostId);
-  if(input.canModerateHelpSolution&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID&&topic.isSolved&&best){
+  const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
+  if(input.canModerateHelpSolution&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID&&topic.isSolved&&best&&best.kind!=="hidden"){
     const fields={expectedBestAnswerPostId:topic.bestAnswerPostId??""};
     if(best?.solutionModerationStatus!=="needs-review")add("markSolutionNeedsReview","helpSolutionMarkNeedsReview",fields);
     add("markSolutionOutdated","helpSolutionMarkOutdated",fields);
@@ -139,7 +142,7 @@ export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActio
  const actorId=input.actorId??headerActorId;
  const {topic}=input;
  const actions=topicQuickActionDescriptors({...input,actorId});
- const best=topic.posts.find(p=>p.id===topic.bestAnswerPostId);
+ const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
  if(!actions.length)return null;
  return <QuickActions>{actions.map(action=>
   action.intent==="closeTopic"||action.intent==="reopenTopic"

@@ -65,6 +65,7 @@ it.each(["section", "help"])("preserves indented code and trailing whitespace th
   expect(response.status).toBe(302);
   const topicId = response.headers.get("Location")!.split("/").at(-1)!;
   const first = (await repository.readTopicPage(topicId))!.posts[0]!;
+  if (first.kind === "hidden") throw new Error("expected published visible post");
   expect(first.body.originalContent).toBe(source);
   expect(parseForumMarkdown(first.body.originalContent).children[0]?.type).toBe("code");
   const replay = await publish() as Response;
@@ -76,8 +77,10 @@ it.each(["section", "help"])("preserves indented code and trailing whitespace th
   expect(reply).toBeInstanceOf(Response);
   const posts = (await repository.readTopicPage(topicId))!.posts;
   expect(posts).toHaveLength(2);
-  expect(posts[1]!.body.originalContent).toBe(source);
-  expect(parseForumMarkdown(posts[1]!.body.originalContent).children[0]?.type).toBe("code");
+  const visibleReply = posts[1]!;
+  if (visibleReply.kind === "hidden") throw new Error("expected published visible reply");
+  expect(visibleReply.body.originalContent).toBe(source);
+  expect(parseForumMarkdown(visibleReply.body.originalContent).children[0]?.type).toBe("code");
 });
 
 it("creates notifications only for links rendered in spoiler bodies and nonquoted table cells", async () => {

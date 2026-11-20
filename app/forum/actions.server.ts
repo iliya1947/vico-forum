@@ -1,4 +1,4 @@
-import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError, type ForumVisibleThreadPost } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -697,7 +697,7 @@ export async function topicAction({ request, params, context }: {
         // Refresh only the conflicted public baseline. A failing refresh remains action
         // data/a client action failure, so the mounted editor is never replaced by a loader boundary.
         const current = await forumReaderForRequest(context).readTopicPage(topicId);
-        const post = current?.posts.find((post) => post.kind !== "hidden" && post.id === postId && post.authorId === actorId);
+        const post = current?.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === postId && post.authorId === actorId);
         if (!post) return mutationFailure("notFound", 404);
         return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post,
           ...(error instanceof ForumPublicationReplayConflictError ? { completedOperationId: draftFence.draftId } : {}),

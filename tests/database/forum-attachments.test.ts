@@ -922,7 +922,9 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       expect((await client.query("select attachment_id from forum_post_attachments where post_id=$1", [postId])).rows)
         .toEqual([{ attachment_id: file.id }]);
       const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(receipt.rows[0]!.topic_id);
-      expect(page?.posts.find((post) => post.id === postId)?.body.originalContent).toBe("");
+      const savedPost=page?.posts.find((post)=>post.id===postId);
+      expect(savedPost?.kind).not.toBe("hidden");
+      expect(savedPost?.kind !== "hidden" ? savedPost?.body.originalContent : undefined).toBe("");
       expect(responseStatus(await action("a different body"))).toBe(409);
       expect((await client.query("select id from forum_posts where id=$1", [postId])).rowCount).toBe(1);
     },

@@ -35,6 +35,7 @@ import type {
   ForumTagPage,
   ForumTagSummary,
   ForumTopicPage,
+  ForumVisibleThreadPost,
   ForumTopicReadKind,
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
@@ -2250,12 +2251,12 @@ export function TopicView({
     if (!actionData || !("operation" in actionData) || actionData.operation !== "postEdit"
       || recoveredActionRef.current === actionData) return;
     recoveredActionRef.current = actionData;
-    const baseline = loadedTopic.posts.find((post) => post.kind !== "hidden" && post.id === actionData.post.id);
+    const baseline = loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === actionData.post.id);
     if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
   const recoveryBaseline = editRecovery?.topicId === loadedTopic.id
-    ? loadedTopic.posts.find((post) => post.kind !== "hidden" && post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    ? loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
     : null;
   const recoveredPost = recoveryBaseline && editRecovery
     ? {
@@ -2413,7 +2414,7 @@ export function TopicView({
     const requested = new URLSearchParams(location.search).get("editPost");
     if (requested && editablePostIds.includes(requested)
       && (editingPostId !== requested || editingPostScope !== editScope)) {
-      setEditBaseRevisionId(topic.posts.find((post) => post.kind !== "hidden" && post.id === requested)?.body.id ?? null);
+      setEditBaseRevisionId(topic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === requested)?.body.id ?? null);
       setEditReady(false);
       setEditingPostId(requested);
       setEditingPostScope(editScope);

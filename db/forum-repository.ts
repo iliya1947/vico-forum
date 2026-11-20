@@ -3524,7 +3524,7 @@ export class DrizzleForumRepository {
       };
       }),
     };
-    }, { isolationLevel: "repeatable read", readOnly: true });
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async readPostLocation(postId: string) {

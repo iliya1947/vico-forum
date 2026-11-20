@@ -204,7 +204,8 @@ describe("persisted forum profiles", () => {
     await repository.selectBestAnswer("profile-topic-a", "profile-replacement", "profile-owner", "own");
     expect(await repository.readProfile("profile-helper")).toMatchObject({ messageCount: 2, bestAnswerCount: 1 });
     expect(await repository.readProfile("profile-newcomer")).toMatchObject({ messageCount: 1, bestAnswerCount: 1 });
-    expect((await repository.readTopicPage("profile-topic-a"))?.posts[0].authorImage).toBe("https://example.com/avatar.png");
+    const firstPost=(await repository.readTopicPage("profile-topic-a"))?.posts[0];
+    expect(firstPost?.kind !== "hidden" ? firstPost?.authorImage : undefined).toBe("https://example.com/avatar.png");
   });
   it("counts Help messages and selected unsolved answers without tag multiplication", async () => {
     const before = await repository.readProfile("profile-helper");
@@ -284,11 +285,13 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
         ],
       });
       expect(result.posts[2]).not.toHaveProperty("authorIdentityKind");
-      expect(result.posts.map(({ id, topicId, parentPostId, createdAt, attachments }) =>
-        ({ id, topicId, parentPostId, createdAt, attachments }))).toEqual(active.posts.map(
-          ({ id, topicId, parentPostId, createdAt, attachments }) =>
-            ({ id, topicId, parentPostId, createdAt, attachments }),
-        ));
+      expect(result.posts.map((post) => ({
+        id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+        createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+      }))).toEqual(active.posts.map((post) => ({
+          id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+          createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+        })));
       const serialized = JSON.stringify(result);
       for (const secret of [
         "SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_TOPIC_AVATAR",
