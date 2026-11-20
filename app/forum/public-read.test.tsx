@@ -29,7 +29,10 @@ import {
   localeContext,
   registryLoaderContext,
 } from "../localization/request-context";
-import CategoryRoute, { loader as categoryLoader } from "../routes/category";
+import CategoryRoute, { loader as rawCategoryLoader, headers as categoryHeaders } from "../routes/category";
+async function categoryLoader(args: Parameters<typeof rawCategoryLoader>[0]) {
+  return (await rawCategoryLoader(args)).data;
+}
 import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
 import PopularRoute, { loader as rawPopularLoader, headers as popularHeaders } from "../routes/popular";
@@ -54,7 +57,10 @@ async function unansweredLoader(args: Parameters<typeof rawUnansweredLoader>[0])
 }
 import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
-import SectionRoute, { loader as sectionLoader } from "../routes/section";
+import SectionRoute, { loader as rawSectionLoader, headers as sectionHeaders } from "../routes/section";
+async function sectionLoader(args: Parameters<typeof rawSectionLoader>[0]) {
+  return (await rawSectionLoader(args)).data;
+}
 import TopicRoute, { loader as rawTopicLoader, headers as topicHeaders } from "../routes/topic";
 async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
   const result = await rawTopicLoader(args);
@@ -5231,6 +5237,87 @@ describe("B3 public content cache policy", () => {
     loaderHeaders: new Headers(),
     actionHeaders: new Headers(),
     errorHeaders: undefined,
+  });
+
+  it("sets no-store for public Section and private no-store for signed-in read state", async () => {
+    const guest=await rawSectionLoader({
+      params:{locale:"en",sectionId:section.id},context:context(),
+    });
+    expect(guest.data.section.id).toBe(section.id);
+    expect(new Headers(guest.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"lin",name:"Lin"}} as never);
+    ctx.set(authorizationContext,{forUser:()=>({has:async()=>false})} as never);
+    const signed=await rawSectionLoader({
+      params:{locale:"en",sectionId:section.id},context:ctx,
+    });
+    expect(signed.data.topicReadStates).toEqual({[topic.id]:"new"});
+    expect(new Headers(signed.init?.headers).get("Cache-Control")).toBe("private, no-store");
+
+    const publicHeaders=sectionHeaders(routeHeaders("public, max-age=600"));
+    expect(publicHeaders.get("Cache-Control")).toBe("no-store");
+    expect(publicHeaders.get("X-Parent-Test")).toBe("retained");
+    const actionHeaders=sectionHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders:new Headers({"Cache-Control":"private, no-store","Retry-After":"60"}),
+    });
+    expect(actionHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(actionHeaders.get("Retry-After")).toBe("60");
+  });
+
+  it("sets no-store on public Category and Help, private no-store on signed-in Help", async () => {
+    const normal=await rawCategoryLoader({
+      params:{locale:"en",categoryId:category.id},context:context(),
+    });
+    expect(normal.data.kind).toBe("category");
+    expect(new Headers(normal.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const help=await rawCategoryLoader({
+      params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:context(),
+    });
+    expect(help.data.kind).toBe("help-solutions");
+    expect(new Headers(help.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"ada",name:"Ada"}} as never);
+    ctx.set(authorizationContext,{forUser:()=>({has:async()=>false})} as never);
+    const privateHelp=await rawCategoryLoader({
+      params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:ctx,
+    });
+    expect(privateHelp.data.kind).toBe("help-solutions");
+    expect(new Headers(privateHelp.init?.headers).get("Cache-Control")).toBe("private, no-store");
+
+    const headers=categoryHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const actionHeaders=categoryHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders:new Headers({"Cache-Control":"private, no-store","Retry-After":"60"}),
+    });
+    expect(actionHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(actionHeaders.get("Retry-After")).toBe("60");
+  });
+
+  it("prevents cacheable 404 and dependency-error headers for Section/Category", async () => {
+    const missing=context();
+    missing.set(forumReaderContext,{
+      ...reader,readSection:async()=>undefined,readCategory:async()=>undefined,
+    });
+    await expect(rawSectionLoader({
+      params:{locale:"en",sectionId:"hidden-section"},context:missing,
+    })).rejects.toMatchObject({status:404});
+    await expect(rawCategoryLoader({
+      params:{locale:"en",categoryId:"hidden-category"},context:missing,
+    })).rejects.toMatchObject({status:404});
+    for(const routeHeadersExport of [sectionHeaders,categoryHeaders]){
+      const headers=routeHeadersExport({
+        ...routeHeaders("public, max-age=600"),
+        errorHeaders:new Headers({"Cache-Control":"public, max-age=3600"}),
+      });
+      expect(headers.get("Cache-Control")).toBe("no-store");
+      expect(headers.get("X-Parent-Test")).toBe("retained");
+    }
   });
 
   it("does not cache Popular rankings or dependency-error documents", async () => {
