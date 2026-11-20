@@ -2,7 +2,7 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2 author PASS; Лира STOP before B2.3c3.**
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2/B2.3a/B2.3b/B2.3c1/B2.3c2/B2.3c3a author PASS; Лира STOP before B2.3c3b.**
 
 ## Подтверждённое B2
 
@@ -16,11 +16,12 @@ Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-
 - B2.3c1 exact `c0160417f52b6c02237251c078f93248f74535ab`: hidden topic admission in `setTopicClosed`, `pinTopic`, `unpinTopic` before closure CAS/no-op and pin idempotency, retaining topic NO KEY UPDATE → actor/AP-10 → History order. +2 PG regressions for hidden open vs hidden closed+pinned, same-state/no-op, Owner/moderator denial, no History mutation, Restore recovery.
 - [Exact-head CI 44709756666](https://github.com/iliya1947/vico-forum/actions/runs/44709756666) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1504/1504 PG17 (18/18 visibility commands). No need to recheck unchanged head without cause.
 - B2.3c2 exact `0430b1db36b90e8f28d6f3d1b2cdc7d1f66e545e`: signal create/withdraw/accepted/rejected operations deny hidden primary/duplicate original topic or selected answer under sorted topic→post→signal→actor locks. Pending status + History remain unchanged on refusal; Restore re-enables. Two modified files (`db/forum-repository.ts`, `tests/database/moderation-visibility-commands.test.ts`), +7 PG regressions. Final exact-head [CI 44711821916](https://github.com/iliya1947/vico-forum/actions/runs/44711821916) **PASS**: **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS; 2758/2758 unit, 1511/1511 PG17, 25/25 visibility**. B2.3c2 author PASS.
+- B2.3c3a exact `373c1b8bab3605e73598f673ed34b9823cee6b50`: `setHelpSolutionModeration` denies hidden topic or selected answer before changed/no-op/clear, pending signal supersession, History. Existing topic→post→signals→actor lock order preserved. Two PG regressions, including Owner/moderator and Restore. [Exact-head CI 44715419604](https://github.com/iliya1947/vico-forum/actions/runs/44715419604) **PASS**: 22/22 checks, 18/18 workflows, 2758/2758 unit and 1513/1513 PostgreSQL17 (27/27 visibility).
 - Work confined to Draft #357; no B3+.
 
 ## Следующий шаг только по явной команде владельца
 
-**B2.3c3: Help/solution/duplicate state writer visibility admission** per `stages/moderation-visibility/PLAN.md`. Split into narrow bounded slices as needed; preserve topic/post/actor and sorted multi-topic locks, state/no-op/History semantics. STOP after the first authorized bounded slice. Later recovery/planning and real PostgreSQL two-way races/lock graph.
+**B2.3c3b: selectBestAnswer visibility admission only** per `stages/moderation-visibility/PLAN.md`: check locked topic and candidate/old selected post visibility, preserve existing sorted post→signal→actor lock graph and no-op semantics; exact-head tests/CI, then STOP. Following bounded slices: solved-state and duplicate writers, recovery/planning, real PG two-way races/lock graph.
 
 B2 overall not complete or ready for Mira checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 
