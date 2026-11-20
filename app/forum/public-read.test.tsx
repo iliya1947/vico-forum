@@ -5369,17 +5369,12 @@ describe("B3 public content cache policy", () => {
     const guest = context();
     const readGuest = vi.fn(reader.readUnreadForUser);
     guest.set(forumReaderContext, { ...reader, readUnreadForUser: readGuest });
-    await expect(rawUnreadLoader({ params: { locale: "en" }, context: guest }))
-      .rejects.toMatchObject({
-        status: 401, headers: expect.objectContaining({}),
-      });
+    const denied = await rawUnreadLoader({ params: { locale: "en" }, context: guest })
+      .catch((error: unknown) => error);
+    expect(denied).toBeInstanceOf(Response);
+    expect((denied as Response).status).toBe(401);
+    expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
     expect(readGuest).not.toHaveBeenCalled();
-    try {
-      await rawUnreadLoader({ params: { locale: "en" }, context: guest });
-    } catch (error) {
-      expect(error).toBeInstanceOf(Response);
-      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
-    }
 
     const ctx = context();
     ctx.set(authSessionContext, { user: { id: "reader" } } as never);
@@ -5393,15 +5388,12 @@ describe("B3 public content cache policy", () => {
     unavailable.set(forumReaderContext, {
       ...reader, readUnreadForUser: async () => { throw new ForumStorageUnavailableError(); },
     });
-    try {
-      await rawUnreadLoader({ params: { locale: "en" }, context: unavailable });
-      throw new Error("expected storage unavailable");
-    } catch (error) {
-      expect(error).toBeInstanceOf(Response);
-      expect((error as Response).status).toBe(503);
-      expect((error as Response).headers.get("Cache-Control")).toBe("private, no-store");
-      expect(await (error as Response).text()).toBe("Unavailable");
-    }
+    const failed = await rawUnreadLoader({ params: { locale: "en" }, context: unavailable })
+      .catch((error: unknown) => error);
+    expect(failed).toBeInstanceOf(Response);
+    expect((failed as Response).status).toBe(503);
+    expect((failed as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    expect(await (failed as Response).text()).toBe("Unavailable");
   });
 
   it("sets no-store on anonymous topic loader data and document responses", async () => {
