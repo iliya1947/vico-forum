@@ -2262,6 +2262,96 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
   }
 });
 
+describe("B3 Help attention public-safe projection", () => {
+  it("excludes hidden signal topics from queues/counts and masks hidden proposed originals", async () => {
+    const question=await fixture(
+      "B3_ATTENTION_VISIBLE_QUESTION_6071", "B3_ATTENTION_VISIBLE_TITLE_6071",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const original=await fixture(
+      "B3_ATTENTION_HIDDEN_ORIGINAL_6071", "B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const details=await service.createHelpSignal({
+      kind:"needs-details",topicId:question.topicId,actorId:"ordinary",
+      explanation:"Question requires clarification",proposedOriginalTopicId:null,
+    });
+    const duplicate=await service.createHelpSignal({
+      kind:"duplicate",topicId:question.topicId,actorId:"author",
+      explanation:"Potential duplicate",proposedOriginalTopicId:original.topicId,
+    });
+    const visibility={signalKinds:["needs-details","duplicate"] as const,appeals:false};
+    const counts=()=>repository.readHelpAttentionCounts(visibility);
+    const cases=async(group:"needs-details"|"duplicate"|"mixed")=>
+      (await repository.readHelpAttentionCases(group,visibility)).cases;
+    const current=await counts();
+    expect((await cases("needs-details")).some(x=>x.id===details.id)).toBe(true);
+    expect((await cases("mixed")).filter(x=>x.topicId===question.topicId).map(x=>x.id).sort())
+      .toEqual([details.id,duplicate.id].sort());
+    expect((await cases("duplicate")).find(x=>x.id===duplicate.id)?.original)
+      .toEqual({id:original.topicId,title:"B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071"});
+
+    await service.setTopicVisibility(topicCommand(original));
+    const masked=(await cases("duplicate")).find(x=>x.id===duplicate.id);
+    expect(masked?.original).toBeNull();
+    expect(JSON.stringify(masked)).not.toContain(original.topicId);
+    expect(JSON.stringify(masked)).not.toContain("B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071");
+    expect(await counts()).toEqual(current);
+    await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore original"));
+    expect((await cases("duplicate")).find(x=>x.id===duplicate.id)?.original?.id).toBe(original.topicId);
+
+    await service.setTopicVisibility(topicCommand(question));
+    expect((await cases("needs-details")).map(x=>x.id)).not.toContain(details.id);
+    expect((await cases("duplicate")).map(x=>x.id)).not.toContain(duplicate.id);
+    expect((await cases("mixed")).map(x=>x.topicId)).not.toContain(question.topicId);
+    const hidden=await counts();
+    expect(hidden["needs-details"]).toBe(current["needs-details"]-1);
+    expect(hidden.duplicate).toBe(current.duplicate-1);
+    expect(hidden.mixed).toBe(current.mixed-1);
+    await service.setTopicVisibility(topicCommand(question,"moderator1",false,1,"Restore question"));
+    expect(await counts()).toEqual(current);
+    expect((await cases("mixed")).filter(x=>x.topicId===question.topicId)).toHaveLength(2);
+  });
+
+  it("excludes hidden selected-answer Needs review from the status queue and count", async () => {
+    const f=await fixture(
+      "B3_ATTENTION_SOLVED_ROOT_6072", "B3_ATTENTION_SOLVED_TITLE_6072",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_ATTENTION_SELECTED_ANSWER_6072",sourceLocale:"en"},
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    await service.setHelpSolutionModeration(f.topicId,"needs-review",null,"moderator1",answerId);
+    const visibility={signalKinds:["needs-review"] as const,appeals:false};
+    const count=async()=>(await repository.readHelpAttentionCounts(visibility))["needs-review"];
+    const cases=async()=>(await repository.readHelpAttentionCases("needs-review",visibility)).cases;
+    const visibleCount=await count();
+    expect((await cases()).find(x=>x.type==="review-status"&&x.id===answerId))
+      .toMatchObject({topicId:f.topicId,topicTitle:"B3_ATTENTION_SOLVED_TITLE_6072"});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide reviewed answer",
+    });
+    expect((await cases()).map(x=>x.id)).not.toContain(answerId);
+    expect(await count()).toBe(visibleCount-1);
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore reviewed answer",
+    });
+    expect(await count()).toBe(visibleCount);
+    await service.setTopicVisibility(topicCommand(f));
+    expect((await cases()).map(x=>x.id)).not.toContain(answerId);
+    expect(await count()).toBe(visibleCount-1);
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore reviewed question"));
+    expect(await count()).toBe(visibleCount);
+  });
+});
+
 describe("B3 public visibility projection and leak-safe discovery", () => {
   it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
     const f=await fixture(
