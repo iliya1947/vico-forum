@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` on unchanged B2 base. Old [CI #44826260876](https://github.com/iliya1947/vico-forum/actions/runs/44826260876) at `b221da10...`: PG17 1599 PASS, main checks Test 2776 PASS / 6 FAIL, unit (3 raw loader data wrapper assertions; 3 stale public Cache-Control expectations). Lint/typecheck passed on old head. Other 13/15 observed workflows success; AP-10 queued.
-- Three microsteps corrected **tests only** in `public-authz-degradation.test.ts`, `topic-headers.test.ts`, `section-category-headers.test.ts`: nested `data.*` and expected new B3 `no-store`. Commits `b351cbec...`, `c504b211...`, `3fa0740c...`. 9/9 source checks PASS; corrected unit/runtime not yet verified. Prior SQL Help Similar and ru/he translation fixes retained.
-- Next `...`: F5 fresh exact-head tests/CI and applicable workflows; correct confirmed blockers or if green author PASS → Мира bounded B3 checkpoint. No B4/merge. STOP.
+- B3 Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`, B2 base unchanged; 34 changed files in B3 local diff. Current stable [CI #44831833799](https://github.com/iliya1947/vico-forum/actions/runs/44831833799) both jobs SUCCESS, 2782/2782 unit, 1599/1599 PostgreSQL17, lint/typecheck/build/smoke PASS; 15/15 exact-head workflows SUCCESS, including connected browser/AP-10.
+- Author B3 scope self-check PASS (no confirmed blocking current-B3 defect): verified B3 diff inventory, inspected critical SQL/public DTO/routes and tests, checked no-leak, neutral 404, tombstones/anchors, filtering before LIMIT, unavailable solution/duplicate, read/history/edit/recovery denial and cache boundaries against plan. Test-only final corrective packet fixed old `DataWithResponseInit` / cache expectation assertions; all applicable CI green at stable SHA.
+- **Assigned next: Мира** for bounded B3 coordinator checkpoint on this exact SHA against B2 PASS baseline. No new B3 code, B4, merge, independent Leva review until checkpoint and owner continuation. Work context in `WORKFLOW.md` #342. **Лира — STOP.**
 
 ## Cadence
 
