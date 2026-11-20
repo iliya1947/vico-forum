@@ -53,3 +53,8 @@ Mira bounded checkpoint PASS on stacked Draft #357 exact `778568e83b89fd0ac14827
 ## 2026-11-20 — B3 activated
 
 Owner continued after B2 Mira PASS. Lira is assigned B3 core public projection/discovery in a new stacked PR based on `feature/moderation-visibility-b2-commands`. Internal B3 microsteps use targeted checks without routine STOP/full-CI loops; after complete B3 author self-check + one full exact-head CI → Mira checkpoint.
+
+
+## 2026-11-20 — B3 cadence corrected to small batches
+
+Owner clarified the purpose of decomposition: prevent Lira from stalling on long uninterrupted work. B3 now runs in batches of 2–3 related microsteps (fewer if a step grows), targeted checks, then STOP for owner `...`. Full repository CI is still deferred to whole-B3 completion unless a concrete cross-cutting risk justifies an earlier run.
