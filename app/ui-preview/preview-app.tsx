@@ -343,6 +343,10 @@ type PreviewTopicOverride = {
   bestAnswerPostId?: string | null;
   solutionModerationStatus?: "needs-review" | "outdated" | null;
   solutionOutdatedReason?: string | null;
+  duplicateOf?: PreviewTopicPage["duplicateOf"];
+  duplicateRelationshipId?: string | null;
+  duplicateDisputed?: boolean;
+  pendingDuplicateAppealId?: string | null;
   isPinned?: boolean;
   isClosed?: boolean;
   closureVersion?: number;
@@ -576,11 +580,27 @@ function previewApplyTopicState(topic: PreviewTopicPage, interactions: PreviewIn
     title: titleSourceLocale ? { ...editedTitle, sourceLocale: titleSourceLocale } : editedTitle,
     isSolved: override?.isSolved ?? topic.isSolved,
     bestAnswerPostId,
+    duplicateOf: override?.duplicateOf === undefined ? topic.duplicateOf : override.duplicateOf,
+    duplicateRelationshipId: override?.duplicateRelationshipId === undefined
+      ? topic.duplicateRelationshipId
+      : override.duplicateRelationshipId,
+    duplicateDisputed: override?.duplicateDisputed ?? topic.duplicateDisputed,
     isPinned: override?.isPinned ?? topic.isPinned,
     isClosed: override?.isClosed ?? topic.isClosed,
     closureVersion: override?.closureVersion ?? topic.closureVersion,
     posts,
   };
+}
+
+function previewPendingDuplicateAppealId(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  topicId: string,
+): string | null {
+  const override = interactions.topicOverrides.get(topicId);
+  if (override?.pendingDuplicateAppealId !== undefined) return override.pendingDuplicateAppealId;
+  const question = previewHelpSolutions(scenario.locale).questions.find((item) => item.id === topicId);
+  return question?.duplicateDisputed ? `${topicId}-appeal` : null;
 }
 
 function previewEditablePostIds(scenario: Scenario, topic: PreviewTopicPage): string[] {
@@ -1734,7 +1754,14 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || ((intent === "pinTopic"
           || intent === "unpinTopic"
           || intent === "closeTopic"
-          || intent === "reopenTopic")
+          || intent === "reopenTopic"
+          || intent === "markSolutionNeedsReview"
+          || intent === "markSolutionOutdated"
+          || intent === "clearSolutionModeration"
+          || intent === "confirmHelpDuplicate"
+          || intent === "removeHelpDuplicate"
+          || intent === "acceptHelpDuplicateAppeal"
+          || intent === "rejectHelpDuplicateAppeal")
           && form.classList.contains("topic-admin-form"))
         || ((intent === "correctTitleSourceLocale" || intent === "correctPostSourceLocale")
           && form.classList.contains("source-locale-form"))
@@ -4392,6 +4419,97 @@ async function previewTopicAction(
     return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
+  if (
+    intent === "confirmHelpDuplicate"
+    || intent === "removeHelpDuplicate"
+    || intent === "acceptHelpDuplicateAppeal"
+    || intent === "rejectHelpDuplicateAppeal"
+  ) {
+    if (scenario.identity !== "manager" && scenario.identity !== "owner") {
+      return { error: "forbidden" as const };
+    }
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage || currentPage.topic.section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+      return { error: "notFound" as const };
+    }
+    const currentTopic = currentPage.topic;
+    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+
+    if (intent === "confirmHelpDuplicate") {
+      const originalTopicId = String(form.get("originalTopicId") ?? "").trim();
+      if (!originalTopicId) return { error: "invalid" as const };
+      if (originalTopicId === routeTopicId) return { error: "conflict" as const };
+      if (currentTopic.duplicateOf || currentTopic.isSolved || currentTopic.bestAnswerPostId) {
+        return { error: "conflict" as const };
+      }
+      const originalPage = previewAdminTopicData(scenario, interactions, originalTopicId);
+      if (!originalPage || originalPage.topic.section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        return { error: "notFound" as const };
+      }
+      if (originalPage.topic.duplicateOf) return { error: "conflict" as const };
+
+      const knownHelpTopicIds = [
+        ...previewHelpSolutions(scenario.locale).questions.map((question) => question.id),
+        ...[...interactions.createdTopics.values()]
+          .filter((topic) => topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID)
+          .map((topic) => topic.id),
+      ];
+      const hasActiveDuplicates = knownHelpTopicIds.some((candidateTopicId) => {
+        if (candidateTopicId === routeTopicId) return false;
+        return previewAdminTopicData(scenario, interactions, candidateTopicId)?.topic.duplicateOf?.id === routeTopicId;
+      });
+      if (hasActiveDuplicates) return { error: "conflict" as const };
+
+      const relationshipId = `preview-duplicate-${++interactions.sequence}`;
+      interactions.topicOverrides.set(routeTopicId, {
+        ...current,
+        duplicateOf: {
+          id: originalPage.topic.id,
+          title: originalPage.topic.title.originalContent,
+        },
+        duplicateRelationshipId: relationshipId,
+        duplicateDisputed: false,
+        pendingDuplicateAppealId: null,
+      });
+      return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
+    }
+
+    if (!currentTopic.duplicateOf || !currentTopic.duplicateRelationshipId) {
+      return { error: "conflict" as const };
+    }
+
+    if (intent === "removeHelpDuplicate") {
+      const expectedRelationshipId = String(form.get("expectedRelationshipId") ?? "").trim();
+      if (!expectedRelationshipId) return { error: "invalid" as const };
+      if (expectedRelationshipId !== currentTopic.duplicateRelationshipId) {
+        return { error: "conflict" as const };
+      }
+      interactions.topicOverrides.set(routeTopicId, {
+        ...current,
+        duplicateOf: null,
+        duplicateRelationshipId: null,
+        duplicateDisputed: false,
+        pendingDuplicateAppealId: null,
+      });
+      return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
+    }
+
+    const pendingAppealId = previewPendingDuplicateAppealId(scenario, interactions, routeTopicId);
+    const expectedAppealId = String(form.get("expectedAppealId") ?? "").trim();
+    if (!expectedAppealId) return { error: "invalid" as const };
+    if (!pendingAppealId || expectedAppealId !== pendingAppealId) {
+      return { error: "conflict" as const };
+    }
+    const accepted = intent === "acceptHelpDuplicateAppeal";
+    interactions.topicOverrides.set(routeTopicId, {
+      ...current,
+      ...(accepted ? { duplicateOf: null, duplicateRelationshipId: null } : {}),
+      duplicateDisputed: false,
+      pendingDuplicateAppealId: null,
+    });
+    return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
+  }
+
   if (intent === "pinTopic" || intent === "unpinTopic") {
     if (scenario.identity !== "manager") return null;
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
@@ -6594,6 +6712,7 @@ function previewAdminTopicData(
       bestAnswerPostId,
       needsDetails: helpQuestion.needsDetails,
       duplicateOf: helpQuestion.duplicateOf,
+      duplicateRelationshipId: helpQuestion.duplicateOf ? `${helpQuestion.id}-duplicate` : null,
       duplicateDisputed: helpQuestion.duplicateDisputed,
       title: {
         id: `${helpQuestion.id}-title`,
@@ -6612,6 +6731,11 @@ function previewAdminTopicData(
       posts,
     };
     const topic = previewApplyTopicState(baseTopic, interactions);
+    const pendingDuplicateAppealId = previewPendingDuplicateAppealId(
+      scenario,
+      interactions,
+      helpQuestion.id,
+    );
     return {
       topic,
       titlePresentation: originalPresentation(
@@ -6626,8 +6750,8 @@ function previewAdminTopicData(
         topic,
       ),
       canManageHelpDuplicate: true,
-      pendingDuplicateAppeal: helpQuestion.duplicateDisputed
-        ? { id: `${helpQuestion.id}-appeal` }
+      pendingDuplicateAppeal: pendingDuplicateAppealId
+        ? { id: pendingDuplicateAppealId }
         : null,
     };
   }
@@ -6973,6 +7097,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       bestAnswerPostId,
       needsDetails: helpQuestion.needsDetails,
       duplicateOf: helpQuestion.duplicateOf,
+      duplicateRelationshipId: helpQuestion.duplicateOf ? `${helpQuestion.id}-duplicate` : null,
       duplicateDisputed: helpQuestion.duplicateDisputed,
       title: {
         id: `${helpQuestion.id}-title`,
@@ -6988,6 +7113,11 @@ function PreviewTopicRoute({ scenario, interactions }: {
       posts,
     };
     const interactiveHelpTopic = previewApplyTopicState(helpTopic, interactions);
+    const pendingDuplicateAppealId = previewPendingDuplicateAppealId(
+      scenario,
+      interactions,
+      helpQuestion.id,
+    );
     return (
       <TopicView
         locale={scenario.locale}
@@ -7014,11 +7144,13 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
         canModerateHelpSolution={scenario.identity === "manager" || scenario.identity === "owner"}
-        canManageHelpDuplicate={scenario.identity === "manager"}
-        pendingDuplicateAppeal={helpQuestion.duplicateDisputed && scenario.identity !== "guest"
+        canManageHelpDuplicate={scenario.identity === "manager" || scenario.identity === "owner"}
+        pendingDuplicateAppeal={pendingDuplicateAppealId
+          && interactiveHelpTopic.duplicateRelationshipId
+          && scenario.identity !== "guest"
           ? {
-              id: `${helpQuestion.id}-appeal`,
-              relationshipId: `${helpQuestion.id}-duplicate`,
+              id: pendingDuplicateAppealId,
+              relationshipId: interactiveHelpTopic.duplicateRelationshipId,
               explanation: scenario.locale === "ru"
                 ? "Проблема похожа, но причина и решение отличаются."
                 : scenario.locale === "he"
