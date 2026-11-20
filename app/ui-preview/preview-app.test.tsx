@@ -1183,6 +1183,28 @@ describe("embedded preview routing", { timeout: 10_000 }, () => {
     expect(document.querySelector(".profile-card")).not.toBeNull();
   });
 
+  it("toggles user Block on another user's profile in the static Pages preview", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="tag-typescript-guest" identity="user" />);
+
+    await user.click(await screen.findByRole("link", { name: /Mixed RTL content with code blocks/ }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Mixed RTL content with code blocks" })).toBeInTheDocument();
+
+    const authorLinks = await screen.findAllByRole("link", { name: "Noa Levi" });
+    await user.click(authorLinks[0]!);
+
+    expect(await screen.findByRole("button", { name: "Block user" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("This user is not blocked.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Block user" }));
+    expect(await screen.findByRole("button", { name: "Unblock user" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("This user's posts are collapsed for you and new notifications from them are silenced.")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unblock user" }));
+    expect(await screen.findByRole("button", { name: "Block user" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("This user is not blocked.")).toBeInTheDocument();
+  });
+
   it("opens the Attention reporter's matching profile", async () => {
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="attention-signals" identity="manager" />);
     await userEvent.click(await screen.findByRole("link", { name: "Appeals (1)" }));
