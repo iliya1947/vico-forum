@@ -2559,6 +2559,55 @@ describe("B3 Help similar-question visible-only ranking", () => {
   });
 });
 
+describe("B3 public tag names require visible topic membership", () => {
+  it("removes hidden-only user tags from index and direct Tag while keeping shared tags", async () => {
+    const suffix=randomUUID().slice(0,8);
+    const shared={key:`b3-shared-${suffix}`,name:`B3 Shared ${suffix}`};
+    const secret={key:`b3-secret-${suffix}`,name:`B3_HIDDEN_TAG_NAME_${suffix}`};
+    async function taggedTopic(title: string, tags: {key:string;name:string}[]) {
+      const topicId=randomUUID(),postId=randomUUID();
+      const titleRevisionId=randomUUID(),bodyRevisionId=randomUUID();
+      await repository.createTopicWithInitialPost({
+        id:topicId,sectionId:"visibility-section",authorId:"author",
+        titleRevision:{id:titleRevisionId,originalContent:title,sourceLocale:"en"},
+        initialPost:{
+          id:postId,topicId,authorId:"author",
+          bodyRevision:{id:bodyRevisionId,originalContent:"Visible initial post",sourceLocale:"en"},
+        },
+        tags,
+      });
+      return {topicId,postId,titleRevisionId,bodyRevisionId};
+    }
+    const visible=await taggedTopic("B3_TAG_VISIBLE_TOPIC", [shared]);
+    const hidden=await taggedTopic("B3_TAG_HIDDEN_TOPIC", [shared,secret]);
+    const index=async()=>await repository.readTags();
+    const row=async(key:string)=>(await index()).find(item=>item.key===key);
+    expect(await row(shared.key)).toMatchObject({name:shared.name,topicCount:2});
+    expect(await row(secret.key)).toMatchObject({name:secret.name,topicCount:1});
+    expect((await repository.readTag(secret.key))?.topics.map(t=>t.id)).toEqual([hidden.topicId]);
+
+    await service.setTopicVisibility(topicCommand(hidden));
+    expect(await row(shared.key)).toMatchObject({name:shared.name,topicCount:1});
+    expect(await row(secret.key)).toBeUndefined();
+    expect(JSON.stringify(await index())).not.toContain(secret.name);
+    expect(await repository.readTag(secret.key)).toBeUndefined();
+    expect(await repository.readTag(`b3-nonexistent-${suffix}`)).toBeUndefined();
+    expect((await repository.readTag(shared.key))?.topics.map(t=>t.id)).toEqual([visible.topicId]);
+
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",false,1,"Restore tagged topic"));
+    expect(await row(shared.key)).toMatchObject({topicCount:2});
+    expect(await row(secret.key)).toMatchObject({name:secret.name,topicCount:1});
+    expect((await repository.readTag(secret.key))?.topics.map(t=>t.id)).toEqual([hidden.topicId]);
+
+    await service.setTopicVisibility(topicCommand(visible));
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",true,2,"Hide tagged topic again"));
+    expect(await row(shared.key)).toBeUndefined();
+    expect(await repository.readTag(shared.key)).toBeUndefined();
+    await service.setTopicVisibility(topicCommand(visible,"moderator1",false,1,"Restore visible shared tag"));
+    expect(await row(shared.key)).toMatchObject({topicCount:1});
+  });
+});
+
 describe("B3 public visibility projection and leak-safe discovery", () => {
   it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
     const f=await fixture(
