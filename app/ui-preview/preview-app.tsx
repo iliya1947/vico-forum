@@ -54,6 +54,7 @@ import {
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { UnderDevelopmentView } from "../forum/under-development-view";
 import { ProfileView } from "../forum/profile-view";
+import { BookmarksView, type BookmarkItemPresentation } from "../forum/bookmarks-view";
 import { FiltersView, type FilterListItem } from "../forum/filters-view";
 import { InvalidProfileError, validateProfileFields, type ProfileFields } from "../forum/profile";
 import { forumProfilePath, forumTopicPath } from "../forum/paths";
@@ -1465,7 +1466,8 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
         || (intent === "reply" && form.classList.contains("topic-reply-form"))
         || (intent === "editTopicTitle" && Boolean(form.closest(".topic-title-editor")))
         || (intent === "setTopicWatch" && Boolean(form.closest(".topic-watch-control")))
-        || (intent === "setTopicBookmark" && Boolean(form.closest(".topic-bookmark-control")))
+        || (intent === "setTopicBookmark"
+          && (Boolean(form.closest(".topic-bookmark-control")) || Boolean(form.closest(".bookmarks-row-actions"))))
         || (intent === "setTopicMute"
           && (Boolean(form.closest(".personal-filter-control")) || Boolean(form.closest(".bookmarks-row-actions"))))
         || (intent === "setUserBlock"
@@ -2967,6 +2969,12 @@ function previewRouter(
       ErrorBoundary: ForumRouteError,
     },
     {
+      path: "/:locale/bookmarks",
+      element: <PreviewBookmarksRoute />,
+      loader: () => previewBookmarksData(scenario, interactions),
+      ErrorBoundary: ForumRouteError,
+    },
+    {
       path: "/:locale/users/:userId",
       element: <PreviewProfileRoute scenario={scenario} interactions={interactions} />,
       loader: ({ params }) => previewProfileAccessData(scenario, params.userId),
@@ -3624,6 +3632,33 @@ function previewInteractionPairs(values: Set<string>, actorId: string) {
       return [];
     }
   });
+}
+
+function previewBookmarksData(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  if (!actor) throw new Response("Unauthorized", { status: 401 });
+  const items: BookmarkItemPresentation[] = previewInteractionPairs(interactions.topicBookmarks, actor.id)
+    .flatMap((id, index) => {
+      const page = previewAdminTopicData(scenario, interactions, id);
+      if (!page) return [];
+      const topic = page.topic;
+      return [{
+        id,
+        title: interactions.topicTitleEdits.get(id)?.originalContent ?? topic.title.originalContent,
+        authorName: topic.authorName,
+        category: { name: topic.section.category.name },
+        section: { name: topic.section.name },
+        savedAt: new Date(Date.UTC(2026, 10, 20, 6, 30, index)).toISOString(),
+      }];
+    });
+  return { locale: scenario.locale, actorId: actor.id, items, next: null };
+}
+
+function PreviewBookmarksRoute() {
+  return <BookmarksView {...useLoaderData<ReturnType<typeof previewBookmarksData>>()} />;
 }
 
 function previewFiltersData(
