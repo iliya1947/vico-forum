@@ -374,6 +374,12 @@ type PreviewAdminMeasure = UserMeasureDetail & {
   canMutate: boolean;
 };
 
+type PreviewOwnerDeactivation = {
+  deactivatedAt: string;
+  retainAtLeastUntil: string;
+  eventId: string;
+};
+
 type PreviewInteractionState = {
   sequence: number;
   createdTopics: Map<string, PreviewCreatedTopic>;
@@ -403,6 +409,7 @@ type PreviewInteractionState = {
   registrationEmailEnabled: boolean;
   registrationVersion: number;
   revokedAccountSessionIds: Set<string>;
+  ownerDeactivations: Map<string, PreviewOwnerDeactivation>;
   measureAppealBody: string | null;
   adminHistoryEvents: AdminHistoryEvent[];
   adminCreatedMeasures: Map<string, PreviewAdminMeasure>;
@@ -471,6 +478,7 @@ function createPreviewInteractionState(): PreviewInteractionState {
     registrationEmailEnabled: registration?.emailRegistrationEnabled ?? true,
     registrationVersion: registration?.version ?? 1,
     revokedAccountSessionIds: new Set(),
+    ownerDeactivations: new Map(),
     measureAppealBody: null,
     adminHistoryEvents: [],
     adminCreatedMeasures: new Map(),
@@ -1385,6 +1393,87 @@ function previewMentionResponse(
   return new Response(JSON.stringify({ users }), { status: 200, headers });
 }
 
+function previewOwnerDeactivationResponse(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Response | null {
+  const rawUrl = typeof input === "string"
+    ? input
+    : input instanceof URL
+      ? input.toString()
+      : input.url;
+  const url = new URL(rawUrl, window.location.origin);
+  const prefix = `/${encodeURIComponent(scenario.locale)}/users/`;
+  const suffix = "/owner/deactivate";
+  if (!url.pathname.startsWith(prefix) || !url.pathname.endsWith(suffix)) return null;
+
+  const headers = {
+    "Cache-Control": "private, no-store",
+    "Content-Type": "application/json; charset=utf-8",
+    "X-Content-Type-Options": "nosniff",
+  };
+  const actor = previewUser(scenario);
+  if (!actor) return new Response("Unauthenticated", { status: 401, headers });
+  if (scenario.identity !== "owner") return new Response("Forbidden", { status: 403, headers });
+
+  const encodedTargetId = url.pathname.slice(prefix.length, -suffix.length);
+  let targetId = "";
+  try {
+    targetId = decodeURIComponent(encodedTargetId);
+  } catch {
+    return new Response("Invalid request", { status: 400, headers });
+  }
+  if (!targetId || !previewProfileNames[targetId]) {
+    return new Response("Not Found", { status: 404, headers });
+  }
+
+  const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+  if (method !== "POST") return new Response("Method Not Allowed", { status: 405, headers });
+  const contentType = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
+    .get("Content-Type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "application/x-www-form-urlencoded") {
+    return new Response("Invalid request", { status: 400, headers });
+  }
+
+  const body = init?.body;
+  const form = body instanceof URLSearchParams
+    ? body
+    : typeof body === "string"
+      ? new URLSearchParams(body)
+      : null;
+  if (!form) return new Response("Invalid request", { status: 400, headers });
+
+  const operationId = form.get("operationId")?.trim() ?? "";
+  const expectedActorId = form.get("expectedActorId")?.trim() ?? "";
+  const submittedTargetId = form.get("targetUserId")?.trim() ?? "";
+  if (form.get("intent") !== "deactivate" || !operationId || submittedTargetId !== targetId) {
+    return new Response("Invalid request", { status: 400, headers });
+  }
+  if (expectedActorId !== actor.id) return new Response("Conflict", { status: 409, headers });
+  if (targetId === actor.id) return new Response("Forbidden", { status: 403, headers });
+
+  const existing = interactions.ownerDeactivations.get(targetId);
+  const record = existing ?? {
+    deactivatedAt: "2026-11-20T10:00:00.000Z",
+    retainAtLeastUntil: "2027-11-20T10:00:00.000Z",
+    eventId: `preview-account-deactivated-${targetId}`,
+  };
+  if (!existing) {
+    interactions.ownerDeactivations.set(targetId, record);
+    interactions.sequence += 1;
+  }
+  return Response.json({
+    targetUserId: targetId,
+    state: "deactivated",
+    changed: !existing,
+    deactivatedAt: record.deactivatedAt,
+    retainAtLeastUntil: record.retainAtLeastUntil,
+    eventId: record.eventId,
+  }, { headers });
+}
+
 function previewNotifications(locale: PreviewLocale) {
   const russian = locale === "ru";
   const hebrew = locale === "he";
@@ -1542,13 +1631,17 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     const previewFetch: typeof fetch = (input, init) => {
       const mentionResponse = previewMentionResponse(activeScenario, input);
       if (mentionResponse) return Promise.resolve(mentionResponse);
+      const deactivationResponse = previewOwnerDeactivationResponse(
+        activeScenario, interactions, input, init,
+      );
+      if (deactivationResponse) return Promise.resolve(deactivationResponse);
       return originalFetch(input, init);
     };
     globalThis.fetch = previewFetch;
     return () => {
       if (globalThis.fetch === previewFetch) globalThis.fetch = originalFetch;
     };
-  }, [activeScenario]);
+  }, [activeScenario, interactions]);
 
   useEffect(() => {
     document.documentElement.lang = activeScenario.locale;
@@ -6815,10 +6908,21 @@ function previewProfileAccessData(scenario: Scenario, routeUserId?: string) {
   return null;
 }
 
-function previewOwnerAccountSnapshot(targetId: string): OwnerUserProfileSnapshot {
+function previewOwnerAccountSnapshot(
+  targetId: string,
+  interactions: PreviewInteractionState,
+): OwnerUserProfileSnapshot {
+  const deactivation = interactions.ownerDeactivations.get(targetId);
   return {
     targetUserId: targetId,
-    lifecycle: { status: "active" },
+    lifecycle: deactivation
+      ? {
+          status: "deactivated",
+          deactivatedAt: deactivation.deactivatedAt,
+          deactivatedByUserId: "owner",
+          retainAtLeastUntil: deactivation.retainAtLeastUntil,
+        }
+      : { status: "active" },
     email: targetId === "owner" ? "owner@example.test" : `${targetId}@example.test`,
     emailVerified: true,
     createdAt: "2026-08-15T09:00:00.000Z",
@@ -6851,8 +6955,11 @@ function previewOwnerAccountSnapshot(targetId: string): OwnerUserProfileSnapshot
   };
 }
 
-function previewOwnerHistory(targetId: string): readonly OwnerHistoryEntry[] {
-  return [{
+function previewOwnerHistory(
+  targetId: string,
+  interactions: PreviewInteractionState,
+): readonly OwnerHistoryEntry[] {
+  const entries: OwnerHistoryEntry[] = [{
     origin: "auth-event",
     id: `preview-account-created-${targetId}`,
     occurredAt: "2026-08-15T09:00:00.000Z",
@@ -6868,6 +6975,25 @@ function previewOwnerHistory(targetId: string): readonly OwnerHistoryEntry[] {
       entityId: targetId,
     },
   }];
+  const deactivation = interactions.ownerDeactivations.get(targetId);
+  if (deactivation) {
+    entries.unshift({
+      origin: "account-event",
+      id: deactivation.eventId,
+      occurredAt: deactivation.deactivatedAt,
+      recordedAt: deactivation.deactivatedAt,
+      monitorKeys: ["accounts.users"],
+      kind: "account.deactivated",
+      source: "account",
+      quality: null,
+      values: {
+        actorUserId: "owner",
+        targetUserId: targetId,
+        retainAtLeastUntil: deactivation.retainAtLeastUntil,
+      },
+    });
+  }
+  return entries;
 }
 
 function previewProfilePrivilegedSections(
@@ -6908,13 +7034,13 @@ function previewProfilePrivilegedSections(
       },
     };
   }
-  if (scenario.identity === "owner" && targetId === actor.id) {
+  if (scenario.identity === "owner") {
     sections.owner = {
       viewerId: actor.id,
-      account: { status: "ready", value: previewOwnerAccountSnapshot(targetId) },
+      account: { status: "ready", value: previewOwnerAccountSnapshot(targetId, interactions) },
       history: {
         status: "ready",
-        value: { entries: previewOwnerHistory(targetId), next: null },
+        value: { entries: previewOwnerHistory(targetId, interactions), next: null },
       },
     };
   }
@@ -6954,7 +7080,9 @@ function PreviewProfileRoute({ scenario, interactions }: {
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
     {...previewUserBlockProps(scenario, interactions, id)}
     privileged={previewProfilePrivilegedSections(scenario, interactions, id)}
-    profile={{ id, name, image: null, joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
+    profile={{ id, name, image: null,
+      ...(interactions.ownerDeactivations.has(id) ? { identityKind: "deleted" as const } : {}),
+      joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: profileRole.slug, displayName: profileRole.displayName, isSystem: profileRole.isSystem },
       messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
     feedback={actionData ?? (scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined)} />;
