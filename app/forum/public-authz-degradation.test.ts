@@ -7,8 +7,12 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumReader } from "../../db/forum-repository";
 import { forumReaderContext } from "./request-context";
-import { loader as sectionLoader } from "../routes/section";
+import { loader as rawSectionLoader } from "../routes/section";
 import { loader as rawTopicLoader } from "../routes/topic";
+async function sectionLoader(args: Parameters<typeof rawSectionLoader>[0]) {
+  const result = await rawSectionLoader(args);
+  return "data" in result && "init" in result ? result.data : result;
+}
 async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
   const result = await rawTopicLoader(args);
   return "data" in result && "init" in result ? result.data : result;
