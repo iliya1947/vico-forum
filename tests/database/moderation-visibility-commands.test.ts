@@ -393,3 +393,76 @@ describe("V4 content writer admission: published edit, title and source locale",
       .rejects.toBeInstanceOf(UserMeasureRestrictedError);
   });
 });
+
+describe("V4 topic closure and pin admission under visibility", () => {
+  const close = (f: Fixture, actorId: string, isClosed: boolean, expectedClosureVersion: number) =>
+    repository.setTopicClosed({ topicId: f.topicId, actorId, isClosed, expectedClosureVersion });
+
+  async function state(f: Fixture) {
+    const [closure] = (await client.query(
+      "select is_closed, closure_version from forum_topics where id=$1", [f.topicId],
+    )).rows;
+    return {
+      closure,
+      pinned: await repository.readTopicPinState(f.topicId),
+      actions: (await events(f.topicId)).map(event => event.action),
+    };
+  }
+
+  it("rejects closure, reopening/no-op and pin/unpin on hidden open topics without mutations", async () => {
+    const f = await fixture();
+    await service.setTopicVisibility(topicCommand(f));
+    const before = await state(f);
+    for (const actorId of ["owner", "moderator1"]) {
+      await expect(close(f, actorId, true, 0)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(close(f, actorId, false, 0)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(repository.pinTopic(f.topicId, actorId)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(repository.unpinTopic(f.topicId, actorId)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    }
+    expect(await state(f)).toEqual(before);
+
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Restore for author"));
+    expect(await close(f, "owner", true, 0)).toEqual({
+      isClosed: true, closureVersion: 1, changed: true,
+    });
+    await repository.pinTopic(f.topicId, "owner");
+    expect(await repository.readTopicPinState(f.topicId)).toBe(true);
+  });
+
+  it("retains existing closed and pinned state while hidden, including refused no-ops", async () => {
+    const f = await fixture();
+    expect(await close(f, "owner", true, 0)).toMatchObject({ closureVersion: 1, changed: true });
+    await repository.pinTopic(f.topicId, "owner");
+    await service.setTopicVisibility(topicCommand(f));
+    const before = await state(f);
+    expect(before).toEqual({
+      closure: { is_closed: true, closure_version: 1 },
+      pinned: true,
+      actions: ["topic.closed", "topic.pinned", "topic.hidden"],
+    });
+    for (const actorId of ["owner", "moderator1"]) {
+      await expect(close(f, actorId, true, 1)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(close(f, actorId, false, 1)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(repository.pinTopic(f.topicId, actorId)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      await expect(repository.unpinTopic(f.topicId, actorId)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    }
+    expect(await state(f)).toEqual(before);
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed"));
+    expect(await close(f, "owner", true, 1)).toEqual({
+      isClosed: true, closureVersion: 1, changed: false,
+    });
+    await repository.pinTopic(f.topicId, "owner");
+    await repository.unpinTopic(f.topicId, "owner");
+    expect(await close(f, "owner", false, 1)).toEqual({
+      isClosed: false, closureVersion: 2, changed: true,
+    });
+    expect(await state(f)).toEqual({
+      closure: { is_closed: false, closure_version: 2 },
+      pinned: false,
+      actions: [
+        "topic.closed", "topic.pinned", "topic.hidden", "topic.restored",
+        "topic.unpinned", "topic.reopened",
+      ],
+    });
+  });
+});

@@ -2156,8 +2156,9 @@ export class DrizzleForumRepository {
     return this.database.transaction(async (tx) => {
       const [topic] = await tx.select({
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+        isHidden: forumTopics.isHidden,
       }).from(forumTopics).where(eq(forumTopics.id, input.topicId)).for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (topic.closureVersion !== input.expectedClosureVersion)
         throw new ForumStateConflictError("topic closure state changed");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
@@ -2185,11 +2186,11 @@ export class DrizzleForumRepository {
 
   async pinTopic(topicId: string, pinnedByUserId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ id: forumTopics.id })
+      const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, pinnedByUserId);
       await this.measureAdmission(tx, pinnedByUserId, "admin.forum");
       const changed = await tx.insert(forumTopicPins)
@@ -2201,11 +2202,11 @@ export class DrizzleForumRepository {
 
   async unpinTopic(topicId: string, actorId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const [topic] = await tx.select({ id: forumTopics.id })
+      const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, actorId);
       await this.measureAdmission(tx, actorId, "admin.forum");
       const changed=await tx.delete(forumTopicPins).where(eq(forumTopicPins.topicId, topicId)).returning({topicId:forumTopicPins.topicId});
