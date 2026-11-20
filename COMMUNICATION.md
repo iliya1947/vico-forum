@@ -43,3 +43,8 @@ Mira bounded checkpoint PASS on #355 exact `704d5a46d59841538524424296ac28eaa39a
 ## 2026-11-20 — B2 cadence correction
 
 Owner approved continuous completion of the remaining B2 tail. B2.3e1 and following internal microsteps no longer require owner STOP or full repository CI after each microstep. Lira should use targeted checks while iterating, complete the whole B2 bounded scope, then run one author self-check + one full exact-head CI and hand B2 to Mira. Stop early only for a real blocker/plan conflict.
+
+
+## 2026-11-20 — moderation visibility B2 PASS
+
+Mira bounded checkpoint PASS on stacked Draft #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`. B1/B2 stay Draft/unmerged. Next rung is B3 from `feature/moderation-visibility-b2-commands`, inactive until owner continuation. No Leva review until the folded final feature.
