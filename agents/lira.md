@@ -24,8 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F2 static public-response acceptance complete; no production change.** Exact stacked Draft #359 head `a6144285934423335a7665285e6326d0bfd4e702`, B2 #357 base unchanged; B3 incomplete.
+- **B3 F2 static public-response acceptance complete; no production change.** Exact stacked Draft #359 head `0126ec3754d4a1995ef38547c34d90a9c378e8f6`, B2 #357 base unchanged; B3 incomplete.
 - F2 audited existing source/data/HTML hidden-post + unsolicited translation + neutral hidden/missing 404 checks; Topic/root do not derive route meta from hidden source, public document/negative 404/503 cache headers are no-store, `ForumRouteError` renders canonical neutral strings. Added one parameterized mounted React error-boundary test (404, 503) with hidden title/body/revision and injected error header; verifies neutral DOM and no forwarded error header. Fixed expected 503 canonical heading. **21/21 cross-file static assertions PASS; Vitest/PG/HTTP execution NOT VERIFIED.** No GitHub Actions/CI inspection.
+- F2 supplemental source-level commit `0126ec3…` follows earlier F2 `a614428…` (linear ancestry, no divergent branch): two added React tests cover equal neutral 404 rendered alert HTML for hidden/absent topic plus hidden-only Tag, and fixed public discovery meta titles. **23/23 newer static checks PASS**. Previous 21/21 check at prior SHA remains historical. Still no Vitest/PG/HTTP `.data` execution; no Actions inspection.
 - Next owner `...`: **F3 only** — old public read/post edit/history/recovery guards and relevant negative regressions; 2–3 related microsteps, handoff, STOP. Then F4 SQL boundaries and F5 whole author check/one allowed exact-head CI. No B4/Mira/merge.
 
 ## Cadence
