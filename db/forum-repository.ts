@@ -4604,11 +4604,12 @@ export class DrizzleForumRepository {
           sectionId: forumTopics.sectionId,
           isSolved: forumTopics.isSolved,
           bestAnswerPostId: forumTopics.bestAnswerPostId,
+          isHidden: forumTopics.isHidden,
         })
         .from(forumTopics)
         .where(eq(forumTopics.id, topicId))
         .for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      if (!topic || topic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
       if (scope === "own" && topic.authorId !== actorId) throw new ForumAuthorizationError("only the topic author may select an answer");
       const [activeDuplicate] = await tx
         .select({ id: forumHelpDuplicateRelationships.id })
@@ -4632,19 +4633,23 @@ export class DrizzleForumRepository {
       if (originalPost?.id === postId) {
         throw new ForumStateConflictError("original topic post cannot be selected as best answer");
       }
+      // Check candidate and current answer under their ordered post locks,
+      // including same-answer no-op, before actor admission or any side effect.
+      const affectedPostIds = [...new Set([postId, topic.bestAnswerPostId]
+        .filter((id): id is string => id !== null))].sort();
+      const lockedAnswers = await tx.select({
+        id: forumPosts.id, isHidden: forumPosts.isHidden,
+      })
+        .from(forumPosts)
+        .where(and(eq(forumPosts.topicId, topicId), inArray(forumPosts.id, affectedPostIds)))
+        .orderBy(asc(forumPosts.id))
+        .for("no key update");
+      if (lockedAnswers.length !== affectedPostIds.length || lockedAnswers.some(answer => answer.isHidden))
+        throw new ForumEntityNotFoundError("selected answer does not exist");
       if (
         topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
         && topic.bestAnswerPostId !== postId
       ) {
-        // Both post-moderation rows are locked before their signal rows. Stable
-        // ID order avoids old/new answer lock inversions during replacements.
-        const affectedPostIds = [postId, topic.bestAnswerPostId]
-          .filter((id): id is string => id !== null).sort();
-        await tx.select({ id: forumPosts.id })
-          .from(forumPosts)
-          .where(and(eq(forumPosts.topicId, topicId), inArray(forumPosts.id, affectedPostIds)))
-          .orderBy(asc(forumPosts.id))
-          .for("no key update");
         const affectedKinds = topic.bestAnswerPostId
           ? or(
               eq(forumHelpSignals.kind, "duplicate"),

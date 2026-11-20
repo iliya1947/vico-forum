@@ -741,3 +741,129 @@ describe("V4 solution moderation admission under topic and answer visibility", (
     expect(restored.history.filter(e => e.action === "help.solutionModerationChanged")).toHaveLength(3);
   });
 });
+
+describe("V4 best-answer selection under hidden topic and answer", () => {
+  async function helpQuestion() {
+    const topicId = randomUUID(), postId = randomUUID(), titleRevisionId = randomUUID();
+    const bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question details", sourceLocale: "en" },
+      },
+    });
+    const answers = [0, 1].map(() => ({ id: randomUUID(), revisionId: randomUUID() }));
+    for (const answer of answers) {
+      await repository.createPost({
+        id: answer.id, topicId, authorId: "ordinary",
+        bodyRevision: { id: answer.revisionId, originalContent: "Helpful answer", sourceLocale: "en" },
+      });
+    }
+    return { topicId, postId, titleRevisionId, bodyRevisionId, answers };
+  }
+  type Question = Awaited<ReturnType<typeof helpQuestion>>;
+  const selection = (f: Question, index: number, scope: "own" | "any" = "own") =>
+    service.selectBestAnswer(f.topicId, f.answers[index]!.id,
+      scope === "own" ? "author" : "owner", scope);
+  const topicVisibility = (f: Question, hidden: boolean, version: number) =>
+    service.setTopicVisibility({
+      topicId: f.topicId, actorId: "moderator1", hidden,
+      expectedVisibilityVersion: version, expectedRevisionId: f.titleRevisionId,
+      reason: "Review question visibility",
+    });
+  const answerVisibility = (f: Question, index: number, hidden: boolean, version: number) =>
+    service.setPostVisibility({
+      topicId: f.topicId, postId: f.answers[index]!.id, actorId: "moderator1", hidden,
+      expectedVisibilityVersion: version, expectedRevisionId: f.answers[index]!.revisionId,
+      reason: "Review answer visibility",
+    });
+  async function state(f: Question) {
+    const [topic, posts, signals, history] = await Promise.all([
+      client.query("select best_answer_post_id,is_solved from forum_topics where id=$1", [f.topicId]),
+      client.query(
+        "select id,solution_moderation_status,solution_outdated_reason_kind from forum_posts where topic_id=$1 order by id",
+        [f.topicId],
+      ),
+      client.query(
+        "select id,status,resolved_by_user_id from forum_help_signals where topic_id=$1 order by id",
+        [f.topicId],
+      ),
+      client.query(
+        "select action,context from admin_history where target_id=$1 order by position",
+        [f.topicId],
+      ),
+    ]);
+    return { topic: topic.rows[0], posts: posts.rows, signals: signals.rows, history: history.rows };
+  }
+
+  it("rejects initial and same-answer selection under hidden topic for own and any, restores no-op", async () => {
+    const f = await helpQuestion();
+    await topicVisibility(f, true, 0);
+    const initial = await state(f);
+    for (const scope of ["own", "any"] as const) {
+      await expect(selection(f, 0, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(f)).toEqual(initial);
+    }
+    await topicVisibility(f, false, 1);
+    await selection(f, 0, "any");
+    await topicVisibility(f, true, 2);
+    const alreadySelected = await state(f);
+    for (const scope of ["own", "any"] as const) {
+      await expect(selection(f, 0, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(f)).toEqual(alreadySelected);
+    }
+    await topicVisibility(f, false, 3);
+    const beforeNoop = await state(f);
+    await selection(f, 0, "own");
+    expect(await state(f)).toEqual(beforeNoop);
+  });
+
+  it("rejects hidden new candidate including no-op, leaves prior choice and History unchanged", async () => {
+    const f = await helpQuestion();
+    await selection(f, 0);
+    await answerVisibility(f, 1, true, 0);
+    const before = await state(f);
+    for (const scope of ["own", "any"] as const) {
+      await expect(selection(f, 1, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(f)).toEqual(before);
+    }
+    await answerVisibility(f, 1, false, 1);
+    await selection(f, 1);
+    await answerVisibility(f, 1, true, 2);
+    const hiddenSelected = await state(f);
+    for (const scope of ["own", "any"] as const) {
+      await expect(selection(f, 1, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(f)).toEqual(hiddenSelected);
+    }
+    await answerVisibility(f, 1, false, 3);
+    const noOpBefore = await state(f);
+    await selection(f, 1);
+    expect(await state(f)).toEqual(noOpBefore);
+  });
+
+  it("rejects replacement when former selected answer is hidden, preserving pending signals", async () => {
+    const f = await helpQuestion();
+    await selection(f, 0);
+    await repository.markTopicSolved(f.topicId, "author", "own");
+    const signal = await service.createHelpSignal({
+      kind: "needs-review", topicId: f.topicId, actorId: "ordinary",
+      explanation: "Please review this answer", proposedOriginalTopicId: null,
+    });
+    await answerVisibility(f, 0, true, 0);
+    const before = await state(f);
+    for (const scope of ["own", "any"] as const) {
+      await expect(selection(f, 1, scope)).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      expect(await state(f)).toEqual(before);
+    }
+    await answerVisibility(f, 0, false, 1);
+    await selection(f, 1, "any");
+    const after = await state(f);
+    expect(after.topic.best_answer_post_id).toBe(f.answers[1]!.id);
+    expect(after.signals.find(s => s.id === signal.id)?.status).toBe("superseded");
+    expect(after.posts.find(p => p.id === f.answers[0]!.id)?.solution_outdated_reason_kind)
+      .toBe("best-answer-replaced");
+    expect(after.history.filter(e => e.action === "topic.bestAnswerChanged")).toHaveLength(1);
+  });
+});
