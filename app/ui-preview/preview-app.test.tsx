@@ -1582,6 +1582,27 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(document.querySelector("#post-question .topic-message-edited")).toBeNull();
   });
 
+  it("submits topic-title and post complaints through the static preview route", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    const reportTitle = await screen.findByRole("button", { name: "Report topic title" });
+    await user.click(reportTitle);
+    const titleForm = screen.getByRole("heading", { level: 3, name: "Report topic title" }).closest("form") as HTMLElement;
+    await user.selectOptions(within(titleForm).getByRole("combobox"), "other");
+    await user.type(within(titleForm).getByRole("textbox"), "The title is misleading.");
+    await user.click(within(titleForm).getByRole("button", { name: "Submit report" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Your report has been received.");
+
+    const question = document.querySelector("#post-question") as HTMLElement;
+    await user.click(within(question).getByRole("button", { name: "Report message" }));
+    const postForm = within(question).getByRole("heading", { level: 3, name: "Report message" }).closest("form") as HTMLElement;
+    await user.click(within(postForm).getByRole("button", { name: "Submit report" }));
+    await waitFor(() => {
+      expect(within(question).getByRole("status")).toHaveTextContent("Your report has been received.");
+    });
+  });
+
   it("suggests and inserts mentions through the static preview lookup", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="user" />);
