@@ -1325,6 +1325,19 @@ function previewUserBlockProps(
   };
 }
 
+function previewTopicBlockProps(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const actor = previewUser(scenario);
+  return {
+    blockedActorId: actor?.id ?? null,
+    blockedAuthorIds: actor
+      ? previewInteractionPairs(interactions.userBlocks, actor.id)
+      : [],
+  };
+}
+
 function previewUser(scenario: Scenario): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
   const unreadNotificationCount = scenario.variant === "notifications-empty" ? 0 : 3;
@@ -6404,6 +6417,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       <TopicView
         key={`${previewPostEditRenderKey(data.topic, interactions)}:${requestedEditPostId}`}
         {...data}
+        {...previewTopicBlockProps(scenario, interactions)}
         canUploadAttachments={false}
       />
     );
@@ -6485,6 +6499,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         {...previewTopicWatchProps(scenario, interactions, interactiveHelpTopic.id)}
         {...previewTopicBookmarkProps(scenario, interactions, interactiveHelpTopic.id)}
         {...previewTopicMuteProps(scenario, interactions, interactiveHelpTopic.id)}
+        {...previewTopicBlockProps(scenario, interactions)}
         topic={interactiveHelpTopic}
         titlePresentation={originalPresentation(
           "topic-title", interactiveHelpTopic.id, interactiveHelpTopic.title.id, interactiveHelpTopic.title.originalContent,
@@ -6535,6 +6550,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicMuteProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicBlockProps(scenario, interactions)}
       topic={interactiveTopic}
       titlePresentation={interactions.topicTitleEdits.has(interactiveTopic.id)
         ? originalPresentation(
@@ -6642,6 +6658,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       {...previewTopicWatchProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicBookmarkProps(scenario, interactions, interactiveTopic.id)}
       {...previewTopicMuteProps(scenario, interactions, interactiveTopic.id)}
+      {...previewTopicBlockProps(scenario, interactions)}
       topic={interactiveTopic}
       titlePresentation={originalPresentation(
         "topic-title",
