@@ -1279,6 +1279,31 @@ function unansweredTopics(locale: PreviewLocale) {
   ];
 }
 
+function previewUnansweredTopics(
+  scenario: Scenario,
+  interactions: PreviewInteractionState,
+) {
+  const created = [...interactions.createdTopics.values()]
+    .filter((topic) => (interactions.replies.get(topic.id)?.length ?? 0) === 0)
+    .map((topic) => {
+      const section = previewSectionPresentation(scenario.locale, topic.sectionId);
+      return {
+        id: topic.id,
+        sourceLocale: topic.sourceLocale,
+        titleDirection: previewDirectionForLocale(topic.sourceLocale),
+        title: topic.title,
+        authorName: topic.authorName,
+        category: section.category,
+        section: { id: section.id, name: section.name },
+      };
+    });
+
+  const existing = unansweredTopics(scenario.locale)
+    .filter((topic) => (interactions.replies.get(topic.id)?.length ?? 0) === 0);
+
+  return [...created, ...existing];
+}
+
 function unreadTopics(locale: PreviewLocale) {
   const base = unansweredTopics(locale);
   return base.slice(0, 2).map((topic, index) => ({
@@ -3447,7 +3472,7 @@ function previewRouter(
     },
     {
       path: "/:locale/unanswered",
-      element: <UnansweredView locale={scenario.locale} topics={unansweredTopics(scenario.locale)} />,
+      element: <UnansweredView locale={scenario.locale} topics={previewUnansweredTopics(scenario, interactions)} />,
     },
     {
       path: "/:locale/unread",
