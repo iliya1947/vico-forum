@@ -2739,16 +2739,30 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
       bodyRevision:{id:revisionId,originalContent:"Activity raising first topic",sourceLocale:"en"},
     });
     // Separate the three activity levels deterministically without relying on wall-clock scheduling.
-    await client.query("update forum_topics set created_at=clock_timestamp()+interval '1 minute' where id=$1", [second.topicId]);
-    await client.query("update forum_posts set created_at=clock_timestamp()+interval '2 minutes' where id=$1", [postId]);
-    const top=async()=>(await repository.search("B3_SEARCH_LIMIT_RANK_20261120",1))[0]?.id;
-    expect(await top()).toBe(first.topicId);
-    await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:true,
-      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide rank raising reply"});
-    expect(await top()).toBe(second.topicId);
-    await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:false,
-      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked reply"});
-    expect(await top()).toBe(first.topicId);
+    const [originalTopicDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_topics where id=$1", [second.topicId],
+    )).rows;
+    const [originalPostDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_posts where id=$1", [postId],
+    )).rows;
+    if (!originalTopicDate || !originalPostDate) throw new Error("missing rank fixtures");
+    try {
+      await client.query("update forum_topics set created_at=clock_timestamp()+interval '1 minute' where id=$1", [second.topicId]);
+      await client.query("update forum_posts set created_at=clock_timestamp()+interval '2 minutes' where id=$1", [postId]);
+      const top=async()=>(await repository.search("B3_SEARCH_LIMIT_RANK_20261120",1))[0]?.id;
+      expect(await top()).toBe(first.topicId);
+      await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide rank raising reply"});
+      expect(await top()).toBe(second.topicId);
+      await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked reply"});
+      expect(await top()).toBe(first.topicId);
+    } finally {
+      await client.query("update forum_topics set created_at=$1 where id=$2",
+        [originalTopicDate.created_at,second.topicId]);
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [originalPostDate.created_at,postId]);
+    }
   });
 
   it("classifies unanswered using visible non-root replies with a hidden root", async () => {
@@ -3036,30 +3050,39 @@ describe("B3 F4 SQL page boundaries and persisted root chronology", () => {
       id:latePostId,topicId:topics[0]!.topicId,authorId:"ordinary",parentPostId:topics[0]!.postId,
       bodyRevision:{id:lateRevisionId,originalContent:"F4 hidden late activity",sourceLocale:"en"},
     });
-    await client.query("update forum_posts set created_at=$1 where id=$2",
-      [new Date(Date.UTC(2037,0,1)),latePostId]);
-    await service.setPostVisibility({
-      topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:true,
-      expectedVisibilityVersion:0,expectedRevisionId:lateRevisionId,reason:"Hide late activity",
-    });
-    await service.setTopicVisibility(topicCommand(topics[7]!));
-    const section=(await repository.readCategory(categoryId,2))?.sections[0];
-    expect(section).toMatchObject({topicCount:7,postCount:7});
-    expect(section?.latestTopics.map(topic=>topic.id))
-      .toEqual([6,5,4,3,2,1].map(index=>topics[index]!.topicId));
-    expect(section?.pinnedTopics.map(topic=>topic.id))
-      .toEqual([topics[2]!.topicId,topics[1]!.topicId]);
-    expect((await repository.readSection(sectionId))?.topics.find(topic=>topic.id===topics[0]!.topicId)?.postCount).toBe(1);
-    await service.setTopicVisibility(topicCommand(topics[7]!,"moderator1",false,1,"Restore ranked topic"));
-    await service.setPostVisibility({
-      topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:false,
-      expectedVisibilityVersion:1,expectedRevisionId:lateRevisionId,reason:"Restore late activity",
-    });
-    const restored=(await repository.readCategory(categoryId,2))?.sections[0];
-    expect(restored).toMatchObject({topicCount:8,postCount:9});
-    expect(restored?.latestTopics[0]?.id).toBe(topics[0]!.topicId);
-    expect(restored?.pinnedTopics.map(topic=>topic.id))
-      .toEqual([topics[7]!.topicId,topics[2]!.topicId]);
+    const [originalLateDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_posts where id=$1", [latePostId],
+    )).rows;
+    if (!originalLateDate) throw new Error("missing late reply fixture");
+    try {
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [new Date(Date.UTC(2037,0,1)),latePostId]);
+      await service.setPostVisibility({
+        topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:lateRevisionId,reason:"Hide late activity",
+      });
+      await service.setTopicVisibility(topicCommand(topics[7]!));
+      const section=(await repository.readCategory(categoryId,2))?.sections[0];
+      expect(section).toMatchObject({topicCount:7,postCount:7});
+      expect(section?.latestTopics.map(topic=>topic.id))
+        .toEqual([6,5,4,3,2,1].map(index=>topics[index]!.topicId));
+      expect(section?.pinnedTopics.map(topic=>topic.id))
+        .toEqual([topics[2]!.topicId,topics[1]!.topicId]);
+      expect((await repository.readSection(sectionId))?.topics.find(topic=>topic.id===topics[0]!.topicId)?.postCount).toBe(1);
+      await service.setTopicVisibility(topicCommand(topics[7]!,"moderator1",false,1,"Restore ranked topic"));
+      await service.setPostVisibility({
+        topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:lateRevisionId,reason:"Restore late activity",
+      });
+      const restored=(await repository.readCategory(categoryId,2))?.sections[0];
+      expect(restored).toMatchObject({topicCount:8,postCount:9});
+      expect(restored?.latestTopics[0]?.id).toBe(topics[0]!.topicId);
+      expect(restored?.pinnedTopics.map(topic=>topic.id))
+        .toEqual([topics[7]!.topicId,topics[2]!.topicId]);
+    } finally {
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [originalLateDate.created_at,latePostId]);
+    }
   });
 
   it("counts only visible non-root Help replies when both root and intermediate parent are hidden", async () => {
