@@ -24,10 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F1 source-level test contract audit complete; no #359 implementation edit.** Exact #359 head `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`; B2 base unchanged, B3 incomplete.
-- Compared new B3 PG and React test definitions with actual `ForumService`/repository methods, PG fixture commands/visibility versions, Help queues/mixed/appeals, `AttentionCenterView` props and form selectors, Topic loader response, stored translation types and catalog labels. No confirmed test-definition mismatch. One provisional text-probe false alarm was a correct conditional public/private `no-store` expression in Topic loader. Final **16/16 targeted cross-file assertions match source**. No real Vitest/PG/HTTP execution; this is NOT test PASS.
-- Finite B3 route still active: **F1 source-audited**, F2 public HTML/JSON/.data/meta/error, F3 old edit/history/recovery guards, F4 SQL boundaries, F5 author check + one exact-head CI. Runtime may uncover new issues requiring owner-gated corrective batches; none asserted today.
-- **Next owner `...`: F2 only, 2–3 related microsteps**, update service and STOP. No GitHub Actions/CI inspection before whole B3 F5; no B4/Mira/merge.
+- **B3 F2 static public-response acceptance complete; no production change.** Exact stacked Draft #359 head `a6144285934423335a7665285e6326d0bfd4e702`, B2 #357 base unchanged; B3 incomplete.
+- F2 audited existing source/data/HTML hidden-post + unsolicited translation + neutral hidden/missing 404 checks; Topic/root do not derive route meta from hidden source, public document/negative 404/503 cache headers are no-store, `ForumRouteError` renders canonical neutral strings. Added one parameterized mounted React error-boundary test (404, 503) with hidden title/body/revision and injected error header; verifies neutral DOM and no forwarded error header. Fixed expected 503 canonical heading. **21/21 cross-file static assertions PASS; Vitest/PG/HTTP execution NOT VERIFIED.** No GitHub Actions/CI inspection.
+- Next owner `...`: **F3 only** — old public read/post edit/history/recovery guards and relevant negative regressions; 2–3 related microsteps, handoff, STOP. Then F4 SQL boundaries and F5 whole author check/one allowed exact-head CI. No B4/Mira/merge.
 
 ## Cadence
 
