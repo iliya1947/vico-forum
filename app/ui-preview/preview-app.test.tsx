@@ -3325,6 +3325,61 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("The current guidance no longer works.")).toBeInTheDocument();
   });
 
+  it("lets the bound Owner manage Help duplicates on the topic page", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
+
+    const openQuickActions = async () => {
+      const summary = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+      expect(summary).not.toBeNull();
+      const details = summary!.closest("details") as HTMLDetailsElement | null;
+      expect(details).not.toBeNull();
+      if (!details!.open) await owner.click(summary!);
+      return within(details!);
+    };
+
+    let actions = await openQuickActions();
+    expect(actions.getByRole("button", { name: "Remove duplicate" })).toBeInTheDocument();
+    expect(actions.getByRole("button", { name: "Accept dispute and remove duplicate" })).toBeInTheDocument();
+    await owner.click(actions.getByRole("button", { name: "Reject dispute" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Reject dispute" })).not.toBeInTheDocument());
+    actions = await openQuickActions();
+    expect(actions.getByRole("button", { name: "Remove duplicate" })).toBeInTheDocument();
+    expect(actions.queryByRole("button", { name: "Accept dispute and remove duplicate" })).not.toBeInTheDocument();
+
+    await owner.click(actions.getByRole("button", { name: "Remove duplicate" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Remove duplicate" })).not.toBeInTheDocument());
+
+    actions = await openQuickActions();
+    const originalId = actions.getByRole("textbox", { name: "Original question ID" });
+    await owner.type(originalId, "help-auth-best-answer");
+    await owner.click(actions.getByRole("button", { name: "Confirm duplicate" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Confirm duplicate" })).not.toBeInTheDocument());
+    actions = await openQuickActions();
+    expect(actions.getByRole("button", { name: "Remove duplicate" })).toBeInTheDocument();
+
+    cleanup();
+
+    const acceptingOwner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
+    const acceptSummary = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(acceptSummary).not.toBeNull();
+    await acceptingOwner.click(acceptSummary!);
+    await acceptingOwner.click(screen.getByRole("button", { name: "Accept dispute and remove duplicate" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", {
+      name: "Accept dispute and remove duplicate",
+    })).not.toBeInTheDocument());
+    const confirmSummary = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(confirmSummary).not.toBeNull();
+    const confirmDetails = confirmSummary!.closest("details") as HTMLDetailsElement | null;
+    expect(confirmDetails).not.toBeNull();
+    if (!confirmDetails!.open) await acceptingOwner.click(confirmSummary!);
+    expect(within(confirmDetails!).getByRole("button", { name: "Confirm duplicate" })).toBeInTheDocument();
+  });
+
   it("checks similar Help questions and publishes a new Help question", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solutions-ask" identity="user" />);
