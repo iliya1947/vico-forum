@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Active stacked Draft #359 exact `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`; base B2 unchanged, B3 incomplete.
-- Latest B3 tag-name leak fix: user-defined `forumTags` whose associated topics are all hidden were still listed publicly (count zero), and `readTag` exposed the label on direct navigation. `readTags` now excludes zero-visible-membership tags; `readTag` joins visible topic membership before revealing tag metadata, returning the same `undefined` as nonexistent tags. Shared tags with visible members remain; no schema/data changes.
-- One actual-PG regression definition checks unique/shared tags, visible counts, hidden name absence from index/direct Tag, and Hide/Restore for one/both topics. **22/22 targeted static checks PASS; PostgreSQL/Vitest/HTTP execution NOT VERIFIED** (no checkout/runtime). GitHub Actions/CI not inspected.
-- Next owner `...`: one small related B3 microbatch based on verified outstanding public projection/response gaps; targeted checks, update #342 and STOP. **Never open Actions/CI before entire B3 completed.** No B4/Mira/merge.
+- **B3 remainder inventoried; no new #359 code this batch.** Exact stacked B3 Draft #359 head `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`, B2 base unchanged; 54 commits/25 diff files. Never treat old PR body/old CI as evidence for exact current head.
+- **Finite route:** five owner-gated 2–3-microstep packages **F1** audit consistency of already-written PG/React test definitions vs real service/fixture types; **F2** public HTML/JSON/.data/meta/error leak acceptance; **F3** old public post/edit/history/recovery negative guard tests; **F4** SQL pre-rank/count/LIMIT, pagination, zero visible body, root/parent edge assertions; **F5** whole B3 author self-check, then the one allowed exact-head CI, fix confirmed failures as new owner-gated packages, Mira checkpoint handoff. Full details and acceptance boundaries in `WORKFLOW.md` + stage `PLAN.md`.
+- Runtime not available in this chat container (no checkout/PG; external git DNS unavailable). All prior 22/22 etc checks were static, not actual runtime PASS. **No Actions inspection until F5**. No B4–B9, no merge.
+- **Next owner `...`: execute only F1, record findings/fixes and handoff, then STOP.** Do not resume open-ended per-query hunting.
 
 ## Cadence
 
