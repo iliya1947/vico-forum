@@ -3325,6 +3325,24 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("The current guidance no longer works.")).toBeInTheDocument();
   });
 
+  it("lets the bound Owner pin and unpin a public topic", async () => {
+    const owner = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="owner" />);
+
+    expect(await screen.findByText("Pinned")).toBeInTheDocument();
+
+    const quickActions = document.querySelector(".topic-admin-tools > summary") as HTMLElement | null;
+    expect(quickActions).not.toBeNull();
+    await owner.click(quickActions!);
+
+    await owner.click(screen.getByRole("button", { name: "Unpin topic" }));
+    await waitFor(() => expect(screen.queryByText("Pinned")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Pin topic" })).toBeInTheDocument();
+
+    await owner.click(screen.getByRole("button", { name: "Pin topic" }));
+    expect(await screen.findByText("Pinned")).toBeInTheDocument();
+  });
+
   it("lets the bound Owner manage Help duplicates on the topic page", async () => {
     const owner = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-duplicate-disputed" identity="owner" />);
