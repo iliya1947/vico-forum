@@ -2,11 +2,13 @@
 
 ## Активный этап
 
-Moderation visibility — **B1 Mira bounded PASS** в Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
+Moderation visibility: B1 **Mira bounded PASS**, Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
 
-По явному owner continuation (`...`) начат **B2 stacked PR #357**, base = `feature/moderation-visibility-b1-foundation`. Начальный узкий срез **B2.1 — neutral atomic visibility History append** реализован, current B2 head `41f94434e62b59d40d7f7ebd57be5927decb23c9`. PostgreSQL 17 PASS (3/3 новых, 1486/1486 full DB). Exact-head `checks` изначально FAIL на неизменённом `app/forum/content-generation-navigation.test.tsx` (одно UI waitFor assertion); rerun **only failed checks job** на том же SHA SUCCESS (2758/2758). B2.1 author self-check PASS.
+B2 — stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), base = `feature/moderation-visibility-b1-foundation`. **B2.1 author PASS**: neutral atomic visibility History append. **B2.2 author PASS**: transactional topic/post Hide/Restore desired-state, in-transaction fresh actor/RBAC/Owner/AP-10 admission before no-op, version+revision CAS, reason validation, atomic History + PostgreSQL regressions. Stable exact head `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`.
 
-B2 ещё не завершён и Mira checkpoint не запрошен. Лира STOP после B2.1. По следующему явному продолжению — B2.2: desired-state topic/post commands, fresh transaction authorization/AP-10, reason/CAS. B1/B2 не merge.
+[Exact-head CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485) **SUCCESS**: 2758/2758 unit, 1493/1493 PG17 (7/7 new B2.2), overall **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS**. All changes B2.2 confined to #357; no public Hide/Restore route, no B3–B9.
+
+**Лира STOP перед B2.3.** Следующий узкий срез B2.3 после явной команды владельца: локальные visibility admission gates существующих content writers (reply/parent/edit/title/source/closure/etc), затем отдельный bounded срез PG race/lock graph. B2 в целом не завершён, checkpoint Миры не запрошен; B1/B2 остаются Draft/unmerged.
 
 ## Baseline
 
@@ -30,14 +32,15 @@ B2 ещё не завершён и Mira checkpoint не запрошен. Лир
 8. Если нижняя ступень требует изменения до финальной сборки, зависимые верхние ступени должны быть синхронизированы с изменившимся основанием до продолжения.
 9. Этот owner decision имеет приоритет над текущей формулировкой `AGENTS.md`. После текущей задачи требуется отдельное process изменение `AGENTS.md`, чтобы закрепить stacked bounded PR delivery как общий штатный маршрут там, где bounded-этапы составляют одну неделимую вертикальную feature.
 
-## Moderation visibility delivery — B1 PASS; B2.1 scoped foundation
+## Moderation visibility delivery — B1 PASS; B2.1/B2.2 author PASS
 
-- B1 Draft #355 head `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, previous `VIS-B1-MIRA-01` closed, checks/workflows green. First stacked rung stays unmerged.
-- B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), head branch `feature/moderation-visibility-b2-commands`, base B1 branch `feature/moderation-visibility-b1-foundation`.
-- B2.1 code on commit `41f94434e62b59d40d7f7ebd57be5927decb23c9`: `db/forum-history.ts` adds `appendVisibilityHistory` using neutral ID-only label and existing transactional advisory order lock, without reading title/body. New `tests/database/visibility-history-append.test.ts` covers typed topic/post events, mandatory reason constraint and enclosing transaction rollback. Diff exactly 2 files vs B1.
-- [CI run 44696500126](https://github.com/iliya1947/vico-forum/actions/runs/44696500126): PostgreSQL17 `database` SUCCESS, 111/111 files, 1486/1486 tests including new 3/3. First `checks` attempt failed 1/2758 unrelated `app/forum/content-generation-navigation.test.tsx` navigation-result waitFor (the B2 diff does not touch its code). Exact-head rerun of only `checks` job passed 2758/2758. Final 6/6 check-runs, 5/5 associated workflows SUCCESS.
-- B2.2+ pending: topic/post desired-state command/CAS, actor + permission/AP-10 transaction admission, reason validation and tests; existing content writer gates and real lock graph remain further bounded slices under the accepted V4/V8 plan. None implemented in B2.1; no B3–B9 routes/UI/read paths.
-- B2.1 author PASS / Lira STOP. Complete remaining B2 work and final whole-B2 exact-head self-check before Mira bounded B2 checkpoint. No independent Leva review until final folded feature.
+- B1 Draft #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: Mira bounded PASS, `VIS-B1-MIRA-01` closed; stays Draft/unmerged.
+- B2 Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), branch `feature/moderation-visibility-b2-commands`, base = B1 branch.
+- B2.1 `41f94434e62b59d40d7f7ebd57be5927decb23c9`: neutral ID-only transaction-owned History append and dedicated PG rollback/reason regressions, author PASS.
+- B2.2 exact `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`: `db/forum-repository.ts`, `db/forum-service.ts`, `db/hyperdrive-forum.ts`, `workers/app.ts`, focused test updates. Topic/post transactional Hide/Restore state CAS, current revision and membership checks, active actor, direct RBAC/Owner and AP-10 admission even on no-op, mandatory transition reason, overflow/stale denial, History appended last and transaction rollback. B2.2 changed only backend commands/wiring/tests; no action routes/reader exposure.
+- Exact-head [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485): 2758/2758 unit and 1493/1493 PostgreSQL17 SUCCESS including 7/7 new `moderation-visibility-commands.test.ts` cases. GitHub check-runs 22/22 SUCCESS; associated workflows 18/18 SUCCESS. Earlier red CI attempts on intermediate commits corrected within B2.2; verified evidence is final exact head.
+- B2 remaining: current content writers and parent/recovery admission gates, new planning admission as appropriate to B2 scope, real PostgreSQL two-way races, actor deactivation and lock compatibility; do not claim all B2/whole-feature acceptance from green B2.2 CI.
+- **B2.2 bounded author PASS; Lira STOP.** Next explicit owner continuation activates B2.3 (writer admission). After full B2 scope, final exact-head author self-check + applicable CI → Mira bounded checkpoint; no Leva review until final folded feature.
 
 ## Process follow-up
 

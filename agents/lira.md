@@ -2,18 +2,20 @@
 
 ## Текущее назначение
 
-Moderation visibility B2 started after Mira **B1 PASS**. Draft [#357](https://github.com/iliya1947/vico-forum/pull/357), head `41f94434e62b59d40d7f7ebd57be5927decb23c9`, stacked on B1 Draft #355 branch `feature/moderation-visibility-b1-foundation`.
+Moderation visibility B2 stacked Draft [#357](https://github.com/iliya1947/vico-forum/pull/357) over B1 [#355](https://github.com/iliya1947/vico-forum/pull/355). B1 Mira bounded PASS. **B2.1/B2.2 author PASS; Лира STOP before B2.3.**
 
-## B2.1 — History foundation
+## Подтверждённое B2
 
-- Added transaction-owned `appendVisibilityHistory`: ID-only label, no source title/body read, shared History ordering lock, typed topic/post context and reason; no B2 public route.
-- New PG test: typed topic/post neutral labels, required reason rejection, rollback. PostgreSQL17 full suite 1486/1486 PASS (3/3 new), 111 test files.
-- Initial exact-head unit `checks` FAIL from unrelated content-generation-navigation waitFor assertion. Rerun of **only checks** on unchanged SHA passed 2758/2758; database 1486/1486, final 6/6 check-runs and 5/5 workflows SUCCESS. B2.1 author PASS; nonrelated test was unchanged.
-- Лира STOP after B2.1. Next small slice only on owner continuation: B2 desired-state transactional commands, fresh actor/capability/AP-10 checks and current revision/version CAS. Stay inside B2; no B3+ read/UI.
+- B2.1 `41f94434e62b59d40d7f7ebd57be5927decb23c9`: `appendVisibilityHistory` neutral ID-only labels, reason/rollback PG regressions.
+- B2.2 exact stable `ff5d560da266ba1c2ccf8eb28304be02a2d5cab8`: transactional topic/post Hide/Restore, current version/revision CAS, membership, active actor, direct fresh RBAC+Owner/AP10 admission before no-op; one neutral History event per transition and rollback if append fails. Backend not exposed through public routes.
+- Final [CI 44701346485](https://github.com/iliya1947/vico-forum/actions/runs/44701346485) **PASS**: 22/22 check-runs, 18/18 workflows, 2758/2758 unit, 1493/1493 PG17 incl 7/7 new. No need to recheck same exact head without new cause.
+- B2.2 changes and tests confined to Draft #357; no B3+.
 
-## Workflow
+## Следующий шаг только по явной команде владельца
 
-B1 Mira PASS, remain Draft/unmerged. B2 Draft stacked atop B1; no intermediate merges. After B2 full author self-check/CI → Mira bounded checkpoint. After B9 fold into B1, final Mira→Leva whole-feature review, owner merge. #342 never merge.
+**B2.3: existing writers availability guards** — reply/direct hidden parent, published edit, own title/source, solution/Help/closure/pin and local recovery/admission seams as scoped by `stages/moderation-visibility/PLAN.md`; preserve lock order. Keep PG two-order concurrency/lock graph as separately bounded follow-on. STOP after B2.3.
+
+B2 overall not complete or ready for Mira checkpoint. B1/B2 Draft/unmerged. After full B2: author self-check/exact-head CI → Mira bounded checkpoint; after B9 final folded feature Mira → Leva → owner merge. Service #342 never merge.
 
 ## Границы
 
