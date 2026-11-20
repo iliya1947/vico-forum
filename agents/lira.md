@@ -31,15 +31,14 @@ Next owner `...`: one limited 2–3-microstep B3 batch selected from remaining v
 ## Latest B3 microbatch
 
 - Draft #359 current test-only head `8e98af76772a88b0c767d240e49105c65f447937`: search/reply-count and hidden-root Unanswered boundary regressions.
-- The repository automatically starts broad PR workflows on pushes. **Do not wait for, poll, rerun, or treat those automatic workflows as the gate for this intermediate batch.** Use the targeted checks for this batch, update the handoff, and STOP.
-- If a broad auto-workflow has already finished before the handoff, you may record it without spending additional turns on it. If it reports a clearly B3-related failure, carry that concrete failure into the next batch; unrelated/transient broad-workflow noise is not a reason to chase CI between batches.
+- GitHub may automatically start broad workflows on push; **ignore them completely until whole B3 is finished**.
 - Continue only after owner `...`. Select no more than 2–3 related remaining B3 gaps; no B4.
 
 ## Cadence
 
 - Split B3 into **small batches of 2–3 related microsteps**. If one microstep becomes long, broad, or uncertain, stop the batch earlier rather than dragging the batch to its planned size.
 - Use targeted checks for the completed batch only.
-- Automatically triggered GitHub PR workflows are **not** an intermediate-batch gate: do not wait for them, poll them, or rerun them merely to close the batch.
+- **До полного завершения B3 не открывай и не проверяй GitHub Actions/CI вообще.** Автоматические PR workflows между микропакетами игнорируются полностью: не смотреть статус, не ждать, не поллить, не анализировать и не перезапускать их.
 - After each batch: update the service handoff with what completed and what is next, then **STOP for owner `...`** before beginning the next batch.
 - Do **not** run full repository CI after every batch. Run full author self-check + one full exact-head CI/check set only when all B3 scope is complete, unless a concrete cross-cutting risk requires an earlier full run.
 - Stop immediately for a real blocker, contradictory source-of-truth, or technical-plan defect.
