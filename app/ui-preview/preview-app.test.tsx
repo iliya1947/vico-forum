@@ -1436,7 +1436,33 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     });
     await manager.click(managerCase);
     expect(await screen.findByRole("heading", { level: 1, name: "Complaint review" })).toBeInTheDocument();
-    expect(screen.queryByText("Sam Chen (sam)")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sam Chen \(sam\)/)).not.toBeInTheDocument();
+
+    await manager.click(screen.getByRole("link", { name: "Queue" }));
+    const managerGroupNav = await waitFor(() => {
+      const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    await manager.click(within(managerGroupNav).getByRole("link", { name: "Appeals" }));
+    await manager.click(screen.getByRole("link", { name: "Open appeal" }));
+    expect(screen.queryByText("Alex Rivera")).not.toBeInTheDocument();
+
+    await manager.click(screen.getByRole("link", { name: "Appeals" }));
+    const managerHistoryNav = await waitFor(() => {
+      const current = document.querySelector(".attention-group-nav") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    await manager.click(within(managerHistoryNav).getByRole("link", { name: "History" }));
+    const managerHistory = await waitFor(() => {
+      const current = document.querySelector(".complaint-history") as HTMLElement | null;
+      expect(current).not.toBeNull();
+      return current!;
+    });
+    await manager.click(within(managerHistory).getByRole("link", { name: "History" }));
+    expect(screen.queryByText(/Sam Chen \(sam\)/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Alex Rivera \(alex\)/)).not.toBeInTheDocument();
 
     cleanup();
 
@@ -1448,7 +1474,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       return current!;
     });
     await owner.click(ownerCase);
-    expect(await screen.findByText("Sam Chen (sam)")).toBeInTheDocument();
+    expect(await screen.findByText(/Sam Chen \(sam\)/)).toBeInTheDocument();
 
     await owner.click(screen.getByRole("link", { name: "Queue" }));
     const groupNav = await waitFor(() => {
@@ -1473,8 +1499,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       return current!;
     });
     await owner.click(within(history).getByRole("link", { name: "History" }));
-    expect(await screen.findByText("Sam Chen (sam)")).toBeInTheDocument();
-    expect(screen.getByText("Alex Rivera (alex)")).toBeInTheDocument();
+    expect(await screen.findByText(/Sam Chen \(sam\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Alex Rivera \(alex\)/)).toBeInTheDocument();
   });
 
   it("opens complaint priority triage and saves an override", async () => {
