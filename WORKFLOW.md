@@ -110,7 +110,7 @@ Delivery:
 - keep B1 #355 and B2 #357 Draft/unmerged;
 - implement only the B3 bounded result from the accepted stage plan;
 - split B3 into **small working batches of 2–3 related microsteps**; if a microstep starts to sprawl or becomes uncertain, stop the batch earlier;
-- after each batch run only the targeted checks needed for that batch, record the result, then **STOP for owner `...`** before taking the next batch; automatically triggered broad GitHub workflows may continue in the background but are not to be waited on or polled at this boundary;
+- after each batch run only the targeted checks needed for that batch, record the result, then **STOP for owner `...`** before taking the next batch; automatically triggered broad GitHub workflows are ignored completely at this boundary; do not open Actions/CI until whole B3 completion;
 - do not run full repository CI after each batch; full author self-check + one full exact-head CI/check set only when the entire B3 bounded scope is complete (or earlier only for a concrete cross-cutting risk);
 - after complete B3, STOP Mira for the coordinator checkpoint; B4 must not start before Mira B3 PASS and a new owner continuation.
 
@@ -121,7 +121,7 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 - Stacked Draft #359 updated with test-only commit `8e98af76772a88b0c767d240e49105c65f447937` (test-only correction after `9e5a77a0`: search exposes `postCount`, not `replyCount`) (parent `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`).
 - Two related real PostgreSQL tests added to `tests/database/moderation-visibility-commands.test.ts`: hidden non-root reply is excluded from body search and replyCount and restored afterwards; Unanswered tracks visible non-root replies correctly when the chronological root is hidden, including hiding and restoring the only answer.
 - No production/schema/other-stage changes. Existing B3 remains partial; other B3 acceptance gaps remain.
-- GitHub may automatically trigger broad PR workflows on each push. **Those automatic workflows are not an intermediate-batch gate. Do not wait for, poll, rerun or require them before STOP.** Batch PASS is based on the targeted checks for that batch. If an automatic workflow has already completed by the time the handoff is written, it may be noted opportunistically; a clearly B3-relevant failure becomes an input to the next batch, but unrelated/transient broad-workflow noise does not block the batch by itself.
+- GitHub may automatically trigger broad PR workflows on each push. **Until the entire B3 bounded scope is finished, Lira must not open or inspect GitHub Actions/CI at all:** no status checks, polling, waiting, failure analysis or reruns. Intermediate batch completion is based only on targeted checks. Broad CI is inspected once at whole-B3 completion, unless Mira explicitly reopens it because of a concrete reason outside this cadence rule.
 - After targeted checks, STOP for owner `...`; next batch must be selected from remaining verified B3 gaps, maximum 2–3 related microsteps.
 
 ## B3 current batch checkpoint — author STOP before next batch
