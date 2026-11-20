@@ -5375,7 +5375,7 @@ describe("B3 public source and negative-response sentinels", () => {
 describe("B3 neutral public document-error presentation", () => {
   it.each([
     { status: 404, expected: "Forum page not found" },
-    { status: 503, expected: "Service temporarily unavailable" },
+    { status: 503, expected: "Temporarily unavailable" },
   ])("hides raw title, body and revision in a mounted $status boundary", async ({ status, expected }) => {
     const secrets = [
       "B3_SECRET_ERROR_TITLE_6240",
