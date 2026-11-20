@@ -4169,16 +4169,23 @@ async function previewCategoryAction(
       return { operation: "helpSimilarQuestions" as const, outcome: "invalid" as const, draft, results: [] };
     }
 
-    const terms = normalizedTitle.toLocaleLowerCase(locale)
+    const terms = [normalizedTitle, draft.body]
+      .join(" ")
+      .toLocaleLowerCase(locale)
       .split(/[^\p{L}\p{N}]+/u)
       .filter((term) => term.length >= 4);
     const tagKeys = new Set(previewTagsFromInput(draft.tags).map((tag) => tag.key));
-    const base = previewHelpSolutions(locale).questions;
+    const base = previewHelpSolutions(locale).questions.map((question) => ({
+      ...question,
+      title: interactions.topicTitleEdits.get(question.id)?.originalContent ?? question.title,
+      replyCount: question.replyCount + (interactions.replies.get(question.id)?.length ?? 0),
+      isSolved: interactions.topicOverrides.get(question.id)?.isSolved ?? question.isSolved,
+    }));
     const created = [...interactions.createdTopics.values()]
       .filter((topic) => topic.sectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID)
       .map((topic) => ({
         id: topic.id,
-        title: topic.title,
+        title: interactions.topicTitleEdits.get(topic.id)?.originalContent ?? topic.title,
         replyCount: interactions.replies.get(topic.id)?.length ?? 0,
         isSolved: interactions.topicOverrides.get(topic.id)?.isSolved ?? false,
         tags: topic.tags,
@@ -4188,14 +4195,21 @@ async function previewCategoryAction(
       const title = question.title.toLocaleLowerCase(locale);
       const titleMatch = terms.some((term) => title.includes(term));
       const tagMatch = question.tags.some((tag) => tagKeys.has(tag.key));
-      if (!titleMatch && !tagMatch) return [];
+      const bodies = previewAdminTopicData(scenario, interactions, question.id)?.topic.posts
+        .map((post) => post.body.originalContent.toLocaleLowerCase(locale)) ?? [];
+      const bodyMatch = terms.some((term) => bodies.some((body) => body.includes(term)));
+      if (!titleMatch && !tagMatch && !bodyMatch) return [];
       return [{
         id: question.id,
         title: question.title,
         replyCount: question.replyCount,
         isSolved: question.isSolved,
         tags: question.tags,
-        matchSource: titleMatch ? "title" as const : "tags" as const,
+        matchSource: titleMatch
+          ? "title" as const
+          : tagMatch
+            ? "tags" as const
+            : "body" as const,
       }];
     }).slice(0, 5);
 
