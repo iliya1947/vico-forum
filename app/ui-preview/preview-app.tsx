@@ -1700,13 +1700,23 @@ function previewTopicBlockProps(
   };
 }
 
-function previewUser(scenario: Scenario): HeaderAuthUser | null {
+function previewUser(
+  scenario: Scenario,
+  interactions?: PreviewInteractionState,
+): HeaderAuthUser | null {
   if (scenario.identity === "guest") return null;
-  const unreadNotificationCount = scenario.variant === "notifications-empty"
-    ? 0
-    : scenario.identity === "user"
-      ? 3
-      : 2;
+  const unreadNotificationCount = interactions
+    ? (scenario.variant === "notifications-empty"
+        ? 0
+        : previewNotifications(scenario).filter((notification) =>
+            notification.readAt === null
+            && !interactions.readNotifications.has(notification.id)
+          ).length)
+    : scenario.variant === "notifications-empty"
+      ? 0
+      : scenario.identity === "user"
+        ? 3
+        : 2;
   if (scenario.identity === "owner") {
     return { id: "owner", name: "Forum Owner", canManageAuthorization: true, canViewAdminPanel: true, unreadNotificationCount };
   }
@@ -1997,6 +2007,10 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     () => createPreviewInteractionState(),
     [scenario.id, activeIdentity],
   );
+  const [, setInteractionRevision] = useState(0);
+  const notifyInteractionChange = useCallback(() => {
+    setInteractionRevision((revision) => revision + 1);
+  }, []);
   const changePreviewLocale = useCallback((locale: PreviewLocale, nextPath?: string) => {
     if (nextPath) setPreviewPath(nextPath);
     setPreviewLocale(locale);
@@ -2007,8 +2021,13 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
     }
   }, []);
   const router = useMemo(
-    () => previewRouter(activeScenario, interactions, changePreviewLocale),
-    [activeScenario, interactions, changePreviewLocale],
+    () => previewRouter(
+      activeScenario,
+      interactions,
+      changePreviewLocale,
+      notifyInteractionChange,
+    ),
+    [activeScenario, interactions, changePreviewLocale, notifyInteractionChange],
   );
 
   useEffect(() => {
@@ -2145,7 +2164,7 @@ export function EmbeddedPreview({ scenarioId, identity }: { scenarioId: string; 
       }}
     >
       <HeaderAuthProvider
-        initialUser={previewUser(activeScenario)}
+        initialUser={previewUser(activeScenario, interactions)}
         initialPresentationState={activeScenario.authPresentationState}
       >
         <I18nextProvider i18n={runtime}>
@@ -3158,6 +3177,7 @@ function previewRouter(
   scenario: Scenario,
   interactions: PreviewInteractionState,
   onLocaleChange: (locale: PreviewLocale, nextPath?: string) => void,
+  onInteractionChange: () => void,
 ) {
   if (scenario.view === "not-found") {
     return createMemoryRouter([{
@@ -3652,7 +3672,7 @@ function previewRouter(
       element: <PreviewNotificationsRoute scenario={scenario} interactions={interactions} />,
       loader: () => previewAuthenticatedRouteData(scenario),
       action: ({ request, params }) => previewNotificationsAction(
-        scenario, interactions, request, params.locale,
+        scenario, interactions, request, params.locale, onInteractionChange,
       ),
       ErrorBoundary: ForumRouteError,
     },
@@ -4439,6 +4459,7 @@ async function previewNotificationsAction(
   interactions: PreviewInteractionState,
   request: Request,
   routeLocale?: string,
+  onNotificationRead?: () => void,
 ) {
   if (!previewUser(scenario)) return null;
   const form = await request.formData();
@@ -4447,7 +4468,10 @@ async function previewNotificationsAction(
   const notification = previewNotifications(scenario).find((item) => item.id === notificationId);
   if (!notification) return null;
 
+  const newlyRead = notification.readAt === null
+    && !interactions.readNotifications.has(notificationId);
   interactions.readNotifications.add(notificationId);
+  if (newlyRead) onNotificationRead?.();
   const locale = previewMutationLocale(routeLocale, scenario.locale);
   if (notification.kind === "complaint-decision") {
     return redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(notification.caseId)}/result`);
