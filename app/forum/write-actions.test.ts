@@ -202,6 +202,12 @@ function writer() {
     markNotificationRead: vi.fn(async () => ({ kind:"reply" as const,topicId:"topic-1",postId:"post-1" })),
     pinTopic: vi.fn(async () => undefined),
     unpinTopic: vi.fn(async () => undefined),
+    setTopicVisibility: vi.fn(async (input: { hidden: boolean; expectedVisibilityVersion: number }) => ({
+      hidden: input.hidden, visibilityVersion: input.expectedVisibilityVersion + 1, changed: true,
+    })),
+    setPostVisibility: vi.fn(async (input: { hidden: boolean; expectedVisibilityVersion: number }) => ({
+      hidden: input.hidden, visibilityVersion: input.expectedVisibilityVersion + 1, changed: true,
+    })),
     setTopicClosed: vi.fn(async (input) => ({
       isClosed: input.isClosed, closureVersion: input.expectedClosureVersion + 1, changed: true,
     })),

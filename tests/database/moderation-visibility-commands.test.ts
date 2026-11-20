@@ -17,7 +17,7 @@ const schema = "visibility_commands_test";
 const client = new Client({ connectionString: url, options: "-c search_path=" + schema });
 const pool = new Pool({ connectionString: url, options: "-c search_path=" + schema, max: 8 });
 const repository = new DrizzleForumRepository(
-  drizzle(pool), { cooldownMs: 0 }, withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+  drizzle(pool), { cooldownMs: 0, now: () => new Date() }, withOwnerUserMeasureAdmission("owner"), undefined, "owner",
 );
 const service = new ForumService(repository);
 async function fixture() {

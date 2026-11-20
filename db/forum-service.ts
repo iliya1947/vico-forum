@@ -30,7 +30,7 @@ type VisibilityCommandInput = {
 };
 function validateVisibilityCommand(input: VisibilityCommandInput & { postId?: string }): string {
   validateEntity(input.topicId, input.actorId);
-  if ("postId" in input) requireText(input.postId, "post id");
+  if ("postId" in input) requireText(input.postId ?? "", "post id");
   requireText(input.expectedRevisionId, "expected revision id");
   if (typeof input.hidden !== "boolean"
     || !Number.isInteger(input.expectedVisibilityVersion)
