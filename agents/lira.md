@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 F5**: initial whole-B3 source audit had no confirmed blockers, but exact `8a907374c797a33b233b6f244d090aa0725862fb` CI failed. 4 new ESLint errors; PG 13 failed / 1586 passed: 1 improper direct Hide test violating state CHECK, 11 tests hit cooldown due leaked future 2035 post created_at, 1 Help Similar ranking mismatch. Root causes verified against actual CI logs and repository write cooldown.
-- **Targeted correction** committed to Draft #359 exact `9776fc58aa59dcfd4b5b02f4b901caa2cd5b3685`: 3 test files, mock parameters cleaned; history SQL Hide/Restore state tuple complete; Popular future times restored via finally; Similar now asserts public Hide before rank. No production code changed. 10/10 static assertions PASS; actual revised tests and CI **not verified**.
-- New auto-triggered exact-head [CI 44821692942](https://github.com/iliya1947/vico-forum/actions/runs/44821692942) has both jobs queued, first 15 other workflows queued as observed.
-- Next owner `...` continue **F5 exact-head CI gate**, investigate remaining Help Similar if still fails, then author PASS → Mira bounded coordinator review only after full applicable checks PASS. NO B4/merge; STOP.
+- **B3 F5 ongoing**; Draft #359 exact `1d54788e9b8fe3cc75821856ded16fcdb10db5f9`, base B2 #357 unchanged. Initial CI had 4 ESLint errors and 13 PG test failures. Prior correction on `9776fc58aa59dcfd4b5b02f4b901caa2cd5b3685` fixed 3 test files; underlying Help Similar mismatch still requires fresh real PG validation.
+- Current F5 packet corrected *two more future-timestamp leaks* in B3 Search (+2 min post) and Category (2037 post) ranking PG regressions, with post/topic chronology saved/restored in `finally`, to prevent known test cooldown cascade. One test file changed; production untouched. 7/7 static assertions PASS; actual current CI NOT VERIFIED.
+- Fresh auto-triggered [CI #44822128290](https://github.com/iliya1947/vico-forum/actions/runs/44822128290) queued (other 14 first-page workflows queued). No author PASS yet.
+- Next owner `...`: continue only F5 exact-head CI and root-cause any failure, on full PASS author handoff **Мире B3 checkpoint**. B4 not authorized; STOP.
 
 ## Cadence
 
