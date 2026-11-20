@@ -116,18 +116,13 @@ Delivery:
 
 B3 result boundary: typed hidden tombstones/public topic 404, consistent thread snapshot/anchors, SQL visibility filtering before rank/count/LIMIT across B3 public discovery/read paths, safe unavailable solution/duplicate projections, public history/edit/recovery denial, and leak/pagination/rank/count/root/parent acceptance. Do not implement B4 assets/private-file work, B5 own/inbox, B6 private moderation surfaces, B7 actions/UI, or later stages.
 
-## B3 batch: search/count and unanswered boundary regressions
+## B3 current working batch — STOP
 
-- Stacked Draft #359 updated with test-only commit `8e98af76772a88b0c767d240e49105c65f447937` (test-only correction after `9e5a77a0`: search exposes `postCount`, not `replyCount`) (parent `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`).
-- Two related real PostgreSQL tests added to `tests/database/moderation-visibility-commands.test.ts`: hidden non-root reply is excluded from body search and replyCount and restored afterwards; Unanswered tracks visible non-root replies correctly when the chronological root is hidden, including hiding and restoring the only answer.
-- No production/schema/other-stage changes. Existing B3 remains partial; other B3 acceptance gaps remain.
-- GitHub may automatically trigger broad PR workflows on each push. **Until the entire B3 bounded scope is finished, Lira must not open or inspect GitHub Actions/CI at all:** no status checks, polling, waiting, failure analysis or reruns. Intermediate batch completion is based only on targeted checks. Broad CI is inspected once at whole-B3 completion, unless Mira explicitly reopens it because of a concrete reason outside this cadence rule.
-- After targeted checks, STOP for owner `...`; next batch must be selected from remaining verified B3 gaps, maximum 2–3 related microsteps.
-
-## B3 current batch checkpoint — author STOP before next batch
-
-- [B3 stacked Draft #359](https://github.com/iliya1947/vico-forum/pull/359), base `feature/moderation-visibility-b2-commands`, exact `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d` (11 B3 commits). No B3 review/merge; B1 #355/B2 #357 unchanged Draft/unmerged.
-- Current code touches SQL visible-only public discovery, topic 404, typed thread tombstone and React presentation, Help/duplicate/unread/profile, public post/history guards, and initial PostgreSQL/UI sentinel tests. This is **partial B3**; no claim of complete B3 leakage or pagination coverage. Before any further implementation, evaluate the existing diff against the B3 checklist and select at most 2–3 related remaining microsteps.
-- [Exact-head CI #44765537615](https://github.com/iliya1947/vico-forum/actions/runs/44765537615): **19/19 check-runs and 15/15 workflows SUCCESS; 2759/2759 unit and 1581/1581 PostgreSQL17 (90/90 visibility commands)**. Initial database attempt: one unhandled rejected promise in existing `tests/database/sa04-complaints-n1.test.ts` N4.2 locale-first case, while 1581 assertions passed. Only failed database job rerun on **same head** passed completely; no production code change required. This CI proves the current partial implementation runs; it is not B3 author completion or Mira review.
-- **Лира STOP now per owner's revised cadence.** Next `...`: select one small B3 batch (max 2–3 related verified gaps), apply focused checks, update #342 and STOP again. The existing current head is green and must not be rechecked without a changed relevant state. Whole-B3 self-check/final CI and Mira checkpoint only after full B3 scope completes.
+- Active stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), B2 base unchanged, current head `7324fd9cfa9e13abdddbf86b352bb977d5cbea3f`. B1 #355 and B2 #357 remain Draft/unmerged.
+- Previous test batch (`9e5a77a0`, corrected `8e98af76`): two PostgreSQL regressions for hidden non-root reply search/count and hidden-root Unanswered. A prior TypeScript assertion error was corrected: `ForumSearchResult` has `postCount`, not `replyCount`.
+- Current two-microstep batch (`7324fd9c`), test-only: fix search `postCount` expectations to **2→1→2**, since it counts the visible root as well as replies; add a deterministic real-PostgreSQL regression for search ordering **before LIMIT 1**, showing visible activity moves first→second on Hide and back on Restore.
+- Seven source/contract static assertions passed on the current branch, confirming count expectations, test fixture, hide/restore test structure, deterministic timestamps and SQL visibility predicate before LIMIT. **Runtime execution of PostgreSQL tests not verified:** this environment has no local repository checkout/PostgreSQL and cannot clone from GitHub due unavailable DNS. No claim of author PASS for these tests.
+- Owner cadence is authoritative: **do not inspect, poll, rerun or analyze GitHub Actions/CI before the whole B3 scope is complete**. Automatically triggered workflows are ignored; only available targeted checks count between batches.
+- B3 remains partial, including remaining public leak/response and discovery-boundary acceptance. No B4+ scope, no Mira checkpoint, no merge.
+- **Next owner `...`:** select one small batch of 2–3 related remaining B3 microsteps, execute any available targeted checks (record limitations), update service handoff, STOP. Do not treat an unexecuted PostgreSQL test as proven.
 
