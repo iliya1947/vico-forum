@@ -1577,7 +1577,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
       .toBeGreaterThanOrEqual(1);
 
     await user.click(within(form).getByRole("button", { name: "Cancel" }));
-    await waitFor(() => expect(form.isConnected).toBe(false));
+    await waitFor(() => expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument());
     expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
     expect(document.querySelector("#post-question .topic-message-edited")).toBeNull();
   });
