@@ -1480,6 +1480,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("Notifications from this topic are not muted.")).toBeInTheDocument();
   });
 
+  it("opens Personal filters with the current muted topic and removes it", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    await user.click(await screen.findByRole("button", { name: "Mute topic" }));
+    expect(await screen.findByRole("button", { name: "Unmute topic" })).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("link", { name: "Personal filters" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Personal filters" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Unmute topic" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Unmute topic" }));
+    expect(await screen.findByText("You have not muted any topics.")).toBeInTheDocument();
+  });
+
   it("edits the authenticated author's own topic title in the preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
