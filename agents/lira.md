@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-Stacked [#359](https://github.com/iliya1947/vico-forum/pull/359) at `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`. 11 B3 commits currently modify SQL discovery, thread/tombstone projection, public guards, Help/unread/profile and initial tests. This exceeds the owner's **new** preferred 2–3-microstep batch size; do not extend the current batch. `checks` passed. Real PG ran 1581 assertions successfully, but the database job failed with an unhandled rejection from existing SA04 Complaints test N4.2; unchanged-head database-job rerun pending. Whole B3 incomplete, Mira not assigned.
+Stacked [#359](https://github.com/iliya1947/vico-forum/pull/359) at `28b60ee3e40a7c6fa1c514a30f9cd47bf14c083d`. 11 B3 commits currently modify SQL discovery, thread/tombstone projection, public guards, Help/unread/profile and initial tests. This exceeds the owner's **new** preferred 2–3-microstep batch size; do not extend the current batch. `checks` passed; on unchanged head, failed-only database-job retry passed. [CI 44765537615](https://github.com/iliya1947/vico-forum/actions/runs/44765537615): **19/19 checks, 15/15 workflows SUCCESS; 2759 unit, 1581 PG17**. Initial transient unhandled rejection was confined to a legacy SA04 Complaints test; no related production change. Whole B3 incomplete, Mira not assigned.
 
-Next owner `...`: inspect rerun first, then one limited 2–3-microstep B3 batch selected from remaining verified gaps; targeted checks, update this handoff, STOP. Do not modify unrelated SA04 test merely due to one transient failure.
+Next owner `...`: one limited 2–3-microstep B3 batch selected from remaining verified gaps; targeted checks, update this handoff, STOP. Do not modify unrelated SA04 test merely due to one transient failure.
 
 ## Cadence
 
