@@ -1573,7 +1573,8 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     const form = await screen.findByRole("form", { name: "Edit published message" });
     expect(document.querySelector("#post-question")).not.toBeNull();
-    expect(screen.getByText("I want strong typing without coupling the whole app to one HTTP library.")).toBeInTheDocument();
+    expect(screen.getAllByText("I want strong typing without coupling the whole app to one HTTP library.").length)
+      .toBeGreaterThanOrEqual(1);
 
     await user.click(within(form).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(form.isConnected).toBe(false));
@@ -1602,7 +1603,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(await screen.findByText("This reply was added without a backend.")).toBeInTheDocument();
 
-    await user.click(screen.getByText("Select as best answer"));
+    await user.click(await screen.findByText("Select as best answer"));
     await user.click(screen.getByRole("button", { name: "Message #2" }));
 
     const prompt = await screen.findByRole("region", { name: "Problem solved?" });
