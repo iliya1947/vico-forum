@@ -7,7 +7,7 @@ Moderation visibility stacked delivery:
 - B1 Draft #355 — **Mira bounded PASS**, exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
 - B2 Draft #357 — **Mira bounded PASS**, exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`.
 - B1/B2 remain Draft/unmerged.
-- **B3 is next but not yet active.** On owner continuation, Lira creates the next stacked implementation PR with base = `feature/moderation-visibility-b2-commands`.
+- **B3 is ACTIVE.** Lira creates the next stacked implementation PR with base = `feature/moderation-visibility-b2-commands` and implements only B3 core public projection/discovery.
 
 B2 checkpoint covered the local B1→B2 diff: desired-state topic/post CAS/reason/no-op; fresh active actor + AP-10 + direct RBAC before no-op; append-last atomic neutral History; writer/parent/receipt/recovery visibility gates; real PostgreSQL stale/no-op/overflow/two-moderator/deactivation/History-failure and lock-order/race coverage. Final exact-head CI and all associated workflows SUCCESS. No confirmed current-B2 blocker remains.
 
@@ -97,3 +97,20 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - No B3 public projection/discovery implementation was introduced.
 - Some translation planning/accepted-task coverage overlaps future B4 responsibilities; this is not a current B2 defect and does not justify rollback. B4 must assess the remaining boundary against the then-current stack rather than duplicate already-covered work.
 - **B2 bounded PASS.** Next stacked rung is B3 from branch `feature/moderation-visibility-b2-commands`, only after owner continuation.
+
+
+## Moderation visibility B3 — ACTIVE
+
+Owner continuation received after B2 Mira PASS.
+
+Lira is active on **B3 — core public projection/discovery**.
+
+Delivery:
+- create a new stacked implementation PR with base `feature/moderation-visibility-b2-commands`;
+- keep B1 #355 and B2 #357 Draft/unmerged;
+- implement only the B3 bounded result from the accepted stage plan;
+- use focused checks during internal B3 microsteps;
+- do not STOP or run full repository CI after every microstep unless a concrete cross-cutting risk requires it;
+- after the whole B3 scope is complete: author self-check + one full exact-head CI/check set → STOP Mira for bounded B3 checkpoint.
+
+B3 result boundary: typed hidden tombstones/public topic 404, consistent thread snapshot/anchors, SQL visibility filtering before rank/count/LIMIT across B3 public discovery/read paths, safe unavailable solution/duplicate projections, public history/edit/recovery denial, and leak/pagination/rank/count/root/parent acceptance. Do not implement B4 assets/private-file work, B5 own/inbox, B6 private moderation surfaces, B7 actions/UI, or later stages.
