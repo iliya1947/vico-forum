@@ -1464,6 +1464,22 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     expect(screen.getByText("This topic is not saved.")).toBeInTheDocument();
   });
 
+  it("opens Bookmarks with the current saved topic and removes it", async () => {
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
+
+    await user.click(await screen.findByRole("button", { name: "Save topic" }));
+    expect(await screen.findByRole("button", { name: "Remove bookmark" })).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("link", { name: "Bookmarks" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Saved topics" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /How should I structure a typed API client\?/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove bookmark" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Remove bookmark" }));
+    expect(await screen.findByText("You have not saved any topics yet.")).toBeInTheDocument();
+  });
+
   it("toggles topic Mute in the static Pages preview", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="topic-solved-user" identity="user" />);
