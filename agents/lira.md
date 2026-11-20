@@ -24,10 +24,10 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- **B3 remainder inventoried; no new #359 code this batch.** Exact stacked B3 Draft #359 head `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`, B2 base unchanged; 54 commits/25 diff files. Never treat old PR body/old CI as evidence for exact current head.
-- **Finite route:** five owner-gated 2–3-microstep packages **F1** audit consistency of already-written PG/React test definitions vs real service/fixture types; **F2** public HTML/JSON/.data/meta/error leak acceptance; **F3** old public post/edit/history/recovery negative guard tests; **F4** SQL pre-rank/count/LIMIT, pagination, zero visible body, root/parent edge assertions; **F5** whole B3 author self-check, then the one allowed exact-head CI, fix confirmed failures as new owner-gated packages, Mira checkpoint handoff. Full details and acceptance boundaries in `WORKFLOW.md` + stage `PLAN.md`.
-- Runtime not available in this chat container (no checkout/PG; external git DNS unavailable). All prior 22/22 etc checks were static, not actual runtime PASS. **No Actions inspection until F5**. No B4–B9, no merge.
-- **Next owner `...`: execute only F1, record findings/fixes and handoff, then STOP.** Do not resume open-ended per-query hunting.
+- **B3 F1 source-level test contract audit complete; no #359 implementation edit.** Exact #359 head `d8fa509c69bf1a2e5c6e94b6ea5195ba4dd3c92f`; B2 base unchanged, B3 incomplete.
+- Compared new B3 PG and React test definitions with actual `ForumService`/repository methods, PG fixture commands/visibility versions, Help queues/mixed/appeals, `AttentionCenterView` props and form selectors, Topic loader response, stored translation types and catalog labels. No confirmed test-definition mismatch. One provisional text-probe false alarm was a correct conditional public/private `no-store` expression in Topic loader. Final **16/16 targeted cross-file assertions match source**. No real Vitest/PG/HTTP execution; this is NOT test PASS.
+- Finite B3 route still active: **F1 source-audited**, F2 public HTML/JSON/.data/meta/error, F3 old edit/history/recovery guards, F4 SQL boundaries, F5 author check + one exact-head CI. Runtime may uncover new issues requiring owner-gated corrective batches; none asserted today.
+- **Next owner `...`: F2 only, 2–3 related microsteps**, update service and STOP. No GitHub Actions/CI inspection before whole B3 F5; no B4/Mira/merge.
 
 ## Cadence
 
