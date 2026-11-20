@@ -6519,9 +6519,7 @@ function PreviewCategoryRoute({ scenario, interactions }: {
     };
     const previewIdentity = previewUser(scenario);
     const isOwnQuestion = (question: typeof page.questions[number]) =>
-      "previewAuthorId" in question
-        ? question.previewAuthorId === previewIdentity?.id
-        : previewProfileIdForName(question.authorName) === previewIdentity?.id;
+      question.previewAuthorId === previewIdentity?.id;
     const filteredPage = scenario.variant === "help-solutions-open-empty" && mode === "open"
       ? { ...page, questions: [] }
       : scenario.variant === "help-solutions-want-empty" && mode === "help"
