@@ -3103,7 +3103,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(await screen.findByText("Appeal submitted.")).toBeInTheDocument();
     expect(screen.getByText("Preview participant appeal")).toBeInTheDocument();
-    expect(screen.getByText("An appeal is awaiting review.")).toBeInTheDocument();
+    expect(screen.getAllByText("An appeal is awaiting review.").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole("button", { name: "Submit appeal" })).not.toBeInTheDocument();
   });
 

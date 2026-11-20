@@ -4,7 +4,7 @@ import {complaintAppealContext} from "../complaints/appeal-context";
 import {readAppealForm} from "../complaints/appeal.server";
 import {complaintHttpError,complaintCommandFailure,complaintPrivateHeaders} from "../complaints/queue.server";
 import {complaintId,ComplaintInputError} from "../../db/complaints-domain";
-import {ForumShell,ForumRouteError} from "../forum/ui";
+import {ForumRouteError} from "../forum/ui";
 import {ComplaintResultView} from "../complaints/result-view";
 export function headers(){return complaintPrivateHeaders;}
 export function shouldRevalidate({actionStatus,formData,defaultShouldRevalidate}:ShouldRevalidateFunctionArgs){
