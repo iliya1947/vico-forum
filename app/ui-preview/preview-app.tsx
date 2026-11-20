@@ -8345,6 +8345,38 @@ function previewProfilePrivilegedSections(
   return sections;
 }
 
+function previewProfileActivityDeltas(
+  userId: string,
+  interactions: PreviewInteractionState,
+) {
+  let messageCount = 0;
+  let bestAnswerCount = 0;
+
+  for (const topic of interactions.createdTopics.values()) {
+    if (topic.authorId === userId) messageCount += 1;
+  }
+  for (const replies of interactions.replies.values()) {
+    messageCount += replies.filter((reply) => reply.authorId === userId).length;
+  }
+
+  for (const [topicIdValue, override] of interactions.topicOverrides) {
+    const selectedPostId = override.bestAnswerPostId;
+    if (!selectedPostId) continue;
+
+    const created = interactions.createdTopics.get(topicIdValue);
+    if (created && selectedPostId === `${created.id}-post-1`) {
+      if (created.authorId === userId) bestAnswerCount += 1;
+      continue;
+    }
+
+    const selectedReply = interactions.replies.get(topicIdValue)
+      ?.find((reply) => reply.id === selectedPostId);
+    if (selectedReply?.authorId === userId) bestAnswerCount += 1;
+  }
+
+  return { messageCount, bestAnswerCount };
+}
+
 function PreviewProfileRoute({ scenario, interactions }: {
   scenario: Scenario;
   interactions: PreviewInteractionState;
@@ -8375,6 +8407,7 @@ function PreviewProfileRoute({ scenario, interactions }: {
     githubUrl: empty ? null : "https://github.com/octocat",
     websiteUrl: empty ? null : "https://example.com/",
   };
+  const activityDeltas = previewProfileActivityDeltas(id, interactions);
   return <ProfileView locale={scenario.locale} isSelf={identity?.id === id}
     editing={query.get("edit") === "1"} saved={query.get("saved") === "1"}
     {...previewUserBlockProps(scenario, interactions, id)}
@@ -8383,7 +8416,8 @@ function PreviewProfileRoute({ scenario, interactions }: {
       ...(interactions.ownerDeactivations.has(id) ? { identityKind: "deleted" as const } : {}),
       joinedAt: "2026-09-01T00:00:00.000Z", ...fields,
       role: { slug: profileRole.slug, displayName: profileRole.displayName, isSystem: profileRole.isSystem },
-      messageCount: empty ? 0 : 128, bestAnswerCount: empty ? 0 : 17 }}
+      messageCount: (empty ? 0 : 128) + activityDeltas.messageCount,
+      bestAnswerCount: (empty ? 0 : 17) + activityDeltas.bestAnswerCount }}
     feedback={actionData ?? (scenario.variant === "profile-error" ? { error: "invalid", draft: { bio, githubUrl: "https://github.com/octocat/repo", websiteUrl: "https://example.com/" } } : undefined)} />;
 }
 
