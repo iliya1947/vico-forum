@@ -4306,24 +4306,33 @@ async function previewTopicAction(
     const title = String(form.get("title") ?? "").trim();
     const expectedRevisionId = String(form.get("expectedRevisionId") ?? "").trim();
     const editorActorId = String(form.get("editorActorId") ?? "").trim();
-    const created = interactions.createdTopics.get(routeTopicId);
-    const baseTitle = created
-      ? { id: `${created.id}-title-r1`, originalContent: created.title, sourceLocale: created.sourceLocale }
-      : routeTopicId === topicId
-        ? topic.title
-        : null;
-    const authorId = created?.authorId ?? (routeTopicId === topicId ? topic.authorId : null);
-    if (!baseTitle || authorId !== actor.id || editorActorId !== actor.id) {
+    if (!title || title.includes("\u0000") || !expectedRevisionId || !editorActorId) {
+      return { operation: "topicTitleEdit" as const, error: "invalid" as const };
+    }
+    if (editorActorId !== actor.id) {
+      return { operation: "topicTitleEdit" as const, error: "conflict" as const };
+    }
+
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) {
+      return { operation: "topicTitleEdit" as const, error: "notFound" as const };
+    }
+    if (currentPage.topic.authorId !== actor.id) {
       return { operation: "topicTitleEdit" as const, error: "forbidden" as const };
     }
-    const currentTitle = interactions.topicTitleEdits.get(routeTopicId) ?? baseTitle;
-    if (!title || expectedRevisionId !== currentTitle.id) {
+
+    const currentTitle = currentPage.topic.title;
+    if (expectedRevisionId !== currentTitle.id) {
       return {
         operation: "topicTitleEdit" as const,
         error: "conflict" as const,
         currentTitle: { id: currentTitle.id, originalContent: currentTitle.originalContent },
       };
     }
+    if (currentTitle.originalContent === title) {
+      return { operation: "topicTitleEdit" as const, ok: true as const, revisionId: currentTitle.id };
+    }
+
     const revisionId = `${routeTopicId}-title-preview-${++interactions.sequence}`;
     interactions.topicTitleEdits.set(routeTopicId, {
       id: revisionId,
@@ -7278,6 +7287,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
         canReply={scenario.identity !== "guest"}
         canSubmitComplaint={scenario.identity !== "guest"}
         canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
+        canEditOwnTitle={previewUser(scenario)?.id === interactiveHelpTopic.authorId}
         canManageSolution={scenario.identity !== "guest"}
         canConfirmOwnSolution={scenario.identity === "user"}
         canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7454,6 +7464,7 @@ function PreviewTopicRoute({ scenario, interactions }: {
       canReply={scenario.identity !== "guest"}
       canSubmitComplaint={scenario.identity !== "guest"}
       canReadPostHistory={scenario.identity === "manager" || scenario.identity === "owner"}
+      canEditOwnTitle={previewUser(scenario)?.id === interactiveTopic.authorId}
       canManageSolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canModerateHelpSolution={false}
