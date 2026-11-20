@@ -244,7 +244,7 @@ describe("public forum authorization degradation", () => {
     const unexpectedRead = vi.fn(async () => { throw new Error("guest should not read private Block"); });
     guest.set(forumReaderContext, { ...reader, readTopicBlockedAuthors: unexpectedRead });
     const result = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
-    expect(result).toHaveProperty("blockedAuthorIds");
+    expect(result).toHaveProperty("data.blockedAuthorIds");
     expect(unexpectedRead).not.toHaveBeenCalled();
   });
   it("keeps authenticated Watch state private, independent of permission grants and status", async () => {
@@ -263,8 +263,8 @@ describe("public forum authorization degradation", () => {
     const privateRead = vi.fn(async () => true);
     guest.set(forumReaderContext, { ...reader, readTopicWatch: privateRead });
     const guestResult = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
-    expect(guestResult).toHaveProperty("topicWatchState", null);
-    expect(guestResult).toHaveProperty("watchActorId", null);
+    expect(guestResult).toHaveProperty("data.topicWatchState", null);
+    expect(guestResult).toHaveProperty("data.watchActorId", null);
     expect(privateRead).not.toHaveBeenCalled();
 
     const degraded = contextWithPermissions("viewer-1", []);
@@ -298,8 +298,8 @@ describe("public forum authorization degradation", () => {
     const guestRead = vi.fn(async () => true);
     guest.set(forumReaderContext, { ...reader, readTopicBookmark: guestRead });
     const anon = await rawTopicLoader({ params: { locale: "en", topicId: topic.id }, context: guest });
-    expect(anon).toHaveProperty("topicBookmarkState", null);
-    expect(anon).toHaveProperty("bookmarkActorId", null);
+    expect(anon).toHaveProperty("data.topicBookmarkState", null);
+    expect(anon).toHaveProperty("data.bookmarkActorId", null);
     expect(guestRead).not.toHaveBeenCalled();
 
     const offline = contextWithPermissions("viewer-b", []);
