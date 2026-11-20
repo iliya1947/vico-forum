@@ -2491,21 +2491,26 @@ export class DrizzleForumRepository {
       "solution-outdated": 0, "duplicate": 0, appeals: 0, mixed: 0,
     };
     const kinds = [...new Set(visibility.signalKinds)];
+    const signalTarget = alias(forumPosts, "attention_count_signal_target");
     if (kinds.length) {
       const wherePending = and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         eq(forumHelpSignals.status, "pending"),
         inArray(forumHelpSignals.kind, kinds),
+        or(isNull(forumHelpSignals.targetPostId), eq(signalTarget.isHidden, false)),
       );
       const [byKind, mixedCount] = await Promise.all([
         this.database.select({ kind: forumHelpSignals.kind, total: count() })
           .from(forumHelpSignals)
           .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+          .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
           .where(wherePending).groupBy(forumHelpSignals.kind),
         this.database.select({ total: count() }).from(
           this.database.select({ topicId: forumHelpSignals.topicId })
             .from(forumHelpSignals)
             .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+            .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
             .where(wherePending)
             .groupBy(forumHelpSignals.topicId)
             .having(gt(count(), 1))
@@ -2534,6 +2539,8 @@ export class DrizzleForumRepository {
         .innerJoin(forumPosts, eq(forumPosts.id, forumTopics.bestAnswerPostId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
+          eq(forumPosts.isHidden, false),
           eq(forumTopics.isSolved, true),
           eq(forumPosts.solutionModerationStatus, "needs-review"),
         ));
@@ -2561,6 +2568,8 @@ export class DrizzleForumRepository {
 
     const original = alias(forumTopics, "attention_original_topic");
     const originalRevision = alias(forumTopicTitleRevisions, "attention_original_revision");
+    const signalTarget = alias(forumPosts, "attention_signal_target");
+    const mixedTarget = alias(forumPosts, "attention_mixed_signal_target");
     const readSignals = async (selected: HelpSignalKind[], limit?: number, skip = 0, topicIds?: string[]) => {
       if (!selected.length || (topicIds && !topicIds.length)) return [] as ForumAttentionQueueCase[];
       const query = this.database.select({
@@ -2576,12 +2585,18 @@ export class DrizzleForumRepository {
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
         .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
         .innerJoin(user, eq(user.id, forumHelpSignals.submittedByUserId))
-        .leftJoin(original, eq(original.id, forumHelpSignals.proposedOriginalTopicId))
+        .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
+        .leftJoin(original, and(
+          eq(original.id, forumHelpSignals.proposedOriginalTopicId),
+          eq(original.isHidden, false),
+        ))
         .leftJoin(originalRevision, eq(originalRevision.id, original.currentTitleRevisionId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
           eq(forumHelpSignals.status, "pending"),
           inArray(forumHelpSignals.kind, selected),
+          or(isNull(forumHelpSignals.targetPostId), eq(signalTarget.isHidden, false)),
           topicIds ? inArray(forumHelpSignals.topicId, topicIds) : undefined,
         )).orderBy(asc(forumHelpSignals.createdAt), asc(forumHelpSignals.id))
         .$dynamic();
@@ -2602,10 +2617,13 @@ export class DrizzleForumRepository {
       const topics = await this.database.select({ topicId: forumHelpSignals.topicId })
         .from(forumHelpSignals)
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+        .leftJoin(mixedTarget, eq(mixedTarget.id, forumHelpSignals.targetPostId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
           eq(forumHelpSignals.status, "pending"),
           inArray(forumHelpSignals.kind, kinds),
+          or(isNull(forumHelpSignals.targetPostId), eq(mixedTarget.isHidden, false)),
         ))
         .groupBy(forumHelpSignals.topicId)
         .having(gt(count(), 1))
@@ -2674,6 +2692,8 @@ export class DrizzleForumRepository {
         .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
+          eq(forumPosts.isHidden, false),
           eq(forumTopics.isSolved, true),
           eq(forumPosts.solutionModerationStatus, "needs-review"),
         )).orderBy(asc(forumPosts.createdAt), asc(forumPosts.id))
