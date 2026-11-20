@@ -598,6 +598,7 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     await service.setPostVisibility(answerCommand(false, 3, "Restore answer visibility"));
     expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
     expect((await facts(f)).signals[0]?.status).toBe("accepted");
+  });
 
   it("denies withdrawal and rejected review of a duplicate while its proposed original is hidden", async () => {
     const f = await helpFixture(), original = await helpFixture();
@@ -642,6 +643,5 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     });
     await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
     expect((await facts(f)).signals[0]?.status).toBe("withdrawn");
-  });
   });
 });
