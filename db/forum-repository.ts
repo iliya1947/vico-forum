@@ -3608,6 +3608,7 @@ export class DrizzleForumRepository {
         isSolved: boolean;
         bestAnswerPostId: string | null;
         needsDetails: boolean;
+        isHidden: boolean;
       };
 
       if (input.kind === "duplicate") {
@@ -3623,12 +3624,13 @@ export class DrizzleForumRepository {
             isSolved: forumTopics.isSolved,
             bestAnswerPostId: forumTopics.bestAnswerPostId,
             needsDetails: forumTopics.needsDetails,
+            isHidden: forumTopics.isHidden,
           })
           .from(forumTopics)
           .where(inArray(forumTopics.id, lockedIds))
           .orderBy(asc(forumTopics.id))
           .for("no key update");
-        if (topics.length !== 2) {
+        if (topics.length !== 2 || topics.some(row => row.isHidden)) {
           throw new ForumEntityNotFoundError("duplicate question or proposed original question does not exist");
         }
         if (topics.some((candidate) => candidate.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID)) {
@@ -3672,11 +3674,12 @@ export class DrizzleForumRepository {
             isSolved: forumTopics.isSolved,
             bestAnswerPostId: forumTopics.bestAnswerPostId,
             needsDetails: forumTopics.needsDetails,
+            isHidden: forumTopics.isHidden,
           })
           .from(forumTopics)
           .where(eq(forumTopics.id, input.topicId))
           .for("no key update");
-        if (!lockedTopic) throw new ForumEntityNotFoundError("topic does not exist");
+        if (!lockedTopic || lockedTopic.isHidden) throw new ForumEntityNotFoundError("topic does not exist");
         if (lockedTopic.sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
           throw new ForumStateConflictError("Help signals are only available for Help & solutions questions");
         }
@@ -3696,6 +3699,7 @@ export class DrizzleForumRepository {
         const [answer] = await tx
           .select({
             status: forumPosts.solutionModerationStatus,
+            isHidden: forumPosts.isHidden,
           })
           .from(forumPosts)
           .where(and(
@@ -3703,7 +3707,8 @@ export class DrizzleForumRepository {
             eq(forumPosts.id, targetPostId),
           ))
           .for("no key update");
-        if (!answer) throw new ForumStateConflictError("current selected solution does not exist");
+        if (!answer || answer.isHidden)
+          throw new ForumEntityNotFoundError("current selected solution does not exist");
         if (
           (input.kind === "needs-review" && answer.status !== null)
           || (input.kind === "solution-outdated" && answer.status === "outdated")
@@ -3763,6 +3768,15 @@ export class DrizzleForumRepository {
 
   async withdrawHelpSignal(signalId: string, topicId: string, actorId: string): Promise<void> {
     await this.database.transaction(async (tx) => {
+      // Resolve immutable signal→topic membership before taking any write lock.
+      const [identity] = await tx.select({ topicId: forumHelpSignals.topicId })
+        .from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
+      if (!identity || identity.topicId !== topicId)
+        throw new ForumEntityNotFoundError("Help signal does not belong to topic");
+      const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
+        .from(forumTopics).where(eq(forumTopics.id, topicId)).for("no key update");
+      if (!topic || topic.isHidden)
+        throw new ForumEntityNotFoundError("Help signal does not belong to topic");
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,
@@ -3801,6 +3815,13 @@ export class DrizzleForumRepository {
   ): Promise<HelpSignalStatus> {
     if (resolution === "rejected") {
       return this.database.transaction(async (tx) => {
+        const [identity] = await tx.select({ topicId: forumHelpSignals.topicId })
+          .from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
+        if (!identity) throw new ForumEntityNotFoundError("Help signal does not exist");
+        const [topic] = await tx.select({ isHidden: forumTopics.isHidden })
+          .from(forumTopics).where(eq(forumTopics.id, identity.topicId)).for("no key update");
+        if (!topic || topic.isHidden)
+          throw new ForumEntityNotFoundError("Help signal does not exist");
         const [signal] = await tx
           .select({
             id: forumHelpSignals.id,
@@ -3854,11 +3875,14 @@ export class DrizzleForumRepository {
           isSolved: forumTopics.isSolved,
           bestAnswerPostId: forumTopics.bestAnswerPostId,
           needsDetails: forumTopics.needsDetails,
+          isHidden: forumTopics.isHidden,
         })
         .from(forumTopics)
         .where(inArray(forumTopics.id, topicIds))
         .orderBy(asc(forumTopics.id))
         .for("no key update");
+      if (topics.some(row => row.isHidden))
+        throw new ForumEntityNotFoundError("Help signal topic does not exist");
 
       // Accepted reviews may update solution moderation and multiple signals.
       // Lock any existing post dependency before signals, then the entire
@@ -3871,13 +3895,16 @@ export class DrizzleForumRepository {
         && reviewedTopic?.isSolved
         && reviewedTopic.bestAnswerPostId === snapshot.targetPostId
       ) {
-        await tx.select({ id: forumPosts.id })
-          .from(forumPosts)
+        const [answer] = await tx.select({
+          id: forumPosts.id, isHidden: forumPosts.isHidden,
+        }).from(forumPosts)
           .where(and(
             eq(forumPosts.topicId, snapshot.topicId),
             eq(forumPosts.id, snapshot.targetPostId),
           ))
           .for("no key update");
+        if (answer?.isHidden)
+          throw new ForumEntityNotFoundError("Help signal solution does not exist");
       }
       const pendingSignalScope = kind === "needs-details"
         ? and(
