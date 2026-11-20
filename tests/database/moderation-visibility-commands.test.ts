@@ -1264,3 +1264,137 @@ describe("V4 protected own duplicate appeal across Hide and Restore", () => {
     expect((await relationship(duplicate)).id).toBe(link.id);
   });
 });
+
+describe("V4 protected duplicate appeal decisions across Hide and Restore", () => {
+  async function question() {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question body", sourceLocale: "en" },
+      },
+    });
+    return { topicId, titleRevisionId };
+  }
+  type Question = Awaited<ReturnType<typeof question>>;
+  const visibility = (f: Question, hidden: boolean, version: number) =>
+    service.setTopicVisibility({
+      topicId: f.topicId, actorId: "moderator1", hidden,
+      expectedVisibilityVersion: version, expectedRevisionId: f.titleRevisionId,
+      reason: "Visibility review",
+    });
+  async function state(duplicate: Question, original: Question) {
+    const [relationships, appeals, history, topics] = await Promise.all([
+      client.query(
+        "select id,duplicate_topic_id,original_topic_id,removed_at,removed_by_user_id " +
+          "from forum_help_duplicate_relationships where duplicate_topic_id=$1 order by id",
+        [duplicate.topicId],
+      ),
+      client.query(
+        "select id,relationship_id,status,resolved_by_user_id,resolved_at " +
+          "from forum_help_duplicate_appeals where relationship_id in " +
+          "(select id from forum_help_duplicate_relationships where duplicate_topic_id=$1) order by id",
+        [duplicate.topicId],
+      ),
+      client.query(
+        "select action,target_id,actor_id,context from admin_history " +
+          "where target_id in ($1,$2) order by position",
+        [duplicate.topicId, original.topicId],
+      ),
+      client.query(
+        "select id,is_hidden,visibility_version from forum_topics where id in ($1,$2) order by id",
+        [duplicate.topicId, original.topicId],
+      ),
+    ]);
+    return {
+      relationships: relationships.rows, appeals: appeals.rows,
+      history: history.rows, topics: topics.rows,
+    };
+  }
+  async function pendingPair() {
+    const duplicate = await question(), original = await question();
+    await service.confirmHelpDuplicate(duplicate.topicId, original.topicId, "owner");
+    const links = await state(duplicate, original);
+    const relationshipId = links.relationships[0]?.id as string | undefined;
+    if (!relationshipId) throw new Error("confirmed relationship expected");
+    await service.appealHelpDuplicate(duplicate.topicId, "author", "Incorrect duplicate", relationshipId);
+    const pending = await state(duplicate, original);
+    const appealId = pending.appeals[0]?.id as string | undefined;
+    if (!appealId) throw new Error("pending appeal expected");
+    return { duplicate, original, relationshipId, appealId };
+  }
+
+  it("accepts existing appeal while both duplicate and canonical original are hidden, without rewriting visibility", async () => {
+    const { duplicate, original, relationshipId, appealId } = await pendingPair();
+    await visibility(duplicate, true, 0);
+    await visibility(original, true, 0);
+    const before = await state(duplicate, original);
+    await expect(service.resolveHelpDuplicateAppeal(duplicate.topicId, "owner", "accepted", randomUUID()))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await state(duplicate, original)).toEqual(before);
+
+    await service.resolveHelpDuplicateAppeal(duplicate.topicId, "owner", "accepted", appealId);
+    const after = await state(duplicate, original);
+    expect(after.topics).toEqual(before.topics);
+    expect(after.relationships).toHaveLength(1);
+    expect(after.relationships[0]).toMatchObject({
+      id: relationshipId, removed_by_user_id: "owner",
+    });
+    expect(after.relationships[0].removed_at).toBeInstanceOf(Date);
+    expect(after.appeals).toHaveLength(1);
+    expect(after.appeals[0]).toMatchObject({
+      id: appealId, relationship_id: relationshipId,
+      status: "accepted", resolved_by_user_id: "owner",
+    });
+    expect(after.appeals[0].resolved_at).toBeInstanceOf(Date);
+    const decisions = after.history.filter((h) => h.action === "help.duplicateAppealResolved");
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0].context).toMatchObject({
+      relationshipId, originalTopicId: original.topicId, appealId, resolution: "accepted",
+    });
+    await expect(service.resolveHelpDuplicateAppeal(duplicate.topicId, "owner", "accepted", appealId))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await state(duplicate, original)).toEqual(after);
+
+    await visibility(original, false, 1);
+    await visibility(duplicate, false, 1);
+    const restored = await state(duplicate, original);
+    expect(restored.relationships).toEqual(after.relationships);
+    expect(restored.appeals).toEqual(after.appeals);
+  });
+
+  it("rejects existing appeal when canonical original is hidden, retaining active duplicate and one decision History", async () => {
+    const { duplicate, original, relationshipId, appealId } = await pendingPair();
+    await visibility(original, true, 0);
+    const before = await state(duplicate, original);
+    await service.resolveHelpDuplicateAppeal(duplicate.topicId, "moderator1", "rejected", appealId);
+    const after = await state(duplicate, original);
+    expect(after.topics).toEqual(before.topics);
+    expect(after.relationships).toEqual(before.relationships);
+    expect(after.relationships[0]).toMatchObject({
+      id: relationshipId, original_topic_id: original.topicId, removed_at: null,
+    });
+    expect(after.appeals).toHaveLength(1);
+    expect(after.appeals[0]).toMatchObject({
+      id: appealId, relationship_id: relationshipId,
+      status: "rejected", resolved_by_user_id: "moderator1",
+    });
+    expect(after.appeals[0].resolved_at).toBeInstanceOf(Date);
+    const decisions = after.history.filter((h) => h.action === "help.duplicateAppealResolved");
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0].context).toMatchObject({
+      relationshipId, originalTopicId: original.topicId, appealId, resolution: "rejected",
+    });
+    await expect(service.resolveHelpDuplicateAppeal(duplicate.topicId, "moderator1", "rejected", appealId))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect(await state(duplicate, original)).toEqual(after);
+
+    await visibility(original, false, 1);
+    const restored = await state(duplicate, original);
+    expect(restored.relationships).toEqual(after.relationships);
+    expect(restored.appeals).toEqual(after.appeals);
+  });
+});
