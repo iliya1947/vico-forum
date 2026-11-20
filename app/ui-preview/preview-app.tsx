@@ -4380,22 +4380,53 @@ async function previewTopicAction(
     };
   }
 
-  if (intent === "selectBestAnswer") {
-    const postId = String(form.get("postId") ?? "").trim();
-    if (!postId) return null;
-    const current = interactions.topicOverrides.get(routeTopicId) ?? {};
-    interactions.topicOverrides.set(routeTopicId, { ...current, bestAnswerPostId: postId });
-    return inline
-      ? { ok: true }
-      : redirect(
-          `${forumTopicPath(locale, routeTopicId)}?solutionPrompt=${encodeURIComponent(postId)}#solution-confirmation`,
-        );
-  }
+  if (intent === "selectBestAnswer" || intent === "markSolved") {
+    const scopeValues = form.getAll("operationScope");
+    if (scopeValues.length > 1 || (scopeValues[0] !== undefined && scopeValues[0] !== "own" && scopeValues[0] !== "any")) {
+      return { error: "invalid" as const };
+    }
 
-  if (intent === "markSolved") {
+    const currentPage = previewAdminTopicData(scenario, interactions, routeTopicId);
+    if (!currentPage) return { error: "notFound" as const };
+    const currentTopic = currentPage.topic;
+    const requestedScope = scopeValues[0] === "own" || scopeValues[0] === "any" ? scopeValues[0] : null;
+    const canManageAny = scenario.identity === "manager" || scenario.identity === "owner";
+    const canManageOwn = currentTopic.authorId === actor.id;
+    const scope = requestedScope === "own"
+      ? (canManageOwn ? "own" : null)
+      : requestedScope === "any"
+        ? (canManageAny ? "any" : null)
+        : canManageAny
+          ? "any"
+          : canManageOwn
+            ? "own"
+            : null;
+    if (!scope) return { error: "forbidden" as const };
+    if (currentTopic.duplicateOf) return { error: "conflict" as const };
+
+    if (intent === "selectBestAnswer") {
+      const postId = String(form.get("postId") ?? "").trim();
+      if (!postId) return { error: "invalid" as const };
+      const postIndex = currentTopic.posts.findIndex((candidate) => candidate.id === postId);
+      if (postIndex < 0) return { error: "notFound" as const };
+      if (postIndex === 0) return { error: "conflict" as const };
+
+      const current = interactions.topicOverrides.get(routeTopicId) ?? {};
+      interactions.topicOverrides.set(routeTopicId, { ...current, bestAnswerPostId: postId });
+      const shouldPromptSolvedConfirmation = scope === "own" && !currentTopic.isSolved && currentTopic.authorId === actor.id;
+      return inline
+        ? { ok: true as const }
+        : redirect(
+            shouldPromptSolvedConfirmation
+              ? `${forumTopicPath(locale, routeTopicId)}?solutionPrompt=${encodeURIComponent(postId)}#solution-confirmation`
+              : `${forumTopicPath(locale, routeTopicId)}#post-${encodeURIComponent(postId)}`,
+          );
+    }
+
+    if (currentTopic.isSolved) return { error: "conflict" as const };
     const current = interactions.topicOverrides.get(routeTopicId) ?? {};
     interactions.topicOverrides.set(routeTopicId, { ...current, isSolved: true });
-    return inline ? { ok: true } : redirect(forumTopicPath(locale, routeTopicId));
+    return inline ? { ok: true as const } : redirect(forumTopicPath(locale, routeTopicId));
   }
 
   if (
@@ -4706,7 +4737,7 @@ function previewCreatedTopicData(
     ...previewTopicWatchProps(scenario, interactions, topic.id),
     ...previewTopicBookmarkProps(scenario, interactions, topic.id),
     ...previewTopicMuteProps(scenario, interactions, topic.id),
-    canManageAnySolution: false,
+    canManageAnySolution: scenario.identity === "manager" || scenario.identity === "owner",
     canModerateHelpSolution: false,
     isTopicAuthor: scenario.identity !== "guest",
     canCorrectTitleSourceLocale: scenario.identity === "manager" || scenario.identity === "owner",
@@ -7353,8 +7384,8 @@ function PreviewTopicRoute({ scenario, interactions }: {
       generationUnits={[]}
       canReply={scenario.identity !== "guest"}
       canSubmitComplaint={scenario.identity !== "guest"}
-      canManageSolution={scenario.identity === "manager"}
-      canManageAnySolution={scenario.identity === "manager"}
+      canManageSolution={scenario.identity === "manager" || scenario.identity === "owner"}
+      canManageAnySolution={scenario.identity === "manager" || scenario.identity === "owner"}
       canModerateHelpSolution={false}
       canCorrectTitleSourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
       canCorrectAnySourceLocale={scenario.identity === "manager" || scenario.identity === "owner"}
@@ -7749,8 +7780,8 @@ function topicData(
           .filter((post) => post.authorId === (identity === "user" ? "alex" : identity === "manager" ? "maya" : "owner"))
           .map((post) => post.id),
     canEditOwnTitle: identity === "user" && translatedTopic.authorId === "alex",
-    canManageSolution: showSecondaryControls || solutionAuthor,
-    canManageAnySolution: identity === "manager",
+    canManageSolution: showSecondaryControls || solutionAuthor || identity === "owner",
+    canManageAnySolution: identity === "manager" || identity === "owner",
     canModerateHelpSolution: false,
     isTopicAuthor: solutionAuthor,
     canConfirmOwnSolution: solutionAuthor,
