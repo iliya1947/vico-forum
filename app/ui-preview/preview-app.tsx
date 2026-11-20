@@ -3634,10 +3634,11 @@ function previewFiltersData(
   const actor = previewUser(scenario);
   if (!actor) throw new Response("Unauthorized", { status: 401 });
   const search = new URL(request.url).searchParams;
-  const tab = search.get("tab") ?? "topics";
-  if (tab !== "topics" && tab !== "users") {
+  const requestedTab = search.get("tab") ?? "topics";
+  if (requestedTab !== "topics" && requestedTab !== "users") {
     throw new Response("Invalid filters query", { status: 400 });
   }
+  const tab: "topics" | "users" = requestedTab;
 
   let items: FilterListItem[];
   if (tab === "topics") {
