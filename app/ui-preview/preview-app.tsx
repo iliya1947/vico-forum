@@ -1283,15 +1283,34 @@ function previewUnansweredTopics(
   scenario: Scenario,
   interactions: PreviewInteractionState,
 ) {
+  const currentTitle = (
+    topicIdValue: string,
+    fallbackTitle: string,
+    fallbackSourceLocale: string,
+  ) => {
+    const edited = interactions.topicTitleEdits.get(topicIdValue);
+    const sourceLocale = interactions.topicTitleSourceLocales.get(topicIdValue)
+      ?? edited?.sourceLocale
+      ?? fallbackSourceLocale;
+    return {
+      title: edited?.originalContent ?? fallbackTitle,
+      sourceLocale,
+      titleDirection: sourceLocale === "und"
+        ? ("auto" as const)
+        : (localeRegistry.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
+    };
+  };
+
   const created = [...interactions.createdTopics.values()]
-    .filter((topic) => (interactions.replies.get(topic.id)?.length ?? 0) === 0)
+    .filter((topic) =>
+      (interactions.replies.get(topic.id)?.length ?? 0) === 0
+      && interactions.topicOverrides.get(topic.id)?.isSolved !== true
+    )
     .map((topic) => {
       const section = previewSectionPresentation(scenario.locale, topic.sectionId);
       return {
         id: topic.id,
-        sourceLocale: topic.sourceLocale,
-        titleDirection: previewDirectionForLocale(topic.sourceLocale),
-        title: topic.title,
+        ...currentTitle(topic.id, topic.title, topic.sourceLocale),
         authorName: topic.authorName,
         category: section.category,
         section: { id: section.id, name: section.name },
@@ -1299,7 +1318,14 @@ function previewUnansweredTopics(
     });
 
   const existing = unansweredTopics(scenario.locale)
-    .filter((topic) => (interactions.replies.get(topic.id)?.length ?? 0) === 0);
+    .filter((topic) =>
+      (interactions.replies.get(topic.id)?.length ?? 0) === 0
+      && interactions.topicOverrides.get(topic.id)?.isSolved !== true
+    )
+    .map((topic) => ({
+      ...topic,
+      ...currentTitle(topic.id, topic.title, topic.sourceLocale),
+    }));
 
   return [...created, ...existing];
 }
