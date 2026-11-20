@@ -1421,14 +1421,22 @@ export class DrizzleForumRepository {
         eq(forumTopics.id, forumTopicTags.topicId), eq(forumTopics.isHidden, false),
       ))
       .groupBy(forumTags.key, forumTags.name, forumTags.createdAt)
+      // A user-supplied tag used only by hidden topics must not reveal its name.
+      .having(sql`count(distinct ${forumTopics.id}) > 0`)
       .orderBy(asc(forumTags.name), asc(forumTags.key));
   }
 
   async readTag(key: string): Promise<ForumTagPage | undefined> {
     const [tag] = await this.database
-      .select({ key: forumTags.key, name: forumTags.name })
+      .selectDistinct({ key: forumTags.key, name: forumTags.name })
       .from(forumTags)
-      .where(eq(forumTags.key, key));
+      .innerJoin(forumTopicTags, eq(forumTopicTags.tagKey, forumTags.key))
+      .innerJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicTags.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
+      .where(eq(forumTags.key, key))
+      .limit(1);
     if (!tag) return undefined;
 
     const topics = await this.database
