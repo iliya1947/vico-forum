@@ -58,3 +58,18 @@ export async function readHiddenPostRevisions(context:RouterContextProvider,
     throw new Response("Unavailable",{status:503,headers:hiddenQueuePrivateHeaders});
   }
 }
+
+/** Independent published-hidden attachment projection, never public includeHidden. */
+export async function readHiddenAttachment(
+  context: RouterContextProvider, topicId: string, postId: string, attachmentId: string,
+) {
+  const session=authSessionForRequest(context);
+  if(!session)throw new Response("Unauthorized",{status:401,headers:hiddenQueuePrivateHeaders});
+  try {
+    return await context.get(hiddenQueueContext).attachment(session.user.id,topicId,postId,attachmentId);
+  }catch(error){
+    if(error instanceof HiddenQueueForbiddenError)
+      throw new Response("Forbidden",{status:403,headers:hiddenQueuePrivateHeaders});
+    throw new Response("Unavailable",{status:503,headers:hiddenQueuePrivateHeaders});
+  }
+}

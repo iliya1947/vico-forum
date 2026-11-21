@@ -103,3 +103,14 @@ export function hiddenInspectionQuery(topicId:string,params:URLSearchParams):Hid
     ||[...id].some(char=>char.codePointAt(0)!<32||char.codePointAt(0)===127))return invalid();
   return {target,includeRevisions:true,before:{createdAt:at,id}};
 }
+
+/** Private AdministrativeRouting path; public attachment GET retains its own visibility gate. */
+export function hiddenAttachmentPath(
+  locale: string, topicId: string, postId: string, attachmentId: string,
+  routing: AdministrativeRouting = defaultAdministrativeRouting,
+  view?: "inline" | "text",
+): string {
+  const url=routing.admin.topic(locale,topicId)
+    +"/posts/"+encodeURIComponent(postId)+"/attachments/"+encodeURIComponent(attachmentId);
+  return url+(view?"?"+new URLSearchParams({view}):"");
+}

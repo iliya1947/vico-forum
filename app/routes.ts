@@ -58,6 +58,7 @@ export default [
     route("admin/forum/sections/:sectionId", "routes/admin-section.tsx"),
     route("admin/forum/topics/:topicId", "routes/admin-topic.tsx"),
     route("admin/forum/topics/:topicId/inspect", "routes/admin-forum-inspect.ts"),
+    route("admin/forum/topics/:topicId/posts/:postId/attachments/:attachmentId", "routes/admin-forum-hidden-attachment.ts"),
     route("admin/history", "routes/admin-history.tsx"),
     route("admin", "routes/admin.tsx"),
     route("super-admin", "routes/super-admin.tsx"),

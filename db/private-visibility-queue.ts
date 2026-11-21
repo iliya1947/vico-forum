@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import type { AuthorizationCapability } from "./authorization-service";
+import type { ForumAttachmentMetadata } from "./forum-attachments";
 
 /** Private moderation data. Never merge this reader into the public ForumReader. */
 export type HiddenQueueKind = "topic" | "post";
@@ -67,6 +68,8 @@ export interface HiddenQueueReader {
   /** Current target only; never general History, source or revision bodies. */
   inspect(actorId: string, target: HiddenInspectionTarget): Promise<HiddenInspection | undefined>;
   revisions(actorId: string, target: Extract<HiddenInspectionTarget,{kind:"post"}>, before?: HiddenRevisionCursor): Promise<HiddenPostRevisionPage>;
+  /** Exact private published membership; only effectively hidden content is admitted. */
+  attachment(actorId: string, topicId: string, postId: string, attachmentId: string): Promise<ForumAttachmentMetadata | null>;
 }
 
 const PAGE_SIZE = 25;
@@ -237,5 +240,26 @@ export class PostgresHiddenQueueReader implements HiddenQueueReader {
       [target.topicId,target.postId,before?.createdAt??null,before?.id??null]);
     const items=rows.slice(0,25),last=items.at(-1);
     return {items,next:rows.length>25&&last?{createdAt:last.createdAt,id:last.id}:null};
+  }
+
+  async attachment(
+    actorId: string, topicId: string, postId: string, attachmentId: string,
+  ): Promise<ForumAttachmentMetadata | null> {
+    await this.admit(actorId);
+    const {rows}=await this.pool.query<ForumAttachmentMetadata>(`
+      select a.id,a.object_key as "objectKey",a.file_name as "fileName",
+        a.declared_mime as "declaredMime",a.detected_type as "detectedType",
+        a.response_mime as "responseMime",a.byte_size as "byteSize",
+        a.verification_status as "verificationStatus",
+        to_char(a.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "createdAt"
+      from forum_post_attachments r
+      join forum_posts p on p.id=r.post_id
+      join forum_topics t on t.id=p.topic_id
+      join forum_attachments a on a.id=r.attachment_id
+      where t.id=$1 and p.topic_id=$1 and p.id=$2 and r.post_id=$2
+        and r.attachment_id=$3 and a.verification_status='type-checked'
+        and (t.is_hidden or p.is_hidden)
+      limit 1`,[topicId,postId,attachmentId]);
+    return rows[0]??null;
   }
 }
