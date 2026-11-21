@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- Mira B3 checkpoint found one P2 `VIS-B3-MIRA-01` on old #359 `3fa0740c...`: B3 visibility-gated trusted raw `readPost`, breaking `readHierarchy` under hidden rows. V2 explicitly keeps raw service/fixture readers trusted. No other current-B3 finding.
-- Corrected only `db/forum-repository.ts` (raw `readPost` byte-identical to B2; public denial unchanged) and `tests/database/moderation-visibility-commands.test.ts` (3 fixed raw assertions + new real-PG test hidden post/topic→trusted hierarchy / public denial / Restore). Commits `8ee8f2be...`, `cde52190...`; **#359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`** stacked on B2 unchanged.
-- 14/14 static checks PASS; **fresh current-head runtime tests pending**. Main CI [#44904360356](https://github.com/iliya1947/vico-forum/actions/runs/44904360356) QUEUED at check; connected acceptance jobs appearing, some run from old YAML in stacked base. `run:ci` applied once, do not retrigger. Next `...`: verify existing exact-head CI, resolve confirmed blocker if any; after PASS author self-check then Mira bounded B3 recheckpoint. B4 blocked. STOP.
+- B3 #359 stable exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91` on unchanged B2 #357 `778568e83...`. Corrected only `VIS-B3-MIRA-01` raw trusted `readPost` regression (raw matches B2 byte-identically) and added PG test of hidden post/topic trusted hierarchy vs gated public readers. Two files changed; previous Mira B3 HOLD was on old `3fa0740c...`.
+- **Author correction self-check PASS**: focused 14/14 static invariants; final [CI #44904360356](https://github.com/iliya1947/vico-forum/actions/runs/44904360356) SUCCESS, **2782/2782 unit**, **1600/1600 PostgreSQL**, revised visibility suite **108/108**, 15/15 connected/all workflows SUCCESS; no confirmed new B3 blocker.
+- Next agent **Мира**: fresh bounded B3 coordinator checkpoint on exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91` against accepted V2/B3 and stacked B2 baseline. No B4, merge or Leva until checkpoint plus owner continuation. **Лира STOP.**
 
 ## Cadence
 
