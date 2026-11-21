@@ -4913,12 +4913,11 @@ export class DrizzleForumRepository {
         sourceLocale: forumPostRevisions.sourceLocale,
       })
       .from(forumPosts)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
       .innerJoin(
         forumPostRevisions,
         and(eq(forumPostRevisions.postId, forumPosts.id), eq(forumPostRevisions.id, forumPosts.currentRevisionId)),
       )
-      .where(and(eq(forumPosts.id, id), eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false)));
+      .where(eq(forumPosts.id, id));
     return row && {
       id: row.id,
       topicId: row.topicId,
