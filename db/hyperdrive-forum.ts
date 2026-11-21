@@ -53,7 +53,7 @@ export interface ForumWriter {
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
-  markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
+  markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<import("./forum-repository").ForumReplyNotificationTarget>;
   markNotificationRead(input:{userId:string;notificationId:string}):Promise<import("./forum-repository").ForumNotificationTarget>;
   setTopicVisibility(input: {
     topicId: string; actorId: string; hidden: boolean; expectedVisibilityVersion: number;
