@@ -227,6 +227,8 @@ function publicDiscoveryLocation(row: {
 export interface ForumNotificationSummary {
   id:string;kind:"reply"|"mention"|"complaint-decision"|"complaint-appeal-result";actorName:string|null;
   actorIdentityKind?: "deleted";
+  /** Retained reply/mention with a currently hidden or absent source. */
+  unavailable?: true;
   topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;appealId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
@@ -238,17 +240,14 @@ export type ForumNotificationTarget =
   | {kind:"complaint-appeal-result";caseId:string;appealId:string}
   | {kind:"reply"|"mention";topicId:string;postId:string};
 
-export interface ForumReplyNotificationSummary {
-  id: string;
-  kind: "reply" | "mention";
-  actorName: string;
-  actorIdentityKind?: "deleted";
-  topicId: string;
-  topicTitle: string;
-  postId: string;
-  createdAt: Date;
-  readAt: Date | null;
-}
+export type ForumReplyNotificationSummary = {
+  id: string; kind: "reply" | "mention"; createdAt: Date; readAt: Date | null;
+} & (
+  | { unavailable: true; actorName: null; actorIdentityKind?: never;
+      topicId: null; topicTitle: null; postId: null }
+  | { unavailable?: false; actorName: string; actorIdentityKind?: "deleted";
+      topicId: string; topicTitle: string; postId: string }
+);
 
 export interface ForumSectionTopicSummary {
   authorIdentityKind?: "deleted";
@@ -1994,26 +1993,38 @@ export class DrizzleForumRepository {
           actor.deactivated_at as "actorDeactivatedAt",
           actor.deactivated_by_user_id as "actorDeactivatedByUserId",
           actor.retain_at_least_until as "actorRetainAtLeastUntil",
-          n.topic_id as "topicId",title.original_content as "topicTitle",
-          n.post_id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
+          topic.id as "topicId",title.original_content as "topicTitle",
+          source_post.id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
         from forum_reply_notifications n
-        left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
-        left join forum_topics topic on topic.id=n.topic_id
-        left join forum_topic_title_revisions title on title.topic_id=topic.id and title.id=topic.current_title_revision_id
+        left join forum_topics topic on topic.id=n.topic_id and topic.is_hidden=false
+        left join forum_posts source_post on source_post.id=n.post_id
+          and source_post.topic_id=topic.id and source_post.is_hidden=false
+        left join "user" actor on actor.id=n.actor_user_id
+          and n.kind in ('reply','mention') and source_post.id is not null
+        left join forum_topic_title_revisions title on title.topic_id=topic.id
+          and title.id=topic.current_title_revision_id and source_post.id is not null
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id and n.kind='complaint-decision'
         left join forum_complaint_appeals a on a.id=n.complaint_appeal_id and n.kind='complaint-appeal-result'
         where n.recipient_user_id=${userId}
         order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
         limit 51 offset ${page*50}`);
       return {
-        items: rows.rows.slice(0,50).map(row => ({
-          id: row.id, kind: row.kind,
-          ...(row.kind === "reply" || row.kind === "mention"
-            ? projectNotificationActor(row) : { actorName: null }),
-          topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId,
-          caseId: row.caseId, appealId: row.appealId,
-          createdAt: row.createdAt, readAt: row.readAt,
-        })),
+        items: rows.rows.slice(0,50).map(row => {
+          const ordinary = row.kind === "reply" || row.kind === "mention";
+          const unavailable = ordinary
+            && (row.topicId === null || row.postId === null || row.topicTitle === null || row.actorId === null);
+          return {
+            id: row.id, kind: row.kind,
+            ...(unavailable
+              ? { unavailable: true as const, actorName: null }
+              : ordinary ? projectNotificationActor(row) : { actorName: null }),
+            topicId: unavailable ? null : row.topicId,
+            topicTitle: unavailable ? null : row.topicTitle,
+            postId: unavailable ? null : row.postId,
+            caseId: row.caseId, appealId: row.appealId,
+            createdAt: row.createdAt, readAt: row.readAt,
+          };
+        }),
         page, total: total.rows[0]?.total??0, hasMore: rows.rows.length>50,
       };
     },{isolationLevel:"repeatable read",accessMode:"read only"});
@@ -2067,19 +2078,31 @@ export class DrizzleForumRepository {
         actorDeactivatedAt: actor.deactivatedAt,
         actorDeactivatedByUserId: actor.deactivatedByUserId,
         actorRetainAtLeastUntil: actor.retainAtLeastUntil,
-        topicId: forumReplyNotifications.topicId,
+        topicId: forumTopics.id,
         topicTitle: forumTopicTitleRevisions.originalContent,
-        postId: forumReplyNotifications.postId,
+        postId: forumPosts.id,
         kind: forumReplyNotifications.kind,
         createdAt: forumReplyNotifications.createdAt,
         readAt: forumReplyNotifications.readAt,
       })
       .from(forumReplyNotifications)
-      .innerJoin(actor, eq(actor.id, forumReplyNotifications.actorUserId))
-      .innerJoin(forumTopics, eq(forumTopics.id, forumReplyNotifications.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumReplyNotifications.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumPosts, and(
+        eq(forumPosts.id, forumReplyNotifications.postId),
+        eq(forumPosts.topicId, forumTopics.id),
+        eq(forumPosts.isHidden, false),
+      ))
+      .leftJoin(actor, and(
+        eq(actor.id, forumReplyNotifications.actorUserId),
+        isNotNull(forumPosts.id),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+        isNotNull(forumPosts.id),
       ))
       .where(and(eq(forumReplyNotifications.recipientUserId, userId),inArray(forumReplyNotifications.kind,["reply","mention"])))
       // Keep every unread row reachable even when the bounded inbox contains
@@ -2090,12 +2113,17 @@ export class DrizzleForumRepository {
         desc(forumReplyNotifications.id),
       )
       .limit(limit);
-    return rows.map(row => ({
-      id: row.id, kind: row.kind as "reply" | "mention",
-      ...projectNotificationActor(row),
-      topicId: row.topicId!, topicTitle: row.topicTitle, postId: row.postId!,
-      createdAt: row.createdAt, readAt: row.readAt,
-    }));
+    return rows.map(row => {
+      const common = { id: row.id, kind: row.kind as "reply" | "mention",
+        createdAt: row.createdAt, readAt: row.readAt };
+      if (row.topicId === null || row.postId === null || row.topicTitle === null
+        || row.actorId === null) {
+        return { ...common, unavailable: true as const,
+          actorName: null, topicId: null, topicTitle: null, postId: null };
+      }
+      return { ...common, ...projectNotificationActor(row),
+        topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId };
+    });
   }
 
   async countUnreadReplyNotifications(userId: string): Promise<number> {
