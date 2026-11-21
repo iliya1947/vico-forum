@@ -96,7 +96,7 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     await repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: true });
     await repository.setTopicBookmark({ actorId: other, topicId: x.id, bookmarked: true });
     const saved = (await stored(viewer, x.id))[0]!.saved_at;
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [x.id]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.id]);
 
     const hiddenPage = await repository.readTopicBookmarks(viewer);
     expect(hiddenPage.items).toEqual([{ id: x.id, savedAt: saved, unavailable: true }]);
@@ -120,7 +120,7 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     await expect(repository.setTopicBookmark({ actorId: "missing-actor", topicId: missing, bookmarked: false }))
       .rejects.toBeInstanceOf(AccountMissingError);
 
-    await fixture.query("update forum_topics set is_hidden=false where id=$1", [x.id]);
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.id]);
     const restored = await repository.readTopicBookmarks(other);
     expect(restored.items[0]).toMatchObject({ id: x.id, title: hiddenTitle });
     expect(restored.items[0]?.unavailable).not.toBe(true);
@@ -139,7 +139,7 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     await repository.setTopicBookmark({actorId:b,topicId:foreign.id,bookmarked:true});
     await fixture.query("update forum_topic_bookmarks set saved_at='2026-11-18T12:00:00.123Z' where user_id=$1",[a]);
     const hiddenId = ids[0]!;
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [hiddenId]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [hiddenId]);
     const first=await repository.readTopicBookmarks(a);
     expect(first.items).toHaveLength(50);
     expect(first.next).not.toBeNull();
@@ -415,7 +415,7 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
             actorId: viewer, topicId: target.id, bookmarked: true,
           });
           await paused!.observed;
-          hidden = hide.client.query("update forum_topics set is_hidden=true where id=$1", [target.id]);
+          hidden = hide.client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [target.id]);
           await expectPgBlocked(hide.pid, add.pid);
           paused!.resume();
           expect(await write).toBe(true);
@@ -425,7 +425,7 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
         } else {
           await hide.client.query("begin");
           hideTransaction = true;
-          await hide.client.query("update forum_topics set is_hidden=true where id=$1", [target.id]);
+          await hide.client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [target.id]);
           write = isolated(add.client).setTopicBookmark({
             actorId: viewer, topicId: target.id, bookmarked: true,
           });

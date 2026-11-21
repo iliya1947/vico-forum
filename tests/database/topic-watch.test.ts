@@ -162,7 +162,7 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
     const x = await topic(author), missing = uuid();
     await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true });
     await forum.setTopicWatch({ topicId: x.topicId, actorId: other, watching: true });
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [x.topicId]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.topicId]);
 
     await expect(forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true }))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
@@ -179,7 +179,7 @@ describe("Watch real PostgreSQL persistence, fanout and ordering", () => {
     await expect(forum.setTopicWatch({ topicId: missing, actorId: inactive, watching: false }))
       .rejects.toBeInstanceOf(AccountInactiveError);
 
-    await fixture.query("update forum_topics set is_hidden=false where id=$1", [x.topicId]);
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.topicId]);
     expect(await forum.setTopicWatch({ topicId: x.topicId, actorId: watcher, watching: true })).toBe(true);
     expect(await forum.readTopicWatch(watcher, x.topicId)).toBe(true);
   });

@@ -303,7 +303,7 @@ describe("Mute/Block M4: real actor mutex, reciprocal Block and AccountState rac
         if (muteFirst) {
           writing = writer(muteClient).setTopicMute({ actorId: viewer, topicId: x, muted: true });
           await reached(gate!.observed);
-          hiding = hideClient.query("update forum_topics set is_hidden=true where id=$1", [x]);
+          hiding = hideClient.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
           await blocked(hidePid, mutePid);
           gate!.resume();
           expect(await writing).toBe(true);
@@ -313,7 +313,7 @@ describe("Mute/Block M4: real actor mutex, reciprocal Block and AccountState rac
         } else {
           await hideClient.query("begin");
           hideOpen = true;
-          await hideClient.query("update forum_topics set is_hidden=true where id=$1", [x]);
+          await hideClient.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
           writing = writer(muteClient).setTopicMute({ actorId: viewer, topicId: x, muted: true });
           await blocked(mutePid, hidePid);
           await hideClient.query("commit");

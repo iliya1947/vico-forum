@@ -89,7 +89,7 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
     const createdAt = (await fixture.query<{ created_at: Date }>(
       "select created_at from forum_topic_mutes where user_id=$1 and topic_id=$2", [viewer, x]
     )).rows[0]!.created_at;
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [x]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
     const page = await repository.readMutedTopics(viewer);
     expect(page.items).toEqual([{ id: x, mutedAt: createdAt, unavailable: true }]);
     expect(JSON.stringify(page)).not.toContain("Mute topic");
@@ -110,7 +110,7 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
     await expect(repository.setTopicMute({ actorId: "missing-actor", topicId: absent, muted: false }))
       .rejects.toBeInstanceOf(AccountMissingError);
 
-    await fixture.query("update forum_topics set is_hidden=false where id=$1", [x]);
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
     expect((await repository.readMutedTopics(other)).items[0]).toMatchObject({ id: x, title: "Mute topic" });
     expect(await repository.setTopicMute({ actorId: viewer, topicId: x, muted: true })).toBe(true);
   });
@@ -127,7 +127,7 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
       "update forum_topic_mutes set created_at='2026-11-19T08:30:00.123Z' where user_id=$1", [viewer],
     );
     const hiddenId = ids[0]!;
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [hiddenId]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [hiddenId]);
     const first = await repository.readMutedTopics(viewer);
     expect(first.items).toHaveLength(50);
     expect(first.next).not.toBeNull();
@@ -260,14 +260,14 @@ describe("Personal Mute/Block: ordinary publication policy", () => {
       "select id from forum_posts where topic_id=$1 limit 1", [x])).rows[0]!.id;
     await repository.setUserBlock({ actorId: viewer, blockedUserId: hiddenAuthor, blocked: true });
     expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
-    await fixture.query("update forum_posts set is_hidden=true where id=$1", [root]);
+    await fixture.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [root]);
     expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([]);
     expect(await repository.readUserBlock(viewer, hiddenAuthor)).toBe(true);
-    await fixture.query("update forum_posts set is_hidden=false where id=$1", [root]);
+    await fixture.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [root]);
     expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [x]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
     expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([]);
-    await fixture.query("update forum_topics set is_hidden=false where id=$1", [x]);
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
     expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
   });
 

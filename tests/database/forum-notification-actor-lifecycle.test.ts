@@ -154,7 +154,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
       id: n.id, kind: n.kind, createdAt: n.createdAt, readAt: n.readAt,
     }));
     try {
-      await client.query("update forum_posts set is_hidden=true where id='g-post-reply-active'");
+      await client.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-reply-active'");
       const partial = await forum.readNotifications(recipient, 0);
       const legacyPartial = await forum.readReplyNotifications(recipient);
       expect(partial.items.find(n => n.id === "g-n4")).toMatchObject({
@@ -166,7 +166,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
       expect(partial.items.find(n => n.id === "g-n2")?.topicTitle).toBe("Retained notification topic");
       expect(JSON.stringify(partial.items.find(n => n.id === "g-n4"))).not.toContain("Active reply");
 
-      await client.query("update forum_topics set is_hidden=true where id='g-topic'");
+      await client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
       const hidden = await forum.readNotifications(recipient, 0);
       const hiddenLegacy = await forum.readReplyNotifications(recipient);
       expect(hidden.total).toBe(before.total);
@@ -201,8 +201,8 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
         "select count(*)::int n from forum_post_notification_suppressions"
       )).rows[0]!.n).toBe(suppressionBefore);
     } finally {
-      await client.query("update forum_topics set is_hidden=false where id='g-topic'");
-      await client.query("update forum_posts set is_hidden=false where id='g-post-reply-active'");
+      await client.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      await client.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-reply-active'");
     }
     const restored = await forum.readNotifications(recipient, 0);
     const legacyRestored = await forum.readReplyNotifications(recipient);
@@ -247,7 +247,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     const markedAt = new Map<string, Date | null>();
     try {
       // Post Hide alone is sufficient to mask the legacy notification target.
-      await client.query("update forum_posts set is_hidden=true where id='g-post-mention-active'");
+      await client.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-mention-active'");
       expect(await readAt("g-n2")).toBeNull();
       await expect(forum.markNotificationRead("g-topic-author", "g-n2")).rejects.toThrow();
       expect(await readAt("g-n2")).toBeNull();
@@ -259,7 +259,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
       expect(await readAt("g-n2")).toEqual(markedAt.get("g-n2"));
 
       // Topic Hide masks every ordinary destination, but not a protected Case result.
-      await client.query("update forum_topics set is_hidden=true where id='g-topic'");
+      await client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
       expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
         .toEqual({ unavailable: true });
       markedAt.set("g-n4", await readAt("g-n4"));
@@ -301,8 +301,8 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
         "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
       )).rows).toEqual(suppressionBefore);
     } finally {
-      await client.query("update forum_topics set is_hidden=false where id='g-topic'");
-      await client.query("update forum_posts set is_hidden=false where id='g-post-mention-active'");
+      await client.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      await client.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-mention-active'");
     }
     expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({
       kind: "mention", topicId: "g-topic", postId: "g-post-mention-active",
