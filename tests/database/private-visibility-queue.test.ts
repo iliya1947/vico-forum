@@ -1,7 +1,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { Client } from "pg";
+import { randomUUID } from "node:crypto";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
-import { PostgresHiddenQueueReader, HiddenQueueForbiddenError } from "../../db/private-visibility-queue";
+import { PostgresHiddenQueueReader, HiddenQueueForbiddenError, HiddenQueueUnavailableError } from "../../db/private-visibility-queue";
 import type { AuthorizationCapability } from "../../db/authorization-service";
 
 const url=process.env.DATABASE_URL!;
@@ -50,6 +51,31 @@ beforeAll(async()=>{
       const parent=i===1?"visible-parent":i===2?"hidden-post-000":null;
       await post(id,topicId,parent,true,stamp(i===25?24:i));
     }
+
+    // Exact current-target events: unrelated retained History must never enter inspection.
+    async function visibilityEvent(kind:"topic"|"post", id:string, topicId:string, version:number,
+      action:"topic.hidden"|"topic.restored"|"post.hidden"|"post.restored", reason:string) {
+      const context={topicId,before:action.endsWith(".restored"),after:action.endsWith(".hidden"),
+        previousVersion:version-1,version,observedRevisionId:id+(kind==="topic"?"-title":"-body"),
+        ...(kind==="post"?{postId:id}:{})};
+      await client.query(`insert into admin_history
+        (id,actor_id,actor_label,action,target_type,target_id,target_label,context,reason)
+        values ($1,'queue-moderator','Moderator',$2,$3,$4,$5,$6::jsonb,$7)`,
+        [randomUUID(),action,kind,id,kind+":"+id,JSON.stringify(context),reason]);
+    }
+    await visibilityEvent("topic","hidden-topic-000","hidden-topic-000",1,"topic.hidden","Reason topic 000");
+    await visibilityEvent("post","hidden-post-000","visible-topic",1,"post.hidden","Reason post 000");
+    await visibilityEvent("post","hidden-post-002","visible-topic",1,"post.hidden","Reason child");
+    await visibilityEvent("post","hidden-post-003","hidden-topic-000",1,"post.hidden","Reason hidden ancestor");
+    await topic("restored-topic");
+    await client.query("update forum_topics set visibility_version=2,visibility_changed_at=$2 where id=$1",
+      ["restored-topic",stamp(35)]);
+    await visibilityEvent("topic","restored-topic","restored-topic",1,"topic.hidden","Previous reason");
+    await visibilityEvent("topic","restored-topic","restored-topic",2,"topic.restored","Current restore reason");
+    await client.query(`insert into admin_history
+      (id,actor_id,actor_label,action,target_type,target_id,target_label,context,reason)
+      values ($1,'queue-moderator','Moderator','topic.pinned','topic','restored-topic',
+        'topic:restored-topic','{}'::jsonb,'Not a visibility reason')`,[randomUUID()]);
     await client.query("commit");
   }catch(error){await client.query("rollback");throw error;}
 },120_000);
@@ -101,5 +127,60 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
       await expect(reader.list("queue-moderator",{kind:"topic"})).rejects.toBeInstanceOf(HiddenQueueForbiddenError);
     }finally{await client.query("rollback");}
     expect((await reader.list("queue-moderator",{kind:"topic"})).items).toHaveLength(25);
+  });
+
+  it("inspects only current target state, revision id and matching visibility event",async()=>{
+    const topic=await reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"});
+    expect(topic).toMatchObject({kind:"topic",topicId:"hidden-topic-000",isHidden:true,
+      visibilityVersion:1,currentRevisionId:"hidden-topic-000-title",
+      lastEvent:{action:"topic.hidden",reason:"Reason topic 000"}});
+    expect(topic?.lastEvent?.at).toMatch(/^\\d{4}-\\d{2}-\\d{2}T/);
+    const post=await reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"hidden-post-000"});
+    expect(post).toMatchObject({kind:"post",id:"hidden-post-000",isHidden:true,
+      currentRevisionId:"hidden-post-000-body",topicHidden:false,parentUnavailable:false,
+      lastEvent:{action:"post.hidden",reason:"Reason post 000"}});
+    const child=await reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"hidden-post-002"});
+    expect(child).toMatchObject({parentPostId:"hidden-post-000",parentUnavailable:true,topicHidden:false});
+    const ancestor=await reader.inspect("queue-moderator",{kind:"post",topicId:"hidden-topic-000",postId:"hidden-post-003"});
+    expect(ancestor).toMatchObject({topicHidden:true,parentUnavailable:true});
+    const restored=await reader.inspect("queue-moderator",{kind:"topic",topicId:"restored-topic"});
+    expect(restored).toMatchObject({isHidden:false,visibilityVersion:2,
+      lastEvent:{action:"topic.restored",reason:"Current restore reason"}});
+    const fresh=await reader.inspect("queue-moderator",{kind:"topic",topicId:"visible-topic"});
+    expect(fresh).toMatchObject({isHidden:false,visibilityVersion:0,visibilityChangedAt:null,lastEvent:null});
+    const output=JSON.stringify([topic,post,child,ancestor,restored,fresh]);
+    for(const forbidden of ["PRIVATE TITLE","PRIVATE BODY","Previous reason","Not a visibility reason",
+      "originalContent","sourceLocale","actorLabel","attachments","context"]){
+      expect(output).not.toContain(forbidden);
+    }
+  });
+  it("rejects mismatched post-to-topic membership and absent targets without disclosure",async()=>{
+    expect(await reader.inspect("queue-moderator",{kind:"topic",topicId:"nonexistent"})).toBeUndefined();
+    expect(await reader.inspect("queue-moderator",{kind:"post",topicId:"hidden-topic-000",postId:"hidden-post-000"}))
+      .toBeUndefined();
+    expect(await reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"nonexistent"}))
+      .toBeUndefined();
+  });
+  it("fails closed if an updated visibility version has no matching History event",async()=>{
+    await expect(reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-001"}))
+      .rejects.toBeInstanceOf(HiddenQueueUnavailableError);
+    await expect(reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"hidden-post-001"}))
+      .rejects.toBeInstanceOf(HiddenQueueUnavailableError);
+  });
+  it("rechecks effective inspection grant and active account after revocation",async()=>{
+    allowed=false;
+    try{
+      await expect(reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"}))
+        .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+      await expect(reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"hidden-post-000"}))
+        .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    }finally{allowed=true;}
+    await client.query("begin");
+    try{
+      await client.query(`update "user" set deactivated_at=now(),deactivated_by_user_id='queue-author',
+        retain_at_least_until=now()+interval '2 years' where id='queue-moderator'`);
+      await expect(reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"}))
+        .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    }finally{await client.query("rollback");}
   });
 });
