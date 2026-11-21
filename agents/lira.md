@@ -1,18 +1,33 @@
-# agents/lira.md — B6-A author PASS, Mira checkpoint handoff
+# agents/lira.md — moderation visibility B6-B active assignment
 
-## Current exact implementation state
+## Accepted foundation
 
-B5 #367 on exact `a2269fb0294feaccb433e76b66e800f3e869658d` received Mira bounded PASS; stacked B1–B5 remain Draft/unmerged. Owner authorized **only B6-A**. [B6 Draft PR #370](https://github.com/iliya1947/vico-forum/pull/370), branch `feature/moderation-visibility-b6-guarded-queue`, exact **`91cb332d6acf60ebf572f57582c13acfeab8eada`**, base B5 unchanged. B6-only **5 commits / 17 scoped files / 0 behind**.
+- B5 #367 coordinator PASS exact `a2269fb0294feaccb433e76b66e800f3e869658d`.
+- B6 #370 branch `feature/moderation-visibility-b6-guarded-queue`.
+- B6-A exact `91cb332d6acf60ebf572f57582c13acfeab8eada` received **Mira bounded coordinator PASS**.
+- B6-A private queue/admission/cursor/no-store and the scoped ordinary-admin hidden-title/count correction are accepted. Do not reopen them without new evidence.
+- Owner has now authorized **B6-B only**. B7/actions, schema/migrations, production/deploy and merge remain blocked.
 
-**B6-A1–A3 implemented and author-verified**: separate hidden topic/post private PostgreSQL reader + effective `forum.content.visibility.manage` and active account on each call (Worker AP-10-filtered authorization), descending 25+1 changedAt/id cursor, effective parent/topic status, no source/attachment/revision data; private `/:locale/admin/forum/content` route, strict bounded kind+timestamp+ID cursor parser, duplicate/unknown rejection, transport metadata separate, neutral 400/401/403/503 and document/.data/error `private,no-store`; EN/RU/HE private tab/paging UI without hidden public link, inspector or actions.
+## B6-B packages
 
-### Actual tests and fixed adjacent current-Stage defect
+### B6-B1 — read-only inspector/current event
 
-- New React Router test `app/routes/admin-forum-content.test.ts`: no auth, generic admin/History/ordinary/Complaint/security-only denial, valid capability, revoke-after-read, auth/database outage/unknown private error, 400 validation, first/next route + alternate admin base, no-store data/document, reviewed RU/HE SHA-256 fingerprints.
-- New real PG test `tests/database/private-visibility-queue.test.ts`: 27 hidden topics and posts, 25+1/cursor/ties, only individually hidden rows, effective parent/topic status, no current source, inactive/missing actor, immediate effective authorization revoke.
-- **Confirmed previous leak:** `app/routes/admin-section.tsx` generic `forum.topic.pin` access + `db/admin-forum.ts` readSectionTopics returned hidden `t`'s ID/title/sourceLocale; real PostgreSQL test red on `6607ba…` (**1 FAIL / 1617 PASS**). One limited SQL fix in `91cb332d6acf60ebf572f57582c13acfeab8eada` filters hidden topics/posts from ordinary admin lists, section/category counts and topic post counts. Real PG negative Hide-topic/post regressions now PASS.
-- Final `91cb332d6acf60ebf572f57582c13acfeab8eada` **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS**, no pending/fail. Main lint/typecheck/unit/build, PostgreSQL 17 clean migration/schema/ACL/Worker smokes and all applicable Chromium/connected acceptance. No remaining confirmed B6-A blocking findings after scoped author self-check. **AUTHOR PASS means author only; Mira independent bounded PASS still pending.**
+Result required: guarded private topic/post inspection on top of B6-A, with fresh effective `forum.content.visibility.manage`, active-account and AP-10 enforcement. It may expose only the private inspection data required by the accepted plan: current visibility state/version/current revision identifiers and last visibility event/reason. Generic Admin/history/Complaint/ordinary-author authority is not a proxy for this capability; existing public/ordinary Admin paths stay public-safe.
 
-## Next — STOP
+Add focused positive/negative/revoke/outage tests for this package, keep private responses `private, no-store`, update the service handoff and **STOP**.
 
-**Лира STOP → Мира (ChatGPT-5.6 Sol)** performs independent **B6-A bounded coordinator checkpoint on exact `91cb332d6acf60ebf572f57582c13acfeab8eada`** (scope, AP-10/auth/revoke/active account, 25+1/cursor, legacy admin title privacy, no-store/i18n and tests). If Mira confirms findings, return to Lira through service #342. On Mira PASS, only owner separately authorizes B6-B. Inspector, hidden revision history, private assets, B7, Leva final independent whole-feature review, merge and deployment remain prohibited.
+### B6-B2 — revision-history boundary and inspector UI
+
+Result required: hidden revision history is available only when the caller also has the existing history capability. Losing or lacking that extra capability must not grant history or weaken the base inspector boundary. Complete localized EN/RU/HE read-only inspector presentation and its private error/data/cache behavior.
+
+Add focused permission/revoke/i18n tests, update the service handoff and **STOP**.
+
+### B6-B3 — private hidden attachment access and B6-B closeout
+
+Result required: private hidden attachment read/download under fresh visibility-management admission and exact attachment→post→topic membership, preserving the existing attachment view/disposition/nosniff/sandbox/type protections and AdministrativeRouting family. Public attachment behavior for hidden content remains unchanged; protected Complaints/evidence access remains its own authority and is not replaced by a blanket admin bypass.
+
+Add focused asset/membership/revoke/cache tests. Then run one whole-B6-B author self-check plus the applicable exact-head CI/acceptance. If PASS, update #370/service handoff with the stable SHA and **STOP → Mira B6-B bounded checkpoint**.
+
+## Guardrails
+
+Do not implement B7 Hide/Restore POST intents, QuickActions, Restore controls, public tombstone actions or conflict UI in B6-B. Do not add schema/migrations/dependencies or Stage 6/external changes. If an actual current-B6-B defect outside these files blocks correctness, diagnose it under AGENTS rules and keep any correction minimal.
