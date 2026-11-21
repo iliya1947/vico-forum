@@ -1,4 +1,5 @@
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { readComplaintEvidenceObject } from "../../db/complaint-review-read";
 import { AccountMissingError } from "../../db/account-state";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -435,6 +436,74 @@ describe("forum attachment lifecycle foundation", () => {
     expect(refs.rows.map(row=>row.post_id).sort()).toEqual([firstPost,secondPost].sort());
     expect(await store.readDraftAttachment(ownerId,draftContext,generation,asset.id))
       .toMatchObject({id:asset.id});
+  });
+
+  it("retains Complaint evidence object and protected Case membership when topic and post Hide", async () => {
+    const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await forum.createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Evidence topic", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Evidence post", sourceLocale: "en" },
+      },
+    });
+    const targetId = crypto.randomUUID(), caseId = crypto.randomUUID();
+    await client.query(
+      "insert into forum_complaint_targets (id,kind,topic_id,post_id,post_revision_id,affected_author_id) " +
+      "values ($1,'post',$2,$3,$4,$5)",
+      [targetId, topicId, postId, revisionId, ownerId],
+    );
+    await client.query(
+      "insert into forum_complaint_cases (id,target_id) values ($1,$2)",
+      [caseId,targetId],
+    );
+    const asset = await store.createDraftAttachment(upload(`topic:${topicId}:reply`,crypto.randomUUID()));
+    await client.query(
+      "insert into forum_complaint_evidence_attachments (target_id,attachment_id) values ($1,$2)",
+      [targetId,asset.id],
+    );
+    // Only the protected evidence reference retains this asset: it has neither
+    // a public post reference nor an active owner draft reference.
+    await client.query("delete from forum_attachment_draft_refs where attachment_id=$1",[asset.id]);
+    await client.query(
+      "update forum_attachments set created_at=now()-interval '31 days' where id=$1",
+      [asset.id],
+    );
+    const readEvidence = () => readComplaintEvidenceObject(drizzle(client),caseId,asset.id);
+    const before = await readEvidence();
+    expect(before).toMatchObject({ objectKey:asset.objectKey,fileName:asset.fileName });
+    expect(await store.readPublishedAttachment(postId,asset.id)).toBeNull();
+    await client.query(
+      "update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1",
+      [topicId],
+    );
+    await client.query(
+      "update forum_posts set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1",
+      [postId],
+    );
+    expect(await readEvidence()).toEqual(before);
+    const remove = vi.fn(async (_objectKey: string) => {});
+    await new ForumAttachmentCleanup(drizzle(client),{delete:remove}).runOnce();
+    expect(remove).not.toHaveBeenCalledWith(asset.objectKey);
+    expect((await client.query(
+      "select object_key,cleanup_status from forum_attachments where id=$1",[asset.id],
+    )).rows).toEqual([{ object_key:asset.objectKey, cleanup_status:"active" }]);
+    expect((await client.query(
+      "select attachment_id from forum_complaint_evidence_attachments where target_id=$1",[targetId],
+    )).rows).toEqual([{attachment_id:asset.id}]);
+    expect(await readEvidence()).toEqual(before);
+    await client.query(
+      "update forum_topics set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1",
+      [topicId],
+    );
+    await client.query(
+      "update forum_posts set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1",
+      [postId],
+    );
+    expect(await readEvidence()).toEqual(before);
+    expect(await store.readPublishedAttachment(postId,asset.id)).toBeNull();
   });
 
   it("rejects a terminal same-generation upload without creating its asset", async () => {
