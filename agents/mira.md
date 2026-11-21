@@ -4,17 +4,16 @@
 - Текущий этап: концептуальное проектирование архитектуры UI progress preview до технического плана.
 - Реализация и изменения #322 не авторизованы.
 - Перед исследовательским подэтапом проверять актуальный `main` и действующие границы задачи.
-- Подэтап 1: production dependencies/test-runtime boundary — завершён.
-- Подэтап 2: browser-safe production route graph — завершён.
-- Подэтап 3: единый production route table для Data Router preview — завершён.
-- Коррекция подэтапа 3: adapter обязан сохранять Framework route IDs по file path; оставлять Data Router автогенерацию нельзя.
-- Подэтап 4: local application transport — завершён.
-- Подэтап 5: native attachment byte presentation — завершён.
-- Route source: `app/routes.ts`; modules — production route modules; server infrastructure — preview-only module-resolution substitution.
-- Local programmable HTTP: `createStaticHandler().queryRoute()` + fresh preview RouterContextProvider на каждый request.
-- Browser bridge: same-origin matched-route `fetch` wrapper; Better Auth 1.7.7 захватывает global fetch на top-level createAuthClient, поэтому transport ставится до lazy route-module evaluation.
-- Attachment upload: узкий preview XMLHttpRequest adapter поверх того же dispatcher.
-- Native attachment raster/open/download: единый presentation resource contract; production -> controlled HTTP URLs, preview -> `blob:` URLs из fake bucket. Service Worker/DOM interception/preview copies не нужны.
-- Transport/R2 block концептуально закрыт.
-- Следующий conceptual block: единый deterministic test state + controls identity/locale/viewport/scenario без изменения ownership.
+- Подэтапы 1–5 закрыли dependency/browser graph/routes/transport/attachments.
+- Подэтап 6: deterministic test state + controls — завершён.
+- Target state: one canonical raw state graph, small overlays, fault profiles, resettable mutable clone.
+- Не переносить current 72-scenario presentation model: scenario не задаёт готовый screen/result.
+- Identity control выбирает concrete session actor; role/grants/Owner authority остаются facts production authorization model. Не использовать `allowedIdentities` как замену authz.
+- Locale идёт через real locale route/registry; direction не хранится в scenario; viewport — только frame geometry.
+- Empty/authz/error/conflict/rate-limit/pending/success states должны получаться из real causes и production loaders/actions.
+- Server-persisted state и browser-local preferences разделены.
+- Critical limitation: `ForumReader` имеет 44 product-query methods, а их SQL semantics живут в `DrizzleForumRepository`; fake DB не должна становиться вторым repository engine. Pages остаётся representative, DB/query correctness — Worker/PostgreSQL acceptance.
+- Browser SQL/PGlite не выбран.
+- Deterministic visible time требует минимальной clock seam: category/attention current routes используют wall-clock напрямую.
+- Следующий conceptual block: migration from current preview + concept done criteria + handoff questions for Leva technical plan.
 - Итог первого этапа должен быть цельным концептуальным документом `research/concept.md`, после чего STOP для решения разработчика.
