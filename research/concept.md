@@ -171,3 +171,77 @@ app/ui-preview/
 4. direct browser transport к application endpoints.
 
 Главный открытый вопрос перед окончательной концепцией: как сделать production route module graph browser-safe с минимальным изменением production-кода. Без решения этой границы утверждать, что задача сводится буквально к одному runtime-файлу и test DB, пока рано.
+
+## 7. Browser-safe boundary для production route graph
+
+Подэтап 2 проверил не имена файлов, а фактический runtime import graph маршрутов из актуального `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+
+### 7.1. Что реально втягивает server infrastructure
+
+В `app/routes/` по-прежнему есть:
+
+- 63 non-test route-модуля со ссылками на `.server` helpers;
+- 37 non-test route-модулей с прямыми runtime-imports из `db/hyperdrive-*`.
+
+Но эти два числа не означают 100 server-only переписываний.
+
+Проверка всех прямых `db/hyperdrive-*` imports в этих 37 route-модулях показала: маршруты используют оттуда infrastructure availability error classes (`ForumStorageUnavailableError`, `ComplaintStorageUnavailableError`, `OwnerSystemUnavailableError` и аналогичные), а не Hyperdrive/PostgreSQL factories.
+
+Основная route/action логика находится в обычных application helpers. В частности, `category.tsx`, `section.tsx` и `topic.tsx` используют настоящий `app/forum/actions.server.ts`; это 772 строки общей product action logic, которую preview как раз должен сохранять.
+
+Большинство непосредственно используемых `.server` helpers также не зависят от Node/Worker runtime сами по себе. Они состоят из React Router context/request logic, permission checks, validation и domain/presentation helpers. Примеры: `admin/access.server.ts`, `forum/mutations.server.ts`, `complaints/queue.server.ts`, `measures/routes.server.ts`, `profile/sections.server.ts`, `super-admin/current-loader.server.ts`.
+
+Реальные browser-incompatible узлы обнаружены ниже этого слоя:
+
+1. `db/hyperdrive-*` implementation modules, которые определяют нужные error classes рядом с PostgreSQL implementation и местами импортируют `pg` / `drizzle-orm/node-postgres`;
+2. `db/postgres-deadlines.ts`, который импортирует `Client` и `Pool` из `pg`; он транзитивно попадает в product graph через `app/localization/content-generation-action.server.ts` ради `isPostgresQueryTimeout`;
+3. настоящий Better Auth PostgreSQL runtime в `app/auth/auth.server.ts`, но production resource route `app/routes/auth-api.ts` его напрямую не импортирует: маршрут вызывает `authRuntimeForRequest(context).handle(request)`. Значит preview может сохранить сам production `/api/auth/*` route и дать ему test `AuthRuntime`.
+
+### 7.2. `.server` suffix не нужно устранять из product logic
+
+React Router Framework convention специально запрещает попадание `.server` modules в свой client bundle и делает такой import build error:
+https://reactrouter.com/api/framework-conventions/server-modules
+
+Но текущий Pages preview собирается отдельным обычным Vite config `app/ui-preview/vite.config.ts` без React Router Framework Vite plugin. Поэтому для выбранной отдельной preview composition root существенна не сама строка `.server` в имени application helper, а то, доходит ли её import graph до реального Node/Worker infrastructure.
+
+Следствие: переименовывать, копировать или раскладывать по новым browser-файлам десятки существующих `.server` helpers только ради preview концептуально не требуется. Exact build viability этого вывода должна быть подтверждена уже технической реализацией, но найденный server-only graph не требует такого массового рефакторинга.
+
+### 7.3. Выбранная минимальная граница
+
+Минимальная концептуальная boundary — **preview-only module-resolution substitution**.
+
+Preview build должен до попадания server adapters в browser graph перенаправлять только infrastructure imports на test-runtime эквиваленты. Для текущего graph это прежде всего:
+
+- `db/hyperdrive-*`;
+- `db/postgres-deadlines`;
+- любые новые genuinely server-only infrastructure modules, если они позже появятся в product graph.
+
+Vite 8 официально поддерживает `resolve.alias` как массив правил с `find: string | RegExp`, поэтому такая граница может быть выражена в самой preview-сборке либо эквивалентным Vite resolution hook:
+https://vite.dev/config/shared-options#resolve-alias
+
+Test infrastructure на этой boundary предоставляет только runtime contracts, необходимые настоящей product logic: прежде всего те же preview error-class identities и минимальные infrastructure classifiers. Capability implementations и fake data остаются в общем test runtime. Если representative unavailable-state должен бросать `ForumStorageUnavailableError`, route и fake adapter должны видеть один и тот же preview class, чтобы существующий `instanceof` branch продолжал работать.
+
+Это не вторая реализация backend:
+
+- route loaders/actions остаются production;
+- validation, permissions, mutation orchestration и response mapping остаются production;
+- подменяется только отсутствующая на GitHub Pages infrastructure implementation.
+
+### 7.4. Почему не выбран более широкий production-refactor
+
+Рассмотрены четыре варианта.
+
+1. **Вынести все error classes/contracts из Hyperdrive modules в новые neutral production modules.** Архитектурно допустимо, но ради preview потребовало бы массово менять уже работающие route/helper imports. Текущий Stage не даёт основания для такого масштаба, если preview-only resolution boundary решает тот же фактический blocker.
+2. **Переименовать/перенести `.server` helpers в browser-safe application modules.** Не требуется по установленной причине: большинство этих helpers уже не содержат Node/Worker infrastructure, а ценность preview как раз в выполнении их настоящей product logic.
+3. **Полифиллить `pg`/Node либо запускать SQL/WASM DB в браузере.** Это протаскивает ненужный production adapter слой в Pages и усложняет preview без продуктовой пользы.
+4. **Сделать вторые loaders/actions для preview.** Прямо противоречит цели задачи и снова создаёт параллельный продукт.
+
+Выбранный вариант минимален, обратим и соответствует действующему `docs/UI_UX_PASS.md`: Pages остаётся representative static preview и не заявляет настоящую database/auth/runtime acceptance.
+
+## 8. Итог второго подэтапа
+
+Первоначальный blocker с browser graph оказался существенно уже, чем выглядел по числу `.server` и Hyperdrive imports.
+
+Концептуально production route modules, loaders/actions и application `.server` helpers можно сохранить едиными. Browser graph нужно разрывать только на реальной infrastructure boundary через preview-only module resolution. Поэтому гипотеза «production product logic + test infrastructure» после этого подэтапа остаётся жизнеспособной без массового production refactor.
+
+Следующий отдельный вопрос перед завершением концепции: как получить **один источник истины для route table** — использовать production `app/routes.ts` / его производное так, чтобы Data Router preview не содержал вручную продублированный список маршрутов. После этого нужно связать тот же router с local transport для прямых application `fetch()`.
