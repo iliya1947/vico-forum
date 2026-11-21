@@ -408,14 +408,14 @@ describe("forum attachment lifecycle foundation", () => {
     await denied(crypto.randomUUID());
     await denied(firstPost, crypto.randomUUID());
 
-    await client.query("update forum_posts set is_hidden=true where id=$1", [firstPost]);
+    await client.query("update forum_posts set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [firstPost]);
     await denied(firstPost);
     expect((await store.readPublishedAttachment(firstPost, asset.id))).toBeNull();
     get.mockClear();
     expect((await download(secondPost)).status).toBe(200);
     expect(get).toHaveBeenCalledOnce();
 
-    await client.query("update forum_topics set is_hidden=true where id=$1", [secondTopic]);
+    await client.query("update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [secondTopic]);
     await denied(secondPost);
     expect((await store.readPublishedAttachment(secondPost, asset.id))).toBeNull();
     expect(await store.readDraftAttachment(ownerId, draftContext, generation, asset.id))
@@ -425,11 +425,11 @@ describe("forum attachment lifecycle foundation", () => {
     expect((await download(null,"text")).status).toBe(200);
     expect(get).toHaveBeenCalledOnce();
 
-    await client.query("update forum_posts set is_hidden=false where id=$1", [firstPost]);
+    await client.query("update forum_posts set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1", [firstPost]);
     get.mockClear();
     expect((await download(firstPost)).status).toBe(200);
     expect(get).toHaveBeenCalledOnce();
-    await client.query("update forum_topics set is_hidden=true where id=$1", [firstTopic]);
+    await client.query("update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [firstTopic]);
     await denied(firstPost);
     const refs = await client.query("select post_id from forum_post_attachments where attachment_id=$1", [asset.id]);
     expect(refs.rows.map(row=>row.post_id).sort()).toEqual([firstPost,secondPost].sort());
