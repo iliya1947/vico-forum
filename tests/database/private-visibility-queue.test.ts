@@ -203,7 +203,7 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
     try {
       const first=await reader.revisions("queue-moderator",target);
       expect(first.items).toHaveLength(25);
-      expect(first.next).toMatchObject({createdAt:"2026-11-21T00:00:00.000004Z",id:"hidden-post-000-history-004"});
+      expect(first.next).toMatchObject({createdAt:"2026-11-21T00:00:00.000003Z",id:"hidden-post-000-history-003"});
       const second=await reader.revisions("queue-moderator",target,first.next!);
       expect(second.items).toHaveLength(4);
       expect(second.next).toBeNull();

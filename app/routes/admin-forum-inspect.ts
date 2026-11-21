@@ -26,6 +26,11 @@ export async function loader({ request, params, context }: {
   for (const [key, value] of new URL(request.url).searchParams) {
     if (key !== ".data" && key !== "_routes") query.append(key, value);
   }
+  // Resolve independent history admission before history-cursor validation.
+  if((query.has("revisions")||query.has("beforeRevisionAt")||query.has("beforeRevisionId"))
+    &&!access.canReadPostHistory)throw new Response("Forbidden",{
+    status:403,headers:hiddenQueuePrivateHeaders,
+  });
   const {target,includeRevisions,before}=hiddenInspectionQuery(topicId,query);
   if(includeRevisions&&!access.canReadPostHistory)throw new Response("Forbidden",{
     status:403,headers:hiddenQueuePrivateHeaders,

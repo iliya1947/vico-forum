@@ -117,6 +117,7 @@ describe("B6-B1 private current inspection resource",()=>{
     await denied(()=>noExtra.call("?postId=post-1&revisions=1"),403);
     expect(noExtra.inspect).not.toHaveBeenCalled();
     expect(noExtra.revisions).not.toHaveBeenCalled();
+    await denied(()=>noExtra.call("?postId=post-1&revisions=1&beforeRevisionAt=bogus"),403);
     const onlyExtra=env(["forum.post.history.read"]);
     await denied(()=>onlyExtra.call("?postId=post-1&revisions=1"),403);
     expect(onlyExtra.inspect).not.toHaveBeenCalled();
