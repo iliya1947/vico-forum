@@ -19,22 +19,21 @@
 5. `AGENTS.current.md` — неизменяемый эталон.
 6. `AGENTS.draft.md` — рабочий AGENTS draft.
 
-Старые reconstruction/proposal материалы не являются основанием для решений.
-
 ## User layer
 
 1. Исходные 55 правил классифицированы.
-2. Удалены только три подтверждённо избыточных смысла: old 17, 29, 44.
-3. 52 оставшихся guard'а структурно упакованы в 42 пункта.
-4. Применены 14 подтверждённых wording reductions в пунктах: 8, 9, 13, 18, 19, 23, 25, 26, 27, 28, 30, 35, 37, 38.
-5. Semantic diff: `research/user-42-wording-semantic-diff.md`.
-6. Объём draft: 1143 → 1046 whitespace words.
-7. Количество пунктов осталось 42, semantic guards — 52.
-
-Исправление отчётности: в предыдущем сообщении разработчику ошибочно было указано 1408 слов; фактический объём до wording reduction — 1143.
+2. Удалены только old 17, 29, 44 как подтверждённо избыточные.
+3. 52 оставшихся guard'а упакованы в 42 пункта.
+4. Применены 14 подтверждённых wording reductions.
+5. Выполнена current-vs-draft semantic coverage: `research/user-current-vs-draft-coverage.md`.
+6. Из 15 действующих current rules:
+   - 14 сохраняются полностью;
+   - current 8 сохраняется только частично.
+7. Regression: current 8 требует, чтобы любой вывод делался только из установленных фактов и условий; draft 8 применяет этот strict gate только к категорическому выводу.
+8. Поэтому текущий User draft пока нельзя считать strict semantic superset current.
 
 Проверяющий: не назначен.
 
-Блокер: нет.
+Блокер: одна установленная semantic regression в draft rule 8.
 
-Следующий переход: выполнить current-vs-draft semantic coverage User layer — проверить сохранность всех 15 действующих current-смыслов и отдельно перечислить новые guards draft.
+Следующий переход: локально исправить только draft rule 8 так, чтобы восстановить полный смысл current 8 и при этом сохранить новые guards uncertainty/hidden premises/confidence propagation; затем повторить coverage current 1–15.
