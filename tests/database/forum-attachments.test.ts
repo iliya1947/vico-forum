@@ -484,7 +484,7 @@ describe("forum attachment lifecycle foundation", () => {
       [postId],
     );
     expect(await readEvidence()).toEqual(before);
-    const remove = vi.fn(async (_objectKey: string) => {});
+    const remove = vi.fn(async (objectKey: string) => { void objectKey; });
     await new ForumAttachmentCleanup(drizzle(client),{delete:remove}).runOnce();
     expect(remove).not.toHaveBeenCalledWith(asset.objectKey);
     expect((await client.query(
