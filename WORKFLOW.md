@@ -2,11 +2,13 @@
 
 ## Активный этап
 
-**Moderation visibility B6-A — Лира. A1 completed, STOP before A2.** Мира дала B5 bounded PASS по [#367](https://github.com/iliya1947/vico-forum/pull/367) exact `a2269fb0294feaccb433e76b66e800f3e869658d`; owner разрешил **только B6-A** ([#342 comment](https://github.com/iliya1947/vico-forum/pull/342#issuecomment-7067233890)). Stacked [Draft #370](https://github.com/iliya1947/vico-forum/pull/370), base = B5 branch, first implementation head `1a886f979cf1c0aeddc002f35bfd83a5c8a890de` (1 commit / 4 files vs B5); B1–B5 stacked Draft/unmerged.
+**Moderation visibility B6-A — Лира. A1/A2 completed, STOP before A3.** B5 #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d` received Mira bounded PASS. Owner authorized **B6-A only**. [Stacked Draft #370](https://github.com/iliya1947/vico-forum/pull/370) exact `07eb98e86a1794bdbc623c7aecbb8c6aa628578b`, unchanged B5 base; 3 B6 commits / 12 scoped files / behind 0. B1–B5 remain Draft/unmerged.
 
-**B6-A1 delivered:** отдельный private hidden topic/post PostgreSQL reader и per-read permission `forum.content.visibility.manage` + active account; Worker использует существующий effective authorization с AP-10 admin.forum restriction. 25+lookahead, SQL cursor DESC changed_at/id, topicHidden/parentUnavailable для поста, никакого hidden body/revision/asset. Приватный request context выдаёт neutral 401/403/503 и `private,no-store`. Статическая проверка 11/11 PASS; **исполняемые PostgreSQL/Vitest/CI/acceptance пока не выполнялись**.
+**A1:** separate private PostgreSQL hidden topic/post reader with effective `forum.content.visibility.manage` + active account per-read, AP-10-effective Worker authorization, 25+lookahead ordered query, effective parent/topic private projection, neutral private no-store errors.
 
-**Лира STOP после A1.** Следующая owner `...` → B6-A2: маршрут `/:locale/admin/forum/content`, строгий bounded URL-query/cursor, private UI и headers/error; затем STOP перед B6-A3 (PG/route/auth/revoke/AP-10/outage acceptance + exact-head checks). После полного B6-A author PASS — Мира bounded checkpoint. B6-B/inspector/revision history/private assets/B7/merge/deploy запрещены.
+**A2:** route `/:locale/admin/forum/content`, current capability check before strict application query `kind` plus complete bounded canonical `beforeChangedAt/beforeId` pair. Hidden-only non-source UI, topic/post tabs, pagination, discoverability limited to `canManageVisibility`, EN/RU/HE canonical labels/manual fingerprints, document/data/error `private,no-store`. A2 8-file/two-commit diff over A1; static source+scope checks passed. **22 current-head GitHub checks registered but pending as of last inspection; no runtime PG/Vitest/CI PASS or whole B6-A author PASS claimed.**
+
+**Лира STOP after A2.** Next owner `...` = **B6-A3**: targeted PG and route/security checks for positive/negative grants, AP-10/revoke, availability/unknown error, strict cursor 25+1 and parent projection, EN/RU/HE/no-store. Verify running check-runs, address only confirmed current B6-A findings and obtain new exact-head applicable CI/acceptance after tests. Then STOP → Mira B6-A bounded checkpoint. B6-B/inspector/history/private assets/B7/merge/deploy excluded.
 
 ## Baseline
 
@@ -102,11 +104,12 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B6-A — AUTHORIZED; A1 complete
+## Moderation visibility B6-A — AUTHORIZED; A1/A2 complete, STOP
 
-- Owner scope unchanged: guarded private queue at `/:locale/admin/forum/content`; topic/post kind, 25+1, strict descending `(changed_at,id)` cursor, effective-parent status, fresh visibility-management auth, AP-10, dynamic deny/revoke, neutral private no-store errors. No inspector/revisions/private assets/Restore/B7.
-- **A1 complete:** [Draft #370](https://github.com/iliya1947/vico-forum/pull/370) exact `1a886f979cf1c0aeddc002f35bfd83a5c8a890de` over B5 exact `a2269fb0294feaccb433e76b66e800f3e869658d`. Private `PostgresHiddenQueueReader` uses effective permission `forum.content.visibility.manage`, active-account admission, parameterized hidden-only queries bounded 26, strict row-order fields and typed private-only projection. Hyperdrive wrapper fails closed; Worker wires AP-10-filtered current authorization into separate reader context. One 4-file commit; GitHub scoped static 11/11 PASS. **Not runtime-verified.**
-- **STOP before A2:** next `...` adds route and strict canonical cursor parsing/presentation/private no-store, no inspector/history/assets/actions. A3 on later owner continuation covers targeted PG/route/authorization tests, whole B6-A exact-head CI/connected acceptance, then STOP → Mira bounded checkpoint.
+- Owner scope unchanged: private queue with fresh `forum.content.visibility.manage`/AP-10, topic/post filter, 25+1 strict `(changed_at,id)` cursor, hidden parent/topic status and `private,no-store` across document/.data/errors. Full inspector, revisions, private assets, B7 Restore/actions out of bounds.
+- **A1:** `1a886f979cf1c0aeddc002f35bfd83a5c8a890de` (one 4-file commit). Private PostgreSQL capability + Worker wiring, static PASS.
+- **A2:** current exact `07eb98e86a1794bdbc623c7aecbb8c6aa628578b` (2 more commits; 8 additional files; total 3 commits / 12 B6 files). Route `admin/forum/content`; fresh admission before strict app-only query; default topic or exact post filter, complete `beforeChangedAt/beforeId` ISOms ID cursor pair, unknown/duplicate reject, `.data/_routes` only transport. Server-rendered own private queue UI, no hidden source or public hidden links; controlled admin link, EN/RU/HE canonical/manual review fingerprints. Source/compare validation PASS. **22 current SHA check-runs registered and not yet complete. No author B6-A PASS.**
+- **STOP before A3:** next `...` authorizes only targeted PostgreSQL and route/permission/revoke/AP-10/outage/pagination/parent/source-safe regression tests and final exact-head applicable CI. After full B6-A author PASS → Mira bounded checkpoint; no B6-B/B7/merge.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 
