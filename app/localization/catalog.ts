@@ -1607,6 +1607,7 @@ export const canonicalEnglishCatalog = {
     personalFiltersTopics: message("personalFiltersTopics", "Muted topics", "Tab title for private muted-topic list."),
     personalFiltersUsers: message("personalFiltersUsers", "Blocked users", "Tab title for private blocked-user list."),
     personalFiltersEmptyTopics: message("personalFiltersEmptyTopics", "You have not muted any topics.", "Empty muted-topic list."),
+    personalFiltersUnavailableTopic: message("personalFiltersUnavailableTopic", "Topic unavailable", "Neutral label for a hidden or missing target in the user's own muted-topic list."),
     personalFiltersEmptyUsers: message("personalFiltersEmptyUsers", "You have not blocked any users.", "Empty blocked-user list."),
     personalFiltersEmptyPage: message("personalFiltersEmptyPage", "No older filters on this page.", "Empty older keyset page in private filters."),
     personalFiltersList: message("personalFiltersList", "Personal filters list", "Accessible label of private personal filters list."),
