@@ -11,7 +11,7 @@ Moderation visibility B1 #355, B2 #357, B3 #359, B4 #365 имеют Mira bounded
 - `7493a269…`: `checks` failed on 2 ESLint assignments in inbox PG tests; corrected `a1dcded5…`.
 - `a1dcded5…`: lint SUCCESS, typecheck failed on 3 RU/HE translation entries/fingerprints and 2 stale test variables; corrected `c95dbdcf…`. EN/RU/HE layout expectation fixed at `5520c507…`.
 - `5520c507…`: **17/18 SUCCESS** (including `checks`, Watch, Bookmarks, Personal Mute/Block, browser suites); `database` was still running. Independently inspected two earlier complete PostgreSQL failures: 35 failing out of 1613 tests. B5 PG fixtures used raw `is_hidden` UPDATE without `visibility_version`/`visibility_changed_at`, violating actual schema constraints; lock-order tests also failed/timed out.
-- Current `998d7a964e414e24121dfd9fa1b5f979912f0acc` fixes exactly 24 Hide/Restore SQL operations in 5 test files via one atomic commit; no production code, schema, dependencies or permissions changed. All **18 current-head check-runs registered** but final results pending. **Do not mark author B5 PASS or reuse old-head successes.**
+- Current `998d7a964e414e24121dfd9fa1b5f979912f0acc` fixes exactly 24 Hide/Restore SQL operations in 5 test files via one atomic commit; no production code, schema, dependencies or permissions changed. Current exact head: **17/18 check-runs SUCCESS**, including `checks` lint/typecheck/unit/build and a successful single-job rerun of `attachments_browser` (first attempt failed early on `editorOperationId` length, with no code changes). Sole `database` check **in progress**. **Full B5 author/PG PASS not established.**
 
 ## Next
 
