@@ -2,18 +2,68 @@ name: CI
 
 on:
   pull_request:
+    types:
+      - labeled
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number whose exact head should be tested
+        required: true
+        type: number
+      head_sha:
+        description: Expected exact PR head SHA
+        required: true
+        type: string
+      base_ref:
+        description: Expected PR base branch
+        required: true
+        type: string
 
 permissions:
   actions: read
   contents: read
+  pull-requests: read
 
 jobs:
   checks:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:ci'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Resolve dispatched PR context
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatch-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.head_sha }}
+          EXPECTED_BASE_REF: ${{ inputs.base_ref }}
+        run: |
+          pr_json="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
+          state="$(jq -r '.state' <<<"$pr_json")"
+          head_sha="$(jq -r '.head.sha' <<<"$pr_json")"
+          base_ref="$(jq -r '.base.ref' <<<"$pr_json")"
+          if [ "$state" != "open" ] || [ -z "$head_sha" ] || [ "$head_sha" = "null" ] || [ -z "$base_ref" ] || [ "$base_ref" = "null" ]; then
+            echo "Could not resolve an open PR context for #$PR_NUMBER" >&2
+            exit 1
+          fi
+          if [ "$head_sha" != "$EXPECTED_HEAD_SHA" ] || [ "$base_ref" != "$EXPECTED_BASE_REF" ]; then
+            echo "PR #$PR_NUMBER moved: expected $EXPECTED_HEAD_SHA on $EXPECTED_BASE_REF, got $head_sha on $base_ref" >&2
+            exit 1
+          fi
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$base_ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout pull request event
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
+      - name: Checkout dispatched PR head
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.dispatch-pr.outputs.head_sha }}
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 12.3.4
@@ -23,6 +73,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Protect accepted migration history
+        env:
+          VICO_CI_BASE_REF: ${{ github.event_name == 'workflow_dispatch' && steps.dispatch-pr.outputs.base_ref || github.base_ref }}
         run: |
           node --test .github/scripts/migration-history.test.mjs
           node --test .github/scripts/production-privileges.test.mjs
@@ -42,7 +94,7 @@ jobs:
           node --test .github/scripts/production-migration-contract.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node --test .github/scripts/verify-production-migration-identity.test.mjs
-          node .github/scripts/verify-migration-history.mjs
+          GITHUB_BASE_REF="$VICO_CI_BASE_REF" node .github/scripts/verify-migration-history.mjs
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -64,6 +116,7 @@ jobs:
             exit 1
           fi
   database:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:ci'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -84,7 +137,38 @@ jobs:
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_test
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Resolve dispatched PR context
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatch-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.head_sha }}
+          EXPECTED_BASE_REF: ${{ inputs.base_ref }}
+        run: |
+          pr_json="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
+          state="$(jq -r '.state' <<<"$pr_json")"
+          head_sha="$(jq -r '.head.sha' <<<"$pr_json")"
+          base_ref="$(jq -r '.base.ref' <<<"$pr_json")"
+          if [ "$state" != "open" ] || [ -z "$head_sha" ] || [ "$head_sha" = "null" ] || [ -z "$base_ref" ] || [ "$base_ref" = "null" ]; then
+            echo "Could not resolve an open PR context for #$PR_NUMBER" >&2
+            exit 1
+          fi
+          if [ "$head_sha" != "$EXPECTED_HEAD_SHA" ] || [ "$base_ref" != "$EXPECTED_BASE_REF" ]; then
+            echo "PR #$PR_NUMBER moved: expected $EXPECTED_HEAD_SHA on $EXPECTED_BASE_REF, got $head_sha on $base_ref" >&2
+            exit 1
+          fi
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "base_ref=$base_ref" >> "$GITHUB_OUTPUT"
+      - name: Checkout pull request event
+        if: github.event_name != 'workflow_dispatch'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Checkout dispatched PR head
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ steps.dispatch-pr.outputs.head_sha }}
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 12.3.4

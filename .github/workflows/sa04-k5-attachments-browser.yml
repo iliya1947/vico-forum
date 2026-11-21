@@ -2,6 +2,8 @@ name: SA04-K5 connected attachment Worker R2 Chromium acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/sa04-k5-attachments-browser.yml"
@@ -20,11 +22,14 @@ on:
       - "workers/attachment-storage.ts"
       - "workers/private-failure-response.ts"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   attachments_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     services:
@@ -46,7 +51,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa04_k5_attachments_test
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa04_k5_attachments_test
       CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_sa04_k5_attachments_test
-      IMPLEMENTATION_SHA: ${{ github.event.pull_request.head.sha }}
+      IMPLEMENTATION_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
       PLAYWRIGHT_CHANNEL: chrome
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
