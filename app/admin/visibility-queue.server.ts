@@ -2,7 +2,7 @@ import { createContext, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import {
   HiddenQueueForbiddenError, HiddenQueueUnavailableError,
-  type HiddenQueueQuery, type HiddenQueueReader,
+  type HiddenQueueQuery, type HiddenQueueReader, type HiddenInspectionTarget,
 } from "../../db/private-visibility-queue";
 
 export const hiddenQueueContext = createContext<HiddenQueueReader>();
@@ -26,6 +26,21 @@ export async function readHiddenQueue(context: RouterContextProvider, query: Hid
       throw new Response("Unavailable", { status: 503, headers: hiddenQueuePrivateHeaders });
     }
     // Never expose unclassified private reader failures to the renderer.
+    throw new Response("Unavailable", { status: 503, headers: hiddenQueuePrivateHeaders });
+  }
+}
+
+/** Never allow a general Admin/History permission to substitute for this reader. */
+export async function readHiddenInspection(context: RouterContextProvider, target: HiddenInspectionTarget) {
+  const session = authSessionForRequest(context);
+  if (!session) throw new Response("Unauthorized", { status: 401, headers: hiddenQueuePrivateHeaders });
+  try {
+    return await context.get(hiddenQueueContext).inspect(session.user.id, target);
+  } catch (error) {
+    if (error instanceof HiddenQueueForbiddenError) {
+      throw new Response("Forbidden", { status: 403, headers: hiddenQueuePrivateHeaders });
+    }
+    // Missing History event, SQL errors and unclassified failures are private 503.
     throw new Response("Unavailable", { status: 503, headers: hiddenQueuePrivateHeaders });
   }
 }

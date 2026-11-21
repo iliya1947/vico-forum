@@ -1,5 +1,5 @@
 import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
-import type { HiddenQueueCursor, HiddenQueueKind, HiddenQueueQuery } from "../../db/private-visibility-queue";
+import type { HiddenQueueCursor, HiddenQueueKind, HiddenQueueQuery, HiddenInspectionTarget } from "../../db/private-visibility-queue";
 
 const UTC_MILLIS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
 const APPLICATION_KEYS = new Set(["kind", "beforeChangedAt", "beforeId"]);
@@ -38,4 +38,28 @@ export function hiddenQueuePath(
     params.set("beforeId", before.id);
   }
   return `${routing.admin.forum(locale)}/content?${params}`;
+}
+
+/** This route is a private inspection resource, not an ordinary Admin topic read. */
+export function hiddenInspectionPath(
+  locale: string, target: HiddenInspectionTarget,
+  routing: AdministrativeRouting = defaultAdministrativeRouting,
+): string {
+  const path = routing.admin.topic(locale, target.topicId) + "/inspect";
+  return target.kind === "post" ? path + "?" + new URLSearchParams({ postId: target.postId }) : path;
+}
+
+/** Parse after capability admission to prevent denied actors from using query validation as an oracle. */
+export function hiddenInspectionTarget(topicId: string, params: URLSearchParams): HiddenInspectionTarget {
+  const invalid = (): never => {
+    throw new Response("Invalid inspection query", {
+      status: 400, headers: { "Cache-Control": "private, no-store" },
+    });
+  };
+  if ([...params.keys()].some(key => key !== "postId") || params.getAll("postId").length > 1) return invalid();
+  const postId = params.get("postId");
+  if (postId === null) return { kind: "topic", topicId };
+  if (!postId || postId !== postId.trim() || new TextEncoder().encode(postId).length > 2048
+    || [...postId].some(char => char.codePointAt(0)! < 32 || char.codePointAt(0) === 127)) return invalid();
+  return { kind: "post", topicId, postId };
 }
