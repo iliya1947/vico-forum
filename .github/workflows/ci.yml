@@ -10,6 +10,14 @@ on:
         description: Pull request number whose exact head should be tested
         required: true
         type: number
+      head_sha:
+        description: Expected exact PR head SHA
+        required: true
+        type: string
+      base_ref:
+        description: Expected PR base branch
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -28,6 +36,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.head_sha }}
+          EXPECTED_BASE_REF: ${{ inputs.base_ref }}
         run: |
           pr_json="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
           state="$(jq -r '.state' <<<"$pr_json")"
@@ -35,6 +45,10 @@ jobs:
           base_ref="$(jq -r '.base.ref' <<<"$pr_json")"
           if [ "$state" != "open" ] || [ -z "$head_sha" ] || [ "$head_sha" = "null" ] || [ -z "$base_ref" ] || [ "$base_ref" = "null" ]; then
             echo "Could not resolve an open PR context for #$PR_NUMBER" >&2
+            exit 1
+          fi
+          if [ "$head_sha" != "$EXPECTED_HEAD_SHA" ] || [ "$base_ref" != "$EXPECTED_BASE_REF" ]; then
+            echo "PR #$PR_NUMBER moved: expected $EXPECTED_HEAD_SHA on $EXPECTED_BASE_REF, got $head_sha on $base_ref" >&2
             exit 1
           fi
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
@@ -130,6 +144,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.head_sha }}
+          EXPECTED_BASE_REF: ${{ inputs.base_ref }}
         run: |
           pr_json="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER")"
           state="$(jq -r '.state' <<<"$pr_json")"
@@ -137,6 +153,10 @@ jobs:
           base_ref="$(jq -r '.base.ref' <<<"$pr_json")"
           if [ "$state" != "open" ] || [ -z "$head_sha" ] || [ "$head_sha" = "null" ] || [ -z "$base_ref" ] || [ "$base_ref" = "null" ]; then
             echo "Could not resolve an open PR context for #$PR_NUMBER" >&2
+            exit 1
+          fi
+          if [ "$head_sha" != "$EXPECTED_HEAD_SHA" ] || [ "$base_ref" != "$EXPECTED_BASE_REF" ]; then
+            echo "PR #$PR_NUMBER moved: expected $EXPECTED_HEAD_SHA on $EXPECTED_BASE_REF, got $head_sha on $base_ref" >&2
             exit 1
           fi
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
