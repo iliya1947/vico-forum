@@ -266,7 +266,9 @@ Test infrastructure на этой boundary предоставляет тольк
 Это подтверждено исходником release commit React Router 8.3.1 (`da2a0f0`):
 https://github.com/remix-run/react-router/blob/da2a0f0/packages/react-router-dev/config/routes.ts
 
-Следовательно, для preview не нужен второй список путей. Нужен только общий адаптер `RouteConfigEntry -> RouteObject`, который рекурсивно сохраняет matching-поля и связывает `file` с настоящим production route module.
+Следовательно, для preview не нужен второй список путей. Нужен только общий адаптер `RouteConfigEntry -> RouteObject`, который рекурсивно сохраняет matching-поля, связывает `file` с настоящим production route module **и сохраняет Framework route identity**.
+
+Это обязательная деталь, пропущенная в первоначальной формулировке подэтапа 3. В React Router 8.3.1 Framework manifest вычисляет id как `entry.id ?? normalize(file-without-extension)`. Несколько текущих route `meta()` уже ищут `match.id === "routes/locale-boundary"`, поэтому нельзя оставлять генерацию Data Router id на усмотрение `createMemoryRouter/createBrowserRouter`. Adapter обязан воспроизводить production id derivation точно.
 
 Текущий `app/ui-preview/preview-app.tsx` как раз делает то, от чего нужно уйти: вручную создаёт отдельный `createMemoryRouter([...])` с повторно записанными `/:locale/...` paths и вручную выбранными views.
 
@@ -341,3 +343,145 @@ Preview не хранит собственные URL patterns, route/view switch
 Это убирает главный structural drift нынешнего `preview-app.tsx`: новый production route автоматически попадает в preview routing из `app/routes.ts`.
 
 Следующий отдельный вопрос: как **тот же Data Router route tree** использовать как local application transport для прямых browser `fetch()` (`/api/auth/*`, attachments, mentions, presence, complaint activity, Owner deactivation) без отдельного endpoint dispatcher и без сетевого запроса к GitHub Pages.
+
+
+## 11. Local application transport для программируемых browser requests
+
+Подэтап 4 проверил, можно ли обслуживать browser-side application HTTP без отдельного preview endpoint dispatcher.
+
+### 11.1. React Router 8.3.1 уже имеет нужный request executor
+
+В точной версии React Router 8.3.1 публичный `createStaticHandler(routes)` экспортирует `queryRoute(request, options)`.
+
+Исходник release commit `da2a0f0` прямо описывает `queryRoute()` как механизм для targeted route requests / resource route requests:
+
+- если `routeId` не указан, target route выбирается по `request.url`;
+- для mutation method вызывается action;
+- для read request вызывается loader;
+- можно передать `requestContext`;
+- через `generateMiddlewareResponse` выполняется route middleware;
+- raw `Response` сохраняется, а non-Response loader/action result может быть преобразован в HTTP response.
+
+Источник:
+https://github.com/remix-run/react-router/blob/da2a0f0/packages/react-router/lib/router/router.ts
+
+Production Framework runtime 8.3.1 сам использует этот путь для resource routes через `staticHandler.queryRoute()` в `handleResourceRequest()`:
+https://github.com/remix-run/react-router/blob/da2a0f0/packages/react-router/lib/server-runtime/server.ts
+
+Следствие: preview не нужен switch по `/api/auth`, `/mentions`, `/presence` и т. п. Нужен один generic dispatcher над тем же route config/module registry.
+
+Концептуальная функция:
+
+`Request -> createPreviewRequestContext() -> staticHandler.queryRoute() -> Response`.
+
+Это второй generated projection того же production route source, а не второй route table:
+
+- interactive Data Router projection использует production component/loader/action exports и Framework-compatible `clientAction` composition;
+- resource transport projection использует те же route IDs/paths/modules, но raw production `loader/action/middleware`, как server/resource request.
+
+Обе проекции строятся автоматически из одного `app/routes.ts` и одного module registry.
+
+### 11.2. Context и middleware сохраняются
+
+Каждый local HTTP request должен получать свежий `RouterContextProvider` через тот же preview context factory, который используется Data Router `getContext()`.
+
+Общее in-memory состояние при этом живёт за context adapters и сохраняется между запросами; request-scoped locale/session/authorization state остаётся request-scoped.
+
+Для locale resource routes недостаточно вызвать `queryRoute()` без options: React Router 8.3.1 запускает server middleware в static handler только когда передан `generateMiddlewareResponse`. Preview dispatcher должен использовать этот публичный option, иначе `locale-boundary.tsx` не установит `localeContext`.
+
+Unknown internal error должен превращаться в safe 500 `Response`, а не утекать как rejected JavaScript promise. Это повторяет общую семантику production `handleResourceRequest()`; endpoint-specific error mapping не нужен.
+
+### 11.3. Один fetch boundary покрывает текущие direct fetch calls и Better Auth
+
+В текущем non-test browser code прямой `fetch()` используется в пяти application местах:
+
+1. attachment cleanup `DELETE /api/attachments`;
+2. mention suggestions `GET /:locale/mentions`;
+3. presence heartbeat `POST /:locale/presence`;
+4. complaint reviewer activity `POST /:locale/attention/complaints/:caseId/activity`;
+5. Owner deactivation `POST /:locale/users/:userId/owner/deactivate`.
+
+Все эти URL уже зарегистрированы в production `app/routes.ts`.
+
+Preview может установить один `fetch` wrapper:
+
+- same-origin URL, который матчится production route tree -> local dispatcher;
+- всё остальное -> original browser `fetch`.
+
+Так внешний network traffic не перехватывается случайно и список endpoint'ов не дублируется.
+
+Better Auth 1.7.7 также укладывается в эту boundary. Exact source `v1.7.7` показывает, что `createAuthClient()` без custom options использует base URL `/api/auth` и передаёт текущий global `fetch` как `customFetchImpl`:
+https://github.com/better-auth/better-auth/blob/v1.7.7/packages/better-auth/src/client/config.ts
+
+Отсюда важен порядок инициализации: local fetch transport должен быть установлен **до** первого выполнения production `app/auth/auth-client.ts`, потому что там `createAuthClient()` вызывается на module top-level и захватывает текущий `fetch`.
+
+Предыдущий выбор lazy `import.meta.glob` для production route modules это позволяет: preview runtime сначала устанавливает transport, затем route modules начинают lazy-evaluate.
+
+### 11.4. Attachment upload использует XMLHttpRequest
+
+Проверка current code обнаружила дополнительный текущий browser transport:
+
+`app/forum/editor-attachments.tsx` отправляет upload через `XMLHttpRequest`, потому что UI использует `upload.onprogress`.
+
+Используемая поверхность XHR узкая:
+
+- `open("POST", "/api/attachments")`;
+- request headers;
+- `send(File)`;
+- `abort()`;
+- `upload.onprogress`;
+- `status`;
+- `responseText`;
+- `onload/onerror/onabort`.
+
+Поэтому production editor переписывать на fetch ради preview не требуется. Preview-only XHR adapter может реализовать именно этот используемый контракт поверх того же `dispatchLocalRequest(Request)`.
+
+Так attachment upload продолжает попадать в настоящий production `routes/attachment-upload.ts` action и test bucket/store adapters. В in-memory preview upload progress может быть deterministic; Pages всё равно не является network-performance acceptance.
+
+Других current browser transport API (`WebSocket`, `EventSource`, `sendBeacon`) в non-test application code не обнаружено.
+
+### 11.5. Почему не Service Worker
+
+Service Worker технически умеет перехватывать и fetch/XHR, и browser-managed subresource requests. Но для этой задачи он хуже page-local transport:
+
+1. service worker живёт в отдельном execution context, поэтому единую in-memory test DB пришлось бы переносить в worker либо строить message bridge;
+2. production URLs root-absolute (`/api/*`, `/:locale/*`), а Pages preview развёрнут как project artifact; service worker по умолчанию контролирует только свой directory scope. Более широкий scope требует server response header `Service-Worker-Allowed`:
+   https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Service-Worker-Allowed
+3. это добавляет lifecycle/cache/scope сложность в лёгкий reversible visual preview.
+
+Поэтому Service Worker не выбран как current architecture.
+
+## 12. Отдельная граница: native attachment reads
+
+Есть один класс запросов, который page-level `fetch`/XHR adapters не перехватывают:
+
+- `ForumAttachmentDisplay` использует обычные `<img src="/api/attachments/file/...">` и `<a href="/api/attachments/file/...">`;
+- inline attachment presentation также получает тот же production URL.
+
+Эти browser-managed resource requests не проходят через переопределённый `window.fetch`.
+
+Это **не опровергает local resource-route transport** для application behavior, но означает, что полностью рабочий raster preview/download на static Pages требует отдельного решения.
+
+На текущем Stage не оправдано тащить Service Worker только ради этой поверхности или менять production attachment backend. Минимальные варианты для следующего концептуального решения:
+
+1. оставить native attachment byte delivery честным ограничением Pages-preview, сохранив upload/metadata/product actions через local transport;
+2. добавить узкую presentation URL boundary только для attachment bytes, если owner хочет, чтобы raster/open/download реально работали в Pages.
+
+До выбора между этими двумя вариантами нельзя утверждать, что static preview полностью эмулирует R2 delivery.
+
+## 13. Итог четвёртого подэтапа
+
+Для **всех текущих программируемых application HTTP requests** отдельный preview backend и endpoint dispatcher не нужны.
+
+Целевая схема:
+
+`same production route config/modules -> createStaticHandler -> dispatchLocalRequest(Request)`
+
+и поверх неё:
+
+- один same-origin production-route-aware `fetch` wrapper;
+- один узкий preview XHR adapter для attachment upload.
+
+Это сохраняет production resource loaders/actions, locale middleware, auth route и request context, а fake infrastructure остаётся только capability/state layer.
+
+Открытым остаётся только native attachment byte delivery через `<img>/<a>`; это отдельная presentation/browser boundary, а не причина возвращаться к второму backend или ручному route dispatcher.
