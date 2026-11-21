@@ -1,17 +1,15 @@
 # agents/lira.md — рабочая память Лиры по #342
 
-## Активное состояние
+## Текущее назначение — STOP → Мира B4 checkpoint
 
-**B4-A и B4-B реализованы в Draft #365; STOP до owner `...` на B4-C.**
+B1 #355 / B2 #357 / B3 #359 (Mira bounded PASS) remain Draft/unmerged. B4 [Draft #365](https://github.com/iliya1947/vico-forum/pull/365) on B3 `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`, stable exact **`97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`**. **Лира B4 author self-check PASS.**
 
-Stack: B1 #355 / B2 #357 / B3 #359 (Мира bounded PASS), все Draft/unmerged. B4 [#365](https://github.com/iliya1947/vico-forum/pull/365) base B3 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`, текущий exact **`239b883c515b3f647077198f85e27a2be30d911a`**.
+## B4 delivered scope / evidence
 
-## Подтверждённые изменения B4
+- One production SQL reader (`db/forum-attachments.ts::readPublishedAttachment`): exact publication membership plus `post.isHidden=false` and `topic.isHidden=false` before public `bucket.get`. Existing download/inline/text and private draft/Complaint paths unchanged.
+- 3 test files: real PostgreSQL+HTTP neutral hidden/missing/no bucket GET, shared visible and owner draft, evidence-only Case ref survives Hide/cleanup/Restore; title and body accepted tasks finish private revision-bound translation after separate PostgreSQL Hide commit during provider execution, new plans denied without effects and Restore no additional work. Inherited B2 planning gates and PG lock race barriers unchanged.
+- [Final CI #44909767945](https://github.com/iliya1947/vico-forum/actions/runs/44909767945) **SUCCESS**: unit **2782/2782**, PostgreSQL **1604/1604**; lint/typecheck/build/smoke pass. Applicable exact-head workflows **9/9 SUCCESS**, SA04-K5 Worker/R2/Chromium, SA07, SA08 included. Four-file B4 diff checked against accepted B3/plan; no confirmed B4 blocker. No production rollout.
 
-- B4-A: `db/forum-attachments.ts` добавлена SQL topic+post visibility проверка до R2 `get`; `tests/database/forum-attachments.test.ts` — PG+HTTP no-bucket для hidden/missing/default/inline/text, visible shared ref, private draft retention.
-- B4-B: B2 title/body planner и executor gates уже реализованы, не изменены. `tests/database/content-topic-title-execution.test.ts` и `tests/database/content-post-body-task-planning.test.ts` добавляют отдельные committed PG Hide **во время provider window** принятой title/body задачи, отказ новых hidden plans, private completion, отсутствие новых task/budget/revision/provider/generation после Restore. В body Hide flags topic/post фиксируются вместе; проверка partial Restore сохраняет no-new-work.
-- Проверен scope: 4 файла в локальном diff #365 (2 production/test B4-A + 2 test-only B4-B); targeted source checks PASS. **Реальные новые PostgreSQL/Vitest/Typecheck и CI НЕ выполнялись; B4 author PASS пока нет.** Прежние B2 реальные PG lock races уже покрывают обе очередности new planning × Hide/Restore.
+## Next
 
-## Следующая команда `...`: B4-C only
-
-Проверить сохранность shared ref/draft/evidence, закрыть только реальные пробелы B4, затем **один применимый final exact-head CI/check set и author B4 self-check** перед fresh Mira coordinator checkpoint. Не выполнять B5–B9, Stage6, merge, UI, private assets routes (B6), unrelated refactor. После B4-C — STOP.
+**Мира** independently checks bounded B4 on stable `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Only after coordinator PASS and owner `...` may Лира begin B5. Do not start B5–B9, merge, private moderator asset route (B6), independent Leva review or Stage6. **Лира STOP.**
