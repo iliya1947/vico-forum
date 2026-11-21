@@ -157,3 +157,8 @@ Reviewed #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d` against accepted 
 ## 2026-11-21 — B6-A coordinator checkpoint PASS
 
 Reviewed #370 exact `91cb332d6acf60ebf572f57582c13acfeab8eada` against accepted B6-A. Private queue/admission/cursor/privacy contracts pass; timestamp precision is schema-level millisecond so cursor ordering is stable. Existing admin-topic route stays public-safe. The ordinary admin section/category hidden-title/count leak was confirmed current-stage and its scoped correction is required for the guarded-private-surface invariant. 22/22 exact-head checks and 18/18 workflows green. No current-B6-A blocker. STOP before B6-B.
+
+
+## 2026-11-22 — B6-B coordinator checkpoint PASS
+
+Reviewed #370 local B6-A→B6-B diff on stable exact `51a9ebe03f16c438faae5bec99a5856287630958`: 12 commits / 17 files. Guarded inspector/current event, dual-capability hidden post revision history and exact-member private hidden attachment access match accepted B6. AP-10 applies to both visibility and post-history permissions; public/ordinary Admin/Complaint boundaries remain independent. Exact-head GitHub evidence independently verified: 22/22 check-runs and 18/18 workflows SUCCESS. No current-B6-B blocker. Lira bypassed explicit B6-B1/B2 STOP gates; process error logged, technical diff retained. Stop before B7 until owner continuation.
