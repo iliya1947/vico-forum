@@ -2,7 +2,7 @@ import { data, Link, useLoaderData, type HeadersArgs, type RouterContextProvider
 import { useTranslation } from "react-i18next";
 import { requireAdminAccess } from "../admin/access.server";
 import { AdminShell } from "../admin/shell";
-import { hiddenQueuePath, hiddenQueueQuery } from "../admin/visibility-queue-path";
+import { hiddenQueuePath, hiddenQueueQuery, hiddenInspectionPath } from "../admin/visibility-queue-path";
 import { hiddenQueuePrivateHeaders, readHiddenQueue } from "../admin/visibility-queue.server";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { ForumRouteError } from "../forum/ui";
@@ -51,7 +51,11 @@ export default function AdminHiddenContentRoute() {
       {page.items.length
         ? <ul className="admin-forum-objects">
           {page.items.map(item => <li key={item.kind + ":" + item.id}>
-            <h3><bdi>{item.id}</bdi></h3>
+            <h3><Link to={hiddenInspectionPath(locale,
+              item.kind==="topic"?{kind:"topic",topicId:item.topicId}:
+                {kind:"post",topicId:item.topicId,postId:item.id},routing)}>
+              {t("adminHiddenInspectorOpen")}: <bdi>{item.id}</bdi>
+            </Link></h3>
             <dl>
               <div><dt>{t("adminHiddenQueueChangedAt")}</dt>
                 <dd><time dateTime={item.changedAt}><bdi>{item.changedAt}</bdi></time></dd></div>
