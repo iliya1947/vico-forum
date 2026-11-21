@@ -238,7 +238,12 @@ export interface ForumNotificationPage {
 export type ForumNotificationTarget =
   | {kind:"complaint-decision";caseId:string}
   | {kind:"complaint-appeal-result";caseId:string;appealId:string}
-  | {kind:"reply"|"mention";topicId:string;postId:string};
+  | {kind:"reply"|"mention";topicId:string;postId:string}
+  | {kind:"unavailable"};
+
+export type ForumReplyNotificationTarget =
+  | {topicId:string;postId:string}
+  | {unavailable:true};
 
 export type ForumReplyNotificationSummary = {
   id: string; kind: "reply" | "mention"; createdAt: Date; readAt: Date | null;
@@ -2040,8 +2045,14 @@ export class DrizzleForumRepository {
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
       await assertActiveAccountForDrizzleMutation(tx, userId);
-      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null}>(sql`
-        select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",n.topic_id as "topicId",n.post_id as "postId"
+      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null;sourceVisible:boolean}>(sql`
+        select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",
+          n.topic_id as "topicId",n.post_id as "postId",
+          exists (
+            select 1 from forum_topics topic
+            join forum_posts source_post on source_post.topic_id=topic.id and source_post.id=n.post_id
+            where topic.id=n.topic_id and topic.is_hidden=false and source_post.is_hidden=false
+          ) as "sourceVisible"
         from forum_reply_notifications n
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id
         left join forum_complaint_appeals a on a.id=n.complaint_appeal_id
@@ -2059,8 +2070,10 @@ export class DrizzleForumRepository {
         await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
         return n.kind==="complaint-appeal-result"&&n.appealId?{kind:n.kind,caseId:n.caseId,appealId:n.appealId}:{kind:"complaint-decision" as const,caseId:n.caseId};
       }
-      if(!n.topicId||!n.postId)throw new ForumEntityNotFoundError("notification target missing");
+      // The source visibility probe is a plain MVCC read. Never acquire a
+      // topic/post lock after the actor and notification row locks.
       await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
+      if(!n.sourceVisible||!n.topicId||!n.postId)return {kind:"unavailable"};
       return {kind:n.kind,topicId:n.topicId,postId:n.postId};
     });
   }
@@ -2141,23 +2154,34 @@ export class DrizzleForumRepository {
   async markReplyNotificationRead(
     userId: string,
     notificationId: string,
-  ): Promise<{ topicId: string; postId: string }> {
+  ): Promise<ForumReplyNotificationTarget> {
     return this.database.transaction(async (tx) => {
       await assertActiveAccountForDrizzleMutation(tx, userId);
-      const [notification] = await tx
-        .update(forumReplyNotifications)
-        .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
-        .where(and(
-          eq(forumReplyNotifications.id, notificationId),
-          eq(forumReplyNotifications.recipientUserId, userId),
-          inArray(forumReplyNotifications.kind,["reply","mention"]),
-        ))
-        .returning({
-          topicId: forumReplyNotifications.topicId,
-          postId: forumReplyNotifications.postId,
-        });
-    if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
-    return {topicId:notification.topicId,postId:notification.postId};
+      // Same lock order as generic mark: account -> own notification.
+      // The correlated visibility check has no topic/post row lock.
+      const row = await tx.execute<{
+        topicId: string | null; postId: string | null; sourceVisible: boolean;
+      }>(sql`
+        select n.topic_id as "topicId",n.post_id as "postId",
+          exists (
+            select 1 from forum_topics topic
+            join forum_posts source_post on source_post.topic_id=topic.id and source_post.id=n.post_id
+            where topic.id=n.topic_id and topic.is_hidden=false and source_post.is_hidden=false
+          ) as "sourceVisible"
+        from forum_reply_notifications n
+        where n.id=${notificationId} and n.recipient_user_id=${userId}
+          and n.kind in ('reply','mention')
+        for update of n
+      `);
+      const notification = row.rows[0];
+      if (!notification) throw new ForumEntityNotFoundError("notification does not exist for user");
+      await tx.execute(sql`
+        update forum_reply_notifications set read_at=coalesce(read_at,now())
+        where id=${notificationId}
+      `);
+      if (!notification.sourceVisible || !notification.topicId || !notification.postId)
+        return { unavailable: true };
+      return { topicId: notification.topicId, postId: notification.postId };
     });
   }
 
