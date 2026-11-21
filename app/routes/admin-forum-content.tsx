@@ -60,7 +60,7 @@ export default function AdminHiddenContentRoute() {
                 <div><dt>{t("adminHiddenQueueTopicRef")}</dt><dd><bdi>{item.topicId}</bdi></dd></div>
                 {item.parentPostId ? <div><dt>{t("adminHiddenQueueParentRef")}</dt>
                   <dd><bdi>{item.parentPostId}</bdi></dd></div> : null}
-                <div><dt>{t("adminHiddenQueueParentRef")}</dt>
+                <div><dt>{t("adminHiddenQueueContextStatus")}</dt>
                   <dd>{t(item.parentUnavailable
                     ? "adminHiddenQueueParentUnavailable" : "adminHiddenQueueParentAvailable")}</dd></div>
               </> : null}

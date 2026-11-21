@@ -754,6 +754,7 @@ export const canonicalEnglishCatalog = {
     adminHiddenQueueVersion: message("adminHiddenQueueVersion", "Visibility version", "Private visibility moderation queue: visibility state version."),
     adminHiddenQueueTopicRef: message("adminHiddenQueueTopicRef", "Topic ID", "Private visibility moderation queue: containing topic identifier."),
     adminHiddenQueueParentRef: message("adminHiddenQueueParentRef", "Parent ID", "Private visibility moderation queue: direct parent message identifier."),
+    adminHiddenQueueContextStatus: message("adminHiddenQueueContextStatus", "Parent/topic status", "Private visibility moderation queue: effective parent and topic status label."),
     adminHiddenQueueParentUnavailable: message("adminHiddenQueueParentUnavailable", "Parent/topic unavailable", "Private visibility moderation queue: effective parent or topic unavailable indication."),
     adminHiddenQueueParentAvailable: message("adminHiddenQueueParentAvailable", "Parent/topic available", "Private visibility moderation queue: effective parent and topic availability indication."),
     adminForumCategories: message("adminForumCategories", "Categories", "Administrative category/section browsing: adminForumCategories."),
