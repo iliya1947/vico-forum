@@ -25,15 +25,13 @@
 2. Удалены только old 17, 29, 44 как подтверждённо избыточные.
 3. 52 оставшихся guard'а упакованы в 42 пункта.
 4. Применены 14 подтверждённых wording reductions.
-5. Выполнена current-vs-draft semantic coverage: `research/user-current-vs-draft-coverage.md`.
-6. Из 15 действующих current rules:
-   - 14 сохраняются полностью;
-   - current 8 сохраняется только частично.
-7. Regression: current 8 требует, чтобы любой вывод делался только из установленных фактов и условий; draft 8 применяет этот strict gate только к категорическому выводу.
-8. Поэтому текущий User draft пока нельзя считать strict semantic superset current.
+5. Установленная regression в draft rule 8 исправлена локально; изменился только rule 8.
+6. Повторный current-vs-draft coverage: `research/user-current-vs-draft-coverage-recheck.md`.
+7. Результат: **15/15 current rules FULL**, PARTIAL 0, LOST 0.
+8. На уровне User instructions текущий draft является semantic superset действующих current rules.
 
 Проверяющий: не назначен.
 
-Блокер: одна установленная semantic regression в draft rule 8.
+Блокер: нет.
 
-Следующий переход: локально исправить только draft rule 8 так, чтобы восстановить полный смысл current 8 и при этом сохранить новые guards uncertainty/hidden premises/confidence propagation; затем повторить coverage current 1–15.
+Следующий переход: перейти к `PROJECT_INSTRUCTIONS.current.md` vs `PROJECT_INSTRUCTIONS.draft.md` и User draft — определить, какие общие правила Project теперь дублируют User layer, а какие действительно должны остаться project-specific. На первом проходе только классификация, без изменения Project draft.
