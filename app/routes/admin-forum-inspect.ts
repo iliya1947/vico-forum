@@ -32,9 +32,6 @@ export async function loader({ request, params, context }: {
     status:403,headers:hiddenQueuePrivateHeaders,
   });
   const {target,includeRevisions,before}=hiddenInspectionQuery(topicId,query);
-  if(includeRevisions&&!access.canReadPostHistory)throw new Response("Forbidden",{
-    status:403,headers:hiddenQueuePrivateHeaders,
-  });
   const inspection=await readHiddenInspection(context,target);
   if(!inspection)throw new Response("Not found",{
     status:404,headers:hiddenQueuePrivateHeaders,
@@ -48,3 +45,4 @@ export async function loader({ request, params, context }: {
 
 export { default } from "../admin/visibility-inspector";
 export { meta } from "./admin";
+export { ForumRouteError as ErrorBoundary } from "../forum/ui";
