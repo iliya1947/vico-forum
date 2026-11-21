@@ -233,7 +233,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     const beforeNotices = (await client.query<{ id: string }>(
       "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
     )).rows.map(row => row.id);
-    const suppressionBefore = (await client.query<{ id: string; recipient_user_id: string; post_id: string }>(
+    const suppressionBefore = (await client.query<{ recipient_user_id: string; post_id: string }>(
       "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
     )).rows;
     const beforeUnread = await forum.countUnreadNotifications(recipient);
@@ -283,8 +283,17 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
         .toBe(beforeUnread - changed - legacyChanged - caseChanged);
       expect(await forum.countUnreadReplyNotifications(recipient))
         .toBe(beforeLegacyUnread - changed - legacyChanged);
-      expect((await forum.readNotifications(recipient, 0)).total).toBe(beforeTotal);
-      expect((await forum.readNotifications(recipient, 0)).items.filter(n => n.kind === "reply" || n.kind === "mention")
+      const currentInbox = await forum.readNotifications(recipient, 0);
+      const currentLegacy = await forum.readReplyNotifications(recipient);
+      expect(currentInbox.total).toBe(beforeTotal);
+      expect(currentInbox.items.map(n => n.id).sort()).toEqual(beforeNotices);
+      const orderedUnreadFirst = (items: { readAt: Date | null }[]) => {
+        const firstRead = items.findIndex(n => n.readAt !== null);
+        return firstRead < 0 || items.slice(firstRead).every(n => n.readAt !== null);
+      };
+      expect(orderedUnreadFirst(currentInbox.items)).toBe(true);
+      expect(orderedUnreadFirst(currentLegacy)).toBe(true);
+      expect(currentInbox.items.filter(n => n.kind === "reply" || n.kind === "mention")
         .every(n => n.unavailable === true)).toBe(true);
       expect((await client.query<{ id: string }>(
         "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
