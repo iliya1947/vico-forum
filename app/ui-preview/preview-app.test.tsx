@@ -2858,7 +2858,10 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Default group" }), "needs-details");
-    await user.selectOptions(screen.getByRole("combobox", { name: "On entry, open" }), "last");
+    await user.selectOptions(
+      screen.getByLabelText("On entry, open", { selector: "#settings-attention-entry" }),
+      "last",
+    );
 
     expect(screen.getByRole("link", { name: "Open Needs attention" })).toHaveAttribute(
       "href",
