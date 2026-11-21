@@ -53,6 +53,7 @@ export default [
     route("admin/measures/:measureId", "routes/admin-measure.tsx"),
     route("admin/users/:userId", "routes/admin-user.tsx"),
     route("admin/forum", "routes/admin-forum.tsx"),
+    route("admin/forum/content", "routes/admin-forum-content.tsx"),
     route("admin/forum/categories/:categoryId", "routes/admin-category.tsx"),
     route("admin/forum/sections/:sectionId", "routes/admin-section.tsx"),
     route("admin/forum/topics/:topicId", "routes/admin-topic.tsx"),

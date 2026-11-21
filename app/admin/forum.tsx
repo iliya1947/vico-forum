@@ -7,6 +7,7 @@ import {forumCategoryPath,forumSectionPath} from "../forum/paths";
 import {AdminShell} from "./shell";
 import type {AdminAccess} from "./access";
 import {adminForumPath,adminCategoryPath,adminSectionPath,adminTopicPath,adminBrowsePath} from "./forum-paths";
+import {hiddenQueuePath} from "./visibility-queue-path";
 
 function Counts({locale,category,section}:{locale:string;category?:AdminForumCategory;section?:AdminForumSection}) {
   const {t}=useTranslation("common");const number=new Intl.NumberFormat(locale);
@@ -46,6 +47,9 @@ export function AdminForumView({locale,access,page,query}:{locale:string;access:
   const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminForumPath(locale,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-forum-heading"><h2 id="admin-forum-heading">{t("adminForum")}</h2>
+      {access.canManageVisibility
+        ? <p><Link to={hiddenQueuePath(locale,"topic",undefined,routing)}>{t("adminHiddenQueueTitle")}</Link></p>
+        : null}
       <h3>{t("adminForumCategories")}</h3><BrowseControls path={path} query={query} page={page} locale={locale}/>
       {page.items.length?<ul className="admin-forum-objects">{page.items.map(category=><li key={category.id}>
         <h4><Link to={adminCategoryPath(locale,category.id,routing)}><bdi>{category.name}</bdi></Link></h4>
