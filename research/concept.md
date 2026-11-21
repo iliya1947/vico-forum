@@ -2,7 +2,7 @@
 
 ## Статус
 
-Материал первого этапа. Реализация не начата.
+Концептуальный первый этап завершён. Реализация не начата. Концепция ожидает решения разработчика; технический implementation plan до её принятия не формируется.
 
 ## 1. Какие production-зависимости нужно подменить для static UI preview
 
@@ -929,3 +929,285 @@ Browser SQL мог бы сократить часть расхождения rep
 - visible reference time требует минимальной clock boundary.
 
 Следующий conceptual block — **миграция с текущего preview и критерии готовности концепции**: что именно из нынешнего `app/ui-preview` сохраняется, что удаляется/заменяется, как переходить без параллельной реализации и какие вопросы оставить Лёве для технического плана.
+
+## 22. Что сохраняется и что исчезает при переходе
+
+Здесь речь идёт о **текущей manual preview architecture, присутствующей в `main`**. Старый implementation PR отдельно не изменяется и не является рабочей поверхностью этой концепции.
+
+### 22.1. Сохраняется
+
+1. **Сам static Pages delivery path**
+   - отдельный Vite build;
+   - `dist/ui-preview`;
+   - существующий GitHub Pages deployment pipeline;
+   - отсутствие production secrets/private bindings.
+
+   Причины менять hosting model нет.
+
+2. **Preview controller как внешний review-инструмент**
+   - отдельная chrome/panel вне product UI;
+   - viewport framing desktop/tablet/mobile;
+   - выбор representative state;
+   - выбор concrete identity/account;
+   - reset.
+
+   Это tooling, а не второй продукт.
+
+3. **Одна static HTML entry shell**
+   - `index.html`;
+   - production global styles;
+   - noindex/nofollow.
+
+4. **Часть нынешнего representative content как материал для fixtures**
+   - тексты тем/сообщений;
+   - длинные строки;
+   - mixed-direction/code examples;
+   - representative users;
+   - полезные IDs/названия review states.
+
+   Они переиспользуются только как **raw domain facts / review bookmarks**, а не как готовые View props.
+
+5. **Текущий browser acceptance intent**
+   - GitHub Pages для визуального progress;
+   - desktop/tablet/mobile;
+   - LTR/RTL/mixed direction;
+   - guest/user/admin representative identities;
+   - populated/empty/error/action states.
+
+### 22.2. Заменяется
+
+1. Ручной route table в `preview-app.tsx` -> generated projection production `app/routes.ts`.
+2. Ручные `Preview*Route` / view switches -> production route modules, loaders/actions/components.
+3. Готовые presentation fixtures -> canonical raw test state + capability adapters.
+4. `scenario.variant` как источник UI result -> raw overlay / fault profile / setup transition.
+5. `allowedIdentities` -> настоящий production auth/authz result.
+6. `previewUser(... canManageAuthorization ...)` как authority source -> test session + production authorization capability + trusted Owner binding.
+7. Ручные EN/RU/HE copies domain objects -> одна source-content state + production locale/translation path.
+8. Hard-coded preview locale universe -> production locale registry/test localization capabilities.
+9. Глобальная блокировка submit/auth interactions в embedded preview -> реальные local actions там, где product behavior может работать без внешнего Stage-6 provider.
+10. Fake route errors `throw new Response(...)` из preview router -> faulting capability + production error mapping.
+
+### 22.3. Удаляется как параллельная product implementation
+
+После cutover в итоговом preview не должно остаться:
+
+- второго списка product URL patterns;
+- second loaders/actions;
+- preview-specific копий forum/admin/auth views;
+- вручную вычисляемых permission booleans как authority;
+- вручную собранных filtered/search/help/notification outputs, если они изображают production behavior;
+- route-specific switch/dispatcher для application HTTP;
+- scenario-specific product mutation logic.
+
+Тестовый код может проверять preview runtime, но не становится третьей реализацией продукта.
+
+## 23. Концептуальная миграция: atomic cutover, а не постепенное смешивание
+
+Маршрут перехода должен сохранять работающий Pages preview до готовности новой модели, но не оставлять два публичных preview режима.
+
+### 23.1. До cutover
+
+Текущий Pages из `main` остаётся визуальным baseline.
+
+Новая architecture может временно собираться рядом **только внутри implementation branch/workspace** для проверки:
+
+- browser-safe route graph;
+- context composition;
+- representative state;
+- local transport;
+- required review matrix.
+
+Это временное техническое сосуществование, а не продуктовая архитектура.
+
+### 23.2. Что не следует делать
+
+Не следует мигрировать route-by-route так, чтобы один опубликованный preview одновременно содержал:
+
+- часть настоящих production routes/loaders;
+- часть старых manual `Preview*Route`;
+- два независимых источника данных.
+
+Такой промежуточный runtime сделал бы неизвестным, какая именно модель показала экран, и закрепил бы второй продукт.
+
+### 23.3. Cutover
+
+Когда target runtime покрывает обязательную representative matrix:
+
+1. единственная Pages entry переключается на target runtime;
+2. manual product route/data/presentation layer удаляется в том же собранном результате;
+3. сохраняются только controller/tooling, raw fixtures, infrastructure adapters и generic route/transport composition;
+4. старые manual-preview tests заменяются tests новых архитектурных invariants;
+5. после cutover нет пользовательского переключателя «old/new preview».
+
+Если новая реализация ещё не готова, fallback — оставить прежний `main` непереключённым, а не поддерживать две архитектуры постоянно.
+
+## 24. Критерии: когда новая концепция действительно лучше нынешней
+
+Новая preview architecture считается успешной не потому, что она «короче», а если выполняются следующие свойства.
+
+### 24.1. Product parity by construction
+
+1. URL topology берётся из production `app/routes.ts`.
+2. Route components/loaders/actions/middleware/clientAction behavior берутся из production route modules.
+3. Permission/auth presentation проходит production request/authz logic.
+4. Добавление обычного production route не требует дописывать второй preview route.
+
+### 24.2. Нет второй product logic
+
+Preview-only код отвечает только за:
+
+- composition;
+- state persistence;
+- infrastructure substitution;
+- local transport;
+- representative faults;
+- review controls.
+
+Он не решает заново, кто может выполнить product action, как выглядит solved state, как фильтруется route UI или какой ErrorBoundary показать.
+
+### 24.3. State coherence
+
+1. Один canonical state graph связывает users/forum/authz/personal/moderation/settings/files.
+2. Identity switch не переписывает authorship/ownership/grants.
+3. Product action меняет state, а последующий production loader видит это изменение.
+4. Reset восстанавливает deterministic baseline.
+
+### 24.4. Honest determinism
+
+1. Seed IDs/timestamps фиксированы.
+2. Visible reference clock контролируется preview boundary.
+3. Scenario воспроизводим после reset.
+4. Hidden nonce/operation randomness не объявляется частью visual determinism.
+
+### 24.5. Static Pages safety
+
+1. Preview не требует Neon/Hyperdrive/R2/Queue/OAuth/provider secrets.
+2. Application-owned programmable requests не уходят случайно в Pages origin.
+3. External provider/runtime success не симулируется как production acceptance.
+4. Attachment presentation работает representative browser-local способом без заявления R2 parity.
+
+### 24.6. Browser acceptance пригодность
+
+Target Pages должен позволять пройти обязательную матрицу `docs/UI_UX_PASS.md`:
+
+- desktop/mobile/intermediate;
+- LTR/RTL/mixed direction;
+- Guest / regular user / authorization-management actor;
+- populated/empty discovery;
+- solved/unsolved topics;
+- create/reply/editor states;
+- translations;
+- Admin;
+- controlled system states;
+- keyboard/focus/overflow/reflow.
+
+Owner/Super-admin representative surfaces добавляются поверх этой матрицы как current product scope, но Pages всё равно не заменяет real-runtime functional/security acceptance.
+
+### 24.7. Стоимость сопровождения
+
+Нормальный новый capability в `main` должен требовать preview-работы только если появился:
+
+- новый infrastructure dependency;
+- новый representative fixture/state;
+- новый browser transport class;
+- новый Framework route-module contract, который generic adapter ещё не поддерживает.
+
+Он **не должен** требовать копирования нового экрана, loader, action или route.
+
+## 25. Что Pages после перехода всё равно не доказывает
+
+Даже полностью успешный target preview не является:
+
+- PostgreSQL/Drizzle query-semantic acceptance;
+- SSR/Worker runtime acceptance;
+- реальным Better Auth/OAuth provider acceptance;
+- production permission/security proof;
+- R2/storage HTTP proof;
+- Queue/provider/background-job acceptance;
+- production observability/retention proof;
+- Stage-6 Infrastructure acceptance.
+
+Эти ограничения являются частью правильной архитектуры, а не недостатком, который нужно закрывать fake-реализацией.
+
+## 26. Вопросы, которые уже относятся к техническому плану Лёвы
+
+Концептуальные решения выше не требуют ответа на следующие implementation details. После принятия концепции их должен определить полный технический plan:
+
+1. Точное физическое разбиение `runtime / database / infrastructure` и сколько файлов реально требуется.
+2. Конкретный механизм build-time чтения `app/routes.ts` и генерации plain route descriptors.
+3. Точный generic mapping Framework route exports -> Data Router/Static Handler projections.
+4. Точная Vite alias/resolution конфигурация для server infrastructure graph.
+5. Конкретные data structures canonical state graph и способы реализовать representative capability methods без копирования сложной SQL semantics.
+6. Точный scope минимальной production clock seam.
+7. Техническое устройство scenario overlays, fault profiles, latency/pending setup и reset lifecycle.
+8. Точный auth/session switch mechanism для concrete fixture accounts и Better Auth local route behavior.
+9. Object URL cache/revoke lifecycle для attachment presentation.
+10. Изоляция state между outer controller/embedded frame, reload и несколькими открытыми preview tabs.
+11. Какие current manual scenario names/content fixtures полезно перенести как review bookmarks, а какие удалить как исторический мусор.
+12. Какие tests доказывают architecture invariants и какой exact browser matrix является gate cutover.
+13. Точный implementation decomposition / stacked-or-independent delivery после утверждения полного плана.
+
+Лёва не должен заново решать уже закрытые концептуальные вопросы: второй product route table, Service Worker, browser SQL/WASM DB, ручные preview loaders/actions и role-based ownership rewriting уже отвергнуты по установленным причинам.
+
+## 27. Финальная целевая модель
+
+Целевая архитектура UI progress preview:
+
+`production route source + production route modules + production product UI/logic`
+
+поверх
+
+`one resettable deterministic raw state + thin infrastructure/capability adapters`
+
+с
+
+`generic local browser transport + minimal presentation/runtime seams`.
+
+В более полном виде:
+
+`app/routes.ts`
+-> build-time plain route descriptors
+-> production route modules
+-> interactive Data Router + local Static Handler transport
+-> fresh request context
+-> fake/in-memory capabilities
+-> one shared resettable state graph.
+
+Внешний controller меняет только review dimensions: account identity, representative state, viewport и начальный route/locale. Он не является источником product authority или presentation data.
+
+### Почему выбрана именно эта модель
+
+Она единственная из рассмотренных моделей одновременно:
+
+- сохраняет production routes/loaders/actions/components;
+- не требует Worker/backend на GitHub Pages;
+- не тащит PostgreSQL/WASM в browser;
+- позволяет настоящие локальные product mutations;
+- сохраняет deterministic representative visual state;
+- не превращает preview в отдельный forum implementation;
+- остаётся лёгкой и обратимой до pre-release;
+- автоматически следует за большей частью изменений `main`.
+
+### Концептуальный первый этап — DONE
+
+Все пункты `TASK.md` первого этапа закрыты:
+
+- назначение и границы preview;
+- production/fake responsibility split;
+- browser-safe production route graph;
+- единый route source;
+- local browser transport;
+- attachments;
+- deterministic state/data model;
+- identity/locale/viewport/scenario controls;
+- static Pages limitations;
+- in-memory vs browser SQL decision;
+- migration/cutover;
+- comparison alternatives;
+- критерии готовности;
+- вопросы технического плана.
+
+**Реализация не начата. Технический план не сформирован.**
+
+Следующий переход возможен только после решения разработчика по этой концепции. Если она принята, следующий назначенный шаг по действующему `AGENTS.md` — Лёва (Codex-6.1 Sol) готовит полный технический `PLAN.md` до начала реализации.
+
