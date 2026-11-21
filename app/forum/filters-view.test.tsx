@@ -69,6 +69,33 @@ describe("personal Filters list presentation", () => {
       .toContain("beforeTargetId=topic-0");
   });
 
+  it("renders hidden Mute without title, location or navigation and allows Unmute", async () => {
+    const hidden: FilterListItem = { kind: "topic", id: "topic-1",
+      createdAt: "2026-11-18T09:10:11.123Z", unavailable: true };
+    let current: FilterListItem[] = [hidden];
+    const submissions: Record<string, FormDataEntryValue>[] = [];
+    const action = vi.fn(async ({ request }: { request: Request }) => {
+      submissions.push(Object.fromEntries((await request.formData()).entries()));
+      current = [];
+      return { operation: "topicMute", ok: true, actorId: "actor-a",
+        topicId: "topic-1", muted: false };
+    });
+    const { container } = setup("topics", action, "actor-a", "actor-a", null, () => current);
+    expect(await screen.findByText("Topic unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /literal title/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /topic unavailable/i })).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("RETAINED_PRIVATE_NAME");
+    expect(container.querySelector(".bookmarks-topic-unavailable time"))
+      .toHaveAttribute("datetime", "2026-11-18T09:10:11.123Z");
+    fireEvent.click(screen.getByRole("button", { name: "Unmute topic" }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(submissions[0]).toEqual({
+      intent: "setTopicMute", editorActorId: "actor-a", muted: "false",
+    });
+    await waitFor(() => expect(screen.queryByText("Topic unavailable")).not.toBeInTheDocument());
+    expect(screen.getByText("You have not muted any topics.")).toBeInTheDocument();
+  });
+
   it("requires a confirmed Block undo and authoritative list absence before hiding the row", async () => {
     let blockedInStore = true;
     const submissions: Record<string, FormDataEntryValue>[] = [];

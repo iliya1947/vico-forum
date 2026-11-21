@@ -148,15 +148,24 @@ export interface ForumTopicReadState {
   latestPostId: string | null;
 }
 
-export interface ForumTopicBookmarkSummary {
-  id: string;
-  title: string;
-  authorName: string;
-  authorIdentityKind?: "deleted";
-  savedAt: Date;
-  section: { id: string; name: string } | null;
-  category: { id: string; name: string };
-}
+export type ForumTopicBookmarkSummary = { id: string; savedAt: Date } & (
+  | {
+    unavailable: true;
+    title?: never;
+    authorName?: never;
+    authorIdentityKind?: never;
+    section?: never;
+    category?: never;
+  }
+  | {
+    unavailable?: false;
+    title: string;
+    authorName: string;
+    authorIdentityKind?: "deleted";
+    section: { id: string; name: string } | null;
+    category: { id: string; name: string };
+  }
+);
 
 export interface ForumTopicBookmarkCursor {
   savedAt: Date;
@@ -170,12 +179,14 @@ export interface ForumTopicBookmarksPage {
 
 /** Strict two-field private keyset cursor; actor is always a separate server argument. */
 export interface ForumPersonalFilterCursor { createdAt: Date; targetId: string; }
-export interface ForumMutedTopicSummary {
-  id: string; title: string; mutedAt: Date;
-  authorName: string; authorIdentityKind?: "deleted";
-  section: { id: string; name: string } | null;
-  category: { id: string; name: string };
-}
+export type ForumMutedTopicSummary = { id: string; mutedAt: Date } & (
+  | { unavailable: true; title?: never; authorName?: never; authorIdentityKind?: never;
+      section?: never; category?: never }
+  | { unavailable?: false; title: string;
+      authorName: string; authorIdentityKind?: "deleted";
+      section: { id: string; name: string } | null;
+      category: { id: string; name: string } }
+);
 export interface ForumBlockedUserSummary {
   id: string; name: string; blockedAt: Date; identityKind?: "deleted";
 }
@@ -216,6 +227,8 @@ function publicDiscoveryLocation(row: {
 export interface ForumNotificationSummary {
   id:string;kind:"reply"|"mention"|"complaint-decision"|"complaint-appeal-result";actorName:string|null;
   actorIdentityKind?: "deleted";
+  /** Retained reply/mention with a currently hidden or absent source. */
+  unavailable?: true;
   topicId:string|null;topicTitle:string|null;postId:string|null;caseId?:string|null;appealId?:string|null;
   createdAt:Date;readAt:Date|null;
 }
@@ -225,19 +238,21 @@ export interface ForumNotificationPage {
 export type ForumNotificationTarget =
   | {kind:"complaint-decision";caseId:string}
   | {kind:"complaint-appeal-result";caseId:string;appealId:string}
-  | {kind:"reply"|"mention";topicId:string;postId:string};
+  | {kind:"reply"|"mention";topicId:string;postId:string}
+  | {kind:"unavailable"};
 
-export interface ForumReplyNotificationSummary {
-  id: string;
-  kind: "reply" | "mention";
-  actorName: string;
-  actorIdentityKind?: "deleted";
-  topicId: string;
-  topicTitle: string;
-  postId: string;
-  createdAt: Date;
-  readAt: Date | null;
-}
+export type ForumReplyNotificationTarget =
+  | {topicId:string;postId:string}
+  | {unavailable:true};
+
+export type ForumReplyNotificationSummary = {
+  id: string; kind: "reply" | "mention"; createdAt: Date; readAt: Date | null;
+} & (
+  | { unavailable: true; actorName: null; actorIdentityKind?: never;
+      topicId: null; topicTitle: null; postId: null }
+  | { unavailable?: false; actorName: string; actorIdentityKind?: "deleted";
+      topicId: string; topicTitle: string; postId: string }
+);
 
 export interface ForumSectionTopicSummary {
   authorIdentityKind?: "deleted";
@@ -913,10 +928,12 @@ export class DrizzleForumRepository {
 
   async setTopicMute(input: { topicId: string; actorId: string; muted: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
-      // Preserve target FK, then admit active actor on this same transaction.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId)).for("key share");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // Mute ON must serialize with Hide. Own OFF keeps its original FK-safe
+      // lock and may succeed for a hidden or absent target without an oracle.
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for(input.muted ? "share" : "key share");
+      if (input.muted && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.muted) {
         await tx.insert(forumTopicMutes).values({ userId: input.actorId, topicId: input.topicId })
@@ -951,10 +968,12 @@ export class DrizzleForumRepository {
 
   async setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
-      // Preserve FK target first, then take the same actor mutex as account lifecycle.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId)).for("key share");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // SAVE must serialize with Hide (NO KEY UPDATE). REMOVE retains its
+      // previous FK-safe KEY SHARE lock and remains safe for missing targets.
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for(input.bookmarked ? "share" : "key share");
+      if (input.bookmarked && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.bookmarked) {
         await tx.insert(forumTopicBookmarks).values({ userId: input.actorId, topicId: input.topicId })
@@ -971,9 +990,12 @@ export class DrizzleForumRepository {
   async setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
       // Matches reply publication's topic mutex, so state changes and fanout are serialized.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId)).for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // New subscriptions require a visible topic. Own Unwatch remains safe even
+      // when the topic is hidden or absent, without probing target existence.
+      if (input.watching && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.watching) {
         await tx.insert(forumTopicWatches).values({ userId: input.actorId, topicId: input.topicId })
@@ -1672,14 +1694,17 @@ export class DrizzleForumRepository {
       sectionId: forumSections.id, sectionName: forumSections.name,
       categoryId: forumCategories.id, categoryName: forumCategories.name,
     }).from(forumTopicMutes)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicMutes.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      // Page by own retained Mute pairs; only visible topic metadata is joinable.
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicMutes.topicId), eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .leftJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
       .where(and(
         eq(forumTopicMutes.userId, userId),
         before ? or(lt(forumTopicMutes.createdAt, before.createdAt),
@@ -1689,13 +1714,26 @@ export class DrizzleForumRepository {
       .orderBy(desc(forumTopicMutes.createdAt), desc(forumTopicMutes.topicId))
       .limit(51);
     const pageRows = rows.slice(0, 50);
-    const items = pageRows.map(row => {
-      const author = projectForumPublicAuthor(row);
+    const items: ForumMutedTopicSummary[] = pageRows.map(row => {
+      if (row.title === null || row.authorId === null || row.authorName === null
+        || row.sectionId === null || row.sectionName === null
+        || row.categoryId === null || row.categoryName === null) {
+        return { id: row.id, mutedAt: row.createdAt, unavailable: true as const };
+      }
+      const author = projectForumPublicAuthor({
+        authorId: row.authorId, authorName: row.authorName,
+        authorDeactivatedAt: row.authorDeactivatedAt,
+        authorDeactivatedByUserId: row.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: row.authorRetainAtLeastUntil,
+      });
       return {
         id: row.id, title: row.title, mutedAt: row.createdAt,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        ...publicDiscoveryLocation(row),
+        ...publicDiscoveryLocation({
+          sectionId: row.sectionId, sectionName: row.sectionName,
+          categoryId: row.categoryId, categoryName: row.categoryName,
+        }),
       };
     });
     const last = pageRows.at(-1);
@@ -1782,14 +1820,18 @@ export class DrizzleForumRepository {
       categoryId: forumCategories.id,
       categoryName: forumCategories.name,
     }).from(forumTopicBookmarks)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicBookmarks.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      // Page by retained own pairs; join current source metadata only for
+      // visible topics, never selecting hidden title/identity/location.
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicBookmarks.topicId), eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .leftJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
       .where(and(
         eq(forumTopicBookmarks.userId, userId),
         before ? or(
@@ -1802,13 +1844,26 @@ export class DrizzleForumRepository {
       .limit(51);
 
     const pageRows = rows.slice(0, 50);
-    const items = pageRows.map((row) => {
-      const author = projectForumPublicAuthor(row);
+    const items: ForumTopicBookmarkSummary[] = pageRows.map(row => {
+      if (row.title === null || row.authorId === null || row.authorName === null
+        || row.sectionId === null || row.sectionName === null
+        || row.categoryId === null || row.categoryName === null) {
+        return { id: row.id, savedAt: row.savedAt, unavailable: true as const };
+      }
+      const author = projectForumPublicAuthor({
+        authorId: row.authorId, authorName: row.authorName,
+        authorDeactivatedAt: row.authorDeactivatedAt,
+        authorDeactivatedByUserId: row.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: row.authorRetainAtLeastUntil,
+      });
       return {
         id: row.id, title: row.title, savedAt: row.savedAt,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        ...publicDiscoveryLocation(row),
+        ...publicDiscoveryLocation({
+          sectionId: row.sectionId, sectionName: row.sectionName,
+          categoryId: row.categoryId, categoryName: row.categoryName,
+        }),
       };
     });
     const last = pageRows.at(-1);
@@ -1943,26 +1998,38 @@ export class DrizzleForumRepository {
           actor.deactivated_at as "actorDeactivatedAt",
           actor.deactivated_by_user_id as "actorDeactivatedByUserId",
           actor.retain_at_least_until as "actorRetainAtLeastUntil",
-          n.topic_id as "topicId",title.original_content as "topicTitle",
-          n.post_id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
+          topic.id as "topicId",title.original_content as "topicTitle",
+          source_post.id as "postId",coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId"
         from forum_reply_notifications n
-        left join "user" actor on actor.id=n.actor_user_id and n.kind in ('reply','mention')
-        left join forum_topics topic on topic.id=n.topic_id
-        left join forum_topic_title_revisions title on title.topic_id=topic.id and title.id=topic.current_title_revision_id
+        left join forum_topics topic on topic.id=n.topic_id and topic.is_hidden=false
+        left join forum_posts source_post on source_post.id=n.post_id
+          and source_post.topic_id=topic.id and source_post.is_hidden=false
+        left join "user" actor on actor.id=n.actor_user_id
+          and n.kind in ('reply','mention') and source_post.id is not null
+        left join forum_topic_title_revisions title on title.topic_id=topic.id
+          and title.id=topic.current_title_revision_id and source_post.id is not null
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id and n.kind='complaint-decision'
         left join forum_complaint_appeals a on a.id=n.complaint_appeal_id and n.kind='complaint-appeal-result'
         where n.recipient_user_id=${userId}
         order by case when n.read_at is null then 0 else 1 end,n.created_at desc,n.id desc
         limit 51 offset ${page*50}`);
       return {
-        items: rows.rows.slice(0,50).map(row => ({
-          id: row.id, kind: row.kind,
-          ...(row.kind === "reply" || row.kind === "mention"
-            ? projectNotificationActor(row) : { actorName: null }),
-          topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId,
-          caseId: row.caseId, appealId: row.appealId,
-          createdAt: row.createdAt, readAt: row.readAt,
-        })),
+        items: rows.rows.slice(0,50).map(row => {
+          const ordinary = row.kind === "reply" || row.kind === "mention";
+          const unavailable = ordinary
+            && (row.topicId === null || row.postId === null || row.topicTitle === null || row.actorId === null);
+          return {
+            id: row.id, kind: row.kind,
+            ...(unavailable
+              ? { unavailable: true as const, actorName: null }
+              : ordinary ? projectNotificationActor(row) : { actorName: null }),
+            topicId: unavailable ? null : row.topicId,
+            topicTitle: unavailable ? null : row.topicTitle,
+            postId: unavailable ? null : row.postId,
+            caseId: row.caseId, appealId: row.appealId,
+            createdAt: row.createdAt, readAt: row.readAt,
+          };
+        }),
         page, total: total.rows[0]?.total??0, hasMore: rows.rows.length>50,
       };
     },{isolationLevel:"repeatable read",accessMode:"read only"});
@@ -1978,8 +2045,14 @@ export class DrizzleForumRepository {
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
       await assertActiveAccountForDrizzleMutation(tx, userId);
-      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null}>(sql`
-        select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",n.topic_id as "topicId",n.post_id as "postId"
+      const row=await tx.execute<{kind:ForumNotificationSummary["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null;sourceVisible:boolean}>(sql`
+        select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",
+          n.topic_id as "topicId",n.post_id as "postId",
+          exists (
+            select 1 from forum_topics topic
+            join forum_posts source_post on source_post.topic_id=topic.id and source_post.id=n.post_id
+            where topic.id=n.topic_id and topic.is_hidden=false and source_post.is_hidden=false
+          ) as "sourceVisible"
         from forum_reply_notifications n
         left join forum_complaint_decisions d on d.id=n.complaint_decision_id
         left join forum_complaint_appeals a on a.id=n.complaint_appeal_id
@@ -1997,8 +2070,10 @@ export class DrizzleForumRepository {
         await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
         return n.kind==="complaint-appeal-result"&&n.appealId?{kind:n.kind,caseId:n.caseId,appealId:n.appealId}:{kind:"complaint-decision" as const,caseId:n.caseId};
       }
-      if(!n.topicId||!n.postId)throw new ForumEntityNotFoundError("notification target missing");
+      // The source visibility probe is a plain MVCC read. Never acquire a
+      // topic/post lock after the actor and notification row locks.
       await tx.execute(sql`update forum_reply_notifications set read_at=coalesce(read_at,statement_timestamp()) where id=${notificationId}`);
+      if(!n.sourceVisible||!n.topicId||!n.postId)return {kind:"unavailable"};
       return {kind:n.kind,topicId:n.topicId,postId:n.postId};
     });
   }
@@ -2016,19 +2091,31 @@ export class DrizzleForumRepository {
         actorDeactivatedAt: actor.deactivatedAt,
         actorDeactivatedByUserId: actor.deactivatedByUserId,
         actorRetainAtLeastUntil: actor.retainAtLeastUntil,
-        topicId: forumReplyNotifications.topicId,
+        topicId: forumTopics.id,
         topicTitle: forumTopicTitleRevisions.originalContent,
-        postId: forumReplyNotifications.postId,
+        postId: forumPosts.id,
         kind: forumReplyNotifications.kind,
         createdAt: forumReplyNotifications.createdAt,
         readAt: forumReplyNotifications.readAt,
       })
       .from(forumReplyNotifications)
-      .innerJoin(actor, eq(actor.id, forumReplyNotifications.actorUserId))
-      .innerJoin(forumTopics, eq(forumTopics.id, forumReplyNotifications.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumReplyNotifications.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumPosts, and(
+        eq(forumPosts.id, forumReplyNotifications.postId),
+        eq(forumPosts.topicId, forumTopics.id),
+        eq(forumPosts.isHidden, false),
+      ))
+      .leftJoin(actor, and(
+        eq(actor.id, forumReplyNotifications.actorUserId),
+        isNotNull(forumPosts.id),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+        isNotNull(forumPosts.id),
       ))
       .where(and(eq(forumReplyNotifications.recipientUserId, userId),inArray(forumReplyNotifications.kind,["reply","mention"])))
       // Keep every unread row reachable even when the bounded inbox contains
@@ -2039,12 +2126,17 @@ export class DrizzleForumRepository {
         desc(forumReplyNotifications.id),
       )
       .limit(limit);
-    return rows.map(row => ({
-      id: row.id, kind: row.kind as "reply" | "mention",
-      ...projectNotificationActor(row),
-      topicId: row.topicId!, topicTitle: row.topicTitle, postId: row.postId!,
-      createdAt: row.createdAt, readAt: row.readAt,
-    }));
+    return rows.map(row => {
+      const common = { id: row.id, kind: row.kind as "reply" | "mention",
+        createdAt: row.createdAt, readAt: row.readAt };
+      if (row.topicId === null || row.postId === null || row.topicTitle === null
+        || row.actorId === null) {
+        return { ...common, unavailable: true as const,
+          actorName: null, topicId: null, topicTitle: null, postId: null };
+      }
+      return { ...common, ...projectNotificationActor(row),
+        topicId: row.topicId, topicTitle: row.topicTitle, postId: row.postId };
+    });
   }
 
   async countUnreadReplyNotifications(userId: string): Promise<number> {
@@ -2062,23 +2154,34 @@ export class DrizzleForumRepository {
   async markReplyNotificationRead(
     userId: string,
     notificationId: string,
-  ): Promise<{ topicId: string; postId: string }> {
+  ): Promise<ForumReplyNotificationTarget> {
     return this.database.transaction(async (tx) => {
       await assertActiveAccountForDrizzleMutation(tx, userId);
-      const [notification] = await tx
-        .update(forumReplyNotifications)
-        .set({ readAt: sql`coalesce(${forumReplyNotifications.readAt}, now())` })
-        .where(and(
-          eq(forumReplyNotifications.id, notificationId),
-          eq(forumReplyNotifications.recipientUserId, userId),
-          inArray(forumReplyNotifications.kind,["reply","mention"]),
-        ))
-        .returning({
-          topicId: forumReplyNotifications.topicId,
-          postId: forumReplyNotifications.postId,
-        });
-    if (!notification?.topicId || !notification.postId) throw new ForumEntityNotFoundError("notification does not exist for user");
-    return {topicId:notification.topicId,postId:notification.postId};
+      // Same lock order as generic mark: account -> own notification.
+      // The correlated visibility check has no topic/post row lock.
+      const row = await tx.execute<{
+        topicId: string | null; postId: string | null; sourceVisible: boolean;
+      }>(sql`
+        select n.topic_id as "topicId",n.post_id as "postId",
+          exists (
+            select 1 from forum_topics topic
+            join forum_posts source_post on source_post.topic_id=topic.id and source_post.id=n.post_id
+            where topic.id=n.topic_id and topic.is_hidden=false and source_post.is_hidden=false
+          ) as "sourceVisible"
+        from forum_reply_notifications n
+        where n.id=${notificationId} and n.recipient_user_id=${userId}
+          and n.kind in ('reply','mention')
+        for update of n
+      `);
+      const notification = row.rows[0];
+      if (!notification) throw new ForumEntityNotFoundError("notification does not exist for user");
+      await tx.execute(sql`
+        update forum_reply_notifications set read_at=coalesce(read_at,now())
+        where id=${notificationId}
+      `);
+      if (!notification.sourceVisible || !notification.topicId || !notification.postId)
+        return { unavailable: true };
+      return { topicId: notification.topicId, postId: notification.postId };
     });
   }
 
