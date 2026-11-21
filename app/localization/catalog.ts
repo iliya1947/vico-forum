@@ -1638,6 +1638,7 @@ export const canonicalEnglishCatalog = {
     bookmarksEmptyPage: message("bookmarksEmptyPage", "No older saved topics on this page.", "Empty older cursor page when earlier saved topics are no longer present."),
     bookmarksList: message("bookmarksList", "Saved topics list", "Accessible label of the private saved-topic list."),
     bookmarksSavedAt: message("bookmarksSavedAt", "Saved {{date}}", "Date of an individual saved topic in the private list.", ["date"]),
+    bookmarksUnavailableTopic: message("bookmarksUnavailableTopic", "Topic unavailable", "Neutral placeholder in a private bookmark list for a hidden or missing topic."),
     bookmarksOlder: message("bookmarksOlder", "Older bookmarks", "Link to the next keyset page of older saved topics."),
     bookmarksNewest: message("bookmarksNewest", "Newest bookmarks", "Link back to the first keyset page of saved topics."),
     bookmarksRemove: message("bookmarksRemove", "Remove bookmark", "Remove a saved topic without deleting the topic."),
