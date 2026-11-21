@@ -11,8 +11,10 @@ if(!url||!["127.0.0.1","localhost"].includes(new URL(url).hostname)
 const schema="hidden_queue_test", options="-c search_path="+schema;
 const client=new Client({connectionString:url,options});
 let allowed=true;
+let historyAllowed=false;
 const authorization={
-  forUser:()=>({has:async(key:string)=>allowed&&key==="forum.content.visibility.manage"}),
+  forUser:()=>({has:async(key:string)=>allowed&&(key==="forum.content.visibility.manage"
+    ||(key==="forum.post.history.read"&&historyAllowed))}),
 } as unknown as AuthorizationCapability;
 const reader=new PostgresHiddenQueueReader(client,authorization);
 const stamp=(i:number)=>new Date(Date.UTC(2026,10,21,0,0,i)).toISOString();
@@ -76,6 +78,16 @@ beforeAll(async()=>{
       (id,actor_id,actor_label,action,target_type,target_id,target_label,context,reason)
       values ($1,'queue-moderator','Moderator','topic.pinned','topic','restored-topic',
         'topic:restored-topic','{}'::jsonb,'Not a visibility reason')`,[randomUUID()]);
+    // Microsecond-stable keyset fixture: 28 historical revisions plus the first current body.
+    await client.query("update forum_post_revisions set created_at='2026-10-30T00:00:00Z' where id='hidden-post-000-body'");
+    for(let i=0;i<28;i++){
+      const id="hidden-post-000-history-"+String(i).padStart(3,"0");
+      const micro=String(i===25?24:i).padStart(6,"0");
+      await client.query(`insert into forum_post_revisions
+        (id,post_id,author_id,original_content,source_locale,created_at)
+        values ($1,'hidden-post-000','queue-author',$2,'en',$3::timestamptz)`,
+        [id,"PRIVATE OLD BODY "+id,"2026-11-21T00:00:00."+micro+"Z"]);
+    }
     await client.query("commit");
   }catch(error){await client.query("rollback");throw error;}
 },120_000);
@@ -182,5 +194,39 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
       await expect(reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"}))
         .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
     }finally{await client.query("rollback");}
+  });
+
+  it("requires both effective permissions for old post text and fails closed after revoke",async()=>{
+    const target={kind:"post" as const,topicId:"visible-topic",postId:"hidden-post-000"};
+    await expect(reader.revisions("queue-moderator",target)).rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    historyAllowed=true;
+    try {
+      const first=await reader.revisions("queue-moderator",target);
+      expect(first.items).toHaveLength(25);
+      expect(first.next).toMatchObject({createdAt:"2026-11-21T00:00:00.000004Z",id:"hidden-post-000-history-004"});
+      const second=await reader.revisions("queue-moderator",target,first.next!);
+      expect(second.items).toHaveLength(4);
+      expect(second.next).toBeNull();
+      expect(new Set([...first.items,...second.items].map(x=>x.id)).size).toBe(29);
+      expect(first.items[0].originalContent).toContain("PRIVATE OLD BODY");
+      expect(first.items[0].createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T.*\.\d{6}Z$/);
+      expect(await reader.revisions("queue-moderator",{kind:"post",topicId:"hidden-topic-000",postId:"hidden-post-000"}))
+        .toEqual({items:[],next:null});
+      allowed=false;
+      await expect(reader.revisions("queue-moderator",target)).rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    } finally {allowed=true;historyAllowed=false;}
+  });
+  it("rejects history when account is deactivated even with both grants",async()=>{
+    historyAllowed=true;
+    try {
+      await client.query("begin");
+      try {
+        await client.query(`update "user" set deactivated_at=now(),deactivated_by_user_id='queue-author',
+          retain_at_least_until=now()+interval '2 years' where id='queue-moderator'`);
+        await expect(reader.revisions("queue-moderator",{
+          kind:"post",topicId:"visible-topic",postId:"hidden-post-000"}))
+          .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+      }finally{await client.query("rollback");}
+    }finally{historyAllowed=false;}
   });
 });

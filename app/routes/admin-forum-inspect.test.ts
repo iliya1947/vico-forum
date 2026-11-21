@@ -5,9 +5,13 @@ import { authorizationContext } from "../authorization/request-context";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { HiddenQueueForbiddenError, HiddenQueueUnavailableError } from "../../db/private-visibility-queue";
 import { hiddenQueueContext } from "../admin/visibility-queue.server";
-import { hiddenInspectionPath, hiddenInspectionTarget } from "../admin/visibility-queue-path";
+import { hiddenInspectionPath, hiddenInspectionTarget, hiddenInspectionQuery } from "../admin/visibility-queue-path";
 import { createAdministrativeRouting } from "../administrative-routing/addresses";
 import { headers, loader } from "./admin-forum-inspect";
+import { canonicalEnglishCatalog } from "../localization/catalog";
+import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
+import { reviewedCommonFingerprints } from "../localization/manual-fingerprints";
+import { sourceFingerprint } from "../localization/fingerprint";
 
 function env(grants:string[]=["forum.content.visibility.manage"],signedIn=true) {
   const context=new RouterContextProvider();
@@ -19,12 +23,14 @@ function env(grants:string[]=["forum.content.visibility.manage"],signedIn=true) 
     isHidden:true,visibilityVersion:1,currentRevisionId:"private-revision",
     visibilityChangedAt:"2026-11-21T00:00:00.000Z",
     lastEvent:{action:"topic.hidden",at:"2026-11-21T00:00:00.000Z",reason:"private reason"}}));
-  context.set(hiddenQueueContext,{inspect} as never);
+  const revisions=vi.fn(async()=>({items:[{id:"rev-1",createdAt:"2026-11-21T00:00:00.123456Z",
+    originalContent:"REDACTED PRIVATE OLD TEXT",sourceLocale:"en"}],next:null}));
+  context.set(hiddenQueueContext,{inspect,revisions} as never);
   const call=(query="",topicId="hidden-topic")=>loader({
     context,params:{topicId},
     request:new Request("https://forum.test/en/admin/forum/topics/"+encodeURIComponent(topicId)+"/inspect"+query),
   });
-  return {permitted,has,inspect,call};
+  return {permitted,has,inspect,revisions,call};
 }
 async function denied(fn:()=>Promise<unknown>,status:number) {
   try {await fn();throw new Error("Expected denial");}
@@ -104,5 +110,80 @@ describe("B6-B1 private current inspection resource",()=>{
     const uri=hiddenInspectionPath("he",post,alt);
     expect(uri).toBe("https://example.test/private/he/forum/topics/hidden%2Ftopic/inspect?postId=post+%C3%97");
     expect(hiddenInspectionTarget(topic.topicId,new URL(uri).searchParams)).toEqual(post);
+  });
+
+  it("requires both independent grants to request raw old message revisions",async()=>{
+    const noExtra=env();
+    await denied(()=>noExtra.call("?postId=post-1&revisions=1"),403);
+    expect(noExtra.inspect).not.toHaveBeenCalled();
+    expect(noExtra.revisions).not.toHaveBeenCalled();
+    const onlyExtra=env(["forum.post.history.read"]);
+    await denied(()=>onlyExtra.call("?postId=post-1&revisions=1"),403);
+    expect(onlyExtra.inspect).not.toHaveBeenCalled();
+    const both=env(["forum.content.visibility.manage","forum.post.history.read"]);
+    const response=await both.call("?postId=post-1&revisions=1");
+    expect(response.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    expect(response.data.access.canReadPostHistory).toBe(true);
+    expect(response.data.revisions?.items[0].originalContent).toBe("REDACTED PRIVATE OLD TEXT");
+    expect(both.revisions).toHaveBeenCalledWith("moderator",
+      {kind:"post",topicId:"hidden-topic",postId:"post-1"},undefined);
+    const basic=await both.call("?postId=post-1");
+    expect(basic.data.revisions).toBeNull();
+    expect(both.revisions).toHaveBeenCalledTimes(1);
+    both.permitted.delete("forum.post.history.read");
+    await denied(()=>both.call("?postId=post-1&revisions=1"),403);
+    expect(both.revisions).toHaveBeenCalledTimes(1);
+    const stillAllowed=await both.call("?postId=post-1");
+    expect(stillAllowed.data.revisions).toBeNull();
+  });
+  it("rejects history for topic-only inspection and validates strict microsecond cursor",async()=>{
+    const both=env(["forum.content.visibility.manage","forum.post.history.read"]);
+    for(const invalid of [
+      "?revisions=1","?postId=post-1&revisions=0","?postId=post-1&revisions=1&revisions=1",
+      "?postId=post-1&beforeRevisionAt=2026-11-21T00:00:00.123456Z&beforeRevisionId=x",
+      "?postId=post-1&revisions=1&beforeRevisionId=x",
+      "?postId=post-1&revisions=1&beforeRevisionAt=2026-11-21T00:00:00.123456Z",
+      "?postId=post-1&revisions=1&beforeRevisionAt=2026-02-30T00:00:00.123456Z&beforeRevisionId=x",
+      "?postId=post-1&revisions=1&beforeRevisionAt=2026-11-21T00:00:00.123Z&beforeRevisionId=x",
+      "?postId=post-1&revisions=1&beforeRevisionAt=2026-11-21T00:00:00.123456Z&beforeRevisionId=%00",
+      "?postId=post-1&revisions=1&beforeRevisionAt=2026-11-21T00:00:00.123456Z&beforeRevisionId=x&unknown=x",
+    ]) {
+      await denied(()=>both.call(invalid),400);
+    }
+    expect(both.revisions).not.toHaveBeenCalled();
+    const cursor={createdAt:"2026-11-21T00:00:00.123456Z",id:"rev/×"};
+    const href=hiddenInspectionPath("he",{kind:"post",topicId:"hidden-topic",postId:"post-1"},undefined,{before:cursor});
+    expect(hiddenInspectionQuery("hidden-topic",new URL(href,"https://forum.test").searchParams))
+      .toEqual({target:{kind:"post",topicId:"hidden-topic",postId:"post-1"},includeRevisions:true,before:cursor});
+    await both.call(new URL(href,"https://forum.test").search);
+    expect(both.revisions).toHaveBeenCalledWith("moderator",
+      {kind:"post",topicId:"hidden-topic",postId:"post-1"},cursor);
+  });
+  it("contains reader failure and revoke without exposing private revision text",async()=>{
+    const e=env(["forum.content.visibility.manage","forum.post.history.read"]);
+    e.revisions.mockRejectedValueOnce(new Error("REDACTED PRIVATE OLD TEXT sql internal"));
+    await denied(()=>e.call("?postId=post-1&revisions=1"),503);
+    e.revisions.mockRejectedValueOnce(new HiddenQueueUnavailableError());
+    await denied(()=>e.call("?postId=post-1&revisions=1"),503);
+    e.revisions.mockRejectedValueOnce(new HiddenQueueForbiddenError());
+    await denied(()=>e.call("?postId=post-1&revisions=1"),403);
+    e.permitted.delete("forum.content.visibility.manage");
+    await denied(()=>e.call("?postId=post-1&revisions=1"),403);
+    expect(e.revisions).toHaveBeenCalledTimes(3);
+  });
+  it("keeps new EN/RU/HE labels in reviewed manual localization packs",async()=>{
+    const keys=[
+      "adminHiddenInspectorTitle","adminHiddenInspectorOpen","adminHiddenInspectorState",
+      "adminHiddenInspectorVisible","adminHiddenInspectorHidden","adminHiddenInspectorCurrentRevision",
+      "adminHiddenInspectorLastEvent","adminHiddenInspectorRevisions","adminHiddenInspectorShowRevisions",
+      "adminHiddenInspectorSourceLocale","adminHiddenInspectorText","adminHiddenInspectorOlder",
+      "adminHiddenInspectorBack",
+    ] as const;
+    for(const key of keys){
+      expect(canonicalEnglishCatalog.common[key].source).toBeTruthy();
+      expect(russianCommonValues[key]).toBeTruthy();
+      expect(hebrewCommonValues[key]).toBeTruthy();
+      expect(reviewedCommonFingerprints[key]).toBe(await sourceFingerprint(canonicalEnglishCatalog.common[key]));
+    }
   });
 });
