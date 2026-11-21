@@ -98,7 +98,7 @@ export async function action({ request, params, context }: {
 
   return runForumMutation(request, context, async (writer, userId) => {
     const target = await writer.markNotificationRead({ userId, notificationId });
-    return target.kind==="complaint-appeal-result" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result#appeal-${encodeURIComponent(target.appealId)}`,{headers:headers()}) : target.kind==="complaint-decision" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result`,{headers:headers()}) : redirect(
+    return target.kind==="unavailable" ? redirect(`/${encodeURIComponent(locale)}/notifications`,{headers:headers()}) : target.kind==="complaint-appeal-result" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result#appeal-${encodeURIComponent(target.appealId)}`,{headers:headers()}) : target.kind==="complaint-decision" ? redirect(`/${encodeURIComponent(locale)}/complaints/${encodeURIComponent(target.caseId)}/result`,{headers:headers()}) : redirect(
       `${forumTopicPath(locale, target.topicId)}#post-${encodeURIComponent(target.postId)}`,
       {headers:headers()},
     );
