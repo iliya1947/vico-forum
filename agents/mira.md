@@ -133,3 +133,7 @@ Owner merged #363 unchanged reviewed head; main is now `9cff976a9621d9fe5dfef28e
 ## 2026-11-21 — B3 coordinator checkpoint HOLD
 
 Reviewed #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` against B2 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` and the accepted B3 plan. One confirmed current-B3 blocker: VIS-B3-MIRA-01 [P2]. B3 narrowed raw `readPost` to visible-only even though V2 explicitly keeps raw `readTopic/readPost/readHierarchy` as trusted service/fixture seams. Because unchanged `readHierarchy` enumerates persisted posts through raw `readPost`, any hidden post/topic now makes the trusted hierarchy throw a false “current body revision missing” error. Public denial is already enforced by `readTopicPage/readPostLocation/readPostHistory` and route/action paths; writer/source-locale admission already rechecks visibility under locks. No second current-B3 finding confirmed; B4–B7 gaps were classified as future rungs, not findings. Return only this correction to Lira; B4 stays blocked until fresh B3 PASS.
+
+## 2026-11-21 — VIS-B3-MIRA-01 correction runtime verified
+
+#359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91` remains stable. Existing exact-head CI `44904360356` completed SUCCESS with both checks/database green; all 15 exact-head workflows completed SUCCESS. Lira's correction remains limited to restoring trusted raw `readPost` and adding focused PG regression. Per stacked workflow, author runtime closure remains Lira's gate before my fresh coordinator checkpoint; I did not bypass it or start B4.
