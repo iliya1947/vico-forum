@@ -97,3 +97,8 @@ Fresh review of #355 exact `704d5a46d59841538524424296ac28eaa39aa5e6`: VIS-B1-MI
 ## 2026-11-20 — B2 bounded PASS
 
 Reviewed #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` as local B1→B2 stacked diff. Commands/CAS/reason/no-op, fresh actor/AP-10/direct RBAC, append-last History/rollback, writer gates, receipt/recovery semantics and real PG races/deactivation/lock compatibility satisfy the B2 checkpoint. Final 22/22 checks and 18/18 workflows SUCCESS; no current-B2 blocker. Translation planning overlap with B4 is not a defect by itself. B3 next only on owner continuation.
+
+## 2026-11-21 — manual PR test process side task
+
+Temporary service PR #361 was created in violation of the fixed #342 assignment and is closed without merge. Recovered Lira review from #361: #362 old exact `898f71c2...` had one finding around `gh pr edit` label removal permissions. Corrected #362 now uses the documented Issues REST label-removal endpoint with the existing `issues: write` permission; new exact head `3387132aeed815fb93cf3094c3d70f5e343ce998`. Old review does not carry PASS across the head change. #342 remains the only service channel.
+
