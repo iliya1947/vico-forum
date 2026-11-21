@@ -1771,7 +1771,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Edited Help topic title" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Edit topic title" })).toBeInTheDocument();
   });
 
   it("edits an authenticated author's own Help question post", async () => {
