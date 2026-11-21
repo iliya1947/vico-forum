@@ -62,7 +62,8 @@ describe("shared notification card grid contract",()=>{
     const html = renderToStaticMarkup(<I18nextProvider i18n={i18n}>
       <RouterProvider router={router} />
     </I18nextProvider>);
-    expect(html).toContain("Content unavailable");
+    expect(html).toContain(locale === "ru" ? russianCommonValues.notificationUnavailable
+      : locale === "he" ? hebrewCommonValues.notificationUnavailable : "Content unavailable");
     expect(html).toContain("Public topic");
     expect(html).toContain("Visible author");
     expect(html).not.toContain(secret);
