@@ -126,12 +126,12 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 - Corrective work already included: SQL OR parentheses behind `is_hidden=false` for Help Similar; ru/he reviewed unavailable-topic UI key and canonical fingerprint; typed loader data assertions; repaired stale guest/raw loader and public cache-header tests (tests only on final packet). All are covered by full green exact-head CI.
 - **Next agent: Мира (ChatGPT-5.6 Sol)** — perform **bounded B3 coordinator checkpoint** on **exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`** against accepted scope and B2 baseline. Check B3 read/SQL leak boundaries and stacked compatibility, challenge author self-check independently; report PASS or confirmed current-B3 findings to #342. Only coordinator PASS permits next owner continuation to B4. No independent Codex review/merge at B3; #342 never merge. **Лира — STOP.**
 
-## Process side task — agent-triggered PR tests
+## Process side task — agent-triggered PR tests — COMPLETE
 
-- #362 merged into main as `7ae969e70e4028156252511b701dbb9b667a61e2`; Leva independent implementation PASS was on exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`.
-- Post-merge hosted dispatch smoke PASS: CI run `44900723276` with PR #363 / exact docs head before rebuild `bbe72f09c34fc9bbae00f6434712ba45e49dfd80` / base `main`; resolver, exact checkout, `VICO_CI_BASE_REF=main`, migration guard, checks and database all SUCCESS.
-- #363 docs content review found no content finding. Initial review HOLD `DOCS-363-MIRA-01` was ancestry-only: GitHub still showed already-merged #362 workflow history in the PR.
-- #363 was rebuilt directly from current main without changing any of the three reviewed docs blobs. Current exact docs head: `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
-- Final #363 scope check: base exact `7ae969e70e4028156252511b701dbb9b667a61e2`, ahead 1 / behind 0, changed files exactly `AGENTS.md`, `AGENT_LOGIC_ERRORS.md`, `PROJECT_STATE.md`; all three blob SHAs equal the already-reviewed content; mergeable; automatic PR workflow runs = 0.
-- **DOCS-363-MIRA-01 CLOSED. Final docs review PASS.** #363 is ready for owner merge. No additional CI/acceptance required because only ancestry changed and reviewed docs content stayed byte-identical.
+- #362 implementation merged into main; #363 documentation merged into main unchanged from the final docs PASS.
+- Current main after #363 merge: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Final implementation evidence remains: Leva independent PASS on #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`; post-merge hosted workflow_dispatch smoke `44900723276` PASS; final docs review PASS on #363 exact `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
+- Main now contains the manual PR-test policy: ordinary PR CI and browser/connected acceptance do not auto-run on open/head update; agents use one-shot `run:ci` / `run:acceptance`; `workflow_dispatch` is fallback; production/deploy workflows keep separate gates.
+- No open process-side finding or docs debt remains.
+- **Next active work returns to moderation visibility B3 coordinator checkpoint:** Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`, base B2 #357 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`. B4 remains blocked until Mira B3 PASS and new owner continuation.
 
