@@ -2,17 +2,22 @@
 
 ## Активный этап
 
-**Moderation visibility B6-A — Лира AUTHOR PASS; STOP → Мира bounded coordinator checkpoint.** B5 #367 coordinator PASS base `a2269fb0294feaccb433e76b66e800f3e869658d` unchanged. [B6 stacked Draft #370](https://github.com/iliya1947/vico-forum/pull/370) exact `91cb332d6acf60ebf572f57582c13acfeab8eada`, **5 commits / 17 files ahead / behind 0** vs B5, B1–B5 remain stacked Draft/unmerged. Owner authorized B6-A only.
+**Moderation visibility B6-B ACTIVATED — Лира implements in small packages; owner continuation received after B6-A coordinator PASS.** B6-A #370 exact `91cb332d6acf60ebf572f57582c13acfeab8eada` remains the accepted stable foundation; B5 base `a2269fb0294feaccb433e76b66e800f3e869658d` unchanged. B1–B5 and B6 stay stacked Draft/unmerged.
 
-**B6-A1–A3 complete:** isolated private hidden topic/post PostgreSQL queue reader, fresh effective visibility management + active account/AP-10, 25+1 descending changedAt/id cursor with parent status; strict app URL query/transport boundary and neutral private no-store 400/401/403/503; localized EN/RU/HE non-source admin view. Targeted real PostgreSQL and route tests cover permission (including revocation, generic-admin/history/ordinary/Complaint denial), account deactivation, paging/ties, hidden parent/topic, outage/no-store and reviewed locale fingerprints. Old `admin-section` hidden-topic title leak **demonstrated by real PG red test** on `6607ba…`; corrected scoped `db/admin-forum.ts` ordinary list/search/count visibility filters, validated by Hide topic/post PG regressions. No migrations or B7 actions/UI.
+**B6-A coordinator PASS:** guarded private queue, fresh `forum.content.visibility.manage` + active account/AP-10, 25+1 cursor, strict private/no-store route and legacy-admin public-safe boundary verified. Exact-head 22/22 checks and 18/18 workflows SUCCESS. No current B6-A blocker.
 
-**Final exact-head verification:** **22/22 check-runs SUCCESS**, **18/18 workflows SUCCESS** on `91cb332d6acf60ebf572f57582c13acfeab8eada` — main lint/typecheck/unit/build, disposable PostgreSQL 17/schema/ACL/Worker smokes and connected Chromium acceptance. No pending/fail. Author scoped source self-check PASS; no known B6-A blocker.
+**Authorized B6-B scope only:** complete the remaining guarded private surface from the accepted plan. No B7 Hide/Restore actions/QuickActions, no schema/migrations, no production/deploy.
 
-**Лира STOP. Следующий исполнитель — Мира (ChatGPT-5.6 Sol): independent bounded coordinator checkpoint B6-A**, verify this stable exact head, especially guarded private queue and legacy admin public-safe boundary. If confirmed findings → Lira correction. Owner authorization only after Mira PASS can start B6-B. B6-B inspector/revision history/private assets/B7/merge/deploy currently blocked.
+Lira cadence for B6-B:
+1. **B6-B1 — read-only inspector/current event.** Guarded private topic/post inspection with fresh visibility-management authority and active account/AP-10; expose only the approved current state/current revision identifiers and last visibility event/reason needed by the private surface. Ordinary/generic Admin callers without the new capability remain public-safe. Add focused tests, update handoff, STOP.
+2. **B6-B2 — hidden revision-history boundary + localized inspector UI.** Revision history is available only with the additional existing history capability; lack/revoke of that capability must not broaden the base inspector. Complete EN/RU/HE read-only presentation and private/no-store error/data boundaries. Add focused tests, update handoff, STOP.
+3. **B6-B3 — private hidden attachment access.** Guarded private asset reader/route with fresh visibility capability, exact attachment→post→topic membership, existing view/security semantics and AdministrativeRouting integration. Public attachment path remains unchanged/404 for hidden content; Complaints/evidence protected exceptions remain independent. Add focused tests, then perform whole-B6-B author self-check and one final exact-head applicable CI/acceptance run.
+
+After B6-B3 author PASS: **STOP → Мира bounded coordinator checkpoint B6-B**. B7 remains blocked until Mira PASS and a new owner continuation. No Leva final review or merge yet.
 
 ## Baseline
 
-- Current main: `f15b90826f8241d337b1cf6068d879b1a7310f56`.
+- Current main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 - #354 corrective package merged and closed.
 - V-P1/V-P2/V-P3 — ранее приняты и не переоткрываются.
 - V-T1/V-T2 — technical fit PASS на current main.
