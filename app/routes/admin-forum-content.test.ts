@@ -8,6 +8,10 @@ import { hiddenQueueContext } from "../admin/visibility-queue.server";
 import { hiddenQueuePath, hiddenQueueQuery } from "../admin/visibility-queue-path";
 import { createAdministrativeRouting } from "../administrative-routing/addresses";
 import { headers, loader } from "./admin-forum-content";
+import { canonicalEnglishCatalog } from "../localization/catalog";
+import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
+import { reviewedCommonFingerprints } from "../localization/manual-fingerprints";
+import { sourceFingerprint } from "../localization/fingerprint";
 
 const changedAt = "2026-11-21T18:12:13.123Z";
 function env(grants: string[] = ["forum.content.visibility.manage"], signedIn=true) {
@@ -101,6 +105,19 @@ describe("B6-A private visibility queue boundary",()=>{
   const e=env();
   await e.call("?kind=post&beforeChangedAt="+changedAt+"&beforeId=post%2F%C3%97&.data=route&_routes=one");
   expect(e.list).toHaveBeenCalledWith("moderator",{kind:"post",before:{changedAt,id:"post/×"}});
+ });
+ it("preserves reviewed EN/RU/HE labels and current semantic fingerprints",async()=>{
+  const keys=[
+    "adminHiddenQueueTitle","adminHiddenTopics","adminHiddenPosts","adminHiddenQueueChangedAt",
+    "adminHiddenQueueVersion","adminHiddenQueueTopicRef","adminHiddenQueueParentRef",
+    "adminHiddenQueueContextStatus","adminHiddenQueueParentUnavailable","adminHiddenQueueParentAvailable",
+  ] as const;
+  for(const key of keys){
+    expect(canonicalEnglishCatalog.common[key].source.length).toBeGreaterThan(0);
+    expect(russianCommonValues[key].length).toBeGreaterThan(0);
+    expect(hebrewCommonValues[key].length).toBeGreaterThan(0);
+    expect(reviewedCommonFingerprints[key]).toBe(await sourceFingerprint(canonicalEnglishCatalog.common[key]));
+  }
  });
  it("returns typed outbound queue pagination paths for default and alternate private admin address families",()=>{
   const alternate=createAdministrativeRouting(

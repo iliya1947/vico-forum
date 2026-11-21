@@ -26,12 +26,12 @@ function page<T extends {id:string}>(items:T[], total:number):AdminBrowsePage<T>
 // Counts are independent aggregates, never reconstructed from bounded discovery lists.
 const categoryProjection = `c.id, c.name,
   (select count(*)::int from forum_sections s where s.category_id=c.id) as "sectionCount",
-  (select count(*)::int from forum_topics t join forum_sections s on s.id=t.section_id where s.category_id=c.id) as "topicCount",
-  (select count(*)::int from forum_posts p join forum_topics t on t.id=p.topic_id join forum_sections s on s.id=t.section_id where s.category_id=c.id) as "postCount",
+  (select count(*)::int from forum_topics t join forum_sections s on s.id=t.section_id where s.category_id=c.id and not t.is_hidden) as "topicCount",
+  (select count(*)::int from forum_posts p join forum_topics t on t.id=p.topic_id join forum_sections s on s.id=t.section_id where s.category_id=c.id and not t.is_hidden and not p.is_hidden) as "postCount",
   (c.id=$4) as reserved`;
 const sectionProjection = `s.id, s.name, json_build_object('id',c.id,'name',c.name) as category,
-  (select count(*)::int from forum_topics t where t.section_id=s.id) as "topicCount",
-  (select count(*)::int from forum_posts p join forum_topics t on t.id=p.topic_id where t.section_id=s.id) as "postCount",
+  (select count(*)::int from forum_topics t where t.section_id=s.id and not t.is_hidden) as "topicCount",
+  (select count(*)::int from forum_posts p join forum_topics t on t.id=p.topic_id where t.section_id=s.id and not t.is_hidden and not p.is_hidden) as "postCount",
   (s.id=$4) as service`;
 
 /** Protected admin projection only. Public Help location/section readers stay unchanged. */
@@ -66,14 +66,14 @@ export class PostgresAdminForumReader implements AdminForumReader {
         join forum_categories c on c.id=s.category_id where s.id=$5),
       matching as (select t.id from forum_topics t
         join forum_topic_title_revisions r on r.topic_id=t.id and r.id=t.current_title_revision_id
-        where t.section_id=$5 and ($1='' or r.original_content ilike $2 escape '\\' or t.id ilike $2 escape '\\')),
+        where t.section_id=$5 and not t.is_hidden and ($1='' or r.original_content ilike $2 escape '\\' or t.id ilike $2 escape '\\')),
       paged as (select t.id, r.original_content as title, r.source_locale as "sourceLocale",
           t.is_solved as "isSolved",
-          (select count(*)::int from forum_posts p where p.topic_id=t.id) as "postCount"
+          (select count(*)::int from forum_posts p where p.topic_id=t.id and not p.is_hidden) as "postCount"
         from forum_topics t
         join forum_topic_title_revisions r on r.topic_id=t.id and r.id=t.current_title_revision_id
         join matching m on m.id=t.id
-        where ($3::text is null or t.id collate "C">$3 collate "C")
+        where not t.is_hidden and ($3::text is null or t.id collate "C">$3 collate "C")
         order by t.id collate "C" limit 26)
       select (select row_to_json(r) from root r) as section,
         coalesce((select json_agg(p order by p.id collate "C") from paged p),'[]') as items,
