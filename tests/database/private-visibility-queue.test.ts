@@ -88,6 +88,33 @@ beforeAll(async()=>{
         values ($1,'hidden-post-000','queue-author',$2,'en',$3::timestamptz)`,
         [id,"PRIVATE OLD BODY "+id,"2026-11-21T00:00:00."+micro+"Z"]);
     }
+
+    // A moderator may read published assets of an individually hidden post OR a post
+    // made unavailable solely by the containing hidden topic. Shared public references
+    // and draft-only assets remain independent.
+    await post("visible-post-hidden-topic","hidden-topic-000");
+    const assets=[
+      ["11111111-1111-4111-8111-111111111111","PRIVATE_ONLY","type-checked"],
+      ["22222222-2222-4222-8222-222222222222","SHARED_PUBLIC","type-checked"],
+      ["33333333-3333-4333-8333-333333333333","PUBLIC_ONLY","type-checked"],
+      ["44444444-4444-4444-8444-444444444444","UNVERIFIED","pending"],
+      ["55555555-5555-4555-8555-555555555555","DRAFT_ONLY","type-checked"],
+    ] as const;
+    for(const [id,name,verification] of assets){
+      await client.query(`insert into forum_attachments
+        (id,owner_id,object_key,file_name,declared_mime,detected_type,response_mime,
+          byte_size,verification_status,created_at)
+        values ($1,'queue-author',$2,$3,'text/plain','text','text/plain',4,$4,clock_timestamp())`,
+        [id,"private/"+id,name+".txt",verification]);
+    }
+    for(const [postId,id] of [
+      ["hidden-post-000",assets[0][0]],["hidden-post-000",assets[1][0]],
+      ["visible-parent",assets[1][0]],["visible-parent",assets[2][0]],
+      ["visible-post-hidden-topic",assets[1][0]],["hidden-post-000",assets[3][0]],
+    ]){
+      await client.query("insert into forum_post_attachments(post_id,attachment_id,created_at) values ($1,$2,clock_timestamp())",
+        [postId,id]);
+    }
     await client.query("commit");
   }catch(error){await client.query("rollback");throw error;}
 },120_000);
@@ -228,5 +255,50 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
           .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
       }finally{await client.query("rollback");}
     }finally{historyAllowed=false;}
+  });
+
+  it("B6-B3 reads only exact published hidden membership and preserves public/shared references",async()=>{
+    const privateId="11111111-1111-4111-8111-111111111111";
+    const sharedId="22222222-2222-4222-8222-222222222222";
+    const publicId="33333333-3333-4333-8333-333333333333";
+    const pendingId="44444444-4444-4444-8444-444444444444";
+    const draftId="55555555-5555-4555-8555-555555555555";
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",privateId))
+      .toMatchObject({id:privateId,objectKey:"private/"+privateId,verificationStatus:"type-checked",
+        fileName:"PRIVATE_ONLY.txt",byteSize:4});
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",sharedId))
+      .toMatchObject({id:sharedId,objectKey:"private/"+sharedId});
+    expect(await reader.attachment("queue-moderator","hidden-topic-000","visible-post-hidden-topic",sharedId))
+      .toMatchObject({id:sharedId});
+    // Hidden branch never reads unrelated public-only or draft-only objects.
+    expect(await reader.attachment("queue-moderator","visible-topic","visible-parent",sharedId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","visible-topic","visible-parent",publicId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",publicId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","hidden-topic-000","hidden-post-000",privateId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",pendingId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",draftId)).toBeNull();
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000","missing")).toBeNull();
+    const shared=await client.query("select post_id from forum_post_attachments where attachment_id=$1 order by post_id",[sharedId]);
+    expect(shared.rows.map(x=>x.post_id)).toEqual(["hidden-post-000","visible-parent","visible-post-hidden-topic"].sort());
+  });
+  it("B6-B3 rechecks effective visibility grant and active actor before exposing object key",async()=>{
+    const asset="11111111-1111-4111-8111-111111111111";
+    allowed=false;
+    try{
+      await expect(reader.attachment("queue-moderator","visible-topic","hidden-post-000",asset))
+        .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    }finally{allowed=true;}
+    await expect(reader.attachment("absent-moderator","visible-topic","hidden-post-000",asset))
+      .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    await client.query("begin");
+    try{
+      await client.query(`update "user" set deactivated_at=now(),
+        deactivated_by_user_id='queue-author',retain_at_least_until=now()+interval '2 years'
+        where id='queue-moderator'`);
+      await expect(reader.attachment("queue-moderator","visible-topic","hidden-post-000",asset))
+        .rejects.toBeInstanceOf(HiddenQueueForbiddenError);
+    }finally{await client.query("rollback");}
+    expect(await reader.attachment("queue-moderator","visible-topic","hidden-post-000",asset))
+      .toMatchObject({id:asset});
   });
 });
