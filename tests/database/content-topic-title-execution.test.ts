@@ -164,6 +164,78 @@ describe("content topic-title execution and publication", () => {
     )).rows).toEqual([{status:"completed"}]);
   });
 
+  it("completes a title task when Hide commits during its provider window without new work on Restore", async () => {
+    const second = await secondClient();
+    const started = deferred(), release = deferred();
+    let execution: ReturnType<TranslationTaskExecutorDispatcher["execute"]> | undefined;
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      );
+      if (planned.kind !== "queued") throw new Error("expected accepted title task");
+      const counters = async () => (await second.query<{
+        heads: number; tasks: number; budget: number; revisions: number;
+      }>(`
+        select
+          (select count(*)::int from translation_task_generation_heads) as heads,
+          (select count(*)::int from translation_tasks) as tasks,
+          (select coalesce(sum(used_units),0)::int from content_translation_request_budget_counters) as budget,
+          (select count(*)::int from forum_topic_title_revisions) as revisions
+      `)).rows[0]!;
+      const before = await counters();
+      const translate = vi.fn(async (): Promise<MachineTranslationResult> => {
+        started.resolve();
+        await release.promise;
+        return {
+          value: "כותרת מתורגמת",
+          provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+        };
+      });
+      execution = createDispatcher(client, { supports: () => true, translate })
+        .execute(enqueuer.messages[0]!);
+      void execution.catch(() => undefined);
+      await started.promise;
+
+      // An independent PostgreSQL connection commits Hide while translation
+      // execution is already inside the provider window.
+      await second.query("update forum_topics set is_hidden=true where id='topic-a'");
+      expect((await client.query(
+        "select is_hidden,current_title_revision_id from forum_topics where id='topic-a'",
+      )).rows[0]).toEqual({ is_hidden: true, current_title_revision_id: "title-a-r1" });
+      const deniedEnqueue = new FakeTranslationTaskEnqueuer();
+      await expect(createPlanner(second, deniedEnqueue).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      )).resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+      expect(deniedEnqueue.messages).toHaveLength(0);
+      expect(await counters()).toEqual(before);
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({ outcome: "published", delivery: "ack" });
+      expect(translate).toHaveBeenCalledTimes(1);
+      expect(await new DrizzleContentTranslationStore(drizzle(second)).read({
+        contentType: "topic-title", contentId: "topic-a", revisionId: "title-a-r1", targetLocale: "he",
+      })).toMatchObject({ translatedContent: "כותרת מתורגמת", provenance: { origin: "machine" } });
+      expect((await second.query(
+        "select status from translation_tasks where id=$1", [planned.task.id],
+      )).rows).toEqual([{ status: "completed" }]);
+      expect(await counters()).toEqual(before);
+
+      await second.query("update forum_topics set is_hidden=false where id='topic-a'");
+      const restoredEnqueue = new FakeTranslationTaskEnqueuer();
+      await expect(createPlanner(second, restoredEnqueue).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      )).resolves.toMatchObject({ kind: "original", reason: "translation-current" });
+      expect(restoredEnqueue.messages).toHaveLength(0);
+      expect(await counters()).toEqual(before);
+      expect(translate).toHaveBeenCalledTimes(1);
+    } finally {
+      release.resolve();
+      if (execution) await Promise.allSettled([execution]);
+      await second.end();
+    }
+  });
+
   it("dispatches by persisted kind, publishes atomically, and makes duplicate delivery provider-free", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
