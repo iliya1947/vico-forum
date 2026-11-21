@@ -104,13 +104,28 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B6-A — author PASS, coordinator pending
+## Moderation visibility B6-A — MIRA COORDINATOR PASS — STOP BEFORE B6-B
 
-- **Accepted B5 base:** `a2269fb0294feaccb433e76b66e800f3e869658d`. B6 scoped [Draft #370](https://github.com/iliya1947/vico-forum/pull/370) stable `91cb332d6acf60ebf572f57582c13acfeab8eada` (5 commits, 17 files, 0 behind), unmerged.
-- **A1/A2:** private reader with independent effective visibility-management admission, active account, AP-10, hidden topic/post 25+1 cursor and effective parent; Worker context + route + strict canonical UTC ISOms/id parser, private document/.data/errors, non-source EN/RU/HE UI. No inspector/assets/Restore.
-- **A3:** React Router 401/403/400/503, current grant/revoke, no-store, pagination/query/transport and i18n fingerprint regression; real PostgreSQL 17 tests 27 hidden topics/posts, order/ties/25+1, actor active/revoke, post parent/topic flags and no hidden source. Adjacent current-stage admin `readSectionTopics` leak proven by 1 failing PG test on preceding `6607ba…`, while 1617 other DB tests passed. Scoped SQL correction hides topic titles/IDs and hidden counts from ordinary admin section/category browsing; new PostgreSQL Hide topic/post regressions pass on current head.
-- **Exact-head author PASS:** **22/22 check-runs SUCCESS; 18/18 workflows SUCCESS** on `91cb332d6acf60ebf572f57582c13acfeab8eada`; PostgreSQL, Worker, lint/typecheck/unit/build, Chromium/connected suites all green. Scope self-reviewed, no remaining confirmed B6-A blocker.
-- **STOP → Мира bounded B6-A coordinator checkpoint** on same SHA; findings return Лире if verified. B6-B, B7, merge and independent final whole-review not authorized.
+- Stacked Draft #370 stable exact `91cb332d6acf60ebf572f57582c13acfeab8eada`, base = accepted B5 #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d`; mergeable, 5 commits / 17 B6-A files / behind 0.
+- Private queue boundary:
+  - isolated private PostgreSQL reader; not added to public ForumReader;
+  - fresh effective `forum.content.visibility.manage` admission plus active-account check on each read;
+  - Worker provides the AP-10-filtered authorization capability to the reader;
+  - route admits through current capability before query validation, then reader independently rechecks capability/active actor; guest/ordinary/history-only/Complaint-only/generic non-capable admin do not gain hidden access.
+- Queue contract matches accepted B6-A:
+  - topic/post kinds;
+  - 25 + lookahead;
+  - descending `(visibility_changed_at,id)` cursor;
+  - strict canonical UTC millisecond query and bounded id;
+  - schema stores visibility timestamps at precision 3, so emitted ISOms cursor and SQL ordering have matching precision;
+  - post rows expose only private moderation identifiers/state, including topic-hidden/direct-parent effective unavailability; no title/body/revision/attachment source.
+- Private HTTP behavior is `private, no-store`; authorization/storage/unclassified reader failures fail closed without raw hidden source.
+- Existing direct `/admin/forum/topics/:topicId` remains public-safe through B3 `readTopicPage`: hidden topic -> neutral 404, individually hidden post -> tombstone. No B6 inspector behavior was introduced early.
+- Adjacent ordinary admin section/category leak found during B6-A was a real current-stage blocker, not future cleanup: generic forum-admin browsing could expose a hidden topic title/id and hidden counts. The scoped `db/admin-forum.ts` correction now filters hidden topics/posts from ordinary admin discovery/counts. This preserves the B6 rule that hidden source is available only through the fresh guarded private surface.
+- Exact-head verification: **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS** on `91cb332d...`, including PostgreSQL 17, lint/typecheck/unit/build and connected authorization/Complaints/AP-10/Chromium suites.
+- **B6-A bounded coordinator checkpoint PASS.** No confirmed current-B6-A blocker remains.
+- Full inspector/current event/revision history/private asset GET and B7 actions/UI remain out of scope.
+- **STOP. B6-B requires fresh owner continuation.**
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 

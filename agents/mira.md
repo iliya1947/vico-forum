@@ -153,3 +153,7 @@ Reviewed #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e` against accepted 
 ## 2026-11-21 — B5 coordinator checkpoint PASS
 
 Reviewed #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d` against accepted B5 and B4 baseline. Watch/Bookmark/Mute ON visibility gates and safe OFF/undo, retained unavailable lists, Block presentation boundary, mixed/legacy notification masking/mark/open, chronology/read/count/suppression/Restore invariants all match the accepted contract. Canonical hidden-topic undo path is reachable because personal intents run before public visibility reads. Corrected M3 test reflects the required real PostgreSQL blocking order and does not weaken production locks. 18/18 exact-head checks and 14/14 workflows green. No current-B5 blocker. Stop before B6.
+
+## 2026-11-21 — B6-A coordinator checkpoint PASS
+
+Reviewed #370 exact `91cb332d6acf60ebf572f57582c13acfeab8eada` against accepted B6-A. Private queue/admission/cursor/privacy contracts pass; timestamp precision is schema-level millisecond so cursor ordering is stable. Existing admin-topic route stays public-safe. The ordinary admin section/category hidden-title/count leak was confirmed current-stage and its scoped correction is required for the guarded-private-surface invariant. 22/22 exact-head checks and 18/18 workflows green. No current-B6-A blocker. STOP before B6-B.
