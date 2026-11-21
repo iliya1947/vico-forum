@@ -44,3 +44,7 @@
 - **What happened:** after a full self-review of #362, Mira declared no current-scope defect and handed the head to Leva, but the dispatch path still attempted to override reserved `GITHUB_BASE_REF` via workflow step env.
 - **Why it was wrong:** the review verified PR-label runtime and dispatch resolver logic but did not verify GitHub's reserved `GITHUB_*` environment-variable semantics. The normal PR path masked the defect because GitHub already provides `GITHUB_BASE_REF` there.
 - **Prevention:** when an unexecuted fallback path depends on event-specific GitHub context or default variables, verify the runner/default-variable contract explicitly; do not infer dispatch correctness from a successful PR-event path.
+
+## 2026-11-21 — erroneous service PR creation
+
+Мира ошибочно истолковала прямую команду разработчика «через свой служебный PR» как разрешение создать новый service PR и создала #366, хотя действующий собственный канал #342 уже существовал. #366 сразу закрыт без merge, handoff перенесён в #342. Причина ошибки — действие было выбрано до проверки смысла формулировки против текущего контекста и существующего канала. Правило предотвращения: если у агента уже назначен служебный PR, слова «свой/твой служебный PR» означают этот существующий PR; новый service PR создаётся только по прямой однозначной команде разработчика создать новый канал.
