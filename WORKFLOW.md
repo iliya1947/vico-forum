@@ -107,66 +107,14 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B4 — B4-B IMPLEMENTED, OWNER STOP
+## Moderation visibility B4 — author PASS; Mira bounded checkpoint pending — STOP
 
-Owner continuation received after B3 Mira PASS. Create the next stacked implementation PR with base = current B3 head `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. Keep earlier rungs Draft/unmerged.
-
-### B4 bounded result
-
-Deliver only accepted-plan **assets + translation boundaries**:
-
-- public published attachment access must enforce exact attachment→post→topic membership and effective visibility **before any bucket.get**, for ordinary download plus existing `view=inline|text` modes; hidden/missing must remain neutral 404 and bucket calls must be zero;
-- preserve legitimate non-publication paths: owner draft attachment access, shared attachment that still has another visible published membership, retained Complaint/evidence references and stored bytes/refs must not be deleted or invalidated by Hide;
-- do not expose a B6 private moderation surface in B4. B4 may establish/verify the lower-level asset boundary required by the accepted plan, but guarded private inspection/read routes and fresh capability admission remain B6;
-- translation planning visibility gates are **already present in B2**: title planner rejects hidden topic; post-body planner uses head/task → parent topic → post ordering and rejects hidden topic/post. Do not reimplement or widen them. Treat them as inherited foundation and verify B4 behavior around them;
-- new translation plans against hidden source must leave no new task/generation/budget/provider side effects; accepted revision-bound tasks may complete private persistence after Hide, without public source/translation disclosure, cancellation/refund, current-pointer mutation or new work on Restore;
-- Restore must reuse permissible persisted translation/asset state and must not enqueue a translation job, create a revision/provider call, or manufacture attachment state;
-- cover the B4 Hide/Restore × new-plan / accepted-execution boundaries with real database synchronization where concurrency matters; do not substitute JS promise ordering for a lock/race claim.
-
-### Scope classification already checked
-
-Current B3 source confirms:
-- `db/forum-attachments.ts::readPublishedAttachment` currently joins post+attachment but **does not join/check topic visibility or post visibility** — this is a real B4 gap;
-- `app/routes/attachment-download.ts` calls the published reader before `bucket.get`, so a correct store gate naturally protects all existing view modes;
-- B2 already changed `db/content-topic-title-task-store.ts` and `db/content-post-body-task-store.ts` to the planned visibility/lock behavior. Do not duplicate those changes unless a concrete B4 test proves a defect;
-- accepted execution stores are intentionally not to receive a new hidden-admission lock/gate merely because source became hidden.
-
-### B4-A — public asset visibility gate + no-bucket acceptance — DONE / STOP
-
-- Created stacked [Draft #365](https://github.com/iliya1947/vico-forum/pull/365) `feature/moderation-visibility-b4-assets-translations`, base B3 #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`, current exact head **`e30c763d4dd42e32537f2a6e6edfec194c6d2af0`**. Earlier B1–B3 rungs remain unmerged. **Only B4-A** implemented; B4-B/B4-C not started.
-- 2 files changed, 3 related microsteps: `db/forum-attachments.ts::readPublishedAttachment` adds `INNER JOIN forumTopics` via the post and requires **both post and topic `is_hidden=false`**, preserving exact post+attachment membership and type-checked status; existing `app/routes/attachment-download.ts` already invokes this reader before `bucket.get` and remains unchanged.
-- `tests/database/forum-attachments.test.ts`: real PostgreSQL + HTTP loader integration regression covers hidden post and hidden parent topic, missing post/ref, all existing `view=download(default)|inline|text` paths, neutral empty 404/headers and **bucket.get not called** for denied paths. Positive shared attachment survives via another visible post; authenticated owner-draft GET still reads the same retained asset; refs remain intact. Test transitions carry valid visibility versions and timestamps.
-- **17/17 focused static diff/source invariants PASS** on exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0`; local PostgreSQL/Vitest/Typecheck execution **NOT VERIFIED**. No broad CI triggered by agent during this packet. Do not claim author B4 PASS; this is a partial bounded packet only.
-- **Next owner `...` → Лира B4-B**: investigate inherited B2 translation plan/accepted execution gates and add only missing B4 real-PG Hide/Restore/new-plan/accepted-execution coverage, preserving safe private completion and no public disclosure; STOP after B4-B. Do not expand into B4-C or B5–B9 without continuation.
-
-### B4-B — translation Hide/Restore during accepted execution — DONE / STOP
-
-- Current stacked [Draft #365](https://github.com/iliya1947/vico-forum/pull/365) exact **`239b883c515b3f647077198f85e27a2be30d911a`**, base B3 unchanged `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. B4-A previous exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0` remains included.
-- **No production translation-planner/executor code edits**. Source confirmed inherited B2 contract: `content-topic-title-task-store.ts` locks topic and checks `isHidden`; `content-post-body-task-store.ts` locks parent topic before post and checks both visibility flags. Existing real PostgreSQL tests cover Hide/Restore × new planning in both committed lock orders, no task/generation/budget side effects for rejected work, accepted task private completion when Hide already committed.
-- Remaining gap was accepted translation task **in provider window** concurrently with committed visibility change, versus existing tests that Hide before execution. Added **two targeted real-PG test cases** only:
-  1. `tests/database/content-topic-title-execution.test.ts`: accepted task enters provider, separate PostgreSQL connection commits title-topic Hide, hidden re-plan denied/no queue or budget/task side effects; in-flight task completes private revision-bound storage; Restore reuses completed translation with no re-enqueue, revision/provider repetition.
-  2. `tests/database/content-post-body-task-planning.test.ts`: accepted body task enters provider, second PostgreSQL connection commits both topic/post Hide flags in one transaction; hidden re-plan denied/no queue; execution completes private result; partial/full Restore retains revision and completed task without new generation/budget/job/provider work.
-- Explicit independent PostgreSQL commit-before-provider-release synchronization is tested; **this is not a new lock-graph proof**. Prior B2 `pg_blocking_pids` barriers remain authoritative for visibility × planning order. Both tests ensure suspended provider can always release in `finally`.
-- Scope/diff and focused source invariants checked on current exact head: four files total in B4 (#365): B4-A two files and B4-B two test files; **no unrelated modules or new private route**. Focused source checks PASS. **Runtime PostgreSQL/Vitest/Typecheck not executed on `239b883c515b3f647077198f85e27a2be30d911a`; no CI label applied**, so B4 author PASS must not be asserted.
-- **Next owner `...` → Лира B4-C only:** check preserved shared refs/drafts/Complaint evidence and any missing B4 in-scope gaps; resolve real blockers, run applicable final exact-head checks once, perform author B4 self-check, then STOP for Mira bounded B4 checkpoint. No B5–B9, merge, or private moderator UI.
-
-### Suggested bounded work packets
-
-1. **B4-A — public asset gate + bucket/no-bypass acceptance.**
-2. **B4-B — translation new-plan/accepted-execution + Restore invariants/races.**
-3. **B4-C — preservation/shared-ref/draft/evidence coverage + bounded author self-check and applicable final checks.**
-
-After each packet: record the result and STOP for owner continuation. Do not run broad CI after every packet; use targeted checks. At complete B4, run the applicable exact-head author check set once, then STOP for Mira coordinator checkpoint.
-
-### Explicitly outside B4
-
-- B5 Watch/Bookmarks/Mute/Block own-list/inbox behavior;
-- B6 queue/inspector/private moderation routes and permissioned hidden-source/private-asset UI;
-- B7 visibility POST intents/QuickActions/forms/UI;
-- B8 whole-feature connected acceptance and B9 closeout;
-- production/Stage6/deployed resources.
-
-**B4-B DONE — Лира STOP; next owner `...` starts only B4-C on existing Draft #365.**
+- Stacked [Draft #365](https://github.com/iliya1947/vico-forum/pull/365), stable exact **`97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`** on accepted B3 #359 base `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. B1 #355, B2 #357, B3 #359 and B4 #365 remain unmerged; B3 Mira PASS already recorded. No B5/B6, merge, private inspector or private asset route authorized.
+- **B4-A public asset boundary:** `db/forum-attachments.ts::readPublishedAttachment` now requires exact attachment→post→topic membership with both post/topic visible before returning metadata. Existing public attachment download/default/inline/text route checks store before bucket. Real-PG/HTTP test covers hidden post/topic and missing post/ref neutral 404, `bucket.get` zero, visible shared membership and retained owner draft access. No new R2/Cloudflare infrastructure.
+- **B4-B accepted translations:** B2 title and body new-planning gates/locking retained unmodified. Added real-PG tests for accepted title/body execution paused in provider window, while separate PG session commits Hide; forbidden hidden plans leave queue/generation/budget unchanged, accepted task persists private revision-bound translation, Restore adds no revision/job/provider work. Earlier B2 PG lock barriers test both commit orders of new planning × Hide/Restore. No production translation changes.
+- **B4-C protected evidence/retention:** evidence-only asset (no publication/draft ref) remains active and readable through protected Case evidence reader after topic+post Hide, cleanup and Restore; no bucket delete or synthetic public membership. Cleanup and Complaint Case readers remain unchanged, no B6 private HTTP read created. All new tests in `tests/database/forum-attachments.test.ts`, `tests/database/content-post-body-task-planning.test.ts` and `tests/database/content-topic-title-execution.test.ts`.
+- **Author B4 self-check PASS** on exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`: four changed files (one production SQL reader + three PG integration test files); no schema/permission/workflow/route/UI change; checked V4/V6 and B4 scope, SQL deny-before-bucket, alternate legitimate references, accepted translation privacy/persistence and B3 stacked compatibility; no confirmed current-B4 blocker. **[CI #44909767945](https://github.com/iliya1947/vico-forum/actions/runs/44909767945) SUCCESS**: checks + database SUCCESS, **2782/2782 unit**, **1604/1604 real PostgreSQL17**, lint/typecheck/build/Worker smoke PASS. Focused PG suites: forum attachments **44/44**, title execution **16/16**, body planning **30/30**. **9/9 exact-head workflows SUCCESS**, including SA04-K5 attachment Worker/R2/Chromium, SA07 and SA08. No production/deployed tests claimed.
+- **Next agent: Мира (ChatGPT-5.6 Sol)** — independently perform bounded **B4 coordinator checkpoint** on stable exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e` against accepted stage plan and B3 baseline, examining public asset gate, protected evidence, translation in-flight behavior and all retained refs; return PASS or verified current-B4 finding to #342. PASS plus separate owner continuation required before B5. No Leva whole-feature review, merge or B5 now. **Лира — STOP.**
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 
@@ -175,5 +123,5 @@ After each packet: record the result and STOP for owner continuation. Do not run
 - Final implementation evidence remains: Leva independent PASS on #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`; post-merge hosted workflow_dispatch smoke `44900723276` PASS; final docs review PASS on #363 exact `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
 - Main now contains the manual PR-test policy: ordinary PR CI and browser/connected acceptance do not auto-run on open/head update; agents use one-shot `run:ci` / `run:acceptance`; `workflow_dispatch` is fallback; production/deploy workflows keep separate gates.
 - No open process-side finding or docs debt remains.
-- **Current active work:** B3 coordinator PASS; B4-A/B4-B implemented in Draft #365 exact `239b883c515b3f647077198f85e27a2be30d911a`; targeted static checks PASS; runtime new-head tests not verified. Owner `...` permits only B4-C/final bounded B4 validation.
+- **Current active work:** B4 Draft #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e` author self-check PASS with 9/9 workflows SUCCESS. Next **Мира bounded B4 coordinator checkpoint**. B5 blocked until coordinator PASS plus owner continuation.
 
