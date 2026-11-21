@@ -15,29 +15,38 @@
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
 2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — очищенный Project draft, но после AGENTS cross-layer анализа найдены ещё 1 full + 1 partial duplicate.
+4. `PROJECT_INSTRUCTIONS.draft.md` — очищенный Project draft: 16 numbered rules + unique project-only unnumbered guards.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
 6. `AGENTS.draft.md` — пока идентичен current.
 
-## AGENTS cross-layer analysis
+## User layer
 
-Полный анализ: `research/agents-vs-upper-layers-classification.md`.
+- Current coverage: 15/15 FULL.
+- Draft является semantic superset current User rules.
 
-Проверено:
-- актуальный `main` по-прежнему `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
-- `main:AGENTS.md` blob `9037fc15fd2b5fbf8c86ee677d00198dfcfbe442`;
-- он полностью совпадает с `AGENTS.current.md`;
-- AGENTS прочитан полностью.
+## Project layer
 
-Результат:
-1. DELETE-SAFE из AGENTS по межслойному сравнению: **0**.
-2. Причина: AGENTS — общий repository-visible contract для Codex + ChatGPT; User/Project coverage не заменяет его для Codex.
-3. Новый DELETE-SAFE в Project draft: Project 3, полностью покрытый AGENTS Review 5.
-4. Новый PARTIAL-DUPLICATE в Project draft: таблица имён/моделей; mapping уже содержится в AGENTS Roles, но короткое требование использовать закреплённые имена надо сохранить.
-5. `AGENTS.draft.md` не изменён.
+1. Current numbered rules: 18.
+2. Draft numbered rules: 16.
+3. Удалены:
+   - current Project 10 — покрыт User 2 + 7;
+   - current Project 3 — покрыт AGENTS Review 5/7, а Project 2 требует читать актуальный AGENTS.
+4. Удалён общий goal-дубль.
+5. Partial interpretation duplicate сокращён до уникального project-context check.
+6. Name/model mapping удалён из Project как дубль AGENTS Roles; project-only требование использовать закреплённые имена сохранено ссылкой на AGENTS.
+7. Все 16 сохранённых numbered rules совпадают с current дословно.
+8. Потерянных Project-specific guards: 0.
+9. Current→draft semantic diff обновлён: `research/project-current-vs-draft-diff.md`.
+10. Объём Project file: 443 → 347 whitespace words.
+
+## AGENTS layer
+
+- Межслойный анализ завершён: `research/agents-vs-upper-layers-classification.md`.
+- DELETE-SAFE из AGENTS только из-за User/Project coverage: 0.
+- `AGENTS.draft.md` ещё не изменён.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: применить к `PROJECT_INSTRUCTIONS.draft.md` два результата AGENTS cross-layer прохода — удалить Project 3 и заменить таблицу имён/моделей короткой ссылкой на актуальные AGENTS roles; затем сделать Project semantic diff повторно.
+Следующий переход: начать отдельный внутренний аудит `AGENTS.current.md` на собственные дубли и безопасные structural merges; первый проход только классификация, без изменения `AGENTS.draft.md`.
