@@ -1,5 +1,6 @@
 import { data, type HeadersArgs, type RouterContextProvider } from "react-router";
 import { requireAdminAccess } from "../admin/access.server";
+import { authorizationForRequest } from "../authorization/request-context";
 import { adminObjectId } from "../admin/forum.server";
 import { hiddenInspectionQuery } from "../admin/visibility-queue-path";
 import { hiddenQueuePrivateHeaders, readHiddenInspection, readHiddenPostRevisions } from "../admin/visibility-queue.server";
@@ -26,9 +27,16 @@ export async function loader({ request, params, context }: {
   for (const [key, value] of new URL(request.url).searchParams) {
     if (key !== ".data" && key !== "_routes") query.append(key, value);
   }
-  // Resolve independent history admission before history-cursor validation.
+  // This capability stays route-local; generic AdminAccess is not broadened.
+  let canReadPostHistory: boolean;
+  try {
+    canReadPostHistory=await authorizationForRequest(context).forUser(access.actorId!).has("forum.post.history.read");
+  }catch{
+    throw new Response("Unavailable",{status:503,headers:hiddenQueuePrivateHeaders});
+  }
+  // A denied actor must not be given a history-cursor query oracle.
   if((query.has("revisions")||query.has("beforeRevisionAt")||query.has("beforeRevisionId"))
-    &&!access.canReadPostHistory)throw new Response("Forbidden",{
+    &&!canReadPostHistory)throw new Response("Forbidden",{
     status:403,headers:hiddenQueuePrivateHeaders,
   });
   const {target,includeRevisions,before}=hiddenInspectionQuery(topicId,query);
@@ -38,7 +46,7 @@ export async function loader({ request, params, context }: {
   });
   const revisions=includeRevisions&&target.kind==="post"
     ? await readHiddenPostRevisions(context,target,before):null;
-  return data({locale:params.locale??"en",access,inspection,revisions},{
+  return data({locale:params.locale??"en",access,canReadPostHistory,inspection,revisions},{
     headers:hiddenQueuePrivateHeaders,
   });
 }

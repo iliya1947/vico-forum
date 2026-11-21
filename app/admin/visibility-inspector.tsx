@@ -7,13 +7,13 @@ import type { loader } from "../routes/admin-forum-inspect";
 
 /** Read-only. Historical source exists only behind both server-side capabilities. */
 export default function VisibilityInspector() {
-  const {locale,access,inspection,revisions}=useLoaderData<typeof loader>();
+  const {locale,access,canReadPostHistory,inspection,revisions}=useLoaderData<typeof loader>();
   const {t}=useTranslation("common");
   const routing=useAdministrativeRouting();
   const target=inspection.kind==="topic"
     ? {kind:"topic" as const,topicId:inspection.topicId}
     : {kind:"post" as const,topicId:inspection.topicId,postId:inspection.id};
-  const canShowRevisions=inspection.kind==="post"&&access.canReadPostHistory;
+  const canShowRevisions=inspection.kind==="post"&&canReadPostHistory;
   const eventLabels={
     "topic.hidden":"historyTopicHidden","topic.restored":"historyTopicRestored",
     "post.hidden":"historyPostHidden","post.restored":"historyPostRestored",

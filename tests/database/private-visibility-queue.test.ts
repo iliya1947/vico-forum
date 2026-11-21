@@ -78,15 +78,15 @@ beforeAll(async()=>{
       (id,actor_id,actor_label,action,target_type,target_id,target_label,context,reason)
       values ($1,'queue-moderator','Moderator','topic.pinned','topic','restored-topic',
         'topic:restored-topic','{}'::jsonb,'Not a visibility reason')`,[randomUUID()]);
-    // Microsecond-stable keyset fixture: 28 historical revisions plus the first current body.
-    await client.query("update forum_post_revisions set created_at='2026-10-30T00:00:00Z' where id='hidden-post-000-body'");
+    // Immutable published revision remains unchanged. 28 future-dated fixture
+    // revisions ensure stable microsecond keyset ordering ahead of current body.
     for(let i=0;i<28;i++){
       const id="hidden-post-000-history-"+String(i).padStart(3,"0");
       const micro=String(i===25?24:i).padStart(6,"0");
       await client.query(`insert into forum_post_revisions
         (id,post_id,author_id,original_content,source_locale,created_at)
         values ($1,'hidden-post-000','queue-author',$2,'en',$3::timestamptz)`,
-        [id,"PRIVATE OLD BODY "+id,"2026-11-21T00:00:00."+micro+"Z"]);
+        [id,"PRIVATE OLD BODY "+id,"2030-01-01T00:00:00."+micro+"Z"]);
     }
 
     // A moderator may read published assets of an individually hidden post OR a post
@@ -230,7 +230,7 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
     try {
       const first=await reader.revisions("queue-moderator",target);
       expect(first.items).toHaveLength(25);
-      expect(first.next).toMatchObject({createdAt:"2026-11-21T00:00:00.000003Z",id:"hidden-post-000-history-003"});
+      expect(first.next).toMatchObject({createdAt:"2030-01-01T00:00:00.000003Z",id:"hidden-post-000-history-003"});
       const second=await reader.revisions("queue-moderator",target,first.next!);
       expect(second.items).toHaveLength(4);
       expect(second.next).toBeNull();

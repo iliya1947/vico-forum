@@ -124,7 +124,8 @@ describe("B6-B1 private current inspection resource",()=>{
     const both=env(["forum.content.visibility.manage","forum.post.history.read"]);
     const response=await both.call("?postId=post-1&revisions=1");
     expect(response.init?.headers).toEqual({"Cache-Control":"private, no-store"});
-    expect(response.data.access.canReadPostHistory).toBe(true);
+    expect(response.data.canReadPostHistory).toBe(true);
+    expect(response.data.access).not.toHaveProperty("canReadPostHistory");
     expect(response.data.revisions?.items[0].originalContent).toBe("REDACTED PRIVATE OLD TEXT");
     expect(both.revisions).toHaveBeenCalledWith("moderator",
       {kind:"post",topicId:"hidden-topic",postId:"post-1"},undefined);
