@@ -580,3 +580,352 @@ Transport/R2 boundary теперь концептуально закрыта ц�
 Это также сохраняет важную границу acceptance: Pages показывает реальную product presentation и representative interaction state, но не становится доказательством production attachment authorization/storage/HTTP semantics.
 
 Следующий conceptual block уже не transport: определить **единый deterministic test state и управляющие preview controls** — как users/roles/forum/settings/complaints/notifications/personal state/Admin/Owner/empty/error states живут в одной базе, а identity/locale/viewport/scenario переключаются без переписывания ownership и без второй product logic.
+
+## 16. Единая deterministic test state model
+
+Подэтап 6 проверил, какой должна быть предметная test database, чтобы preview оставался рабочим и интерактивным, но не превращался во вторую реализацию repository/domain behavior.
+
+### 16.1. Один canonical state graph вместо набора готовых экранов
+
+Текущий `app/ui-preview/preview-app.tsx` содержит 72 scenario definitions. В нём есть 21 отдельная `scenario.variant` ветка, которая вручную формирует такие состояния, как:
+
+- solved / unsolved / best-answer confirmation;
+- empty notifications/search/help queues;
+- 401 / 403 / 503 / unexpected error;
+- admin success/conflict;
+- profile empty/error/long;
+- no-pins;
+- form/reply errors.
+
+Кроме того, current preview содержит много locale-specific вручную собранных presentation objects.
+
+Это не должно переноситься в новый `database.ts`.
+
+Целевая модель обратная:
+
+`canonical raw state -> production capability adapter -> production loader/action -> production presentation`.
+
+Scenario выбирает исходные факты, actor и при необходимости infrastructure fault; он **не задаёт готовый результат UI**.
+
+### 16.2. Что хранится как raw test facts
+
+Одна каноническая state graph должна использовать стабильные IDs и связи между доменами.
+
+Минимальные текущие области:
+
+1. **Accounts/auth**
+   - users;
+   - active/deactivated account state;
+   - session/account-method facts, необходимые текущим auth/settings surfaces;
+   - account locale.
+
+2. **Authorization**
+   - built-in/custom roles;
+   - role grants;
+   - assignments;
+   - per-user allow/deny overrides;
+   - отдельный server-bound Owner ID.
+
+   Owner authority не превращается в role fixture: как и production, она возникает из exact match actor ID с trusted Owner binding.
+
+3. **Forum**
+   - categories, sections;
+   - topics, posts;
+   - immutable title/body revisions и current revision refs;
+   - solved/closed/best-answer state;
+   - tags/pins;
+   - public profiles;
+   - presence.
+
+   В одной базе могут одновременно существовать solved, unsolved, closed, pinned, translated, long-content, mixed-direction, Help и empty-section examples. Для этого не нужны разные копии всей базы.
+
+4. **Personal state**
+   - read state;
+   - Watch;
+   - Bookmarks;
+   - Topic Mute;
+   - User Block;
+   - notification suppression receipts там, где они нужны для текущей presentation;
+   - notifications/read state.
+
+   Разные пользователи должны иметь разные реальные пары. Empty-state достигается выбором пользователя/ресурса без записей, а не флагом `notifications-empty`.
+
+5. **Moderation**
+   - Help signals разных current типов;
+   - duplicate relationships и appeals;
+   - complaints, reports/cases, notes, decisions, appeals;
+   - attachment security events;
+   - user measures/appeals, поскольку это уже current Admin/profile surface.
+
+6. **Settings**
+   - registration flags;
+   - account-wide privacy setting;
+   - server-persisted account/settings state.
+
+   Browser-local theme/editor/administrator preferences не следует притворять строками server DB: это отдельный deterministic device-state layer в preview runtime.
+
+7. **Attachments**
+   - metadata;
+   - draft/current-operation refs;
+   - published refs;
+   - representative bytes в fake private bucket;
+   - security-event metadata.
+
+8. **Localization/translation**
+   - locale registry facts;
+   - representative content translations/generation state;
+   - UI translation capability state, необходимый production loaders.
+
+   UI locale не переписывает source locale пользовательского контента.
+
+9. **Admin / Owner / Super-admin**
+   - Admin History;
+   - Owner events / retained observations / attempt facts там, где они нужны текущей presentation;
+   - representative current monitoring state;
+   - честные unavailable/placeholder состояния для тех внешних capabilities, которые реально не существуют в Pages.
+
+   Stage-6 Infrastructure placeholder не превращается в fake «working infrastructure».
+
+Это не требование зеркально скопировать SQL schema. Физическая форма test data должна отражать domain identities/relations, достаточные capability adapters. Конкретное разбиение файлов относится к техническому плану.
+
+### 16.3. Base fixture + маленькие overlays, а не полный snapshot на каждый scenario
+
+Большинство visual states можно получить из одной богатой base fixture:
+
+- пустой раздел — отдельный section без topics;
+- пустые notifications — отдельный active user без notifications;
+- own/foreign topic — разные authors в одной базе;
+- solved/unsolved/closed — разные topics;
+- manager/Owner/user — разные persisted authorization/account identities;
+- Block/Mute/Watch/Bookmark combinations — разные пары;
+- public/deactivated profile — разные users;
+- complaints/Help/security — разные concrete records.
+
+Отдельный scenario state overlay нужен только там, где состояние действительно глобально конфликтует с base fixture, например другой registration policy или специальный stale/concurrent setup.
+
+Overlay содержит только **raw facts**, а не готовые loader results/view props.
+
+При запуске preview создаётся fresh mutable clone `base + overlay`. Product mutations могут менять эту clone. Reset возвращает её к исходному deterministic состоянию.
+
+## 17. Preview controls: четыре независимых измерения
+
+Current controller связывает `Role`, `State`, route/view/variant и allowed identities. В целевой модели эти измерения должны быть разделены.
+
+### 17.1. Identity, а не Role
+
+Контрол должен называться по смыслу **Identity / Account**, не Role.
+
+Причина: Vico использует dynamic roles/grants/overrides, а Owner вообще не является persisted role.
+
+Representative selectable actors должны включать как минимум:
+
+- Guest — отсутствие session;
+- обычного active user;
+- пользователя с moderation/admin grants;
+- exact bound Owner.
+
+Supporting fixture users (например blocked author, deactivated account, custom-role user) могут существовать в базе без отдельной кнопки.
+
+Смена identity меняет только current auth/session actor. Она не меняет:
+
+- authorship topics/posts;
+- ownership;
+- assignments;
+- grants;
+- complaint participants;
+- saved personal state.
+
+Scenario не должен иметь `allowedIdentities`, скрывающий неудобные комбинации. Если actor не имеет доступа, настоящий production loader/action должен показать реальный 401/403/readonly state. Scenario может иметь только recommended/default actor для быстрого открытия.
+
+### 17.2. Locale
+
+Locale должен менять настоящий locale-prefixed route / production locale navigation.
+
+Из locale автоматически следуют:
+
+- registry resolution;
+- direction;
+- UI translations;
+- content translation presentation.
+
+Scenario не хранит отдельный `direction` и не имеет RU/HE копий category/topic objects.
+
+Явный URL locale остаётся authoritative и не обязан переписывать persisted `user.locale`; это позволяет preview проверять тот же precedence contract, что production.
+
+### 17.3. Viewport
+
+Viewport — только внешний browser/frame dimension:
+
+- desktop;
+- tablet/intermediate;
+- mobile.
+
+Он не входит ни в test database, ни в scenario state и не меняет domain data.
+
+### 17.4. Scenario / State
+
+Scenario становится review bookmark, а не alternate application implementation.
+
+Он задаёт только:
+
+- route / query / hash;
+- default actor;
+- при необходимости raw-state overlay;
+- при необходимости fault profile;
+- при необходимости setup transition через настоящий production action/interaction.
+
+Он не задаёт:
+
+- React view;
+- component props;
+- permission booleans;
+- direction;
+- solved/result flags;
+- ready-made error response;
+- filtered result arrays.
+
+Добавление production route автоматически даёт route в preview через уже выбранный route adapter; новый named scenario требуется только если этот route нужен в review matrix.
+
+## 18. Empty, error, conflict и pending states
+
+Representative states делятся по их реальной причине.
+
+### 18.1. Данные
+
+Через обычные fixture facts:
+
+- empty list/section;
+- solved/unsolved/closed;
+- zero notifications;
+- profile without optional fields;
+- no bookmarks/watch/mutes/blocks;
+- stale/current revisions;
+- unread/read;
+- complaint/help states.
+
+### 18.2. Identity / authorization
+
+Через настоящий session + authorization state:
+
+- 401 — no session;
+- 403 — session есть, effective permission нет;
+- Owner-only state — actor ID совпадает trusted Owner binding;
+- readonly Admin state — grants дают read, но не Owner write authority.
+
+Никаких preview `canManageAuthorization: true` как источника authority.
+
+### 18.3. Infrastructure faults
+
+503/unavailable и безопасный unexpected failure должны создаваться на capability boundary общим fault profile:
+
+- forum storage unavailable;
+- auth unavailable;
+- attachment storage unavailable;
+- translation/provider unavailable;
+- другой конкретный current capability.
+
+Adapter бросает существующий production error type; production loader/ErrorBoundary решает, какой UI показать.
+
+Это лучше `variant: "route-503"`, потому что проверяет настоящий error mapping и не зависит от route component.
+
+### 18.4. Action/transient states
+
+Success, validation error, conflict, rate-limit и pending — не database snapshots сами по себе.
+
+Если такой state нужен для visual review, scenario setup должен получить его через тот же production action/interaction path:
+
+- invalid input -> настоящий validation result;
+- stale version -> raw state + настоящий conflicting action;
+- rate limit -> deterministic clock/counter facts + настоящий write;
+- pending -> controlled test latency + настоящий navigation/fetcher/auth action;
+- success -> настоящий mutation и revalidation.
+
+Конкретный способ автоматического setup относится к техническому плану. Концептуальный запрет: не подсовывать компоненту вручную fabricated `actionData`.
+
+## 19. Determinism: clock, IDs и reset
+
+### 19.1. Clock
+
+Все seeded timestamps фиксированы.
+
+Mutable test state использует preview-controlled logical `now` для:
+
+- ordering;
+- relative time;
+- rate limits;
+- presence windows;
+- expiry;
+- pagination timestamps.
+
+Проверка current production route graph выявила существенный existing seam gap: как минимум `app/routes/category.tsx` и `app/routes/attention.tsx` формируют visible `referenceTime` прямым `new Date()`.
+
+Следовательно, для действительно deterministic Pages нужен **минимальный injectable clock boundary** для user-visible/request reference time с production default = real clock и preview value = fixed logical now.
+
+Глобально monkey-patch `Date` не выбран: это более широкое и хрупкое вмешательство, чем узкая dependency boundary.
+
+### 19.2. IDs
+
+Seed entities используют стабильные IDs.
+
+IDs, создаваемые test persistence при интерактивных mutations, должны быть reproducible внутри resettable preview state.
+
+При этом нет причины глобально подменять `crypto.randomUUID()`: current UI использует случайные operation IDs/nonces, которые не являются fixture identity и обычно не видимы пользователю. Determinism preview означает одинаковое observable domain/presentation state после reset, а не побайтово одинаковые hidden form nonce values.
+
+### 19.3. Reset
+
+После включения настоящих mutations preview обязан иметь простой reset к исходному `base + overlay`.
+
+Без reset интерактивный Pages-preview постепенно перестал бы быть reproducible и сравнимым между review sessions.
+
+## 20. Важная граница: test database не должна стать второй production repository
+
+Current `ForumReader` содержит 44 product-specific read methods: Popular, Search, Unread, Help filters, recommendations, notification projections, personal lists и т. д.
+
+Их production semantics во многих местах реализованы SQL/Drizzle logic внутри `DrizzleForumRepository`.
+
+Одновременно `ForumService` сейчас зависит от concrete `DrizzleForumRepository`, поэтому нельзя честно утверждать, что in-memory state автоматически переиспользует всю repository/domain semantics.
+
+Отсюда целевая граница:
+
+1. **Production routes/actions/components/authz orchestration — настоящие.**
+2. **Preview persistence adapters — representative test infrastructure, а не доказательство DB query semantics.**
+3. Простые state relations/mutations, нужные для живого visual review, могут отражаться в единой state graph.
+4. Сложные SQL ranking/filter/fanout semantics не следует второй раз строить в browser ради parity. Если их корректность важна — это repository/Worker/PostgreSQL acceptance, которая уже отделена от Pages source-of-truth.
+5. Если technical plan обнаружит конкретный небольшой production domain helper, который можно переиспользовать без расширения архитектуры, его следует переиспользовать. Но ради Pages не нужно превращать все Postgres repositories в browser database engine.
+
+Это сохраняет смысл UI preview: **рабочая product presentation поверх representative state**, а не browser-клон PostgreSQL.
+
+### 20.1. Почему PGlite/SQLite/WASM всё ещё не выбран
+
+Новая проверка не создаёт достаточного основания менять предыдущий вывод.
+
+Browser SQL мог бы сократить часть расхождения repository queries, но потребовал бы:
+
+- новый runtime/dependency;
+- browser migrations/bootstrap;
+- другой Drizzle/DB adapter вместо текущего `node-postgres`;
+- адаптацию многочисленных raw pg/runtime boundaries;
+- заметно больший static artifact/runtime.
+
+Для visual progress preview это дороже, чем польза. Реальная query/data correctness всё равно проверяется PostgreSQL/Worker acceptance.
+
+## 21. Итог шестого подэтапа
+
+Целевая data/control model:
+
+`one canonical base state + small raw overlays + fault profiles + real production route/action/presentation`.
+
+Основные правила:
+
+- scenario не является экраном;
+- identity не является role;
+- locale не создаёт копии данных;
+- viewport не входит в domain state;
+- empty/permission/error states возникают из реальных причин;
+- mutable interactions работают на resettable clone;
+- Owner задаётся trusted binding;
+- server-persisted и browser-local settings не смешиваются;
+- сложная repository SQL semantics не дублируется ради Pages;
+- visible reference time требует минимальной clock boundary.
+
+Следующий conceptual block — **миграция с текущего preview и критерии готовности концепции**: что именно из нынешнего `app/ui-preview` сохраняется, что удаляется/заменяется, как переходить без параллельной реализации и какие вопросы оставить Лёве для технического плана.
