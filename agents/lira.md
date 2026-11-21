@@ -1,21 +1,18 @@
-# agents/lira.md — B6-A implementation current state
+# agents/lira.md — B6-A author PASS, Mira checkpoint handoff
 
-## B6-A1/A2 complete — STOP before A3
+## Current exact implementation state
 
-B5 accepted by Mira on #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d`, unchanged stacked base. Owner authorized **only B6-A** in service #342. All B1–B5 implementation PRs remain Draft/unmerged.
+B5 #367 on exact `a2269fb0294feaccb433e76b66e800f3e869658d` received Mira bounded PASS; stacked B1–B5 remain Draft/unmerged. Owner authorized **only B6-A**. [B6 Draft PR #370](https://github.com/iliya1947/vico-forum/pull/370), branch `feature/moderation-visibility-b6-guarded-queue`, exact **`91cb332d6acf60ebf572f57582c13acfeab8eada`**, base B5 unchanged. B6-only **5 commits / 17 scoped files / 0 behind**.
 
-[Draft B6 #370](https://github.com/iliya1947/vico-forum/pull/370), branch `feature/moderation-visibility-b6-guarded-queue`, head **`07eb98e86a1794bdbc623c7aecbb8c6aa628578b`**, 3 commits / 12 B6-only files / 0 behind vs B5.
+**B6-A1–A3 implemented and author-verified**: separate hidden topic/post private PostgreSQL reader + effective `forum.content.visibility.manage` and active account on each call (Worker AP-10-filtered authorization), descending 25+1 changedAt/id cursor, effective parent/topic status, no source/attachment/revision data; private `/:locale/admin/forum/content` route, strict bounded kind+timestamp+ID cursor parser, duplicate/unknown rejection, transport metadata separate, neutral 400/401/403/503 and document/.data/error `private,no-store`; EN/RU/HE private tab/paging UI without hidden public link, inspector or actions.
 
-### Delivered
+### Actual tests and fixed adjacent current-Stage defect
 
-- **A1** `1a886f979cf1c0aeddc002f35bfd83a5c8a890de`: separate hidden topic/post private PostgreSQL 25+lookahead reader; per-read current effective `forum.content.visibility.manage` and active account; existing AP-10-aware Worker auth; private no-store 401/403/503, no hidden title/body/source/asset or public reader.
-- **A2** `07eb98e86a1794bdbc623c7aecbb8c6aa628578b`: route `/:locale/admin/forum/content` and `headers`, strict `kind=topic|post` (defaults topic) + canonical UTC ISOms `beforeChangedAt`/bounded `beforeId` pair, unknown/duplicate/partial rejection, only `.data/_routes` treated as transport. Requires current visibility capability before query and again inside private reader. Private topic/post tabs, 25+1 pagination and effective-parent display; visibility-management-only link from admin forum page; 10 new canonical EN keys plus reviewed RU/HE values and semantic SHA-256 fingerprints. UI does not expose hidden source or public hidden links; no inspector/history/assets/Restore controls.
-- Static GitHub source/compare checks PASS; A2 itself changes 8 files/2 commits from A1. **22 exact-head check-runs registered and pending at last inspection. Real PG, new targeted route/security tests, whole B6-A author runtime PASS not yet established.**
+- New React Router test `app/routes/admin-forum-content.test.ts`: no auth, generic admin/History/ordinary/Complaint/security-only denial, valid capability, revoke-after-read, auth/database outage/unknown private error, 400 validation, first/next route + alternate admin base, no-store data/document, reviewed RU/HE SHA-256 fingerprints.
+- New real PG test `tests/database/private-visibility-queue.test.ts`: 27 hidden topics and posts, 25+1/cursor/ties, only individually hidden rows, effective parent/topic status, no current source, inactive/missing actor, immediate effective authorization revoke.
+- **Confirmed previous leak:** `app/routes/admin-section.tsx` generic `forum.topic.pin` access + `db/admin-forum.ts` readSectionTopics returned hidden `t`'s ID/title/sourceLocale; real PostgreSQL test red on `6607ba…` (**1 FAIL / 1617 PASS**). One limited SQL fix in `91cb332d6acf60ebf572f57582c13acfeab8eada` filters hidden topics/posts from ordinary admin lists, section/category counts and topic post counts. Real PG negative Hide-topic/post regressions now PASS.
+- Final `91cb332d6acf60ebf572f57582c13acfeab8eada` **22/22 check-runs SUCCESS, 18/18 workflows SUCCESS**, no pending/fail. Main lint/typecheck/unit/build, PostgreSQL 17 clean migration/schema/ACL/Worker smokes and all applicable Chromium/connected acceptance. No remaining confirmed B6-A blocking findings after scoped author self-check. **AUTHOR PASS means author only; Mira independent bounded PASS still pending.**
 
-### Source-level adjacent finding for B6-A3
+## Next — STOP
 
-On the current B6 head, `app/routes/admin-section.tsx` uses broad `requireAdminForumAccess` (any `ADMIN_FORUM_PERMISSIONS`, including `forum.topic.pin`); `db/admin-forum.ts` `readSectionTopics` reads `forum_topic_title_revisions.original_content` with no `t.is_hidden=false` filter. **This is a plausible current-Stage hidden-title exposure to generic forum admin callers; confirmed source path, real PG/runtime not yet tested.** In A3 add targeted generic-admin + hidden-topic negative regression and fix only if confirmed; not part of A2 route change. The new private queue itself enforces visibility-management permission separately.
-
-### Next / STOP
-
-**Лира STOP before A3.** Next owner `...`: B6-A3 only — create targeted PostgreSQL visibility queue reader tests and route auth/no-store/strict-cursor, dynamic grant/revoke/AP-10/outage/parent/pagination/EN-RU-HE checks; inspect existing CI, remediate only verified B6-A defects, run applicable exact-head checks after changes, record in #342, then STOP → **Мира bounded B6-A checkpoint**. B6-B, hidden inspector/revision history/private attachments, B7, merge or production forbidden.
+**Лира STOP → Мира (ChatGPT-5.6 Sol)** performs independent **B6-A bounded coordinator checkpoint on exact `91cb332d6acf60ebf572f57582c13acfeab8eada`** (scope, AP-10/auth/revoke/active account, 25+1/cursor, legacy admin title privacy, no-store/i18n and tests). If Mira confirms findings, return to Lira through service #342. On Mira PASS, only owner separately authorizes B6-B. Inspector, hidden revision history, private assets, B7, Leva final independent whole-feature review, merge and deployment remain prohibited.
