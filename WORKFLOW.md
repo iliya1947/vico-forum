@@ -3,7 +3,7 @@
 ## Current state
 
 - Задача: переосмысление архитектуры UI progress preview.
-- Service workspace создан от main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; перед подэтапом 4 подтверждено, что `main` остаётся на этом exact head.
+- Service workspace создан от main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; перед подэтапом 5 подтверждено, что `main` остаётся на этом exact head.
 - Активный этап: **концептуальное проектирование до технического плана**.
 - Исполнитель: **Мира-3 (GPT-5.6 Sol)**.
 - Реализация: **не авторизована**.
@@ -11,16 +11,15 @@
 - Подэтап 1 завершён: установлена production dependency/runtime boundary для static preview.
 - Подэтап 2 завершён: установлен минимальный способ разорвать browser graph без массового production refactor.
 - Подэтап 3 завершён: установлен единый source of truth для preview routing без ручной копии URL hierarchy.
-- В подэтапе 4 исправлена пропущенная деталь подэтапа 3: Data Router adapter обязан воспроизводить Framework route IDs (`entry.id ?? file-without-extension`), иначе текущие `meta()` consumers `routes/locale-boundary` разойдутся с production.
+- В подэтапе 4 исправлена существенная пропущенная деталь подэтапа 3: Data Router adapter обязан воспроизводить Framework route IDs (`entry.id ?? file-without-extension`), иначе текущие `meta()` consumers `routes/locale-boundary` разойдутся с production.
 - Подэтап 4 завершён: установлен local application transport для всех текущих программируемых browser HTTP requests.
-- Результат: `research/concept.md`, разделы 1–13.
-- Один generic `dispatchLocalRequest(Request)` строится на публичном React Router 8.3.1 `createStaticHandler(...).queryRoute()` и том же production route config/module registry.
-- Same-origin production-route-aware `fetch` wrapper покрывает текущие direct fetch calls и Better Auth, если устанавливается до lazy evaluation `auth-client.ts`.
-- Attachment upload через current `XMLHttpRequest` требует только узкого preview XHR adapter поверх того же dispatcher; production editor переписывать не нужно.
-- Service Worker не выбран: он усложняет единое in-memory состояние и scope/lifecycle ради static Pages.
-- Единственная оставшаяся transport/presentation граница: native attachment byte delivery через `<img>/<a>` на `/api/attachments/file/*`, который page-level fetch/XHR interception не перехватывает.
+- Подэтап 5 завершён: закрыта native attachment byte boundary для `<img>/<a>` без Service Worker и второго backend.
+- Результат: `research/concept.md`, разделы 1–15.
+- Native attachment bytes в Pages должны идти через одну общую presentation resource boundary: production возвращает текущие controlled `/api/attachments/file/*` URLs, preview — `blob:` URLs из in-memory fake bucket.
+- Это сохраняет production attachment routes/actions/state, но Pages не заявляет R2/download authorization/HTTP acceptance.
+- Transport/R2 concept теперь закрыт: fetch/Better Auth -> local dispatcher; XHR upload -> узкий adapter; native attachment display/download -> presentation URL resolver.
 - Реализация этих выводов не начиналась.
 
 ## Next transition
 
-STOP по правилу декомпозиции. После команды разработчика следующий подэтап — решить **native attachment byte delivery** для Pages: оставить честным ограничением static preview либо обосновать минимальную preview URL boundary для raster/open/download без Service Worker и без второго backend.
+STOP по правилу декомпозиции. После команды разработчика следующий conceptual block — определить **единый deterministic test state и preview controls**: users/roles/forum/settings/complaints/notifications/personal state/Admin/Owner/empty/error fixtures и переключение identity/locale/viewport/scenario без переписывания ownership или второй product logic.
