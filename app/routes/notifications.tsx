@@ -30,21 +30,27 @@ export async function loader({ params, context, url }: {
     const result=await forumReaderForRequest(context).readNotifications(session.user.id,page);
     return {
       locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
-      notifications:result.items.map(notification=>({
-        id: notification.id, kind: notification.kind,
-        ...(notification.unavailable ? {unavailable: true as const} : {}),
-        actorName: notification.kind==="reply"||notification.kind==="mention"
-          ? notification.actorIdentityKind==="deleted" ? DELETED_USER_NAME : notification.actorName
-          : null,
-        ...(notification.actorIdentityKind==="deleted" &&
-            (notification.kind==="reply"||notification.kind==="mention")
-          ? {actorIdentityKind:"deleted" as const} : {}),
-        topicId: notification.topicId, topicTitle: notification.topicTitle, postId: notification.postId,
-        ...("caseId" in notification ? {caseId:notification.caseId} : {}),
-        ...("appealId" in notification ? {appealId:notification.appealId} : {}),
-        createdAt:new Date(notification.createdAt).toISOString(),
-        readAt:notification.readAt===null?null:new Date(notification.readAt).toISOString(),
-      })),
+      notifications:result.items.map(notification=>{
+        const unavailable=notification.unavailable===true;
+        return {
+          id: notification.id, kind: notification.kind,
+          ...(unavailable ? {unavailable: true as const} : {}),
+          actorName: unavailable ? null
+            : notification.kind==="reply"||notification.kind==="mention"
+              ? notification.actorIdentityKind==="deleted" ? DELETED_USER_NAME : notification.actorName
+              : null,
+          ...(!unavailable && notification.actorIdentityKind==="deleted" &&
+              (notification.kind==="reply"||notification.kind==="mention")
+            ? {actorIdentityKind:"deleted" as const} : {}),
+          topicId: unavailable ? null : notification.topicId,
+          topicTitle: unavailable ? null : notification.topicTitle,
+          postId: unavailable ? null : notification.postId,
+          ...("caseId" in notification ? {caseId:unavailable ? null : notification.caseId} : {}),
+          ...("appealId" in notification ? {appealId:unavailable ? null : notification.appealId} : {}),
+          createdAt:new Date(notification.createdAt).toISOString(),
+          readAt:notification.readAt===null?null:new Date(notification.readAt).toISOString(),
+        };
+      }),
     };
   } catch (error) {
     if (error instanceof ForumStorageUnavailableError) {
