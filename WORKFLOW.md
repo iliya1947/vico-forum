@@ -3,28 +3,29 @@
 ## Current state
 
 - Задача: переосмысление архитектуры UI progress preview.
-- Service workspace создан от main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; перед подэтапом 6 подтверждено, что `main` остаётся на этом exact head.
-- Активный этап: **концептуальное проектирование до технического плана**.
-- Исполнитель: **Мира-3 (GPT-5.6 Sol)**.
-- Реализация: **не авторизована**.
+- Service workspace создан от main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; перед финальным conceptual closeout подтверждено, что `main` остаётся на этом exact head.
+- Исполнитель концептуального этапа: **Мира-3 (GPT-5.6 Sol)**.
+- **Первый conceptual stage завершён.**
+- Реализация: **не начиналась и не авторизована**.
+- Технический `PLAN.md`: **не сформирован**.
 - Изменения старых implementation PR: **не входят в текущую задачу**.
-- Подэтапы 1–5 завершены: dependency/runtime boundary, browser-safe route graph, единый route source, local transport и native attachment byte presentation.
-- Подэтап 6 завершён: определена единая deterministic test-state/control model.
-- Результат: `research/concept.md`, разделы 1–21.
-- Current preview содержит 72 scenario definitions, 21 unique `scenario.variant` ветку и вручную формирует множество готовых UI states; это в целевую модель не переносится.
-- Целевая модель: one canonical base state + small raw overlays + capability fault profiles + production route/action/presentation.
-- Scenario задаёт route/default actor/raw overlay/fault/setup transition, но не view/component props/permission booleans/direction/готовые result arrays.
-- Identity становится отдельным concrete account/session control; Guest/User/Manager/Owner не переписывают ownership или persisted roles/grants. Owner authority остаётся exact trusted binding.
-- Locale идёт через production locale routing/registry; direction и translations не задаются scenario вручную.
-- Viewport остаётся только внешним размером preview frame.
-- Empty/401/403/409/429/503/pending/success должны возникать из реальных data/auth/fault/action причин, а не из fabricated view variants.
-- Test state хранит current accounts/authz/forum/personal/moderation/settings/attachments/localization/Admin/Owner facts, но browser-local preferences остаются отдельным device-state layer.
-- `ForumReader` сейчас имеет 44 product-specific read methods; сложные SQL ranking/filter/fanout semantics не должны второй раз реализовываться ради Pages. Preview adapters — representative infrastructure, не DB-query acceptance.
-- Browser SQL/PGlite/WASM по-прежнему не выбран как несоразмерный visual-preview цели.
-- Для deterministic user-visible relative time требуется минимальная injectable clock boundary: current `category.tsx` и `attention.tsx` напрямую используют `new Date()`.
-- Mutable preview state должен быть resettable к исходному `base + overlay`.
-- Реализация этих выводов не начиналась.
+- Цельный результат: `research/concept.md`, разделы 1–27.
+- Выбран target: production `app/routes.ts` + production route modules/loaders/actions/components поверх одного resettable deterministic raw-state graph и thin preview infrastructure adapters.
+- Browser graph разрывается только на genuinely server-only infrastructure boundary.
+- Routing имеет один source of truth; programmable HTTP идёт через generic local Static Handler dispatcher; current XHR upload — через narrow adapter; attachment native bytes — через presentation resource boundary.
+- Test state: one canonical base + small raw overlays + capability fault profiles. Scenario не является экраном и не подсовывает готовые View props/actionData.
+- Identity выбирает concrete session actor; ownership/roles/grants/Owner binding не переписываются. Locale идёт через production registry/routing; viewport — внешний frame dimension.
+- Complex PostgreSQL query semantics не дублируются в browser. Pages остаётся representative visual/product-interaction environment, а не DB/runtime/security acceptance.
+- Mutable preview state должен reset к deterministic baseline; visible reference time требует минимальной clock boundary.
+- Migration concept: old manual Pages preview остаётся baseline до готовности target runtime; target строится рядом только в implementation branch/workspace; published runtime не должен быть смешанным old/new. Cutover переключает единственную entry и удаляет manual product route/data/presentation layer в том же собранном результате.
+- В целевой архитектуре сохраняются Pages/Vite delivery, controller tooling, viewport framing и полезный representative content как raw fixtures/review bookmarks; manual route table, `Preview*Route`, presentation fixtures, hard-coded authority/locale copies и fake route errors удаляются/заменяются.
+- Критерии готовности и оставшиеся implementation-only вопросы зафиксированы в разделах 24–26.
+- Подтверждённая ошибка с route IDs остаётся записана в `AGENT_ERRORS.md` / `AGENT_LOGIC_ERRORS.md`; новых подтверждённых ошибок в финальном подэтапе не обнаружено.
 
 ## Next transition
 
-STOP по правилу декомпозиции. После команды разработчика следующий conceptual block — описать **миграцию с нынешнего preview и критерии готовности всей концепции**: что сохраняется, что удаляется/заменяется, как избежать временного второго продукта и какие вопросы передать Лёве уже в технический план.
+**STOP — решение разработчика по концепции.**
+
+Если концепция принимается, следующий шаг по действующему `AGENTS.md`: разработчик подключает **Лёву (Codex-6.1 Sol)** к этому же служебному PR `#369`; Лёва читает актуальный контекст и готовит полный технический `PLAN.md` до начала реализации.
+
+До этого не формировать технический plan, не создавать implementation PR и не начинать код.
