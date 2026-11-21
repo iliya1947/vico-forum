@@ -62,6 +62,11 @@ beforeAll(async () => {
     (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
     values ('g-target','post','g-topic','g-source-post','g-source-revision','g-topic-author')`);
   await client.query("insert into forum_complaint_cases(id,target_id) values('g-case','g-target')");
+  // The recipient must be an actual Case participant to open protected
+  // Decision/Appeal results. Inbox receipt alone does not grant Case access.
+  await client.query(`insert into forum_complaints
+    (id,case_id,target_id,reporter_user_id,reason)
+    values ('g-report','g-case','g-target',$1,'spam')`, [recipient]);
   await client.query(`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning)
     values('g-decision','g-case','confirmed','g-reviewer','System decision')`);
   await client.query(`insert into forum_complaint_appeals
