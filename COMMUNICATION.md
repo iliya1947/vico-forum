@@ -18,13 +18,13 @@
 
 ## Текущий этап
 
-Moderation visibility is in stacked B6. B1–B5 have bounded coordinator PASS and remain Draft/unmerged. B6-A #370 exact `91cb332d6acf60ebf572f57582c13acfeab8eada` has Mira bounded PASS: guarded private queue/admission/cursor/privacy and the required ordinary-admin hidden-content leak correction are accepted.
+Moderation visibility stacked delivery has coordinator PASS through **B6-B**. Draft #370 stable exact `51a9ebe03f16c438faae5bec99a5856287630958` passed the bounded checkpoint: guarded inspector/current visibility event, dual-capability hidden post revision history, and exact-member private hidden attachment access remain private/AP-10/active-account gated and do not broaden ordinary Admin, public attachment or Complaint boundaries. Exact-head 22/22 checks and 18/18 workflows are SUCCESS.
 
-Owner continuation activates **B6-B only**. Lira works in three small STOP packages: read-only inspector/current event → extra-capability hidden revision history + localized inspector UI → private hidden attachment access, followed by one whole-B6-B author self-check/full applicable exact-head CI. B7 canonical Hide/Restore actions/QuickActions remains inactive until B6-B Mira PASS plus another owner continuation.
+B7 canonical Hide/Restore actions/QuickActions is **inactive** until a new explicit owner continuation. No final Leva whole-feature review or merge yet.
 
 ## Дальнейшие планы
 
-- Moderation visibility: B1–B5 and B6-A coordinator PASS; B6-B is active in #370. B7–B9 inactive.
+- Moderation visibility: B1–B6 coordinator PASS; B7–B9 inactive pending owner continuation.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
 
 
