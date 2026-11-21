@@ -228,4 +228,87 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     expect(await forum.countUnreadNotifications(recipient)).toBe(3);
     expect(await forum.countUnreadReplyNotifications(recipient)).toBe(2);
   });
+  it("marks hidden notices read with neutral targets and retains read_at, counts and Restore access", async () => {
+    const beforeTotal = (await forum.readNotifications(recipient, 0)).total;
+    const beforeNotices = (await client.query<{ id: string }>(
+      "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
+    )).rows.map(row => row.id);
+    const suppressionBefore = (await client.query<{ id: string; recipient_user_id: string; post_id: string }>(
+      "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
+    )).rows;
+    const beforeUnread = await forum.countUnreadNotifications(recipient);
+    const beforeLegacyUnread = await forum.countUnreadReplyNotifications(recipient);
+    const readAt = async (id: string) => (await client.query<{ read_at: Date | null }>(
+      "select read_at from forum_reply_notifications where id=$1", [id],
+    )).rows[0]!.read_at;
+    let changed = 0;
+    let legacyChanged = 0;
+    let caseChanged = 0;
+    let hiddenReplyReadAt: Date | null = null;
+    let hiddenMentionReadAt: Date | null = null;
+    try {
+      // Post Hide alone is sufficient to mask the legacy notification target.
+      await client.query("update forum_posts set is_hidden=true where id='g-post-mention-active'");
+      expect(await readAt("g-n2")).toBeNull();
+      await expect(forum.markNotificationRead("g-topic-author", "g-n2")).rejects.toThrow();
+      expect(await readAt("g-n2")).toBeNull();
+      expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
+      hiddenMentionReadAt = await readAt("g-n2");
+      expect(hiddenMentionReadAt).not.toBeNull();
+      changed++;
+      expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
+      expect(await readAt("g-n2")).toEqual(hiddenMentionReadAt);
+
+      // Topic Hide masks every ordinary destination, but not a protected Case result.
+      await client.query("update forum_topics set is_hidden=true where id='g-topic'");
+      expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
+        .toEqual({ unavailable: true });
+      hiddenReplyReadAt = await readAt("g-n4");
+      expect(hiddenReplyReadAt).not.toBeNull();
+      legacyChanged++;
+      expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
+        .toEqual({ unavailable: true });
+      expect(await readAt("g-n4")).toEqual(hiddenReplyReadAt);
+
+      expect(await forum.markNotificationRead(recipient, "g-n5"))
+        .toEqual({ kind: "complaint-decision", caseId: "g-case" });
+      caseChanged++;
+      const caseReadAt = await readAt("g-n5");
+      expect(caseReadAt).not.toBeNull();
+      expect(await forum.markNotificationRead(recipient, "g-n5"))
+        .toEqual({ kind: "complaint-decision", caseId: "g-case" });
+      expect(await readAt("g-n5")).toEqual(caseReadAt);
+
+      expect(await forum.countUnreadNotifications(recipient))
+        .toBe(beforeUnread - changed - legacyChanged - caseChanged);
+      expect(await forum.countUnreadReplyNotifications(recipient))
+        .toBe(beforeLegacyUnread - changed - legacyChanged);
+      expect((await forum.readNotifications(recipient, 0)).total).toBe(beforeTotal);
+      expect((await forum.readNotifications(recipient, 0)).items.filter(n => n.kind === "reply" || n.kind === "mention")
+        .every(n => n.unavailable === true)).toBe(true);
+      expect((await client.query<{ id: string }>(
+        "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
+      )).rows.map(row => row.id)).toEqual(beforeNotices);
+      expect((await client.query(
+        "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
+      )).rows).toEqual(suppressionBefore);
+    } finally {
+      await client.query("update forum_topics set is_hidden=false where id='g-topic'");
+      await client.query("update forum_posts set is_hidden=false where id='g-post-mention-active'");
+    }
+    expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({
+      kind: "mention", topicId: "g-topic", postId: "g-post-mention-active",
+    });
+    expect(await forum.markReplyNotificationRead(recipient, "g-n4")).toEqual({
+      topicId: "g-topic", postId: "g-post-reply-active",
+    });
+    expect(await readAt("g-n2")).toEqual(hiddenMentionReadAt);
+    expect(await readAt("g-n4")).toEqual(hiddenReplyReadAt);
+    expect((await forum.readNotifications(recipient, 0)).total).toBe(beforeTotal);
+    expect(await forum.countUnreadNotifications(recipient))
+      .toBe(beforeUnread - changed - legacyChanged - caseChanged);
+    expect(await forum.countUnreadReplyNotifications(recipient))
+      .toBe(beforeLegacyUnread - changed - legacyChanged);
+  });
+
 });
