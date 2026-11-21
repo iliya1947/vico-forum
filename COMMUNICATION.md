@@ -18,15 +18,13 @@
 
 ## Текущий этап
 
-Продуктовые V-P1/V-P2/V-P3 уже ACCEPTED (D-08); их нельзя повторно открывать из-за утраты записи при migration. V-T1/V-T2 technical fit PASS. Лёва завершил адаптацию полного V1–V9 к main6fa2a43 и разложил один visibility PR на checkpoints B1–B9: `stages/moderation-visibility/PLAN.md`.
+Moderation visibility is in stacked B6. B1–B5 have bounded coordinator PASS and remain Draft/unmerged. B6-A #370 exact `91cb332d6acf60ebf572f57582c13acfeab8eada` has Mira bounded PASS: guarded private queue/admission/cursor/privacy and the required ordinary-admin hidden-content leak correction are accepted.
 
-Действующие важные адаптации: current Watch/Bookmarks/Mute/Block и unavailable own/inbox projections; новая visibility capability в existing AP-10/admin/History/Owner classification; atomic publication/recovery guards; parent-topic lock для новых body translation plans; public asset gate до bucket. Эти детали уже входят в stage plan и не являются новыми product forks.
-
-**B1 author self-check PASS**, [Draft #355](https://github.com/iliya1947/vico-forum/pull/355) exact `736da519e3f3fcae716ec5fb1b81886cdac63a6e`: schema/permission/History foundation with forward repository migration 0071, default-visible topic/post, partial queue, AP-10, typed History, neutral labels and Owner mapping. CI 44640562493 checks 2752/2752, PG17 1483/1483, 74-table manifest parity, runtime privilege probes and Worker; **13/13 workflows SUCCESS**. Public Hide/Restore/write/read gates not present; no production/external migration acceptance. **Next Mira bounded B1 coordinator checkpoint**; B2 only after Mira PASS and owner continuation.
+Owner continuation activates **B6-B only**. Lira works in three small STOP packages: read-only inspector/current event → extra-capability hidden revision history + localized inspector UI → private hidden attachment access, followed by one whole-B6-B author self-check/full applicable exact-head CI. B7 canonical Hide/Restore actions/QuickActions remains inactive until B6-B Mira PASS plus another owner continuation.
 
 ## Дальнейшие планы
 
-- Moderation visibility: B1 foundation implemented and author-verified in stacked Draft #355; next Mira B1 checkpoint. Remaining B2–B9 inactive.
+- Moderation visibility: B1–B5 and B6-A coordinator PASS; B6-B is active in #370. B7–B9 inactive.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
 
 
