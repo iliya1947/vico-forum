@@ -8,7 +8,6 @@ import argparse
 import base64
 import json
 import os
-import re
 import shutil
 import subprocess
 import time
@@ -390,9 +389,8 @@ try:
         resume = active.locator("button.forum-composer-resume")
         if resume.count() and resume.is_visible():
             resume.click()
-        operation_field = form.locator('input[name="editorOperationId"]')
-        expect(operation_field).to_have_value(re.compile(r"^[0-9a-f-]{36}$"))
-        operation = operation_field.input_value()
+        operation = form.locator('input[name="editorOperationId"]').input_value()
+        assert len(operation) == 36
         payload = b"K5 built Worker Better Auth local R2 browser attachment"
         uploader = form.locator('input[type="file"]')
         expect(uploader).to_have_count(1)

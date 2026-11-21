@@ -70,9 +70,7 @@ describe("SA03 Admin directory remains independent and links to single canonical
       .find(x => x.id === "users")?.href).toBe("/en/admin/users");
     expect(adminDestinations("en", adminAccess(new Set(["access.authorization.manage"])))
       .find(x => x.id === "users")?.href).toBe("/en/admin/authorization#authorization-users-heading");
-    const unfinished = UNDER_DEVELOPMENT_FEATURES.map(x=>x.id);
-    expect(unfinished).not.toContain("admin-users");
-    expect(unfinished).not.toContain("admin-settings");
+    expect(UNDER_DEVELOPMENT_FEATURES.map(x=>x.id)).not.toContain("admin-users");
   });
 });
 

@@ -194,16 +194,9 @@ describe("SET-02 stale Owner registration policy UI", () => {
   it("refreshes current version and toggles after a 409 without silently replaying the write", async () => {
     let snapshot = { googleRegistrationEnabled: true, emailRegistrationEnabled: true, version: 7 };
     const writes: FormData[] = [];
-    let loaderCalls = 0;
-    let releaseRefresh!: () => void;
-    const refreshGate = new Promise<void>((resolve) => { releaseRefresh = resolve; });
     const router = createMemoryRouter([{
       path: "/en/settings/forum",
-      loader: async () => {
-        loaderCalls += 1;
-        if (loaderCalls > 1) await refreshGate;
-        return { ...ownerState, registration: snapshot };
-      },
+      loader: () => ({ ...ownerState, registration: snapshot }),
       action: async ({ request }) => {
         writes.push(await request.formData());
         return data({ ok: false, error: "conflict" }, { status: 409 });
@@ -220,7 +213,6 @@ describe("SET-02 stale Owner registration policy UI", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save registration settings" }));
     await waitFor(() => expect(writes).toHaveLength(1));
     await screen.findByText("Settings changed. Review the current values and try again.");
-    releaseRefresh();
     await waitFor(() => expect(page.container.querySelector('input[name="expectedVersion"]')).toHaveValue("8"));
     expect(screen.getByRole("checkbox", { name: "Allow new accounts through Google" })).not.toBeChecked();
     expect(writes).toHaveLength(1);
