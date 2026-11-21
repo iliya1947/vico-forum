@@ -38,6 +38,9 @@ export class HiddenQueueUnavailableError extends Error {
 export type HiddenInspectionTarget =
   | { kind: "topic"; topicId: string }
   | { kind: "post"; topicId: string; postId: string };
+export interface HiddenRevisionCursor { createdAt: string; id: string }
+export interface HiddenPostRevision { id:string; createdAt:string; sourceLocale:string; originalContent:string }
+export interface HiddenPostRevisionPage {items:HiddenPostRevision[];next:HiddenRevisionCursor|null}
 export type HiddenVisibilityAction = "topic.hidden" | "topic.restored" | "post.hidden" | "post.restored";
 export interface HiddenVisibilityEvent {
   action: HiddenVisibilityAction;
@@ -63,6 +66,7 @@ export interface HiddenQueueReader {
   list(actorId: string, query: HiddenQueueQuery): Promise<HiddenQueuePage>;
   /** Current target only; never general History, source or revision bodies. */
   inspect(actorId: string, target: HiddenInspectionTarget): Promise<HiddenInspection | undefined>;
+  revisions(actorId: string, target: Extract<HiddenInspectionTarget,{kind:"post"}>, before?: HiddenRevisionCursor): Promise<HiddenPostRevisionPage>;
 }
 
 const PAGE_SIZE = 25;
@@ -211,5 +215,27 @@ export class PostgresHiddenQueueReader implements HiddenQueueReader {
       parentPostId: row.parentPostId, parentUnavailable: row.parentUnavailable,
       topicHidden: row.topicHidden,
     };
+  }
+
+  /** Extra permission is checked after fresh visibility admission, before revision text retrieval. */
+  async revisions(actorId: string, target: Extract<HiddenInspectionTarget,{kind:"post"}>,
+    before?: HiddenRevisionCursor): Promise<HiddenPostRevisionPage> {
+    await this.admit(actorId);
+    if (!(await this.authorization.forUser(actorId).has("forum.post.history.read"))) {
+      throw new HiddenQueueForbiddenError();
+    }
+    const {rows}=await this.pool.query<HiddenPostRevision>(`
+      select r.id,r.source_locale as "sourceLocale",r.original_content as "originalContent",
+        to_char(r.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as "createdAt"
+      from forum_post_revisions r
+      join forum_posts p on p.id=r.post_id
+      join forum_topics t on t.id=p.topic_id
+      where p.topic_id=$1 and p.id=$2
+        and ($3::timestamptz is null or (r.created_at,r.id collate "C")
+          < ($3::timestamptz,$4::text collate "C"))
+      order by r.created_at desc,r.id collate "C" desc limit 26`,
+      [target.topicId,target.postId,before?.createdAt??null,before?.id??null]);
+    const items=rows.slice(0,25),last=items.at(-1);
+    return {items,next:rows.length>25&&last?{createdAt:last.createdAt,id:last.id}:null};
   }
 }

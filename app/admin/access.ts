@@ -18,6 +18,7 @@ export interface AdminAccess {
   canManageMeasures?: boolean;
   canReadForum: boolean;
   canManageVisibility?: boolean;
+  canReadPostHistory?: boolean;
   canManageAuthorization: boolean;
 }
 export function adminAccess(permissions: ReadonlySet<PermissionKey>): AdminAccess {
@@ -28,6 +29,7 @@ export function adminAccess(permissions: ReadonlySet<PermissionKey>): AdminAcces
   const canManageMeasures = permissions.has("admin.users.blocks.manage");
   return { canEnter: canReadForum || canManageAuthorization || canReadHistory || canReadUsers || canManageMeasures, canReadForum, canManageAuthorization,
     ...(permissions.has("forum.content.visibility.manage") ? { canManageVisibility: true } : {}),
+    ...(permissions.has("forum.post.history.read") ? { canReadPostHistory: true } : {}),
     ...(canReadHistory ? { canReadHistory: true } : {}),
     ...(canReadUsers ? { canReadUsers: true } : {}),
     ...(canManageMeasures ? { canManageMeasures: true } : {}) };

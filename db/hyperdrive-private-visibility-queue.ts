@@ -36,5 +36,16 @@ export function createHyperdriveHiddenQueue(
         bestEffortDiscardClient(pool);
       }
     },
+    async revisions(actorId, target, before) {
+      const pool = createWebPool(connectionString);
+      try {
+        return await new PostgresHiddenQueueReader(pool, authorization).revisions(actorId, target, before);
+      } catch (error) {
+        if (error instanceof HiddenQueueForbiddenError) throw error;
+        throw new HiddenQueueUnavailableError();
+      } finally {
+        bestEffortDiscardClient(pool);
+      }
+    },
   };
 }

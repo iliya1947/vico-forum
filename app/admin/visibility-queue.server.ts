@@ -2,7 +2,7 @@ import { createContext, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import {
   HiddenQueueForbiddenError, HiddenQueueUnavailableError,
-  type HiddenQueueQuery, type HiddenQueueReader, type HiddenInspectionTarget,
+  type HiddenQueueQuery, type HiddenQueueReader, type HiddenInspectionTarget, type HiddenRevisionCursor,
 } from "../../db/private-visibility-queue";
 
 export const hiddenQueueContext = createContext<HiddenQueueReader>();
@@ -42,5 +42,19 @@ export async function readHiddenInspection(context: RouterContextProvider, targe
     }
     // Missing History event, SQL errors and unclassified failures are private 503.
     throw new Response("Unavailable", { status: 503, headers: hiddenQueuePrivateHeaders });
+  }
+}
+
+/** Post revision text never flows through a general Admin/History reader. */
+export async function readHiddenPostRevisions(context:RouterContextProvider,
+  target:Extract<HiddenInspectionTarget,{kind:"post"}>, before?:HiddenRevisionCursor) {
+  const session=authSessionForRequest(context);
+  if(!session)throw new Response("Unauthorized",{status:401,headers:hiddenQueuePrivateHeaders});
+  try {
+    return await context.get(hiddenQueueContext).revisions(session.user.id,target,before);
+  } catch(error) {
+    if(error instanceof HiddenQueueForbiddenError)
+      throw new Response("Forbidden",{status:403,headers:hiddenQueuePrivateHeaders});
+    throw new Response("Unavailable",{status:503,headers:hiddenQueuePrivateHeaders});
   }
 }

@@ -1,5 +1,5 @@
 import { defaultAdministrativeRouting, type AdministrativeRouting } from "../administrative-routing/addresses";
-import type { HiddenQueueCursor, HiddenQueueKind, HiddenQueueQuery, HiddenInspectionTarget } from "../../db/private-visibility-queue";
+import type { HiddenQueueCursor, HiddenQueueKind, HiddenQueueQuery, HiddenInspectionTarget, HiddenRevisionCursor } from "../../db/private-visibility-queue";
 
 const UTC_MILLIS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/u;
 const APPLICATION_KEYS = new Set(["kind", "beforeChangedAt", "beforeId"]);
@@ -44,9 +44,19 @@ export function hiddenQueuePath(
 export function hiddenInspectionPath(
   locale: string, target: HiddenInspectionTarget,
   routing: AdministrativeRouting = defaultAdministrativeRouting,
+  revisions?: { before?: HiddenRevisionCursor },
 ): string {
-  const path = routing.admin.topic(locale, target.topicId) + "/inspect";
-  return target.kind === "post" ? path + "?" + new URLSearchParams({ postId: target.postId }) : path;
+  const base = routing.admin.topic(locale, target.topicId) + "/inspect";
+  const params = new URLSearchParams();
+  if(target.kind==="post")params.set("postId",target.postId);
+  if(revisions){
+    params.set("revisions","1");
+    if(revisions.before){
+      params.set("beforeRevisionAt",revisions.before.createdAt);
+      params.set("beforeRevisionId",revisions.before.id);
+    }
+  }
+  return base + (params.size?"?"+params:"");
 }
 
 /** Parse after capability admission to prevent denied actors from using query validation as an oracle. */
@@ -62,4 +72,34 @@ export function hiddenInspectionTarget(topicId: string, params: URLSearchParams)
   if (!postId || postId !== postId.trim() || new TextEncoder().encode(postId).length > 2048
     || [...postId].some(char => char.codePointAt(0)! < 32 || char.codePointAt(0) === 127)) return invalid();
   return { kind: "post", topicId, postId };
+}
+
+export interface HiddenInspectionQuery {
+  target: HiddenInspectionTarget;
+  includeRevisions: boolean;
+  before?: HiddenRevisionCursor;
+}
+export function hiddenInspectionQuery(topicId:string,params:URLSearchParams):HiddenInspectionQuery {
+  const invalid=():never=>{throw new Response("Invalid inspection query",{
+    status:400,headers:{"Cache-Control":"private, no-store"},
+  });};
+  const keys=["postId","revisions","beforeRevisionAt","beforeRevisionId"];
+  if([...params.keys()].some(key=>!keys.includes(key))||keys.some(key=>params.getAll(key).length>1))
+    return invalid();
+  const targetParams=new URLSearchParams();
+  if(params.has("postId"))targetParams.set("postId",params.get("postId")!);
+  const target=hiddenInspectionTarget(topicId,targetParams);
+  const mode=params.get("revisions");
+  if(mode!==null&&mode!=="1")return invalid();
+  const at=params.get("beforeRevisionAt"),id=params.get("beforeRevisionId");
+  if((at===null)!==(id===null))return invalid();
+  if(mode===null&&(at!==null||id!==null))return invalid();
+  if(mode!==null&&target.kind!=="post")return invalid();
+  if(at===null||id===null)return {target,includeRevisions:mode==="1"};
+  const truncated=at.slice(0,-4)+"Z",parsed=new Date(truncated);
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u.test(at)
+    ||!Number.isFinite(parsed.getTime())||parsed.toISOString()!==truncated
+    ||!id||id!==id.trim()||new TextEncoder().encode(id).length>256
+    ||[...id].some(char=>char.codePointAt(0)!<32||char.codePointAt(0)===127))return invalid();
+  return {target,includeRevisions:true,before:{createdAt:at,id}};
 }
