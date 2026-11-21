@@ -414,8 +414,9 @@ export function NotificationsView({
           <ul className="notifications-list">
             {notifications.map((notification) => {
               const unread = notification.readAt === null;
-              const deletedActor = notification.actorIdentityKind === "deleted";
-              const actorLabel = deletedActor ? t("deletedUser") : notification.actorName ?? "";
+              const unavailable = notification.unavailable === true;
+              const deletedActor = !unavailable && notification.actorIdentityKind === "deleted";
+              const actorLabel = unavailable ? "" : deletedActor ? t("deletedUser") : notification.actorName ?? "";
               return (
                 <li key={notification.id}>
                   <Form method="post" className="notification-form">
@@ -424,14 +425,15 @@ export function NotificationsView({
                     <button
                       className={[ "notification-card", unread?"is-unread":null, (notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result")?"is-system":null ].filter(Boolean).join(" ")}
                       type="submit"
-                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
+                      aria-label={`${t("notificationOpen")}: ${unavailable?t("notificationUnavailable"):notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
                     >
-                      {notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
+                      {!unavailable && notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
                         {deletedActor ? "" : actorLabel.trim().slice(0, 1).toUpperCase()}
                       </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          {notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
+                          {unavailable ? <strong>{t("notificationUnavailable")}</strong> :
+                            notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
                             <strong>{t(notification.kind==="complaint-decision"?"notificationDecisionResult":"complaintAppealNotification")}</strong>:
                             <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:actorLabel})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
