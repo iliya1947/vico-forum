@@ -134,6 +134,43 @@ describe("notifications route", () => {
     expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1",0);
   });
 
+  it("serializes unavailable reply/mention without hidden source metadata or actor", async () => {
+    const value = context();
+    const secret = "HIDDEN_NOTIFICATION_SENTINEL";
+    const readNotifications = vi.fn(async () => ({
+      page: 0, total: 2, hasMore: false, items: [{
+        id: "hidden-reply", kind: "reply" as const, unavailable: true as const,
+        actorName: secret, actorIdentityKind: "deleted" as const,
+        topicId: "hidden-topic", topicTitle: secret, postId: "hidden-post",
+        caseId: secret, appealId: secret, createdAt: new Date("2026-11-01T10:00:00.000Z"), readAt: null,
+      }, {
+        id: "hidden-mention", kind: "mention" as const, unavailable: true as const,
+        actorName: secret, topicId: "hidden-topic", topicTitle: secret, postId: "hidden-post",
+        createdAt: new Date("2026-11-01T11:00:00.000Z"),
+        readAt: new Date("2026-11-02T12:00:00.000Z"),
+      }],
+    }));
+    value.set(forumReaderContext, { readNotifications } as never);
+    const result = await loader({ params: { locale: "ru" }, context: value });
+    expect(result).toEqual({
+      locale: "ru", page: 0, total: 2, hasMore: false,
+      notifications: [{
+        id: "hidden-reply", kind: "reply", unavailable: true,
+        actorName: null, topicId: null, topicTitle: null, postId: null,
+        caseId: null, appealId: null,
+        createdAt: "2026-11-01T10:00:00.000Z", readAt: null,
+      }, {
+        id: "hidden-mention", kind: "mention", unavailable: true,
+        actorName: null, topicId: null, topicTitle: null, postId: null,
+        createdAt: "2026-11-01T11:00:00.000Z", readAt: "2026-11-02T12:00:00.000Z",
+      }],
+    });
+    expect(JSON.stringify(result)).not.toContain(secret);
+    expect(JSON.stringify(result)).not.toContain("hidden-topic");
+    expect(JSON.stringify(result)).not.toContain("hidden-post");
+    expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1", 0);
+  });
+
   it("rejects duplicate, unknown, oversized and invalid notification POST before mutation",async()=>{
     const contextValue=context();
     const markNotificationRead=vi.fn();
