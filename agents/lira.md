@@ -1,35 +1,18 @@
-# agents/lira.md — рабочая память Лиры по #342
+# agents/lira.md — текущий контекст Лиры по #342
 
-## Текущее назначение — B5; STOP после B5.4a
+## Назначение — B5; STOP после B5.4b
 
-B1 #355, B2 #357, B3 #359 и B4 #365 получили bounded Mira PASS и остаются Draft/unmerged. B4 stable exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`, [CI #44909767945](https://github.com/iliya1947/vico-forum/actions/runs/44909767945) SUCCESS, 9/9 workflows. B5 разрешён владельцем через #342 после B4 PASS.
+Moderation visibility B1 #355, B2 #357, B3 #359, B4 #365 получили Mira bounded coordinator PASS; stacked Draft, без merge. Stable B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
 
-## B5.1 Watch ON/OFF
+[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `7493a269444f656cfcf511207d2b945d31a01c50` на неизменной B4 head branch. Whole B5 local diff: 20 файлов, 35 commits впереди base, behind 0. Записаны B5.1 Watch hidden/missing ON/OFF; B5.2 Bookmarks и unavailable own list; B5.3 Mute/Block и unavailable own filters; B5.4a mixed/legacy inbox readers; B5.4b mark/open и notification invariants. Полное содержание и границы — PR #367 и `WORKFLOW.md`.
 
-Создан [stacked Draft #367](https://github.com/iliya1947/vico-forum/pull/367) с base = B4 branch `feature/moderation-visibility-b4-assets-translations` exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Current exact `7bb6b652e2b23568e86471005364177031761bc1`, compare ahead 2 / behind 0; changed files only `db/forum-repository.ts` + `tests/database/topic-watch.test.ts`.
+### B5.4b — зафиксировано (пока только static)
 
-- `setTopicWatch` keeps topic `FOR NO KEY UPDATE` before active actor check; hidden/missing topic denies ON with neutral not-found; own OFF for hidden/missing returns false after active actor admission.
-- Added PostgreSQL-targeted regression for hidden ON denial, own/other retained pair separation, hidden/missing OFF, inactive actor refusal, Restore.
-- GitHub diff and source assertions checked. **PostgreSQL/Vitest/CI execution not run; B5 author PASS not established.** No schema/route/UI change.
+- `markNotificationRead` и `markReplyNotificationRead` проверяют видимость topic+post в том же actor→notification-locked transaction обычным MVCC `EXISTS` без topic/post row locks; спрятанный/отсутствующий источник возвращает только neutral unavailable, но own notification `read_at` сохраняет idempotent mark.
+- `app/routes/notifications.tsx` перенаправляет unavailable open в приватный `/:locale/notifications`; обычный видимый и защищённый Complaint Case/Appeal destination не изменены.
+- PG-targeted regression: hidden post/topic, foreign actor denial, read_at idempotence, unread badge/chronology, no new notices, unchanged suppression receipts, Restore и Complaint case. Route neutral redirect tested across EN/RU/HE.
+- B5.4b local diff от прежнего head `a1daf50a52650bf00b6ba7cdeccf6176c02ee872`: 5 файлов, ahead 7/behind 0. GitHub static diff/source checks PASS. **PostgreSQL/Vitest/typecheck/CI не запускались; ни runtime PASS, ни whole-B5 author PASS не установлены.**
 
-## B5.2 Bookmarks ON/OFF and unavailable own lists
+## Следующий шаг
 
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `6d4f8b6b98a357f96b8acc7d5393f35593d81125`; base #365 unchanged. Changed-file scope B5.1+B5.2 exactly 8 files, ahead 12/behind 0. Bookmark save locks visible topic `FOR SHARE` (conflicts with Hide `FOR NO KEY UPDATE`) before actor; own remove retains `FOR KEY SHARE`, succeeds for hidden/missing target with active actor check. Private list keeps retained pair pagination/keyset but source joins only visible topic. Hidden/missing rows reveal only own pair id/save date, display neutral placeholder and Remove, no source link/identity/location.
-
-Added PG-targeted Hide/Restore/actor-isolation/keyset/absent-target tests and real 2-connection Add×Hide order barriers, plus route/UI DTO/undo regressions; English label. GitHub exact-head source/diff reviewed, **PostgreSQL/Vitest/lint/typecheck/CI not run**, so whole B5 author PASS is not established.
-
-## B5.3 Mute/Block и unavailable muted list
-
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `7e73cd12e1644edf8a95a78b721c8d075390a1f9`, base #365 unchanged. Mute ON acquires topic `FOR SHARE` before actor, denies hidden/missing; own OFF retains `FOR KEY SHARE`, admits active actor, succeeds for hidden/missing. `readMutedTopics` preserves own keyset rows and only joins visible metadata; unavailable row is own pair ID/timestamp only, no hidden title/author/location/link. Private route/UI allow Unmute; Block/Reveal existing hidden-content gates remain unchanged and get PG regression.
-
-B5.3 changes 8 files on top of B5.1/B5.2, full B5 local diff 14 files/20 commits, no behind commits. GitHub static source/patch checks PASS. Tests authored: real PG Mute×Hide both orders, hidden/Restore, missing OFF, 50+2 pagination, Block hidden author and route/UI masking. **Local PostgreSQL/Vitest/CI cannot be executed via current environment; not run.** B5 author self-check/CI PASS remains pending for final whole-B5 checkpoint.
-
-## B5.4a — mixed/legacy inbox readers (recorded, STOP)
-
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `a1daf50a52650bf00b6ba7cdeccf6176c02ee872`, unchanged base #365. Mixed and legacy reply/mention source joins now gate title/actor/post/topic on current topic+post visibility. Hidden/absent source projects `unavailable:true`, no actor or source metadata; notice ID/kind/time/read_at and existing count queries preserved. Existing Complaint Decision/Appeal result notices remain independent. Route additionally removes hidden fields on serialization; UI shows neutral label/no avatar. Added PG-targeted hidden post+topic, mixed/legacy counts/order/Restore/suppression/protected Case regression, private route DTO test, EN/RU/HE layout test.
-
-Static GitHub source/compare PASS on exact head: B5.4a changes 7 files, ahead 8/behind 0 relative to B5.3 head. **PostgreSQL/Vitest/typecheck/CI were not executed; no full B5 PASS.** B5.4b markNotificationRead/markReplyNotificationRead and open redirect still unresolved and must be handled next; the implementation PR remains Draft.
-
-## Next
-
-**Лира STOP after B5.4a.** Next owner `...` authorizes only B5.4b: mark-read/open hidden-source behavior, no lock inversion, idempotent read_at, badge/order/suppression/Restore/no-backfill assertions. Then whole B5 author self-check + exact-head CI/acceptance, Mira bounded coordinator checkpoint. Do not begin B6/B7, merge, Leva whole-feature review or Stage6.
+**Лира STOP после B5.4b.** Только следующая команда владельца `...` разрешает consolidated whole-B5 author self-check и применимые exact-head `run:ci`/`run:acceptance` в #367. При подтверждённых проблемах исправить только scope B5, проверить новый head; затем записать #342 handoff **STOP → Мира bounded coordinator checkpoint**. B6/B7, merge, Лёва whole-feature review и Stage6 запрещены.
