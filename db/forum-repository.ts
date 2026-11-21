@@ -148,15 +148,17 @@ export interface ForumTopicReadState {
   latestPostId: string | null;
 }
 
-export interface ForumTopicBookmarkSummary {
-  id: string;
-  title: string;
-  authorName: string;
-  authorIdentityKind?: "deleted";
-  savedAt: Date;
-  section: { id: string; name: string } | null;
-  category: { id: string; name: string };
-}
+export type ForumTopicBookmarkSummary = { id: string; savedAt: Date } & (
+  | { unavailable: true }
+  | {
+    unavailable?: false;
+    title: string;
+    authorName: string;
+    authorIdentityKind?: "deleted";
+    section: { id: string; name: string } | null;
+    category: { id: string; name: string };
+  }
+);
 
 export interface ForumTopicBookmarkCursor {
   savedAt: Date;
@@ -951,10 +953,12 @@ export class DrizzleForumRepository {
 
   async setTopicBookmark(input: { topicId: string; actorId: string; bookmarked: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
-      // Preserve FK target first, then take the same actor mutex as account lifecycle.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId)).for("key share");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // SAVE must serialize with Hide (NO KEY UPDATE). REMOVE retains its
+      // previous FK-safe KEY SHARE lock and remains safe for missing targets.
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for(input.bookmarked ? "share" : "key share");
+      if (input.bookmarked && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.bookmarked) {
         await tx.insert(forumTopicBookmarks).values({ userId: input.actorId, topicId: input.topicId })
@@ -1785,14 +1789,18 @@ export class DrizzleForumRepository {
       categoryId: forumCategories.id,
       categoryName: forumCategories.name,
     }).from(forumTopicBookmarks)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicBookmarks.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      // Page by retained own pairs; join current source metadata only for
+      // visible topics, never selecting hidden title/identity/location.
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicBookmarks.topicId), eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .leftJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
       .where(and(
         eq(forumTopicBookmarks.userId, userId),
         before ? or(
@@ -1805,13 +1813,26 @@ export class DrizzleForumRepository {
       .limit(51);
 
     const pageRows = rows.slice(0, 50);
-    const items = pageRows.map((row) => {
-      const author = projectForumPublicAuthor(row);
+    const items: ForumTopicBookmarkSummary[] = pageRows.map(row => {
+      if (row.title === null || row.authorId === null || row.authorName === null
+        || row.sectionId === null || row.sectionName === null
+        || row.categoryId === null || row.categoryName === null) {
+        return { id: row.id, savedAt: row.savedAt, unavailable: true };
+      }
+      const author = projectForumPublicAuthor({
+        authorId: row.authorId, authorName: row.authorName,
+        authorDeactivatedAt: row.authorDeactivatedAt,
+        authorDeactivatedByUserId: row.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: row.authorRetainAtLeastUntil,
+      });
       return {
         id: row.id, title: row.title, savedAt: row.savedAt,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        ...publicDiscoveryLocation(row),
+        ...publicDiscoveryLocation({
+          sectionId: row.sectionId, sectionName: row.sectionName,
+          categoryId: row.categoryId, categoryName: row.categoryName,
+        }),
       };
     });
     const last = pageRows.at(-1);
