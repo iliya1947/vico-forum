@@ -1440,6 +1440,93 @@ describe("visibility-gated post-body planning", () => {
     )).rows).toEqual([{status:"completed"}]);
   });
 
+  it("completes an accepted body task while topic and post Hide commit during its provider window", async () => {
+    const second = await secondClient();
+    const started = deferred(), release = deferred();
+    let execution: ReturnType<ContentPostBodyTaskExecutor["execute"]> | undefined;
+    try {
+      const enqueuer = new FakeTranslationTaskEnqueuer();
+      const planned = await createPlanner(client, enqueuer).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      );
+      if (planned.kind !== "queued") throw new Error("expected accepted body task");
+      const counters = async () => (await second.query<{
+        heads: number; tasks: number; budget: number; revisions: number;
+      }>(`
+        select
+          (select count(*)::int from translation_task_generation_heads) as heads,
+          (select count(*)::int from translation_tasks) as tasks,
+          (select coalesce(sum(used_units),0)::int from content_translation_request_budget_counters) as budget,
+          (select count(*)::int from forum_post_revisions) as revisions
+      `)).rows[0]!;
+      const before = await counters();
+      const translate = vi.fn(async (request: MachineTranslationRequest) => {
+        started.resolve();
+        await release.promise;
+        return machineResultForRequest(request);
+      });
+      execution = createBodyExecutor(client, { supports: () => true, translate })
+        .execute(enqueuer.messages[0]!);
+      void execution.catch(() => undefined);
+      await started.promise;
+
+      // Commit both Hide flags on an independent PostgreSQL connection while
+      // accepted work is in-flight, before its revision-bound publication.
+      await second.query("begin");
+      try {
+        await second.query("update forum_topics set is_hidden=true where id='topic-a'");
+        await second.query("update forum_posts set is_hidden=true where id='post-a'");
+        await second.query("commit");
+      } catch (error) {
+        await second.query("rollback");
+        throw error;
+      }
+      expect((await client.query(
+        "select t.is_hidden as topic_hidden,p.is_hidden as post_hidden,p.current_revision_id " +
+        "from forum_posts p join forum_topics t on t.id=p.topic_id where p.id='post-a'",
+      )).rows[0]).toEqual({
+        topic_hidden: true, post_hidden: true, current_revision_id: "post-a-r1",
+      });
+      const deniedEnqueue = new FakeTranslationTaskEnqueuer();
+      await expect(createPlanner(second, deniedEnqueue).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      )).resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+      expect(deniedEnqueue.messages).toHaveLength(0);
+      expect(await counters()).toEqual(before);
+
+      release.resolve();
+      await expect(execution).resolves.toEqual({ outcome: "published", delivery: "ack" });
+      expect(translate).toHaveBeenCalled();
+      const callsAfterPublication = translate.mock.calls.length;
+      expect(await new DrizzleContentTranslationStore(drizzle(second)).read({
+        contentType: "post-body", contentId: "post-a", revisionId: "post-a-r1", targetLocale: "he",
+      })).toMatchObject({ contentId: "post-a", revisionId: "post-a-r1", provenance: { origin: "machine" } });
+      expect((await second.query(
+        "select status from translation_tasks where id=$1", [planned.task.id],
+      )).rows).toEqual([{ status: "completed" }]);
+      expect(await counters()).toEqual(before);
+
+      await second.query("update forum_topics set is_hidden=false where id='topic-a'");
+      const stillHiddenEnqueue = new FakeTranslationTaskEnqueuer();
+      await expect(createPlanner(second, stillHiddenEnqueue).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      )).resolves.toMatchObject({ kind: "original" });
+      expect(stillHiddenEnqueue.messages).toHaveLength(0);
+      await second.query("update forum_posts set is_hidden=false where id='post-a'");
+      const restoredEnqueue = new FakeTranslationTaskEnqueuer();
+      await expect(createPlanner(second, restoredEnqueue).planAndDispatch(
+        requestRevision(), "he", budgetAdmission(), "author-a",
+      )).resolves.toMatchObject({ kind: "original", reason: "translation-current" });
+      expect(restoredEnqueue.messages).toHaveLength(0);
+      expect(await counters()).toEqual(before);
+      expect(translate).toHaveBeenCalledTimes(callsAfterPublication);
+    } finally {
+      release.resolve();
+      if (execution) await Promise.allSettled([execution]);
+      await second.end();
+    }
+  });
+
   async function counts() {
     const result = await client.query(`
       select
