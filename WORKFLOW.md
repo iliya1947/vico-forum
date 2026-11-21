@@ -15,27 +15,29 @@
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
 2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 17 numbered rules после первого dedup-pass против User layer.
+4. `PROJECT_INSTRUCTIONS.draft.md` — очищенный Project draft: 17 numbered rules + unique project-only unnumbered guards.
 5. `AGENTS.current.md` — неизменяемый эталон.
 6. `AGENTS.draft.md` — пока идентичен current.
 
+## User layer
+
+- Current coverage: 15/15 FULL.
+- Draft является semantic superset current User rules.
+
 ## Project layer
 
-1. Первый classification-pass против User draft завершён.
-2. Применены только подтверждённые изменения:
-   - удалён old Project 10;
-   - удалён ненумерованный goal-дубль;
-   - partial duplicate «Перед ответом…» сокращён до project-context check;
-   - old 11–18 перенумерованы в 10–17 без изменения текста.
-3. Exact semantic diff: `research/project-current-vs-draft-semantic-diff.md`.
-4. Validation:
-   - numbered rules 18 → 17;
-   - unexpected text changes: 0;
-   - whole-file transform matches expected.
-5. Все project-specific смыслы первого pass сохранены.
+1. Классификация против User draft: `research/project-vs-user-classification.md`.
+2. Подтверждённые изменения уже находятся в `PROJECT_INSTRUCTIONS.draft.md`, commit `46ceb0fe8f42b11da4ccb553bc6111489739617c`.
+3. Current→draft semantic diff: `research/project-current-vs-draft-diff.md`.
+4. Удалено:
+   - current Project 10 как полный дубль User 2 + 7;
+   - ненумерованный goal-дубль как полный дубль User 19 + 22 + 26 + 39.
+5. Partial duplicate «Перед ответом…» сокращён до уникального project-context check; трактовочная часть покрыта User 20.
+6. Потерянных Project-specific guards: 0.
+7. Draft numbered rules: 18 → 17.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: проверить внутреннее дублирование и безопасные structural merges внутри текущего Project draft, пока без изменения AGENTS layer.
+Следующий переход: перейти к `AGENTS.current.md` против User + Project drafts и классифицировать межслойные дубли. Первый проход — только анализ, без изменения `AGENTS.draft.md`.
