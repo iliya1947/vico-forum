@@ -11,7 +11,7 @@
 ## Исходное состояние
 
 - Current main при создании workspace: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Current #322 head при создании workspace: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- #322 head, на котором непосредственно перед созданием workspace выполнялся review: `e23c0e0ade79e786e29b4057af1dfd292814e34e`.
 - #322 сейчас содержит большую собственную логику preview и representative state.
 - В `main` уже существуют dependency-injection seams через React Router contexts для ряда production capabilities, включая forum reader/writer, auth, authorization, complaint submission и Owner profile/lifecycle.
 - Это делает вариант production UI/routes + substituted infrastructure технически правдоподобным, но **его жизнеспособность и границы ещё не установлены полностью**.
@@ -89,3 +89,34 @@
 - явно перечисляет оставшиеся вопросы, которые уже должен решить технический план.
 
 После этого — **STOP и решение разработчика**. Только после принятия концепции Лёва или другой назначенный архитектор готовит полный технический `PLAN.md`.
+
+
+## Обсуждённая целевая гипотеза
+
+Эта гипотеза должна быть проверена концептуально, но она является исходным вариантом, ради которого создана задача:
+
+1. **Production product logic должна по возможности оставаться настоящей.**
+   Preview должен переиспользовать актуальные router/routes/components/loaders/actions и permission/auth presentation logic из `main`, а не иметь вторые версии этих механизмов.
+
+2. **Подменяется инфраструктура, а не продукт.**
+   Вместо Neon/PostgreSQL, Better Auth, R2 и других внешних runtime-зависимостей preview получает тестовые реализации тех же capability/interfaces через существующие context seams или другие минимально необходимые boundaries.
+
+3. **Representative test state хранится в репозитории.**
+   Пользователи, роли, темы, сообщения, жалобы, notifications, personal state и другие необходимые состояния задаются детерминированными fixtures/test state.
+
+4. **Предпочтительный базовый кандидат — in-memory store/adapters, а не SQL-БД в браузере.**
+   PGlite/SQLite/WASM или иная browser-side database рассматривается только если concept research установит, что in-memory capability implementations недостаточно для требуемой parity. UI progress preview не должен дублировать database-integration testing, которое проверяется отдельными PostgreSQL/acceptance наборами.
+
+5. **Одна composition boundary.**
+   Концептуально preview должен иметь небольшой composition root (условно `ui-preview/runtime.ts`), который:
+   - создаёт test state;
+   - создаёт fake/in-memory capabilities;
+   - подключает их к production contexts/runtime;
+   - запускает настоящий product router/UI.
+   Конкретное имя файла и технический способ реализации относятся уже к будущему техническому плану.
+
+6. **Выбор роли не должен переписывать предметные данные.**
+   User / Manager / Owner должны означать смену текущей auth/authorization identity, а не изменение владельца темы или автора сообщения в fixture.
+
+7. **Новая capability в `main` не должна требовать второй реализации product behavior в preview.**
+   В нормальном случае preview должен получить новый production route/UI/action автоматически; отдельная работа требуется только для representative data или новой infrastructure dependency.
