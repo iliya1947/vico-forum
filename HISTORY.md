@@ -7,3 +7,4 @@
 - 2026-11-21 — loss/conflict-check исправил классификацию: P03 и A-L1–A-L6 нельзя удалять без потери области/аудитории; C11 восстановлен как отдельная универсальная защита применимости источника.
 - 2026-11-21 — построена минимальная целевая архитектура U/P/A: четыре безопасных удаления, шесть новых универсальных guards, сохранение generic AGENTS logic как Codex/shared-agent coverage и отдельный project-level PR permission proposal.
 - 2026-11-21 — executability-check отклонил простую модель расширения U до 19 пунктов; U07/U09 признаны перегруженными, C03+C11 объединены как один evidence/applicability guard, а перед финальными редакциями назначен внутренний аудит AGENTS.md.
+- 2026-11-21 — внутренний аудит AGENTS.md показал, что shared logic A-L1–A-L6 нужно сохранять для Codex, а реальное сокращение искать в повторениях Diagnosis/Roles/Workflow/Review/Developer-action; подтверждён Workflow как место единого PR permission contract.
