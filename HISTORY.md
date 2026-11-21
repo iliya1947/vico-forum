@@ -49,3 +49,12 @@
 ## 2026-11-20 — owner adopted stacked bounded PR workflow
 
 Владелец выбрал stacked delivery как общий рабочий паттерн для составных вертикальных задач: bounded PR-ступени строятся друг на друге, не merge в main по отдельности; после последней ступени весь final head сворачивается в первый PR, который проходит единый whole-feature review и owner merge. Для moderation visibility это B1→B9. Отдельный follow-up после #342: обновить AGENTS.md под этот штатный процесс.
+
+## 2026-11-21 — manual PR test control correction
+
+- Owner approved moving ordinary PR CI/acceptance from automatic per-push runs to agent-triggered execution.
+- #362 was created for the mechanism and #363 for documentation.
+- Lira reviewed #362 exact `898f71c2d408428ddf126d218c88c861ef29a10d` and identified one label-consumption permission issue; no PASS was issued.
+- Mira corrected #362 to the documented Issues REST label-removal endpoint on exact `3387132aeed815fb93cf3094c3d70f5e343ce998`.
+- Erroneous service PR #361 was closed without merge; #342 remains the assigned service channel.
+
