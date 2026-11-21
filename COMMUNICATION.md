@@ -63,3 +63,16 @@ Owner clarified the purpose of decomposition: prevent Lira from stalling on long
 ## 2026-11-20 — intermediate B3 auto-CI is not a gate
 
 GitHub automatically triggers broad workflows on B3 pushes. Lira must not wait for, poll or rerun those workflows to close an intermediate 2–3-microstep batch. Batch closure uses targeted checks, then STOP for owner `...`. Full exact-head CI remains a whole-B3 end gate unless a concrete B3-relevant risk requires earlier escalation.
+
+## Manual PR test execution
+
+Owner decision: PR CI/acceptance runs are agent-triggered rather than automatic on every PR head change.
+
+Control contract:
+- `run:ci` triggers main CI;
+- `run:acceptance` triggers relevant acceptance workflows subject to their existing path filters;
+- `workflow_dispatch` remains fallback;
+- labels are one-shot commands and are removed after consumption.
+
+Lira reviewed #362 exact `898f71c2d408428ddf126d218c88c861ef29a10d` and found the label-removal permission ambiguity. Mira corrected it on `3387132aeed815fb93cf3094c3d70f5e343ce998` via the Issues REST endpoint supported by the existing `issues: write` permission. Old Lira review is not a PASS for the new head.
+
