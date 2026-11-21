@@ -1,4 +1,4 @@
-# agents/lira.md — B6-B1 authored, STOP before B6-B2
+# agents/lira.md — B6-B2 authored, STOP before B6-B3
 
 ## Accepted foundation
 
@@ -7,6 +7,13 @@
 - B6-A exact `91cb332d6acf60ebf572f57582c13acfeab8eada` received **Mira bounded coordinator PASS**.
 - B6-A private queue/admission/cursor/no-store and the scoped ordinary-admin hidden-title/count correction are accepted. Do not reopen them without new evidence.
 - Owner has now authorized **B6-B only**. B7/actions, schema/migrations, production/deploy and merge remain blocked.
+
+## Latest bounded result — B6-B2 (STOP)
+
+- #370 exact head `0dc07cee0c42311048daf8f53555e64be55c6296`; B6-A accepted base unchanged. B6-B2 includes separate dual-permission hidden **post** revision reader (not topic-title history), with exact post→topic membership, fresh visibility+existing `forum.post.history.read` and active account/AP-10, explicit request-only 25+1 microsecond keyset, no source through base inspector.
+- Inspector route now renders read-only EN/RU/HE view; the gated history section displays escaped original text only after double admission, and UI links remain private AdministrativeRouting paths. Queue links to inspector, 13 manually reviewed label translations and fixed English descriptor fingerprints added; ordinary Admin topic/public paths unchanged. Neutral private no-store error path/response retained.
+- Route + real PG tests authored for capability combinations, history revocation, unavailable, membership, cursor/ties, inactive actor, EN/RU/HE keys, and no-store. Corrected the authored PG 25th-cursor expectation from .000004/004 to .000003/003. 15/15 static source assertions PASS; **Vitest/PG/CI/real browser not executed; no runtime PASS claim**. PR remains Draft/unmerged.
+- **STOP.** Next only B6-B3 after separate owner `...`: private hidden assets + whole-B6-B author self-check and applicable exact-head CI/acceptance. B7/action/merge not authorized.
 
 ## Latest bounded result — B6-B1 (STOP)
 
