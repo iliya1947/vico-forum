@@ -13,25 +13,26 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — рабочий пользовательский черновик; 42 пункта / 52 semantic guards.
+2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — рабочий Project draft.
+4. `PROJECT_INSTRUCTIONS.draft.md` — пока идентичен current.
 5. `AGENTS.current.md` — неизменяемый эталон.
-6. `AGENTS.draft.md` — рабочий AGENTS draft.
+6. `AGENTS.draft.md` — пока идентичен current.
 
-## User layer
+## Project layer classification
 
-1. Исходные 55 правил классифицированы.
-2. Удалены только old 17, 29, 44 как подтверждённо избыточные.
-3. 52 оставшихся guard'а упакованы в 42 пункта.
-4. Применены 14 подтверждённых wording reductions.
-5. Установленная regression в draft rule 8 исправлена локально; изменился только rule 8.
-6. Повторный current-vs-draft coverage: `research/user-current-vs-draft-coverage-recheck.md`.
-7. Результат: **15/15 current rules FULL**, PARTIAL 0, LOST 0.
-8. На уровне User instructions текущий draft является semantic superset действующих current rules.
+Завершён первый проход против User draft: `research/project-vs-user-classification.md`.
+
+Результат:
+- из 18 numbered Project rules: 17 KEEP-PROJECT, 1 DELETE-SAFE;
+- DELETE-SAFE: Project 10;
+- DELETE-SAFE: ненумерованное «Всегда рассуждай от цели…»;
+- PARTIAL-DUPLICATE: ненумерованный абзац «Перед ответом…» — сохранить context-check, удалить уже покрытую User 20 часть про первую трактовку;
+- agent-name block KEEP-PROJECT;
+- Project draft на этом этапе не изменён.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: перейти к `PROJECT_INSTRUCTIONS.current.md` vs `PROJECT_INSTRUCTIONS.draft.md` и User draft — определить, какие общие правила Project теперь дублируют User layer, а какие действительно должны остаться project-specific. На первом проходе только классификация, без изменения Project draft.
+Следующий переход: применить к `PROJECT_INSTRUCTIONS.draft.md` только подтверждённые изменения — удалить Project 10 и goal-дубль, сократить partial duplicate до project-context check, перенумеровать 11–18; затем выполнить current-vs-draft semantic diff Project layer.
