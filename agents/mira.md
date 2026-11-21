@@ -1,19 +1,19 @@
 # agents/Миры.md — личная рабочая память Миры.
 
-- Исполнитель текущего этапа: **Мира-3 (GPT-5.6 Sol)**.
-- Текущий этап: концептуальное проектирование архитектуры UI progress preview до технического плана.
-- Реализация и изменения #322 не авторизованы.
-- Перед исследовательским подэтапом проверять актуальный `main` и действующие границы задачи.
-- Подэтапы 1–5 закрыли dependency/browser graph/routes/transport/attachments.
-- Подэтап 6: deterministic test state + controls — завершён.
-- Target state: one canonical raw state graph, small overlays, fault profiles, resettable mutable clone.
-- Не переносить current 72-scenario presentation model: scenario не задаёт готовый screen/result.
-- Identity control выбирает concrete session actor; role/grants/Owner authority остаются facts production authorization model. Не использовать `allowedIdentities` как замену authz.
-- Locale идёт через real locale route/registry; direction не хранится в scenario; viewport — только frame geometry.
-- Empty/authz/error/conflict/rate-limit/pending/success states должны получаться из real causes и production loaders/actions.
-- Server-persisted state и browser-local preferences разделены.
-- Critical limitation: `ForumReader` имеет 44 product-query methods, а их SQL semantics живут в `DrizzleForumRepository`; fake DB не должна становиться вторым repository engine. Pages остаётся representative, DB/query correctness — Worker/PostgreSQL acceptance.
-- Browser SQL/PGlite не выбран.
-- Deterministic visible time требует минимальной clock seam: category/attention current routes используют wall-clock напрямую.
-- Следующий conceptual block: migration from current preview + concept done criteria + handoff questions for Leva technical plan.
-- Итог первого этапа должен быть цельным концептуальным документом `research/concept.md`, после чего STOP для решения разработчика.
+- Исполнитель conceptual stage: **Мира-3 (GPT-5.6 Sol)**.
+- Service PR: **#369**.
+- Первый conceptual stage по UI progress preview — **завершён**.
+- Итог: `research/concept.md`, разделы 1–27.
+- Реализация не начата; старые implementation PR не трогать.
+- Target: production route source/modules/product logic + one resettable deterministic raw state + thin infrastructure adapters.
+- Нет второго route table/loaders/actions/views; scenario — review bookmark/raw overlay/fault/setup, а не экран.
+- Route parity: Framework route IDs обязаны сохраняться.
+- Transport: Static Handler local dispatcher + fetch wrapper; narrow XHR upload adapter; native attachment bytes через presentation URL seam.
+- State: base fixture + small raw overlays; concrete identity/session; Owner = trusted exact binding; locale через production registry; viewport вне domain state.
+- Empty/authz/error/conflict/pending/success возникают из real causes и production logic.
+- Complex SQL ranking/filter/fanout semantics не дублировать; Pages не DB/runtime/security acceptance.
+- Determinism: fixed seeded facts, resettable mutable clone, minimal visible-time clock seam.
+- Migration: target можно временно строить рядом только внутри implementation branch; published preview не смешивать old/new. Cutover единый, manual product layer удаляется при переключении.
+- Сохраняются static Pages/Vite delivery, controller tooling и полезный representative content как raw fixtures.
+- После принятия концепции следующий агент — **Лёва (Codex-6.1 Sol)**, который готовит полный technical `PLAN.md`; до owner acceptance Лёву не назначать.
+- Подтверждённая route-ID ошибка уже журналирована; новых ошибок в final closeout нет.
