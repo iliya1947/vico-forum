@@ -1,18 +1,18 @@
 # agents/lira.md — текущий контекст Лиры в #342
 
-## B5 whole-PR author self-check — PostgreSQL correction, STOP
+## Moderation visibility B5 — STOP после protected Complaint test fixture
 
-Moderation visibility B1 #355, B2 #357, B3 #359, B4 #365 имеют Mira bounded coordinator PASS; все stacked Draft/unmerged. Stable B4 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
+B1 #355, B2 #357, B3 #359, B4 #365 имеют Mira bounded checkpoint PASS и остаются stacked Draft/unmerged. Stable B4 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
 
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) current **`998d7a964e414e24121dfd9fa1b5f979912f0acc`**, 22 B5 files / 39 commits ahead / behind 0 against unchanged B4. Реализованы Watch/Bookmarks/Mute/Block visibility ON/OFF, own unavailable lists, mixed/legacy inbox mask/read/open и Hide/Restore/suppression invariants; подробности и объём в PR body и `WORKFLOW.md`.
+[Draft #367](https://github.com/iliya1947/vico-forum/pull/367), exact `fbe1b931c77f91d6f14ed72c8982e6e7a10ee315` на неизменной B4 base. B5.1 Watch, B5.2 Bookmarks, B5.3 Mute/Block, B5.4a/b inbox реализованы. Code scope/acceptance в PR body и `WORKFLOW.md`.
 
-### Author self-check / actual CI evidence
+### Exact-head проверки и оставшиеся блокеры
 
-- `7493a269…`: `checks` failed on 2 ESLint assignments in inbox PG tests; corrected `a1dcded5…`.
-- `a1dcded5…`: lint SUCCESS, typecheck failed on 3 RU/HE translation entries/fingerprints and 2 stale test variables; corrected `c95dbdcf…`. EN/RU/HE layout expectation fixed at `5520c507…`.
-- `5520c507…`: **17/18 SUCCESS** (including `checks`, Watch, Bookmarks, Personal Mute/Block, browser suites); `database` was still running. Independently inspected two earlier complete PostgreSQL failures: 35 failing out of 1613 tests. B5 PG fixtures used raw `is_hidden` UPDATE without `visibility_version`/`visibility_changed_at`, violating actual schema constraints; lock-order tests also failed/timed out.
-- Current `998d7a964e414e24121dfd9fa1b5f979912f0acc` fixes exactly 24 Hide/Restore SQL operations in 5 test files via one atomic commit; no production code, schema, dependencies or permissions changed. Current exact head: **17/18 check-runs SUCCESS**, including `checks` lint/typecheck/unit/build and a successful single-job rerun of `attachments_browser` (first attempt failed early on `editorOperationId` length, with no code changes). Sole `database` check **in progress**. **Full B5 author/PG PASS not established.**
+- `998d7a964e414e24121dfd9fa1b5f979912f0acc`: 17/18 check-runs SUCCESS, включая `checks` lint/typecheck/unit/build и повторный `attachments_browser`. `database` FAILED: **27 tests failed / 1586 passed**, 2 test files.
+- `tests/database/forum-notification-actor-lifecycle.test.ts`: новый B5 protected Complaint Decision test attempted `markNotificationRead(g-recipient, g-n5)`, but case member check requires affected author or reporter; fixture recipient was neither. Actual production rejection was correct. Fixed by inserting real `forum_complaints` reporter row `g-report` for `g-recipient`, existing case `g-case`. One-test-file GitHub exact-head static diff at `fbe1b931…`, **no production/authority change**.
+- `tests/database/personal-filters-concurrency.test.ts`: **26 timeouts** across existing M3/M4/M5, including B5 new Mute×Hide, plus afterAll pool.end hook timeout. Root cause **not established**, do not alter production lock protocol or inflate test timeouts without tracing actual cause. Distinct next diagnostic subtask.
+- 18 new-head checks registered after fixture correction. **No current-head author PASS, no Mira handoff**. Old-head CI SUCCESS does not transfer.
 
 ## Next
 
-**Лира STOP.** Следующий owner `...`: проверить все current-head checks, особенно `database`, и при подтверждённых дефектах исправить только B5 с новым exact-head CI/acceptance. После полного applicable PASS + author self-review — запись #342 и STOP → **Мира bounded coordinator checkpoint**. B6/B7 и merge/deploy запрещены.
+**Лира STOP после Case fixture.** Следующая owner `...`: investigate PostgreSQL M3/M4/M5 timeouts (barriers, pool/transaction waits, comparisons with last working base), inspect exact-head results, fix only verified current-B5 defects; rerun applicable checks if changed. After entire B5 exact-head PASS, STOP → **Мира bounded coordinator checkpoint**. B6/B7/merge/deployment запрещены.
