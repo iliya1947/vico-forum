@@ -3757,7 +3757,7 @@ function previewRouter(
     },
     {
       path: "/:locale/settings/account",
-      element: <SettingsAccountRoute mutationMode="all"
+      element: <SettingsAccountRoute
         googleLink={async (_callbackURL, expectedUserId) => {
           const actor = previewUser(scenario);
           if (!actor || expectedUserId !== actor.id) return false;
