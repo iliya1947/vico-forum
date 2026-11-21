@@ -10,19 +10,17 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Состояние: подготовлен полный draft `research/AGENTS.proposed.md` по change-map и сравнение `research/agents-proposal-comparison.md`. Действующий `AGENTS.md` не изменялся.
+Состояние: подготовлены конкретные proposal верхних слоёв: `research/USER_INSTRUCTIONS.proposed.md`, `research/PROJECT_INSTRUCTIONS.proposed.md`; общий количественный разбор — `research/upper-layer-comparison.md`. Действующие инструкции не изменялись.
 
-Размер current → proposed:
-- символы: 17720 → 17228 (-2.8%);
-- whitespace words: 2209 → 2143 (-3%);
-- строки: 160 → 161 (0.6%).
+User current → proposed: 262 → 268 whitespace words (2.3%).
+Project current → proposed: 443 → 394 (-11.1%).
+AGENTS current → proposed: 2209 → 2143 (-3%).
+Все три слоя: 2914 → 2805 words (-3.7%), 22973 → 22305 chars (-2.9%).
 
-Shared reasoning, technical diagnosis, workflow topology, review gates, exact-head, source-of-truth, CI и audit semantics сохранены. Добавлен единый PR permission gate и удалены подтверждённые внутренние повторы.
-
-Нерешённый вопрос: гранулярность PR permission — требуется ли отдельная прямая команда на каждый новый PR либо разрешение на задачу/цепочку может покрывать предусмотренные ею PR. Без решения владельца final wording этого gate не готов.
+User layer немного вырос, но общий instruction load снизился; новые universal guards не размазаны по Project/AGENTS.
 
 Проверяющий: не назначен.
 
-Блокер: решение разработчика по гранулярности PR permission потребуется перед применением, но не блокирует дальнейшее проектирование U/P.
+Блокер: перед применением остаётся policy-вопрос гранулярности PR permission; он не блокирует semantic validation User proposal.
 
-Следующий переход: вернуться к User/Project layers и построить конкретный минимальный proposal с учётом очищенного AGENTS draft; сам AGENTS не применять.
+Следующий переход: построить semantic coverage table User proposal против старых U01–U15 и подтверждённых новых guards; проверить loss/overlap без новых стресс-тестов.
