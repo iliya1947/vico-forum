@@ -4,7 +4,7 @@
 
 **Moderation visibility B5 — Лира, in progress.** После B4 bounded coordinator PASS Мира и owner continuation разрешён только B5. Stacked implementation [Draft #367](https://github.com/iliya1947/vico-forum/pull/367) создан от B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`.
 
-B1 #355, B2 #357, B3 #359, B4 #365 — accepted Mira checkpoints, остаются Draft/unmerged. B5 микропакет Watch ON/OFF записан в #367 exact `7bb6b652e2b23568e86471005364177031761bc1`; PostgreSQL/CI ещё не выполнялись. Следующий пакет — Bookmarks ON/OFF и unavailable own-list semantics, только после owner continuation. Не начинать B6/B7.
+B1 #355, B2 #357, B3 #359, B4 #365 — accepted Mira checkpoints, остаются Draft/unmerged. B5.1 Watch и B5.2 Bookmarks записаны в #367 exact `6d4f8b6b98a357f96b8acc7d5393f35593d81125`; только статическая проверка diff, PostgreSQL/Vitest/CI пока не запускались. Следующий пакет после owner continuation — B5.3 Mute/Block. B6/B7 заблокированы.
 
 ## Baseline
 
@@ -113,6 +113,7 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - Required checks are the B5 rows of the accepted matrix: hidden/absent OFF safe, unavailable own-list rows + undo, retained notice/read_at/badge, generic mark/read/open, chronology, suppressed receipts, Restore no fanout/backfill/read reset.
 - Keep B6 guarded private queue/inspection/assets, B7 canonical Hide/Restore UI/actions, B8 whole acceptance and B9 closeout out of scope.
 - **B5.1 Watch micro-package — STATIC REVIEW ONLY:** [Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `7bb6b652e2b23568e86471005364177031761bc1` on unchanged B4 #365. `setTopicWatch` now uses existing topic `FOR NO KEY UPDATE` lock, reads `isHidden`, denies hidden/missing ON with neutral not-found, admits own OFF for hidden/missing after active actor admission. Real-PG-targeted Hide/Unwatch/Restore/missing/inactive regression added. Exactly 2 B5 files changed (`db/forum-repository.ts`, `tests/database/topic-watch.test.ts`), GitHub compare ahead 2/behind 0. **Real PostgreSQL/Vitest/CI execution not performed**; no author B5 PASS.
+- **B5.2 Bookmarks — STATIC REVIEW ONLY:** [Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `6d4f8b6b98a357f96b8acc7d5393f35593d81125` on unchanged B4 #365. Save: visible-topic `FOR SHARE` lock before actor, rejects hidden/missing; Remove: prior `FOR KEY SHARE`, active own actor, safe hidden/missing idempotence. `readTopicBookmarks` pages retained pairs first and joins title/author/location only to visible topic; hidden/missing = typed unavailable id/savedAt, no link but Remove available. PG-targeted tests: Hide/Restore/foreign pair/keyset/absent OFF, both concurrent Add×Hide orders; route/UI masking/undo checks. English fallback label added. Exact B5 PR scope now 8 files, ahead 12/behind 0. **Only static diff/source review; real PG/Vitest/lint/typecheck/CI not run.** B5 author PASS not established. Next STOP → owner continuation for B5.3 Mute/Block.
 - After implementation: author self-check + applicable exact-head CI/acceptance, update #342 handoff, then **STOP → Mira bounded coordinator checkpoint**. Do not start B6 without fresh owner continuation.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
