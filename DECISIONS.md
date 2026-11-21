@@ -66,3 +66,13 @@ V-P1/V-P2/V-P3 не являются открытыми owner forks. Они бы
 Это относится, в частности, к GitHub workflow-возможностям вроде stacked PR, Draft PR, смены base, compare между ветками и другим штатным механизмам.
 
 После #342 это правило должно быть перенесено в обновлённый `AGENTS.md` вместе со stacked bounded PR workflow.
+
+## D-11 — agent-triggered PR tests
+
+PR CI and browser/connected acceptance are not automatic per-push gates. Agents launch only the checks required by the current workflow point:
+- `run:ci` for the main CI;
+- `run:acceptance` for path-relevant acceptance suites;
+- `workflow_dispatch` as fallback.
+
+Production/deploy workflows, UI preview Pages and Codex service-channel bridge are outside this control mechanism.
+
