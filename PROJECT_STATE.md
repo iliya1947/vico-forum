@@ -224,7 +224,9 @@ Package 7 добавляет integration/closeout coverage без новых dom
 
 ## CI и migration state
 
-Обычный pull-request CI проверяет repository/local correctness без production rollout:
+При запуске на PR основной CI проверяет repository/local correctness без production rollout. PR CI и browser/connected acceptance запускаются агентом по требованию через одноразовые labels `run:ci` и `run:acceptance`; открытие PR и изменение его head не запускают эти проверки автоматически.
+
+Основной CI проверяет:
 
 - accepted migration history и Drizzle metadata;
 - lint и typecheck;
