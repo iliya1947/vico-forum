@@ -179,12 +179,14 @@ export interface ForumTopicBookmarksPage {
 
 /** Strict two-field private keyset cursor; actor is always a separate server argument. */
 export interface ForumPersonalFilterCursor { createdAt: Date; targetId: string; }
-export interface ForumMutedTopicSummary {
-  id: string; title: string; mutedAt: Date;
-  authorName: string; authorIdentityKind?: "deleted";
-  section: { id: string; name: string } | null;
-  category: { id: string; name: string };
-}
+export type ForumMutedTopicSummary = { id: string; mutedAt: Date } & (
+  | { unavailable: true; title?: never; authorName?: never; authorIdentityKind?: never;
+      section?: never; category?: never }
+  | { unavailable?: false; title: string;
+      authorName: string; authorIdentityKind?: "deleted";
+      section: { id: string; name: string } | null;
+      category: { id: string; name: string } }
+);
 export interface ForumBlockedUserSummary {
   id: string; name: string; blockedAt: Date; identityKind?: "deleted";
 }
@@ -922,10 +924,12 @@ export class DrizzleForumRepository {
 
   async setTopicMute(input: { topicId: string; actorId: string; muted: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
-      // Preserve target FK, then admit active actor on this same transaction.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
-        .where(eq(forumTopics.id, input.topicId)).for("key share");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // Mute ON must serialize with Hide. Own OFF keeps its original FK-safe
+      // lock and may succeed for a hidden or absent target without an oracle.
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
+        .where(eq(forumTopics.id, input.topicId)).for(input.muted ? "share" : "key share");
+      if (input.muted && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.muted) {
         await tx.insert(forumTopicMutes).values({ userId: input.actorId, topicId: input.topicId })
@@ -1686,14 +1690,17 @@ export class DrizzleForumRepository {
       sectionId: forumSections.id, sectionName: forumSections.name,
       categoryId: forumCategories.id, categoryName: forumCategories.name,
     }).from(forumTopicMutes)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicMutes.topicId))
-      .innerJoin(forumTopicTitleRevisions, and(
+      // Page by own retained Mute pairs; only visible topic metadata is joinable.
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicMutes.topicId), eq(forumTopics.isHidden, false),
+      ))
+      .leftJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
-      .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
+      .leftJoin(user, eq(user.id, forumTopics.authorId))
+      .leftJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
+      .leftJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
       .where(and(
         eq(forumTopicMutes.userId, userId),
         before ? or(lt(forumTopicMutes.createdAt, before.createdAt),
@@ -1703,13 +1710,26 @@ export class DrizzleForumRepository {
       .orderBy(desc(forumTopicMutes.createdAt), desc(forumTopicMutes.topicId))
       .limit(51);
     const pageRows = rows.slice(0, 50);
-    const items = pageRows.map(row => {
-      const author = projectForumPublicAuthor(row);
+    const items: ForumMutedTopicSummary[] = pageRows.map(row => {
+      if (row.title === null || row.authorId === null || row.authorName === null
+        || row.sectionId === null || row.sectionName === null
+        || row.categoryId === null || row.categoryName === null) {
+        return { id: row.id, mutedAt: row.createdAt, unavailable: true as const };
+      }
+      const author = projectForumPublicAuthor({
+        authorId: row.authorId, authorName: row.authorName,
+        authorDeactivatedAt: row.authorDeactivatedAt,
+        authorDeactivatedByUserId: row.authorDeactivatedByUserId,
+        authorRetainAtLeastUntil: row.authorRetainAtLeastUntil,
+      });
       return {
         id: row.id, title: row.title, mutedAt: row.createdAt,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        ...publicDiscoveryLocation(row),
+        ...publicDiscoveryLocation({
+          sectionId: row.sectionId, sectionName: row.sectionName,
+          categoryId: row.categoryId, categoryName: row.categoryName,
+        }),
       };
     });
     const last = pageRows.at(-1);
