@@ -1,16 +1,22 @@
 # Workflow
 
-Активный этап: implementation #362 завершён, ожидает отдельной финальной проверки.
+Активный этап: implementation и документация подготовлены; требуется независимая проверка.
 Исполнитель: Мира.
-Implementation PR: #362, exact head `09aa27065904f99e70a82a0350088fba9b74d6bb`.
-Self-check:
-- changed files: 18 PR-test workflows + 1 label-bootstrap workflow;
-- открытие #362 не породило test workflow runs;
-- основной CI запускается только на `run:ci` либо `workflow_dispatch`;
-- 17 acceptance workflows запускаются только на `run:acceptance` либо `workflow_dispatch`;
+Implementation PR: #362, stable exact head `898f71c2d408428ddf126d218c88c861ef29a10d`.
+Docs PR: #363, exact head `d9696824229e47ffc099f3b3a3118ef6a76f4ec7`, stacked поверх #362.
+Self-check #362:
+- изменены ровно 18 PR-test workflows + 1 control/bootstrap workflow;
+- основной CI запускается только через одноразовый label `run:ci` либо `workflow_dispatch`;
+- 17 acceptance workflows запускаются только через одноразовый label `run:acceptance` либо `workflow_dispatch`;
 - существующие acceptance `paths` сохранены;
-- diff не содержит production/deploy, UI preview Pages или Codex bridge файлов;
-- bootstrap использует GitHub CLI `gh label create --force`, подтверждённый актуальной официальной документацией.
-Ограничение проверки: end-to-end добавление `run:ci` / `run:acceptance` возможно только после merge bootstrap workflow в main.
+- control workflow создаёт labels после merge в main и автоматически снимает использованный label с PR;
+- production/deploy workflows, UI preview Pages и Codex bridge не изменены;
+- открытие PR и последующие изменения head #362/#363 не породили test workflow runs.
+Docs #363:
+- `AGENTS.md` фиксирует постоянное правило ручного запуска агентами;
+- `PROJECT_STATE.md` отражает фактический режим CI;
+- diff только этих двух документов.
+Ограничение: end-to-end label trigger нельзя проверить до merge #362, потому что labels/bootstrap ещё не существуют в main.
+Проверка: Мира — автор изменения, поэтому её self-check не является независимым whole-PR review. Следующий технический reviewer — Лёва по стандартному workflow на exact head #362.
 Блокер: нет.
-Следующий переход: отдельная финальная проверка production/deploy boundaries и постоянной инструкции агентам, затем решение о ready/review.
+Следующий переход: независимый review #362; после PASS — merge владельцем #362, post-merge bootstrap/label smoke, затем retarget/review/merge #363.
