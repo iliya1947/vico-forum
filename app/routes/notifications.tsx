@@ -32,6 +32,7 @@ export async function loader({ params, context, url }: {
       locale:params.locale??"en",page:result.page,total:result.total,hasMore:result.hasMore,
       notifications:result.items.map(notification=>({
         id: notification.id, kind: notification.kind,
+        ...(notification.unavailable ? {unavailable: true as const} : {}),
         actorName: notification.kind==="reply"||notification.kind==="mention"
           ? notification.actorIdentityKind==="deleted" ? DELETED_USER_NAME : notification.actorName
           : null,
