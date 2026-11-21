@@ -74,7 +74,7 @@ Control contract:
 - `workflow_dispatch` remains fallback;
 - labels are one-shot commands and are removed after consumption.
 
-Current independent Leva rereview: #362 exact c85214aa9a2706fb0cb1704cfcf18459aa97bcdb — **HOLD**, MANUAL-CI-LEVA-01 CLOSED, MANUAL-CI-LEVA-02 [P2] OPEN. All acceptance gates and control-label consumption are confirmed by current-head runtime; dispatch base is still assigned through reserved workflow env GITHUB_BASE_REF. Full contract/source/local diagnostic evidence and closure criteria: research/manual-pr-tests-review.md.
+Current independent Leva review: #362 exact 5ed18dcffb856564fd0e8df9ec9d43020cd7f807 — **PASS**, MANUAL-CI-LEVA-01/02 CLOSED. The final two-line CI correction passes the resolved base via VICO_CI_BASE_REF to the child guard; shipped-command local verification and exact-head CI support closure. Full evidence and the unexecuted pre-merge hosted-dispatch boundary: research/manual-pr-tests-review.md.
 
-Next: Mira coordinates the local base-to-guard correction, author targeted checks and #363 resync, then new stable-head independent review. Hosted dispatch remains unexecuted pre-merge; neither its success nor an implementation change by Leva is claimed. #361 stays closed; #342 is the only service channel.
+Next: owner merge #362; Mira performs one post-merge workflow_dispatch smoke for an open PR using expected head/base, then routes dependent docs #363 through its separate review. Prior positive acceptance evidence remains relevant because acceptance/controller code is unchanged. #342 remains the only service channel; this process PASS does not activate moderation B4.
 

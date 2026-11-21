@@ -2,7 +2,7 @@
 
 ## Активный этап
 
-**Текущая process side task #362: повторный Leva review HOLD** на exact c85214aa9a2706fb0cb1704cfcf18459aa97bcdb. MANUAL-CI-LEVA-01 CLOSED; MANUAL-CI-LEVA-02 [P2] остаётся: нельзя передавать dispatch base через reserved workflow env GITHUB_BASE_REF. Следующая — Мира для локального исправления и нового stable-head handoff. Доказательства: research/manual-pr-tests-review.md. Moderation B3 отдельно ожидает checkpoint Миры; старые формулировки ACTIVE ниже реализацию не возобновляют.
+**Текущая process side task #362: Leva independent review PASS** на exact 5ed18dcffb856564fd0e8df9ec9d43020cd7f807; оба finding CLOSED. #362 готов к owner merge. Затем Мира выполняет post-merge dispatch smoke и ведёт зависимый #363 по docs review маршруту. Evidence/ограничения — research/manual-pr-tests-review.md. Moderation B3 отдельно остаётся на checkpoint Миры; B4 не активирован.
 
 Moderation visibility stacked delivery:
 
@@ -128,13 +128,10 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## Process side task — agent-triggered PR tests
 
-- Owner decision D-11: PR CI / browser acceptance только по команде агента: `run:ci` / `run:acceptance`; `workflow_dispatch` — fallback. Production/deploy, UI preview Pages и Codex bridge вне этого механизма; #361 закрыт и не source of truth.
-- Leva rereview of #362 exact `c85214aa9a2706fb0cb1704cfcf18459aa97bcdb` closed MANUAL-CI-LEVA-01 and left only MANUAL-CI-LEVA-02 [P2]: workflow env tried to override reserved `GITHUB_BASE_REF`.
-- Local correction applied in #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`: resolved base now travels via `VICO_CI_BASE_REF`; only the child guard process is invoked as `GITHUB_BASE_REF="$VICO_CI_BASE_REF" node .github/scripts/verify-migration-history.mjs`. Resolver/head/base drift checks and exact checkout are unchanged.
-- Correction diff against previous reviewed head is only `.github/workflows/ci.yml`, 2 additions / 2 deletions. No acceptance workflow changed.
-- Targeted runtime `run:ci` on exact `5ed18dcf...`: controller SUCCESS; all 17 acceptance workflows SKIPPED; CI run `44897099641` `checks` SUCCESS + `database` SUCCESS; `Protect accepted migration history` SUCCESS through the corrected child-process path.
-- Previous current-scope evidence remains relevant where code did not change: `run:acceptance` on prior head `c85214aa...` had all 17 acceptance workflows SUCCESS, controller SUCCESS, CI SKIPPED; AP-10 4/4 SUCCESS. Broad acceptance was not repeated because the correction touches only CI base propagation.
-- Hosted `workflow_dispatch` still cannot be executed before the trigger exists on default branch. Leva's independent local experiment already covered ordinary and stacked base plus immutable migration denial for this exact propagation pattern; Mira does not claim hosted dispatch runtime PASS.
-- #363 resynchronized directly over #362: current docs head `bbe72f09c34fc9bbae00f6434712ba45e49dfd80`, docs-only. The reserved-variable miss from Mira's prior exhaustive review is recorded in both logic/error journals.
-- **Next:** fresh Leva review only of the new #362 exact head and remaining MANUAL-CI-LEVA-02 closure. Previously closed MANUAL-CI-LEVA-01 should not be re-opened absent relevant change.
+- Owner decision D-11: run:ci / run:acceptance запускаются агентом в нужной точке workflow; dispatch — fallback. Production/deploy, UI preview Pages и Codex bridge вне этого механизма; #361 закрыт, не source of truth.
+- **Leva independent review PASS** на #362 exact **5ed18dcffb856564fd0e8df9ec9d43020cd7f807**, base main 6f50d6ad549f816e091282012d6201fa03291b82. Оба MANUAL-CI-LEVA-01/02 CLOSED, открытых current-scope findings нет. Полное evidence и границы — research/manual-pr-tests-review.md.
+- Последний fix — только ci.yml, 2 additions / 2 deletions: VICO_CI_BASE_REF → child-process GITHUB_BASE_REF. Команда из shipped YAML независимо прошла 4/4 ordinary/stacked/immutable-migration fixture cases. Новая CI 44897099641 checks/database и migration guard SUCCESS; controller SUCCESS, 17 acceptance SKIPPED. Acceptance/controller код неизменён, прежние 17/17 positive suites остаются относящимися evidence.
+- Hosted workflow_dispatch pre-merge не выполнялся: trigger ещё не в default branch. Это явное ограничение проверки, не утверждение о runtime PASS.
+- #363 docs head bbe72f09c34fc9bbae00f6434712ba45e49dfd80, base exact #362, три docs-файла, mergeable; отдельный docs review ещё нужен.
+- **Next:** владелец merge #362; после merge Мира выполняет один фактический dispatch smoke с ожидаемыми head/base существующего открытого PR, затем ведёт #363 по отдельному docs review маршруту. Для dispatch не использовать уже закрытый #362. #342 не merge.
 
