@@ -24,9 +24,9 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 
 ## Current batch handoff — STOP
 
-- B3 Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`, B2 base unchanged; 34 changed files in B3 local diff. Current stable [CI #44831833799](https://github.com/iliya1947/vico-forum/actions/runs/44831833799) both jobs SUCCESS, 2782/2782 unit, 1599/1599 PostgreSQL17, lint/typecheck/build/smoke PASS; 15/15 exact-head workflows SUCCESS, including connected browser/AP-10.
-- Author B3 scope self-check PASS (no confirmed blocking current-B3 defect): verified B3 diff inventory, inspected critical SQL/public DTO/routes and tests, checked no-leak, neutral 404, tombstones/anchors, filtering before LIMIT, unavailable solution/duplicate, read/history/edit/recovery denial and cache boundaries against plan. Test-only final corrective packet fixed old `DataWithResponseInit` / cache expectation assertions; all applicable CI green at stable SHA.
-- **Assigned next: Мира** for bounded B3 coordinator checkpoint on this exact SHA against B2 PASS baseline. No new B3 code, B4, merge, independent Leva review until checkpoint and owner continuation. Work context in `WORKFLOW.md` #342. **Лира — STOP.**
+- Mira B3 checkpoint found one P2 `VIS-B3-MIRA-01` on old #359 `3fa0740c...`: B3 visibility-gated trusted raw `readPost`, breaking `readHierarchy` under hidden rows. V2 explicitly keeps raw service/fixture readers trusted. No other current-B3 finding.
+- Corrected only `db/forum-repository.ts` (raw `readPost` byte-identical to B2; public denial unchanged) and `tests/database/moderation-visibility-commands.test.ts` (3 fixed raw assertions + new real-PG test hidden post/topic→trusted hierarchy / public denial / Restore). Commits `8ee8f2be...`, `cde52190...`; **#359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`** stacked on B2 unchanged.
+- 14/14 static checks PASS; **fresh current-head runtime tests pending**. Main CI [#44904360356](https://github.com/iliya1947/vico-forum/actions/runs/44904360356) QUEUED at check; connected acceptance jobs appearing, some run from old YAML in stacked base. `run:ci` applied once, do not retrigger. Next `...`: verify existing exact-head CI, resolve confirmed blocker if any; after PASS author self-check then Mira bounded B3 recheckpoint. B4 blocked. STOP.
 
 ## Cadence
 
