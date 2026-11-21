@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
 import { Link, RouterProvider, createMemoryRouter, redirect, useActionData, useLoaderData, useParams, useSearchParams } from "react-router";
 import { defaultAdministrativeRouting } from "../administrative-routing/addresses";
+import { adminAccess } from "../admin/access";
 
 import {
   HeaderAuthProvider,
@@ -94,6 +95,7 @@ import { isPreviewLocale, previewTranslationRuntime, type PreviewLocale } from "
 import { LocaleNavigationProvider } from "../localization/locale-navigation";
 import { localeRegistry } from "../localization/registry";
 import { settingsUserPath } from "../settings/paths";
+import { allowedAdminEntries, allowedAttentionEntries } from "../settings/workspace-access";
 
 type Direction = "ltr" | "rtl";
 export const previewIdentities = ["guest", "user", "manager", "owner"] as const;
@@ -1700,6 +1702,40 @@ function previewTopicBlockProps(
   };
 }
 
+function previewAdministrativeProjection(scenario: Scenario) {
+  const administrative = scenario.identity === "manager" || scenario.identity === "owner";
+  const permissions = new Set<PermissionKey>(administrative ? PERMISSION_CATALOG : []);
+  const actorId = scenario.identity === "owner"
+    ? "owner"
+    : scenario.identity === "manager"
+      ? "maya"
+      : undefined;
+  const access = {
+    ...adminAccess(permissions),
+    ...(actorId ? { actorId } : {}),
+  };
+  const attention = allowedAttentionEntries({
+    canViewSignals: permissions.has("forum.solution.manageAny")
+      || permissions.has("forum.helpDuplicate.manage")
+      || permissions.has("forum.helpNeedsDetails.manage"),
+    canReadSecurity: permissions.has("forum.attachmentSecurity.read"),
+    canReviewComplaints: permissions.has("forum.complaint.review"),
+    canReviewAppeals: permissions.has("forum.complaint.appeal.review"),
+    canManageComplaintPriorities: permissions.has("forum.complaint.priority.manage"),
+  });
+  return {
+    access,
+    admin: allowedAdminEntries(access),
+    attention,
+    canViewSuperAdmin: scenario.identity === "owner",
+    canViewModerationAttention: Object.values(attention).some((groups) => groups.length > 0),
+  };
+}
+
+function previewAdminAccess(scenario: Scenario) {
+  return previewAdministrativeProjection(scenario).access;
+}
+
 function previewUser(
   scenario: Scenario,
   interactions?: PreviewInteractionState,
@@ -1717,11 +1753,19 @@ function previewUser(
       : scenario.identity === "user"
         ? 3
         : 2;
-  if (scenario.identity === "owner") {
-    return { id: "owner", name: "Forum Owner", canManageAuthorization: true, canViewAdminPanel: true, unreadNotificationCount };
-  }
-  if (scenario.identity === "manager") {
-    return { id: "maya", name: "Maya Cohen", canManageAuthorization: true, canViewModerationAttention: true, unreadNotificationCount };
+  if (scenario.identity === "owner" || scenario.identity === "manager") {
+    const administrative = previewAdministrativeProjection(scenario);
+    return {
+      id: scenario.identity === "owner" ? "owner" : "maya",
+      name: scenario.identity === "owner" ? "Forum Owner" : "Maya Cohen",
+      canManageAuthorization: administrative.access.canManageAuthorization,
+      canViewAdminPanel: administrative.access.canEnter,
+      canViewSuperAdmin: administrative.canViewSuperAdmin,
+      adminEntryDestinations: administrative.admin,
+      attentionEntryGroups: administrative.attention,
+      canViewModerationAttention: administrative.canViewModerationAttention,
+      unreadNotificationCount,
+    };
   }
   return { id: "alex", name: "Alex Rivera", unreadNotificationCount };
 }
@@ -3786,13 +3830,7 @@ function previewSettingsForumData(
     ...previewAuthorizationData(scenario.locale, interactions.authorization),
     canManageElevated: scenario.identity === "owner",
     canMutateAuthorization: scenario.identity === "owner",
-    access: {
-      actorId: actor?.id ?? "",
-      canEnter: true,
-      canManageAuthorization: true,
-      canReadForum: true,
-      canReadHistory: true,
-    },
+    access: previewAdminAccess(scenario),
     registration: {
       googleRegistrationEnabled: interactions.registrationGoogleEnabled,
       emailRegistrationEnabled: interactions.registrationEmailEnabled,
@@ -3871,18 +3909,13 @@ function previewSettingsAdministratorData(scenario: Scenario) {
   if (scenario.identity !== "owner" && scenario.identity !== "manager") {
     throw new Response("Forbidden", { status: 403 });
   }
+  const administrative = previewAdministrativeProjection(scenario);
   return {
     locale: scenario.locale,
-    accountId: actor?.id ?? "",
+    accountId: actor.id,
     canViewForum: scenario.identity === "owner",
-    admin: scenario.identity === "owner"
-      ? (["overview", "roles"] as const)
-      : ([] as const),
-    attention: {
-      signals: ["needs-details", "needs-review"] as const,
-      complaints: ["group1"] as const,
-      security: [] as const,
-    },
+    admin: administrative.admin,
+    attention: administrative.attention,
   };
 }
 
@@ -6743,16 +6776,6 @@ function PreviewSectionRoute({ scenario, interactions }: {
   );
 }
 
-const previewAdminAccess = {
-  actorId: "maya",
-  canEnter: true,
-  canManageAuthorization: true,
-  canReadForum: true,
-  canReadUsers: true,
-  canReadHistory: true,
-  canManageMeasures: true,
-} as const;
-
 function previewAdminBrowseQuery(request: Request) {
   return { search: new URL(request.url).searchParams.get("q")?.trim() ?? "" };
 }
@@ -6876,7 +6899,7 @@ function previewAdminMeasuresData(
       },
       requestedTarget: "",
       createId: PREVIEW_ADMIN_CREATE_ID,
-      access: previewAdminAccess,
+      access: previewAdminAccess(scenario),
       maySelectAdministrativeRestrictions: scenario.identity === "owner",
     };
   }
@@ -6892,7 +6915,7 @@ function previewAdminMeasuresData(
     pendingAppeals: null,
     requestedTarget: targetId,
     createId: PREVIEW_ADMIN_CREATE_ID,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     maySelectAdministrativeRestrictions: scenario.identity === "owner",
   };
 }
@@ -6920,7 +6943,7 @@ function PreviewAdminMeasureRoute({ scenario, interactions }: {
       appealId: appeal.id,
       operationId: `review-${appeal.id}`,
     }))}
-    access={previewAdminAccess}
+    access={previewAdminAccess(scenario)}
     maySelectAdministrativeRestrictions={scenario.identity === "owner"}
     feedback={feedback}
   />;
@@ -7236,7 +7259,7 @@ function PreviewAdminHistoryRoute({ scenario, interactions }: {
   interactions: PreviewInteractionState;
 }) {
   const { t } = useTranslation("common");
-  return <AdminShell locale={scenario.locale} access={previewAdminAccess} current="history">
+  return <AdminShell locale={scenario.locale} access={previewAdminAccess(scenario)} current="history">
     <section aria-labelledby="admin-history-heading">
       <h2 id="admin-history-heading">{t("adminHistory")}</h2>
       <p>{t("historyCoverage")}</p>
@@ -7252,7 +7275,7 @@ function previewAdminOverviewData(
   const categories = previewHomepageCategories(scenario, interactions);
   return {
     locale: scenario.locale,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     counts: {
       categories: categories.length,
       sections: categories.reduce((sum, category) => sum + category.sectionCount, 0),
@@ -7289,7 +7312,7 @@ function previewAdminUsersData(
   );
   return {
     locale: scenario.locale,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     query,
     page: { items, total: items.length, next: null },
   };
@@ -7312,7 +7335,7 @@ function previewAdminForumData(
   const items = previewAdminFilter(previewAdminCategories(scenario, interactions), query.search);
   return {
     locale: scenario.locale,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     page: { items, total: items.length, next: null },
     query,
   };
@@ -7334,7 +7357,7 @@ function previewAdminCategoryData(
   );
   return {
     locale: scenario.locale,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     category,
     sections: { items, total: items.length, next: null },
     query,
@@ -7364,7 +7387,7 @@ function previewAdminSectionData(
   const items = previewAdminFilter(topics, query.search);
   return {
     locale: scenario.locale,
-    access: previewAdminAccess,
+    access: previewAdminAccess(scenario),
     section,
     topics: { items, total: items.length, next: null },
     query,
@@ -7406,13 +7429,7 @@ function PreviewAuthorizationRoute({ scenario }: {
   const canMutate = scenario.identity === "owner";
   return <AuthorizationAdminView
     {...data}
-    access={{
-      actorId: scenario.identity === "owner" ? "owner" : "maya",
-      canEnter: true,
-      canManageAuthorization: true,
-      canReadForum: true,
-      canReadHistory: true,
-    }}
+    access={previewAdminAccess(scenario)}
     canManageElevated={canMutate}
     canMutateAuthorization={canMutate}
     result={actionData ?? fixtureResult}
@@ -7785,7 +7802,7 @@ function PreviewAdminTopicRoute({ scenario, interactions }: {
   if (!data) throw new Response("Not Found", { status: 404 });
   return <AdminTopicView
     locale={scenario.locale}
-    access={previewAdminAccess}
+    access={previewAdminAccess(scenario)}
     topic={projectAdminTopic(data.topic, data.canManageHelpDuplicate)}
     titlePresentation={data.titlePresentation}
     postPresentations={data.postPresentations}
