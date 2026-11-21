@@ -2045,7 +2045,7 @@ export class DrizzleForumRepository {
   async markNotificationRead(userId:string,notificationId:string):Promise<ForumNotificationTarget>{
     return this.database.transaction(async tx=>{
       await assertActiveAccountForDrizzleMutation(tx, userId);
-      const row=await tx.execute<{kind:ForumNotificationTarget["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null;sourceVisible:boolean}>(sql`
+      const row=await tx.execute<{kind:ForumNotificationSummary["kind"];caseId:string|null;appealId:string|null;topicId:string|null;postId:string|null;sourceVisible:boolean}>(sql`
         select n.kind,coalesce(d.case_id,a.case_id) as "caseId",a.id as "appealId",
           n.topic_id as "topicId",n.post_id as "postId",
           exists (
