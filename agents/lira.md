@@ -1,18 +1,18 @@
-# agents/lira.md — текущий контекст Лиры по #342
+# agents/lira.md — текущее назначение Лиры по #342
 
-## Назначение — B5; STOP после B5.4b
+## Active: B5 whole-PR author self-check, exact-head CI pending — STOP
 
-Moderation visibility B1 #355, B2 #357, B3 #359, B4 #365 получили Mira bounded coordinator PASS; stacked Draft, без merge. Stable B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
+Moderation visibility B1 #355 / B2 #357 / B3 #359 / B4 #365 получили Mira bounded PASS; stacked PR Draft/unmerged. B4 base stable `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Владелец разрешил только B5.
 
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `7493a269444f656cfcf511207d2b945d31a01c50` на неизменной B4 head branch. Whole B5 local diff: 20 файлов, 35 commits впереди base, behind 0. Записаны B5.1 Watch hidden/missing ON/OFF; B5.2 Bookmarks и unavailable own list; B5.3 Mute/Block и unavailable own filters; B5.4a mixed/legacy inbox readers; B5.4b mark/open и notification invariants. Полное содержание и границы — PR #367 и `WORKFLOW.md`.
+[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) current head **`5520c50773e7a4ec095e850b4807fd5f384ee5ca`** (B5-only 22 files / ahead 38 / behind 0 vs B4). Реализованы B5.1 Watch, B5.2 Bookmarks, B5.3 Mute/Block, B5.4a mixed/legacy inbox readers, B5.4b mark-read/open с suppression/Restore инвариантами. Scope и подробности — в PR body #367 и `WORKFLOW.md`.
 
-### B5.4b — зафиксировано (пока только static)
+### Whole-B5 self-check — найденные/исправленные дефекты
 
-- `markNotificationRead` и `markReplyNotificationRead` проверяют видимость topic+post в том же actor→notification-locked transaction обычным MVCC `EXISTS` без topic/post row locks; спрятанный/отсутствующий источник возвращает только neutral unavailable, но own notification `read_at` сохраняет idempotent mark.
-- `app/routes/notifications.tsx` перенаправляет unavailable open в приватный `/:locale/notifications`; обычный видимый и защищённый Complaint Case/Appeal destination не изменены.
-- PG-targeted regression: hidden post/topic, foreign actor denial, read_at idempotence, unread badge/chronology, no new notices, unchanged suppression receipts, Restore и Complaint case. Route neutral redirect tested across EN/RU/HE.
-- B5.4b local diff от прежнего head `a1daf50a52650bf00b6ba7cdeccf6176c02ee872`: 5 файлов, ahead 7/behind 0. GitHub static diff/source checks PASS. **PostgreSQL/Vitest/typecheck/CI не запускались; ни runtime PASS, ни whole-B5 author PASS не установлены.**
+1. CI на `7493a269…` failed `checks`: 2 ESLint `no-useless-assignment` в новых inbox PG tests. Fix `a1dcded5…`.
+2. CI на `a1dcded5…`: lint SUCCESS; Typecheck failed на обязательных 3 новых canonical UI keys в RU/HE manual values/fingerprints и 2 несуществующих test variables. Fix atomic commit `c95dbdcf…`: RU/HE переводы, вычисленные по `app/localization/fingerprint.ts` 3 SHA-256 семантических fingerprints, исправления теста.
+3. Whole-B5 source self-check: EN/RU/HE notification layout regression всё ещё ожидал English после добавления настоящих переводов. Fix `5520c507…`, текущий head.
+4. GitHub compare подтверждает head, unchanged base, 22 scoped files. **18 current-head check-runs queued/in progress. PostgreSQL/Vitest/typecheck/build/CI/browser acceptance для current SHA пока не подтверждены; author PASS не установлен.** Старые head SUCCESS не переиспользовать.
 
-## Следующий шаг
+## Next
 
-**Лира STOP после B5.4b.** Только следующая команда владельца `...` разрешает consolidated whole-B5 author self-check и применимые exact-head `run:ci`/`run:acceptance` в #367. При подтверждённых проблемах исправить только scope B5, проверить новый head; затем записать #342 handoff **STOP → Мира bounded coordinator checkpoint**. B6/B7, merge, Лёва whole-feature review и Stage6 запрещены.
+**Лира STOP до результатов CI `5520c507…`.** Следующая owner команда `...` — проверить все exact-head check-runs и workflows (в том числе `checks`, `database`, connected acceptance) без повторных ненужных запусков; при подтверждённом B5 defect исправить и проверять только новый stable head. После всех applicable PASS + author self-review — запись в #342 и STOP → **Мира bounded coordinator checkpoint**. B6/B7/B8/B9, merge, Leva whole-feature review, production/Stage6 запрещены.
