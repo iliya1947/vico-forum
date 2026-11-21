@@ -9,3 +9,4 @@
 - 2026-11-21 — executability-check отклонил простую модель расширения U до 19 пунктов; U07/U09 признаны перегруженными, C03+C11 объединены как один evidence/applicability guard, а перед финальными редакциями назначен внутренний аудит AGENTS.md.
 - 2026-11-21 — внутренний аудит AGENTS.md показал, что shared logic A-L1–A-L6 нужно сохранять для Codex, а реальное сокращение искать в повторениях Diagnosis/Roles/Workflow/Review/Developer-action; подтверждён Workflow как место единого PR permission contract.
 - 2026-11-21 — составлена точная change-map AGENTS.md: подтверждены KEEP/MOVE/REFERENCE/DELETE-DUPLICATE и единый Workflow PR-permission gate; действующий AGENTS.md не изменялся.
+- 2026-11-21 — подготовлен полный proposed AGENTS.md как research draft и количественно сравнён с current; действующий файл не изменён. Выявлен единственный unresolved policy-вопрос: гранулярность разрешения на создание PR.
