@@ -250,6 +250,6 @@ export async function solutionScope(context: RouterContextProvider, form?: FormD
 export interface PostEditConflictData {
   operation: "postEdit";
   error: "conflict";
-  post: import("../../db/forum-repository").ForumTopicPage["posts"][number];
+  post: import("../../db/forum-repository").ForumVisibleThreadPost;
   completedOperationId?: string;
 }

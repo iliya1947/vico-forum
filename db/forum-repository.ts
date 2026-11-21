@@ -268,6 +268,7 @@ export type HelpSolutionOutdatedReasonKind = "best-answer-replaced";
 export interface ForumHelpDuplicateReference {
   id: string;
   title: string;
+  unavailable?: boolean;
 }
 
 export interface ForumHelpDuplicateAppeal {
@@ -305,6 +306,8 @@ export type ForumAttentionQueueGroup = "needs-details" | "needs-review" | "solut
 
 export interface ForumAttentionQueueCase {
   type: "signal" | "appeal" | "review-status";
+  /** Retained appeal keeps its guarded review-action topicId even when no topic link exists. */
+  topicUnavailable?: boolean;
   id: string;
   kind: HelpSignalKind | "appeal" | "review-status";
   topicId: string;
@@ -413,7 +416,8 @@ export interface ForumSectionPage {
   topics: ForumTopicSummary[];
 }
 
-export interface ForumThreadPost extends ForumPost {
+export interface ForumVisibleThreadPost extends ForumPost {
+  kind?: "visible";
   authorIdentityKind?: "deleted";
   attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
@@ -421,6 +425,17 @@ export interface ForumThreadPost extends ForumPost {
   createdAt: Date;
   editedAt?: Date | null;
 }
+
+/** A public tombstone must never contain author identity, revision, body or assets. */
+export interface ForumHiddenThreadPost {
+  kind: "hidden";
+  id: string;
+  topicId: string;
+  parentPostId: string | null;
+  createdAt: Date;
+}
+
+export type ForumThreadPost = ForumVisibleThreadPost | ForumHiddenThreadPost;
 
 export interface ForumTopicPage extends ForumTopic {
   authorIdentityKind?: "deleted";
@@ -696,8 +711,8 @@ export class DrizzleForumRepository {
       bio: sql<string>`coalesce(${forumProfiles.bio}, '')`,
       githubUrl: forumProfiles.githubUrl, websiteUrl: forumProfiles.websiteUrl,
       role: { slug: authzRoles.slug, displayName: authzRoles.displayName, isSystem: authzRoles.isSystem },
-      messageCount: sql<number>`(select count(*) from ${forumPosts} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
-      bestAnswerCount: sql<number>`(select count(*) from ${forumTopics} join ${forumPosts} on ${forumPosts.id} = ${forumTopics.bestAnswerPostId} where ${forumPosts.authorId} = ${user.id})`.mapWith(Number),
+      messageCount: sql<number>`(select count(*) from ${forumPosts} join ${forumTopics} on ${forumTopics.id} = ${forumPosts.topicId} where ${forumPosts.authorId} = ${user.id} and not ${forumTopics.isHidden} and not ${forumPosts.isHidden})`.mapWith(Number),
+      bestAnswerCount: sql<number>`(select count(*) from ${forumTopics} join ${forumPosts} on ${forumPosts.id} = ${forumTopics.bestAnswerPostId} where ${forumPosts.authorId} = ${user.id} and not ${forumTopics.isHidden} and not ${forumPosts.isHidden})`.mapWith(Number),
     }).from(user)
       .leftJoin(forumProfiles, eq(forumProfiles.userId, user.id))
       .leftJoin(authzUserRoles, eq(authzUserRoles.userId, user.id))
@@ -1208,8 +1223,8 @@ export class DrizzleForumRepository {
       })
       .from(forumCategories)
       .leftJoin(forumSections, eq(forumSections.categoryId, forumCategories.id))
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(
         sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
@@ -1226,8 +1241,8 @@ export class DrizzleForumRepository {
         messageCount: sql<number>`count(distinct ${forumPosts.id})::int`,
       })
       .from(forumSections)
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID))
       .groupBy(
         forumSections.id,
@@ -1299,7 +1314,7 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(gte(forumPosts.createdAt, cutoff30d))
+      .where(and(gte(forumPosts.createdAt, cutoff30d), eq(forumTopics.isHidden, false), eq(forumPosts.isHidden, false)))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, forumTopics.authorId, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil);
 
@@ -1359,7 +1374,7 @@ export class DrizzleForumRepository {
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
-      .where(eq(forumTopics.isSolved, false))
+      .where(and(eq(forumTopics.isSolved, false), eq(forumTopics.isHidden, false)))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1369,7 +1384,14 @@ export class DrizzleForumRepository {
         forumCategories.id,
         forumCategories.name,
       )
-      .having(sql`count(${forumPosts.id}) = 1`)
+      .having(sql`count(${forumPosts.id}) filter (
+        where not ${forumPosts.isHidden}
+          and ${forumPosts.id} <> (
+            select root.id from forum_posts root
+            where root.topic_id = ${forumTopics.id}
+            order by root.created_at, root.id limit 1
+          )
+      ) = 0`)
       .orderBy(desc(forumTopics.createdAt), desc(forumTopics.id));
 
     return rows.map((row) => {
@@ -1391,19 +1413,30 @@ export class DrizzleForumRepository {
       .select({
         key: forumTags.key,
         name: forumTags.name,
-        topicCount: sql<number>`count(distinct ${forumTopicTags.topicId})::int`,
+        topicCount: sql<number>`count(distinct ${forumTopics.id})::int`,
       })
       .from(forumTags)
       .leftJoin(forumTopicTags, eq(forumTopicTags.tagKey, forumTags.key))
+      .leftJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicTags.topicId), eq(forumTopics.isHidden, false),
+      ))
       .groupBy(forumTags.key, forumTags.name, forumTags.createdAt)
+      // A user-supplied tag used only by hidden topics must not reveal its name.
+      .having(sql`count(distinct ${forumTopics.id}) > 0`)
       .orderBy(asc(forumTags.name), asc(forumTags.key));
   }
 
   async readTag(key: string): Promise<ForumTagPage | undefined> {
     const [tag] = await this.database
-      .select({ key: forumTags.key, name: forumTags.name })
+      .selectDistinct({ key: forumTags.key, name: forumTags.name })
       .from(forumTags)
-      .where(eq(forumTags.key, key));
+      .innerJoin(forumTopicTags, eq(forumTopicTags.tagKey, forumTags.key))
+      .innerJoin(forumTopics, and(
+        eq(forumTopics.id, forumTopicTags.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
+      .where(eq(forumTags.key, key))
+      .limit(1);
     if (!tag) return undefined;
 
     const topics = await this.database
@@ -1421,7 +1454,7 @@ export class DrizzleForumRepository {
         categoryName: forumCategories.name,
       })
       .from(forumTopicTags)
-      .innerJoin(forumTopics, eq(forumTopics.id, forumTopicTags.topicId))
+      .innerJoin(forumTopics, and(eq(forumTopics.id, forumTopicTags.topicId), eq(forumTopics.isHidden, false)))
       .innerJoin(forumTopicTitleRevisions, and(
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
@@ -1429,7 +1462,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(eq(forumTopicTags.tagKey, key))
       .groupBy(
         forumTopics.id,
@@ -1511,13 +1544,14 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumPostRevisions, and(
         eq(forumPostRevisions.postId, forumPosts.id),
         eq(forumPostRevisions.id, forumPosts.currentRevisionId),
       ))
       .leftJoin(forumTopicTags, eq(forumTopicTags.topicId, forumTopics.id))
       .leftJoin(forumTags, eq(forumTags.key, forumTopicTags.tagKey))
+      .where(eq(forumTopics.isHidden, false))
       .groupBy(
         forumTopics.id,
         forumTopicTitleRevisions.id,
@@ -1580,7 +1614,7 @@ export class DrizzleForumRepository {
       .innerJoin(user, eq(user.id, forumTopics.authorId))
       .innerJoin(forumSections, eq(forumSections.id, forumTopics.sectionId))
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
-      .innerJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .innerJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumTopicReadStates, and(
         eq(forumTopicReadStates.userId, userId),
         eq(forumTopicReadStates.topicId, forumTopics.id),
@@ -1589,10 +1623,13 @@ export class DrizzleForumRepository {
         eq(lastReadPost.topicId, forumTopicReadStates.topicId),
         eq(lastReadPost.id, forumTopicReadStates.lastReadPostId),
       ))
-      .where(or(
-        isNull(forumTopicReadStates.userId),
-        gt(forumPosts.createdAt, lastReadPost.createdAt),
-        and(eq(forumPosts.createdAt, lastReadPost.createdAt), gt(forumPosts.id, lastReadPost.id)),
+      .where(and(
+        eq(forumTopics.isHidden, false),
+        or(
+          isNull(forumTopicReadStates.userId),
+          gt(forumPosts.createdAt, lastReadPost.createdAt),
+          and(eq(forumPosts.createdAt, lastReadPost.createdAt), gt(forumPosts.id, lastReadPost.id)),
+        ),
       ))
       .groupBy(
         forumTopics.id,
@@ -1704,11 +1741,19 @@ export class DrizzleForumRepository {
     return rows.length > 0;
   }
 
-  /** Only block matches among this topic's authors; never load a user's full block graph. */
+  /** Only match blocked authors of visible posts in a visible topic; hidden
+   * authors must not leak indirectly through the personalized loader DTO. */
   async readTopicBlockedAuthors(userId: string, topicId: string): Promise<string[]> {
     const rows = await this.database.select({ id: forumUserBlocks.blockedUserId })
       .from(forumUserBlocks)
-      .innerJoin(forumPosts, eq(forumPosts.authorId, forumUserBlocks.blockedUserId))
+      .innerJoin(forumPosts, and(
+        eq(forumPosts.authorId, forumUserBlocks.blockedUserId),
+        eq(forumPosts.isHidden, false),
+      ))
+      .innerJoin(forumTopics, and(
+        eq(forumTopics.id, forumPosts.topicId),
+        eq(forumTopics.isHidden, false),
+      ))
       .where(and(eq(forumUserBlocks.userId, userId), eq(forumPosts.topicId, topicId)))
       .groupBy(forumUserBlocks.blockedUserId);
     return rows.map(row => row.id);
@@ -1788,7 +1833,7 @@ export class DrizzleForumRepository {
     const [topic] = await database
       .select({ id: forumTopics.id })
       .from(forumTopics)
-      .where(eq(forumTopics.id, topicId));
+      .where(and(eq(forumTopics.id, topicId), eq(forumTopics.isHidden, false)));
     if (!topic) return undefined;
 
     const [marker] = await database
@@ -1800,12 +1845,13 @@ export class DrizzleForumRepository {
       ));
 
     const posts = await database
-      .select({ id: forumPosts.id })
+      .select({ id: forumPosts.id, isHidden: forumPosts.isHidden })
       .from(forumPosts)
       .where(eq(forumPosts.topicId, topicId))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
 
-    const latestPostId = posts.at(-1)?.id ?? null;
+    const visiblePosts = posts.filter((post) => !post.isHidden);
+    const latestPostId = visiblePosts.at(-1)?.id ?? null;
     if (!latestPostId) {
       return {
         topicId,
@@ -1821,7 +1867,7 @@ export class DrizzleForumRepository {
         topicId,
         state: "new",
         lastReadPostId: null,
-        firstUnreadPostId: posts[0]!.id,
+        firstUnreadPostId: visiblePosts[0]!.id,
         latestPostId,
       };
     }
@@ -1830,7 +1876,7 @@ export class DrizzleForumRepository {
     if (markerIndex < 0) {
       throw new ForumStateConflictError("topic read marker does not belong to current topic snapshot");
     }
-    const firstUnreadPostId = posts[markerIndex + 1]?.id ?? null;
+    const firstUnreadPostId = posts.slice(markerIndex + 1).find((post) => !post.isHidden)?.id ?? null;
     return {
       topicId,
       state: firstUnreadPostId ? "unread" : "read",
@@ -2264,6 +2310,7 @@ export class DrizzleForumRepository {
               on ${forumPostRevisions.postId} = ${forumPosts.id}
               and ${forumPostRevisions.id} = ${forumPosts.currentRevisionId}
             where ${forumPosts.topicId} = ${forumTopics.id}
+              and not ${forumPosts.isHidden}
               and ${forumPostRevisions.originalContent} ilike ${patterns[index]!} escape '!'
           )`
         : sql<boolean>`false`,
@@ -2360,6 +2407,12 @@ export class DrizzleForumRepository {
       select count(*)::int
       from ${forumPosts}
       where ${forumPosts.topicId} = ${forumTopics.id}
+        and not ${forumPosts.isHidden}
+        and ${forumPosts.id} <> (
+          select root.id from forum_posts root
+          where root.topic_id = ${forumTopics.id}
+          order by root.created_at, root.id limit 1
+        )
     )`;
     const activityAt = sql`greatest(
       ${forumTopics.createdAt},
@@ -2367,7 +2420,7 @@ export class DrizzleForumRepository {
         (
           select max(${forumPosts.createdAt})
           from ${forumPosts}
-          where ${forumPosts.topicId} = ${forumTopics.id}
+          where ${forumPosts.topicId} = ${forumTopics.id} and not ${forumPosts.isHidden}
         ),
         ${forumTopics.createdAt}
       )
@@ -2394,14 +2447,14 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.topicId, forumTopics.id),
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
-      .where(sql`
+      .where(and(eq(forumTopics.isHidden, false), sql`(
         ${exactTitleMatch}
         or ${exactTagMatch}
         or ${strongTitleMatch}
         or ${tagMatchCount} > 0
         or ${bodyMatchCount} > 0
         or ${titleMatchCount} > 0
-      `)
+      )`))
       .orderBy(
         desc(matchTier),
         desc(coveredTermCount),
@@ -2415,7 +2468,7 @@ export class DrizzleForumRepository {
     return rows.map((row) => ({
       id: row.id,
       title: row.title,
-      replyCount: Math.max(0, row.postCount - 1),
+      replyCount: row.postCount,
       isSolved: row.isSolved,
       tags: tagsByTopic.get(row.id) ?? [],
       matchSource: row.matchSource,
@@ -2448,21 +2501,26 @@ export class DrizzleForumRepository {
       "solution-outdated": 0, "duplicate": 0, appeals: 0, mixed: 0,
     };
     const kinds = [...new Set(visibility.signalKinds)];
+    const signalTarget = alias(forumPosts, "attention_count_signal_target");
     if (kinds.length) {
       const wherePending = and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         eq(forumHelpSignals.status, "pending"),
         inArray(forumHelpSignals.kind, kinds),
+        or(isNull(forumHelpSignals.targetPostId), eq(signalTarget.isHidden, false)),
       );
       const [byKind, mixedCount] = await Promise.all([
         this.database.select({ kind: forumHelpSignals.kind, total: count() })
           .from(forumHelpSignals)
           .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+          .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
           .where(wherePending).groupBy(forumHelpSignals.kind),
         this.database.select({ total: count() }).from(
           this.database.select({ topicId: forumHelpSignals.topicId })
             .from(forumHelpSignals)
             .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+            .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
             .where(wherePending)
             .groupBy(forumHelpSignals.topicId)
             .having(gt(count(), 1))
@@ -2491,6 +2549,8 @@ export class DrizzleForumRepository {
         .innerJoin(forumPosts, eq(forumPosts.id, forumTopics.bestAnswerPostId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
+          eq(forumPosts.isHidden, false),
           eq(forumTopics.isSolved, true),
           eq(forumPosts.solutionModerationStatus, "needs-review"),
         ));
@@ -2518,6 +2578,8 @@ export class DrizzleForumRepository {
 
     const original = alias(forumTopics, "attention_original_topic");
     const originalRevision = alias(forumTopicTitleRevisions, "attention_original_revision");
+    const signalTarget = alias(forumPosts, "attention_signal_target");
+    const mixedTarget = alias(forumPosts, "attention_mixed_signal_target");
     const readSignals = async (selected: HelpSignalKind[], limit?: number, skip = 0, topicIds?: string[]) => {
       if (!selected.length || (topicIds && !topicIds.length)) return [] as ForumAttentionQueueCase[];
       const query = this.database.select({
@@ -2533,12 +2595,18 @@ export class DrizzleForumRepository {
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
         .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
         .innerJoin(user, eq(user.id, forumHelpSignals.submittedByUserId))
-        .leftJoin(original, eq(original.id, forumHelpSignals.proposedOriginalTopicId))
+        .leftJoin(signalTarget, eq(signalTarget.id, forumHelpSignals.targetPostId))
+        .leftJoin(original, and(
+          eq(original.id, forumHelpSignals.proposedOriginalTopicId),
+          eq(original.isHidden, false),
+        ))
         .leftJoin(originalRevision, eq(originalRevision.id, original.currentTitleRevisionId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
           eq(forumHelpSignals.status, "pending"),
           inArray(forumHelpSignals.kind, selected),
+          or(isNull(forumHelpSignals.targetPostId), eq(signalTarget.isHidden, false)),
           topicIds ? inArray(forumHelpSignals.topicId, topicIds) : undefined,
         )).orderBy(asc(forumHelpSignals.createdAt), asc(forumHelpSignals.id))
         .$dynamic();
@@ -2559,10 +2627,13 @@ export class DrizzleForumRepository {
       const topics = await this.database.select({ topicId: forumHelpSignals.topicId })
         .from(forumHelpSignals)
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpSignals.topicId))
+        .leftJoin(mixedTarget, eq(mixedTarget.id, forumHelpSignals.targetPostId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
           eq(forumHelpSignals.status, "pending"),
           inArray(forumHelpSignals.kind, kinds),
+          or(isNull(forumHelpSignals.targetPostId), eq(mixedTarget.isHidden, false)),
         ))
         .groupBy(forumHelpSignals.topicId)
         .having(gt(count(), 1))
@@ -2580,8 +2651,10 @@ export class DrizzleForumRepository {
       const rows = await this.database.select({
         id: forumHelpDuplicateAppeals.id,
         topicId: forumHelpDuplicateRelationships.duplicateTopicId,
+        topicHidden: forumTopics.isHidden,
         topicTitle: forumTopicTitleRevisions.originalContent,
-        originalId: duplicate.id, originalTitle: duplicateTitle.originalContent,
+        originalId: duplicate.id, originalHidden: duplicate.isHidden,
+        originalTitle: duplicateTitle.originalContent,
         submittedByUserId: forumHelpDuplicateAppeals.appellantUserId,
         submittedByName: user.name, explanation: forumHelpDuplicateAppeals.explanation,
         createdAt: forumHelpDuplicateAppeals.createdAt,
@@ -2589,9 +2662,15 @@ export class DrizzleForumRepository {
         .innerJoin(forumHelpDuplicateRelationships,
           eq(forumHelpDuplicateRelationships.id, forumHelpDuplicateAppeals.relationshipId))
         .innerJoin(forumTopics, eq(forumTopics.id, forumHelpDuplicateRelationships.duplicateTopicId))
-        .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
+        .leftJoin(forumTopicTitleRevisions, and(
+          eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
+          eq(forumTopics.isHidden, false),
+        ))
         .innerJoin(duplicate, eq(duplicate.id, forumHelpDuplicateRelationships.originalTopicId))
-        .innerJoin(duplicateTitle, eq(duplicateTitle.id, duplicate.currentTitleRevisionId))
+        .leftJoin(duplicateTitle, and(
+          eq(duplicateTitle.id, duplicate.currentTitleRevisionId),
+          eq(duplicate.isHidden, false),
+        ))
         .innerJoin(user, eq(user.id, forumHelpDuplicateAppeals.appellantUserId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -2602,10 +2681,13 @@ export class DrizzleForumRepository {
       return {
         cases: rows.slice(0, pageSize).map((row): ForumAttentionQueueCase => ({
           type: "appeal", id: row.id, kind: "appeal",
-          topicId: row.topicId, topicTitle: row.topicTitle,
+          topicId: row.topicId, topicTitle: row.topicHidden ? "" : row.topicTitle ?? "",
+          ...(row.topicHidden ? { topicUnavailable: true } : {}),
           submittedByUserId: row.submittedByUserId, submittedByName: row.submittedByName,
           explanation: row.explanation, createdAt: row.createdAt,
-          targetPostId: null, original: { id: row.originalId, title: row.originalTitle },
+          targetPostId: null,
+          original: row.originalHidden || !row.originalTitle
+            ? null : { id: row.originalId, title: row.originalTitle },
         })),
         hasMore: rows.length > pageSize, page,
       };
@@ -2631,6 +2713,8 @@ export class DrizzleForumRepository {
         .innerJoin(forumTopicTitleRevisions, eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId))
         .where(and(
           eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+          eq(forumTopics.isHidden, false),
+          eq(forumPosts.isHidden, false),
           eq(forumTopics.isSolved, true),
           eq(forumPosts.solutionModerationStatus, "needs-review"),
         )).orderBy(asc(forumPosts.createdAt), asc(forumPosts.id))
@@ -2679,10 +2763,12 @@ export class DrizzleForumRepository {
         and(
           eq(forumPosts.topicId, forumTopics.id),
           eq(forumPosts.authorId, userId),
+          eq(forumPosts.isHidden, false),
         ),
       )
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         or(
           eq(forumTopics.authorId, userId),
           eq(forumPosts.authorId, userId),
@@ -2720,10 +2806,16 @@ export class DrizzleForumRepository {
       : filters.relation === "duplicate"
         ? isNotNull(activeDuplicate.id)
         : undefined;
+    const visibleReplyCount = sql<number>`count(distinct ${forumPosts.id}) filter (
+      where ${forumPosts.id} <> (
+        select root.id from forum_posts root where root.topic_id = ${forumTopics.id}
+        order by root.created_at, root.id limit 1
+      )
+    )::int`;
     const answersCondition = filters.answers === "none"
-      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      ? sql`${visibleReplyCount} = 0`
       : filters.answers === "has"
-        ? sql`count(distinct ${forumPosts.id}) > 1`
+        ? sql`${visibleReplyCount} > 0`
         : sql`true`;
 
     const rows = await this.database
@@ -2733,7 +2825,7 @@ export class DrizzleForumRepository {
         authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        postCount: visibleReplyCount,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
@@ -2757,10 +2849,11 @@ export class DrizzleForumRepository {
           inArray(forumTopicTags.tagKey, interestTagKeys),
         ),
       )
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(currentBestAnswer, and(
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+        eq(currentBestAnswer.isHidden, false),
       ))
       .leftJoin(activeDuplicate, and(
         eq(activeDuplicate.duplicateTopicId, forumTopics.id),
@@ -2768,6 +2861,7 @@ export class DrizzleForumRepository {
       ))
       .where(and(
         eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
         eq(forumTopics.isSolved, false),
         ne(forumTopics.authorId, userId),
         solutionCondition,
@@ -2799,7 +2893,7 @@ export class DrizzleForumRepository {
         title: row.title,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        replyCount: Math.max(0, row.postCount - 1),
+        replyCount: row.postCount,
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
@@ -2860,6 +2954,16 @@ export class DrizzleForumRepository {
         ? isNotNull(activeDuplicate.id)
         : undefined;
     const visibleSignalKinds = filter.mode === "attention" ? [...(attentionVisibility?.signalKinds ?? [])] : [];
+    // Match the same public visibility gate as the Attention queue, including
+    // targetless signals. The predicate also applies to the later badge count.
+    const visibleSignalTarget = sql`(
+      ${forumHelpSignals.targetPostId} is null or exists (
+        select 1 from ${forumPosts}
+        where ${forumPosts.id} = ${forumHelpSignals.targetPostId}
+          and ${forumPosts.topicId} = ${forumHelpSignals.topicId}
+          and not ${forumPosts.isHidden}
+      )
+    )`;
     // Correlated EXISTS selects actionable cases before applying the 100-question bound.
     // A denied signal/appeal capability must not leak its cases into this private queue.
     const signalAttentionCondition = visibleSignalKinds.length
@@ -2868,6 +2972,7 @@ export class DrizzleForumRepository {
           where ${forumHelpSignals.topicId} = ${forumTopics.id}
           and ${forumHelpSignals.status} = 'pending'
           and ${inArray(forumHelpSignals.kind, visibleSignalKinds)}
+          and ${visibleSignalTarget}
         )`
       : sql`false`;
     const appealAttentionCondition = attentionVisibility?.appeals
@@ -2883,10 +2988,16 @@ export class DrizzleForumRepository {
     const reviewAttentionCondition = visibleSignalKinds.includes("needs-review")
       ? eq(currentBestAnswer.solutionModerationStatus, "needs-review")
       : sql`false`;
+    const visibleReplyCount = sql<number>`count(distinct ${forumPosts.id}) filter (
+      where ${forumPosts.id} <> (
+        select root.id from forum_posts root where root.topic_id = ${forumTopics.id}
+        order by root.created_at, root.id limit 1
+      )
+    )::int`;
     const answersCondition = filters.answers === "none"
-      ? sql`count(distinct ${forumPosts.id}) <= 1`
+      ? sql`${visibleReplyCount} = 0`
       : filters.answers === "has"
-        ? sql`count(distinct ${forumPosts.id}) > 1`
+        ? sql`${visibleReplyCount} > 0`
         : sql`true`;
 
     const questionQuery = this.database
@@ -2896,7 +3007,7 @@ export class DrizzleForumRepository {
         authorId: forumTopics.authorId, authorName: user.name,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
         authorRetainAtLeastUntil: user.retainAtLeastUntil,
-        postCount: sql<number>`count(distinct ${forumPosts.id})::int`,
+        postCount: visibleReplyCount,
         isSolved: forumTopics.isSolved,
         bestAnswerPostId: forumTopics.bestAnswerPostId,
         solutionModerationStatus: currentBestAnswer.solutionModerationStatus,
@@ -2912,16 +3023,18 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(currentBestAnswer, and(
         eq(currentBestAnswer.topicId, forumTopics.id),
         eq(currentBestAnswer.id, forumTopics.bestAnswerPostId),
+        eq(currentBestAnswer.isHidden, false),
       ))
       .leftJoin(activeDuplicate, and(
         eq(activeDuplicate.duplicateTopicId, forumTopics.id),
         isNull(activeDuplicate.removedAt),
       ))
       .where(and(
+        eq(forumTopics.isHidden, false),
         filter.mode === "solved"
           ? and(
               eq(forumTopics.sectionId, HELP_SOLUTIONS_SERVICE_SECTION_ID),
@@ -2964,7 +3077,7 @@ export class DrizzleForumRepository {
       )
       .having(and(
         filter.mode === "active"
-          ? sql`count(distinct ${forumPosts.id}) > 1`
+          ? sql`${visibleReplyCount} > 0`
           : sql`true`,
         answersCondition,
       ))
@@ -2992,6 +3105,7 @@ export class DrizzleForumRepository {
                 inArray(forumHelpSignals.topicId, topicIds),
                 eq(forumHelpSignals.status, "pending"),
                 inArray(forumHelpSignals.kind, visibleSignalKinds),
+                visibleSignalTarget,
               ))
           : Promise.resolve([]),
         attentionVisibility?.appeals
@@ -3041,7 +3155,7 @@ export class DrizzleForumRepository {
         title: row.title,
         authorName: author.name,
         ...(author.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        replyCount: Math.max(0, row.postCount - 1),
+        replyCount: row.postCount,
         isSolved: row.isSolved,
         hasBestAnswer: row.bestAnswerPostId !== null,
         solutionModerationStatus: row.solutionModerationStatus as HelpSolutionModerationStatus | null,
@@ -3061,6 +3175,7 @@ export class DrizzleForumRepository {
 
   private async readHelpDuplicatePresentations(
     topicIds: readonly string[],
+    queryDb: Pick<NodePgDatabase, "select"> = this.database,
   ): Promise<Map<string, {
     duplicateOf: ForumHelpDuplicateReference;
     duplicateRelationshipId: string;
@@ -3070,19 +3185,21 @@ export class DrizzleForumRepository {
     const originalTopic = alias(forumTopics, "help_duplicate_original_topic");
     const originalTitle = alias(forumTopicTitleRevisions, "help_duplicate_original_title");
     const pendingAppeal = alias(forumHelpDuplicateAppeals, "help_duplicate_pending_appeal");
-    const rows = await this.database
+    const rows = await queryDb
       .select({
         relationshipId: forumHelpDuplicateRelationships.id,
         duplicateTopicId: forumHelpDuplicateRelationships.duplicateTopicId,
         originalTopicId: forumHelpDuplicateRelationships.originalTopicId,
+        originalHidden: originalTopic.isHidden,
         originalTitle: originalTitle.originalContent,
         pendingAppealId: pendingAppeal.id,
       })
       .from(forumHelpDuplicateRelationships)
       .innerJoin(originalTopic, eq(originalTopic.id, forumHelpDuplicateRelationships.originalTopicId))
-      .innerJoin(originalTitle, and(
+      .leftJoin(originalTitle, and(
         eq(originalTitle.topicId, originalTopic.id),
         eq(originalTitle.id, originalTopic.currentTitleRevisionId),
+        eq(originalTopic.isHidden, false),
       ))
       .leftJoin(pendingAppeal, and(
         eq(pendingAppeal.relationshipId, forumHelpDuplicateRelationships.id),
@@ -3096,7 +3213,9 @@ export class DrizzleForumRepository {
     return new Map(rows.map((row) => [
       row.duplicateTopicId,
       {
-        duplicateOf: { id: row.originalTopicId, title: row.originalTitle },
+        duplicateOf: row.originalHidden
+          ? { id: "", title: "", unavailable: true }
+          : { id: row.originalTopicId, title: row.originalTitle! },
         duplicateRelationshipId: row.relationshipId,
         duplicateDisputed: row.pendingAppealId !== null,
       },
@@ -3148,8 +3267,8 @@ export class DrizzleForumRepository {
           ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
         ),
       )
-      .leftJoin(forumTopics, eq(forumTopics.sectionId, forumSections.id))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumTopics, and(eq(forumTopics.sectionId, forumSections.id), eq(forumTopics.isHidden, false)))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(eq(forumCategories.id, id))
       .groupBy(forumCategories.id, forumCategories.name, forumSections.id, forumSections.name, forumSections.createdAt)
       .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
@@ -3176,10 +3295,11 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(and(
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
       ))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil)
@@ -3254,10 +3374,11 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(and(
         eq(forumSections.categoryId, id),
         ne(forumSections.id, HELP_SOLUTIONS_SERVICE_SECTION_ID),
+        eq(forumTopics.isHidden, false),
       ))
       .groupBy(
         forumTopics.id,
@@ -3358,9 +3479,9 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .innerJoin(user, eq(user.id, forumTopics.authorId))
-      .leftJoin(forumPosts, eq(forumPosts.topicId, forumTopics.id))
+      .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
-      .where(eq(forumTopics.sectionId, id))
+      .where(and(eq(forumTopics.sectionId, id), eq(forumTopics.isHidden, false)))
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
@@ -3386,7 +3507,8 @@ export class DrizzleForumRepository {
   }
 
   async readTopicPage(id: string): Promise<ForumTopicPage | undefined> {
-    const [topic] = await this.database
+    return this.database.transaction(async (tx) => {
+    const [topic] = await tx
       .select({
         id: forumTopics.id, sectionId: forumSections.id, sectionName: forumSections.name,
         categoryId: forumCategories.id, categoryName: forumCategories.name, authorId: forumTopics.authorId,
@@ -3409,14 +3531,15 @@ export class DrizzleForumRepository {
         eq(forumTopicTitleRevisions.id, forumTopics.currentTitleRevisionId),
       ))
       .leftJoin(forumTopicPins, eq(forumTopicPins.topicId, forumTopics.id))
-      .where(eq(forumTopics.id, id));
+      .where(and(eq(forumTopics.id, id), eq(forumTopics.isHidden, false)));
     if (!topic) return undefined;
     const topicAuthor = projectForumPublicAuthor(topic);
-    const tags = await this.readTagsForTopics([id]);
-    const duplicatePresentation = (await this.readHelpDuplicatePresentations([id])).get(id);
-    const posts = await this.database
+    const tags = await this.readTagsForTopics([id], tx);
+    const duplicatePresentation = (await this.readHelpDuplicatePresentations([id], tx)).get(id);
+    const posts = await tx
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
+        isHidden: forumPosts.isHidden,
         parentPostId: forumPosts.parentPostId,
         authorName: user.name, authorImage: user.image,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
@@ -3429,13 +3552,16 @@ export class DrizzleForumRepository {
       })
       .from(forumPosts)
       .innerJoin(user, eq(user.id, forumPosts.authorId))
-      .innerJoin(forumPostRevisions, and(
+      .leftJoin(forumPostRevisions, and(
         eq(forumPostRevisions.postId, forumPosts.id),
         eq(forumPostRevisions.id, forumPosts.currentRevisionId),
+        eq(forumPosts.isHidden, false),
       ))
       .where(eq(forumPosts.topicId, id))
       .orderBy(asc(forumPosts.createdAt), asc(forumPosts.id));
-    const attached = posts.length === 0 ? [] : await this.database.select({
+    // A hidden post must never join attachment metadata into the public snapshot.
+    const visiblePostIds = posts.filter((post) => !post.isHidden).map((post) => post.id);
+    const attached = visiblePostIds.length === 0 ? [] : await tx.select({
       postId: forumPostAttachments.postId,
       id: forumAttachments.id,
       fileName: forumAttachments.fileName,
@@ -3443,7 +3569,7 @@ export class DrizzleForumRepository {
       detectedType: forumAttachments.detectedType,
     }).from(forumPostAttachments).innerJoin(forumAttachments,
       eq(forumAttachments.id, forumPostAttachments.attachmentId),
-    ).where(inArray(forumPostAttachments.postId, posts.map((post) => post.id)))
+    ).where(inArray(forumPostAttachments.postId, visiblePostIds))
       .orderBy(asc(forumPostAttachments.createdAt), asc(forumAttachments.id));
     const attachmentsByPost = new Map<string, Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>>();
     for (const attachment of attached) {
@@ -3465,7 +3591,17 @@ export class DrizzleForumRepository {
       title: { id: topic.revisionId, originalContent: topic.originalContent, sourceLocale: topic.sourceLocale },
       section: { id: topic.sectionId, name: topic.sectionName, category: { id: topic.categoryId, name: topic.categoryName } },
       tags: tags.get(id) ?? [],
-      posts: posts.map((post) => {
+      posts: posts.map((post): ForumThreadPost => {
+        if (post.isHidden) {
+          return {
+            kind: "hidden",
+            id: post.id, topicId: post.topicId,
+            parentPostId: post.parentPostId, createdAt: post.createdAt,
+          };
+        }
+        if (!post.revisionId || post.originalContent === null || !post.sourceLocale) {
+          throw new Error("visible published post revision is missing");
+        }
         const postAuthor = projectForumPublicAuthor(post);
         return {
         id: post.id, topicId: post.topicId, authorId: post.authorId, parentPostId: post.parentPostId,
@@ -3480,11 +3616,15 @@ export class DrizzleForumRepository {
       };
       }),
     };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async readPostLocation(postId: string) {
     const [post] = await this.database.select({ topicId: forumPosts.topicId, authorId: forumPosts.authorId })
-      .from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+      .from(forumPosts)
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
+      .where(and(eq(forumPosts.id, postId), eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false)))
+      .limit(1);
     return post;
   }
 
@@ -3501,8 +3641,12 @@ export class DrizzleForumRepository {
       createdAt: forumPostRevisions.createdAt,
     }).from(forumPostRevisions)
       .innerJoin(forumPosts, eq(forumPosts.id, forumPostRevisions.postId))
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
       .innerJoin(user, eq(user.id, forumPostRevisions.authorId))
-      .where(and(eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId)))
+      .where(and(
+        eq(forumPostRevisions.postId, postId), eq(forumPosts.topicId, topicId),
+        eq(forumPosts.isHidden, false), eq(forumTopics.isHidden, false),
+      ))
       .orderBy(desc(forumPostRevisions.createdAt), desc(forumPostRevisions.id));
     return rows.map(row => {
       const author = projectForumPublicAuthor(row);
@@ -3514,9 +3658,12 @@ export class DrizzleForumRepository {
     });
   }
 
-  private async readTagsForTopics(topicIds: readonly string[]): Promise<Map<string, ForumTag[]>> {
+  private async readTagsForTopics(
+    topicIds: readonly string[],
+    queryDb: Pick<NodePgDatabase, "select"> = this.database,
+  ): Promise<Map<string, ForumTag[]>> {
     if (topicIds.length === 0) return new Map();
-    const rows = await this.database
+    const rows = await queryDb
       .select({
         topicId: forumTopicTags.topicId,
         key: forumTags.key,

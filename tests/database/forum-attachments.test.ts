@@ -499,7 +499,7 @@ describe("atomic publication of selected draft refs", () => {
       expect(created.post.id).toBe(postId);
       expect(await store.readPublishedAttachment(postId, asset.id)).toMatchObject({ id: asset.id });
       const loaded = await repository.readTopicPage(topicId);
-      expect(loaded?.posts[0]?.attachments).toEqual([{
+      expect(loaded?.posts[0]?.kind !== "hidden" ? loaded?.posts[0]?.attachments : undefined).toEqual([{
         id: asset.id, fileName: asset.fileName, byteSize: asset.byteSize,
         detectedType: asset.detectedType,
       }]);
@@ -728,9 +728,11 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
     const conflict = await save(op, revisionId, "New unsaved buffer", selected, []);
     expect(conflict).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", completedOperationId: op } });
-    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (current.kind === "hidden") throw new Error("expected visible published post");
     expect(responseStatus(await save(crypto.randomUUID(), current.body.id, "New unsaved buffer", [], selected))).toBe(302);
-    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (after.kind === "hidden") throw new Error("expected visible published post");
     expect(after.body.originalContent).toBe("New unsaved buffer");
     expect((after.attachments ?? []).map((file) => file.id)).toEqual(selected);
     expect((await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId))).toHaveLength(3);
@@ -778,9 +780,11 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     const stale = await save(fresh, revisionId, "Current retained buffer", [...prior, b], []);
     expect(stale).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit" } });
     expect(stale).not.toHaveProperty("data.completedOperationId");
-    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (baseline.kind === "hidden") throw new Error("expected visible baseline");
     expect(responseStatus(await save(fresh, baseline.body.id, "Current retained buffer", [b], prior))).toBe(302);
-    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (after.kind === "hidden") throw new Error("expected visible published post");
     expect(after.body.originalContent).toBe("Current retained buffer");
     expect((after.attachments ?? []).map((file) => file.id).sort()).toEqual([...prior, b].sort());
     expect(await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId)).toHaveLength(3);
@@ -857,8 +861,8 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       const resolvedTopic = kind === "reply" ? topicId! : destination.pathname.split("/").filter(Boolean).at(-1)!;
       const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(resolvedTopic);
       expect(page).toBeDefined();
-      const published = page!.posts.find((post) => post.attachments?.some((entry) => entry.id === file.id));
-      expect(published?.attachments).toEqual([{
+      const published = page!.posts.find((post) => post.kind !== "hidden" && post.attachments?.some((entry) => entry.id === file.id));
+      expect(published?.kind !== "hidden" ? published?.attachments : undefined).toEqual([{
         id: file.id, fileName: file.fileName, byteSize: file.byteSize,
         detectedType: file.detectedType,
       }]);
@@ -922,7 +926,9 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       expect((await client.query("select attachment_id from forum_post_attachments where post_id=$1", [postId])).rows)
         .toEqual([{ attachment_id: file.id }]);
       const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(receipt.rows[0]!.topic_id);
-      expect(page?.posts.find((post) => post.id === postId)?.body.originalContent).toBe("");
+      const savedPost=page?.posts.find((post)=>post.id===postId);
+      expect(savedPost?.kind).not.toBe("hidden");
+      expect(savedPost?.kind !== "hidden" ? savedPost?.body.originalContent : undefined).toBe("");
       expect(responseStatus(await action("a different body"))).toBe(409);
       expect((await client.query("select id from forum_posts where id=$1", [postId])).rowCount).toBe(1);
     },

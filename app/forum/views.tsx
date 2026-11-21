@@ -35,6 +35,7 @@ import type {
   ForumTagPage,
   ForumTagSummary,
   ForumTopicPage,
+  ForumVisibleThreadPost,
   ForumTopicReadKind,
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
@@ -1727,7 +1728,9 @@ function AttentionCaseCard({ item, locale, isPreview }: {
         <span className="attention-case-id">#{item.id}</span>
         {item.type !== "review-status" ? <time dateTime={item.createdAt}>{dateLabel} UTC</time> : null}
       </div>
-      <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>
+      {item.topicUnavailable
+        ? <span className="attention-case-topic">{t("attentionCaseTopicUnavailable")}</span>
+        : <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>}
       <div className="attention-case-metadata">
         {item.submittedByUserId && item.submittedByName ? (
           <span>{t("attentionCaseReporter")}: <Link to={forumProfilePath(locale, item.submittedByUserId)}>
@@ -1751,6 +1754,10 @@ function AttentionCaseCard({ item, locale, isPreview }: {
           {t("attentionCaseOriginal")}: <Link to={forumTopicPath(locale, item.original.id)}>
             <bdi dir="auto">{item.original.title}</bdi>
           </Link>
+        </p>
+      ) : item.type === "appeal" ? (
+        <p className="attention-case-original">
+          {t("attentionCaseOriginal")}: {t("helpDuplicateOriginalUnavailable")}
         </p>
       ) : null}
       {item.type === "review-status" ? (
@@ -2250,12 +2257,12 @@ export function TopicView({
     if (!actionData || !("operation" in actionData) || actionData.operation !== "postEdit"
       || recoveredActionRef.current === actionData) return;
     recoveredActionRef.current = actionData;
-    const baseline = loadedTopic.posts.find((post) => post.id === actionData.post.id);
+    const baseline = loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === actionData.post.id);
     if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
   const recoveryBaseline = editRecovery?.topicId === loadedTopic.id
-    ? loadedTopic.posts.find((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    ? loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
     : null;
   const recoveredPost = recoveryBaseline && editRecovery
     ? {
@@ -2296,7 +2303,7 @@ export function TopicView({
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const selectableBestAnswerPosts = canManageSolution && !canManageAnySolution && !topic.duplicateOf
-    ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
+    ? topic.posts.slice(1).filter((post) => post.kind !== "hidden" && post.id !== topic.bestAnswerPostId)
     : [];
   const directRepliesByParent = new Map<string, string[]>();
   for (const post of topic.posts) {
@@ -2413,7 +2420,7 @@ export function TopicView({
     const requested = new URLSearchParams(location.search).get("editPost");
     if (requested && editablePostIds.includes(requested)
       && (editingPostId !== requested || editingPostScope !== editScope)) {
-      setEditBaseRevisionId(topic.posts.find((post) => post.id === requested)?.body.id ?? null);
+      setEditBaseRevisionId(topic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === requested)?.body.id ?? null);
       setEditReady(false);
       setEditingPostId(requested);
       setEditingPostScope(editScope);
@@ -2463,7 +2470,7 @@ export function TopicView({
       return;
     }
     const updated = topic.posts.find((post) => post.id === submitted.postId);
-    if (!updated || updated.body.id === submitted.expectedRevisionId) return;
+    if (!updated || updated.kind === "hidden" || updated.body.id === submitted.expectedRevisionId) return;
     editPublicationRef.current = null;
     closePostEditor();
   }, [navigation.state, forumWriteError, topic.posts]);
@@ -2572,9 +2579,9 @@ export function TopicView({
   }
 
   function insertAttributedQuote(postId: string, content: string) {
-    const source = topic.posts.find((post) => post.id === postId);
+    const source = topic.posts.find((post) => post.kind !== "hidden" && post.id === postId);
     const editor = replyEditorRef.current;
-    if (!source || !editor) return;
+    if (!source || source.kind === "hidden" || !editor) return;
     const permalink = forumTopicPath(locale, topic.id) + "#post-" + encodeURIComponent(postId);
     const quote = attributedQuoteMarkdown({
       author: source.authorName,
@@ -2593,8 +2600,8 @@ export function TopicView({
   }
 
   function quoteWholeMessage(postId: string) {
-    const source = topic.posts.find((post) => post.id === postId);
-    if (source) insertAttributedQuote(postId, source.body.originalContent);
+    const source = topic.posts.find((post) => post.kind !== "hidden" && post.id === postId);
+    if (source && source.kind !== "hidden") insertAttributedQuote(postId, source.body.originalContent);
   }
 
   function quoteSelectedText(postId: string) {
@@ -2689,9 +2696,11 @@ export function TopicView({
               <strong>{t("helpDuplicateBadge")}</strong>
               <span>
                 {t("helpDuplicateOf")}{" "}
-                <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
-                  {topic.duplicateOf.title}
-                </Link>
+                {topic.duplicateOf.unavailable
+                  ? <span>{t("helpDuplicateOriginalUnavailable")}</span>
+                  : <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
+                      {topic.duplicateOf.title}
+                    </Link>}
               </span>
               {canManageHelpDuplicate && topic.duplicateDisputed ? (
                 <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
@@ -2756,6 +2765,42 @@ export function TopicView({
               const messageNumber = messageNumberById.get(post.id)!;
               const isOriginalQuestion = post.id === originalPost?.id;
               const isBestAnswer = topic.bestAnswerPostId === post.id;
+              if (post.kind === "hidden") {
+                const parentNumber = post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
+                const replyIds = directRepliesByParent.get(post.id) ?? [];
+                return (
+                  <li id={`post-${post.id}`} key={post.id}
+                    className="forum-post topic-message moderation-hidden-post"
+                    data-moderation-hidden-post>
+                    <header className="topic-message-author">
+                      <a className="topic-message-anchor topic-message-author-number"
+                        href={`#post-${encodeURIComponent(post.id)}`}>
+                        {t("postNumber", { number: messageNumber })}
+                      </a>
+                    </header>
+                    {post.id === originalPost?.id && (
+                      <div className="topic-question-heading">
+                        <TopicTitlePresentation presentation={titlePresentation} />
+                      </div>
+                    )}
+                    <div className="topic-message-body topic-message-filtered" role="note">
+                      <p>{t("moderationHiddenPostNotice")}</p>
+                    </div>
+                    <div className="topic-message-relations">
+                      {parentNumber !== undefined && (
+                        <a href={`#post-${encodeURIComponent(post.parentPostId!)}`}>
+                          {t("replyToMessageNumberCompact", { number: parentNumber })}
+                        </a>
+                      )}
+                      {replyIds.map((id) => (
+                        <a key={id} href={`#post-${encodeURIComponent(id)}`}>
+                          {t("postNumber", { number: messageNumberById.get(id)! })}
+                        </a>
+                      ))}
+                    </div>
+                  </li>
+                );
+              }
               const generationUnit = generationByContentId.get(post.id);
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;

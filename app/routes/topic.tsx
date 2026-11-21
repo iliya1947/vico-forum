@@ -27,7 +27,7 @@ import type { ContentGenerationActionResponse } from "../localization/content-ge
 import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import type { ForumTopicReadState } from "../../db/forum-repository";
+import type { ForumTopicReadState, ForumVisibleThreadPost } from "../../db/forum-repository";
 import type { TopicWatchState } from "../forum/topic-watch-control";
 import type { PersonalFilterState } from "../forum/personal-filter-control";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
@@ -35,16 +35,21 @@ import { DELETED_USER_NAME } from "../../db/public-identity";
 
 export { topicAction as action } from "../forum/actions.server";
 
-/** React Router does not forward action/data cache headers to document or
- * single-fetch responses without the matching route-module headers export.
- * Keep public GET and parent headers unchanged; propagate only the action's
- * cache policy and retry advice, leaving framework cookies untouched. */
+/** React Router does not forward loader/action cache headers to document or
+ * single-fetch responses without this route-module headers export.
+ * Public topic/404 responses must not be cached; preserve private action
+ * policies, retry advice and unrelated parent headers. */
 export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
-  for (const name of ["Cache-Control", "Retry-After"] as const) {
-    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
-    if (value !== null) result.set(name, value);
-  }
+  // A hidden topic becomes 404 immediately; neither its previous public
+  // document nor the neutral negative response may be cached.
+  const cachePolicy = errorHeaders?.get("Cache-Control")
+    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control");
+  result.set("Cache-Control", cachePolicy?.split(",").some((part) => part.trim().toLowerCase() === "no-store")
+    ? cachePolicy : "no-store");
+  const retry = errorHeaders?.get("Retry-After")
+    ?? actionHeaders.get("Retry-After") ?? loaderHeaders.get("Retry-After");
+  if (retry !== null) result.set("Retry-After", retry);
   return result;
 }
 
@@ -56,15 +61,16 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   if (!loaded) throw new Response("Not Found", { status: 404 });
   // The repository already projects deleted authors; mask again at the public route boundary.
   const topic = loaded.authorIdentityKind === "deleted"
-    || loaded.posts.some((post) => post.authorIdentityKind === "deleted")
+    || loaded.posts.some((post) => post.kind !== "hidden" && post.authorIdentityKind === "deleted")
     ? {
         ...loaded,
         authorName: loaded.authorIdentityKind === "deleted" ? DELETED_USER_NAME : loaded.authorName,
-        posts: loaded.posts.map((post) => post.authorIdentityKind === "deleted"
+        posts: loaded.posts.map((post) => post.kind !== "hidden" && post.authorIdentityKind === "deleted"
           ? { ...post, authorName: DELETED_USER_NAME, authorImage: null } : post),
       }
     : loaded;
 
+  const visiblePosts = topic.posts.filter((post): post is ForumVisibleThreadPost => post.kind !== "hidden");
   const resolvedLocale = context.get(localeContext);
   const loadedRegistry = await registryForRequest(context);
   const revisions = [
@@ -77,7 +83,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     },
     // Attachment-only posts have no text translation unit. Keep them out of
     // both translation lookup and generation planning, which require text.
-    ...topic.posts.filter((post) => post.body.originalContent.trim().length > 0).map((post) => ({
+    ...visiblePosts.filter((post) => post.body.originalContent.trim().length > 0).map((post) => ({
       contentType: "post-body" as const,
       contentId: post.id,
       revisionId: post.body.id,
@@ -93,7 +99,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   );
   const titlePresentation = presentations[0]!;
   const textPostPresentations = new Map(presentations.slice(1).map((item) => [item.contentId, item]));
-  const postPresentations = topic.posts.map((post): ContentTranslationPresentation => {
+  const postPresentations = visiblePosts.map((post): ContentTranslationPresentation => {
     const text = textPostPresentations.get(post.id);
     if (text) return text;
     const originalLocale = post.body.sourceLocale === "und" ? undefined : post.body.sourceLocale;
@@ -177,7 +183,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       ]);
       canReply = reply;
       canEditOwnTitle = titleEditOwn && topic.authorId === session.user.id;
-      editablePostIds = editOwn ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
+      editablePostIds = editOwn ? visiblePosts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
       canReadPostHistory = historyRead;
       canSubmitComplaint = complaintCreate;
       canManageSolution = solutionAny || (solutionOwn && session.user.id === topic.authorId);
@@ -192,9 +198,9 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       canManageClosure = closure;
       canUseAdminPanel = solutionAny || canManageHelpDuplicate || sourceAny || pin || closure;
       correctablePostIds = sourceAny
-        ? topic.posts.map((post) => post.id)
+        ? visiblePosts.map((post) => post.id)
         : sourceOwn
-          ? topic.posts.filter((post) => post.authorId === session.user.id).map((post) => post.id)
+          ? visiblePosts.filter((post) => post.authorId === session.user.id).map((post) => post.id)
           : [];
     } catch (error) {
       if (!(error instanceof AuthorizationUnavailableError)) throw error;
@@ -295,7 +301,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canSubmitComplaint,
     topicReadState,
   };
-  return session ? data(page, { headers: { "Cache-Control": "private, no-store" } }) : page;
+  return data(page, { headers: { "Cache-Control": session ? "private, no-store" : "no-store" } });
 });
 
 export default function TopicRoute() {

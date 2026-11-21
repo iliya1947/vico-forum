@@ -1,4 +1,4 @@
-import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError, type ForumVisibleThreadPost } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -425,7 +425,7 @@ export async function topicAction({ request, params, context }: {
       const postId = requiredFormText(formData, "postId");
       if (!postId) return generationFailure("invalid", 400);
       const post = topic.posts.find((candidate) => candidate.id === postId);
-      if (!post) return generationFailure("not-found", 404);
+      if (!post || post.kind === "hidden") return generationFailure("not-found", 404);
       await contentGenerationAdmissionForRequest(context).assertAllowed(session.user.id);
       const input = {
         actorId: session.user.id,
@@ -697,7 +697,7 @@ export async function topicAction({ request, params, context }: {
         // Refresh only the conflicted public baseline. A failing refresh remains action
         // data/a client action failure, so the mounted editor is never replaced by a loader boundary.
         const current = await forumReaderForRequest(context).readTopicPage(topicId);
-        const post = current?.posts.find((post) => post.id === postId && post.authorId === actorId);
+        const post = current?.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === postId && post.authorId === actorId);
         if (!post) return mutationFailure("notFound", 404);
         return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post,
           ...(error instanceof ForumPublicationReplayConflictError ? { completedOperationId: draftFence.draftId } : {}),

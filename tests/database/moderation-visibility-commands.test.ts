@@ -28,11 +28,11 @@ const repository = new DrizzleForumRepository(
   drizzle(pool), { cooldownMs: 0, now: () => new Date() }, withOwnerUserMeasureAdmission("owner"), undefined, "owner",
 );
 const service = new ForumService(repository);
-async function fixture(bodyContent = "PRIVATE POST") {
+async function fixture(bodyContent = "PRIVATE POST", titleContent = "PRIVATE TOPIC", sectionId = "visibility-section") {
   const topicId = randomUUID(), postId = randomUUID(), titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
   await repository.createTopicWithInitialPost({
-    id: topicId, sectionId: "visibility-section", authorId: "author",
-    titleRevision: { id: titleRevisionId, originalContent: "PRIVATE TOPIC", sourceLocale: "en" },
+    id: topicId, sectionId, authorId: "author",
+    titleRevision: { id: titleRevisionId, originalContent: titleContent, sourceLocale: "en" },
     initialPost: {
       id: postId, topicId, authorId: "author",
       bodyRevision: { id: bodyRevisionId, originalContent: bodyContent, sourceLocale: "en" },
@@ -2260,4 +2260,908 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
       30_000,
     );
   }
+});
+
+describe("B3 Help attention public-safe projection", () => {
+  it("excludes hidden signal topics from queues/counts and masks hidden proposed originals", async () => {
+    const question=await fixture(
+      "B3_ATTENTION_VISIBLE_QUESTION_6071", "B3_ATTENTION_VISIBLE_TITLE_6071",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const original=await fixture(
+      "B3_ATTENTION_HIDDEN_ORIGINAL_6071", "B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const details=await service.createHelpSignal({
+      kind:"needs-details",topicId:question.topicId,actorId:"ordinary",
+      explanation:"Question requires clarification",proposedOriginalTopicId:null,
+    });
+    const duplicate=await service.createHelpSignal({
+      kind:"duplicate",topicId:question.topicId,actorId:"author",
+      explanation:"Potential duplicate",proposedOriginalTopicId:original.topicId,
+    });
+    const visibility={signalKinds:["needs-details","duplicate"] as const,appeals:false};
+    const counts=()=>repository.readHelpAttentionCounts(visibility);
+    const cases=async(group:"needs-details"|"duplicate"|"mixed")=>
+      (await repository.readHelpAttentionCases(group,visibility)).cases;
+    const current=await counts();
+    expect((await cases("needs-details")).some(x=>x.id===details.id)).toBe(true);
+    expect((await cases("mixed")).filter(x=>x.topicId===question.topicId).map(x=>x.id).sort())
+      .toEqual([details.id,duplicate.id].sort());
+    expect((await cases("duplicate")).find(x=>x.id===duplicate.id)?.original)
+      .toEqual({id:original.topicId,title:"B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071"});
+
+    await service.setTopicVisibility(topicCommand(original));
+    const masked=(await cases("duplicate")).find(x=>x.id===duplicate.id);
+    expect(masked?.original).toBeNull();
+    expect(JSON.stringify(masked)).not.toContain(original.topicId);
+    expect(JSON.stringify(masked)).not.toContain("B3_ATTENTION_SECRET_ORIGINAL_TITLE_6071");
+    expect(await counts()).toEqual(current);
+    await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore original"));
+    expect((await cases("duplicate")).find(x=>x.id===duplicate.id)?.original?.id).toBe(original.topicId);
+
+    await service.setTopicVisibility(topicCommand(question));
+    expect((await cases("needs-details")).map(x=>x.id)).not.toContain(details.id);
+    expect((await cases("duplicate")).map(x=>x.id)).not.toContain(duplicate.id);
+    expect((await cases("mixed")).map(x=>x.topicId)).not.toContain(question.topicId);
+    const hidden=await counts();
+    expect(hidden["needs-details"]).toBe(current["needs-details"]-1);
+    expect(hidden.duplicate).toBe(current.duplicate-1);
+    expect(hidden.mixed).toBe(current.mixed-1);
+    await service.setTopicVisibility(topicCommand(question,"moderator1",false,1,"Restore question"));
+    expect(await counts()).toEqual(current);
+    expect((await cases("mixed")).filter(x=>x.topicId===question.topicId)).toHaveLength(2);
+  });
+
+  it("filters hidden answer-target signals before Help Needs Attention LIMIT and badge counts", async () => {
+    const f=await fixture(
+      "B3_HELP_HIDDEN_SIGNAL_ROOT_6174", "B3_HELP_SIGNAL_VISIBLE_TITLE_6174",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:revisionId,originalContent:"B3_HELP_HIDDEN_SIGNAL_ANSWER_6174",sourceLocale:"en",
+      },
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    const answerSignal=await service.createHelpSignal({
+      kind:"needs-review",topicId:f.topicId,actorId:"ordinary",
+      explanation:"Answer needs review",proposedOriginalTopicId:null,
+    });
+    const detailsSignal=await service.createHelpSignal({
+      kind:"needs-details",topicId:f.topicId,actorId:"author",
+      explanation:"Question needs detail",proposedOriginalTopicId:null,
+    });
+    expect(answerSignal.status).toBe("pending");
+    expect(detailsSignal.status).toBe("pending");
+
+    const reviewOnly={signalKinds:["needs-review"] as const,appeals:false};
+    const both={signalKinds:["needs-review","needs-details"] as const,appeals:false};
+    const read=async(visibility:typeof reviewOnly|typeof both)=>
+      (await repository.readHelpSolutionsNeedsAttention({},visibility))?.questions
+        .find(q=>q.id===f.topicId);
+    expect(await read(reviewOnly)).toMatchObject({
+      attention:{signals:{"needs-review":1},totalSignals:1},
+    });
+    expect(await read(both)).toMatchObject({
+      attention:{signals:{"needs-review":1,"needs-details":1},totalSignals:2},
+    });
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide signaled answer",
+    });
+    expect(await read(reviewOnly)).toBeUndefined();
+    const retained=await read(both);
+    expect(retained?.attention).toMatchObject({
+      signals:{"needs-details":1},totalSignals:1,
+    });
+    expect(retained?.attention?.signals).not.toHaveProperty("needs-review");
+    expect(JSON.stringify(retained)).not.toContain("B3_HELP_HIDDEN_SIGNAL_ANSWER_6174");
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore signaled answer",
+    });
+    expect(await read(both)).toMatchObject({
+      attention:{signals:{"needs-review":1,"needs-details":1},totalSignals:2},
+    });
+    await service.setTopicVisibility(topicCommand(f));
+    expect(await read(both)).toBeUndefined();
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore signaled question"));
+    expect(await read(reviewOnly)).toMatchObject({
+      attention:{signals:{"needs-review":1},totalSignals:1},
+    });
+  });
+
+  it("excludes hidden selected-answer Needs review from the status queue and count", async () => {
+    const f=await fixture(
+      "B3_ATTENTION_SOLVED_ROOT_6072", "B3_ATTENTION_SOLVED_TITLE_6072",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_ATTENTION_SELECTED_ANSWER_6072",sourceLocale:"en"},
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    await service.setHelpSolutionModeration(f.topicId,"needs-review",null,"moderator1",answerId);
+    const visibility={signalKinds:["needs-review"] as const,appeals:false};
+    const count=async()=>(await repository.readHelpAttentionCounts(visibility))["needs-review"];
+    const cases=async()=>(await repository.readHelpAttentionCases("needs-review",visibility)).cases;
+    const visibleCount=await count();
+    expect((await cases()).find(x=>x.type==="review-status"&&x.id===answerId))
+      .toMatchObject({topicId:f.topicId,topicTitle:"B3_ATTENTION_SOLVED_TITLE_6072"});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide reviewed answer",
+    });
+    expect((await cases()).map(x=>x.id)).not.toContain(answerId);
+    expect(await count()).toBe(visibleCount-1);
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore reviewed answer",
+    });
+    expect(await count()).toBe(visibleCount);
+    await service.setTopicVisibility(topicCommand(f));
+    expect((await cases()).map(x=>x.id)).not.toContain(answerId);
+    expect(await count()).toBe(visibleCount-1);
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore reviewed question"));
+    expect(await count()).toBe(visibleCount);
+  });
+});
+
+describe("B3 retained Help duplicate appeal visibility projection", () => {
+  it("retains a protected pending appeal with hidden current titles redacted and resolves it", async () => {
+    const duplicate=await fixture(
+      "B3_APPEAL_DUPLICATE_BODY_6132", "B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const original=await fixture(
+      "B3_APPEAL_ORIGINAL_BODY_6132", "B3_APPEAL_SECRET_ORIGINAL_TITLE_6132",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    await service.confirmHelpDuplicate(duplicate.topicId,original.topicId,"owner");
+    const relation=await client.query<{id:string}>(
+      "select id from forum_help_duplicate_relationships where duplicate_topic_id=$1 and removed_at is null",
+      [duplicate.topicId],
+    );
+    const relationshipId=relation.rows[0]?.id;
+    if (!relationshipId) throw new Error("missing confirmed duplicate relationship");
+    await service.appealHelpDuplicate(duplicate.topicId,"author","Retained appeal explanation",relationshipId);
+    const appeal=await client.query<{id:string}>(
+      "select id from forum_help_duplicate_appeals where relationship_id=$1 and status='pending'",
+      [relationshipId],
+    );
+    const appealId=appeal.rows[0]?.id;
+    if (!appealId) throw new Error("missing pending appeal");
+
+    const visibility={signalKinds:[] as const,appeals:true};
+    const count=async()=>(await repository.readHelpAttentionCounts(visibility)).appeals;
+    const findCase=async()=>{
+      for(let page=0;page<100;page++){
+        const result=await repository.readHelpAttentionCases("appeals",visibility,page);
+        const item=result.cases.find(item=>item.id===appealId);
+        if(item)return item;
+        if(!result.hasMore)break;
+      }
+      throw new Error("pending appeal missing from retained Attention queue");
+    };
+    const initialCount=await count();
+    expect(await findCase()).toMatchObject({
+      id:appealId,topicId:duplicate.topicId,
+      topicTitle:"B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      original:{id:original.topicId,title:"B3_APPEAL_SECRET_ORIGINAL_TITLE_6132"},
+    });
+
+    await service.setTopicVisibility(topicCommand(original));
+    const hiddenOriginal=await findCase();
+    expect(hiddenOriginal.original).toBeNull();
+    expect(hiddenOriginal.topicTitle).toBe("B3_APPEAL_SECRET_DUPLICATE_TITLE_6132");
+    expect(JSON.stringify(hiddenOriginal)).not.toContain("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(JSON.stringify(hiddenOriginal)).not.toContain(original.topicId);
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(duplicate));
+    const bothHidden=await findCase();
+    expect(bothHidden).toMatchObject({
+      id:appealId,topicId:duplicate.topicId,
+      topicTitle:"",topicUnavailable:true,original:null,
+    });
+    expect(JSON.stringify(bothHidden)).not.toContain("B3_APPEAL_SECRET_DUPLICATE_TITLE_6132");
+    expect(JSON.stringify(bothHidden)).not.toContain("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(JSON.stringify(bothHidden)).not.toContain(original.topicId);
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore original"));
+    const restoredOriginal=await findCase();
+    expect(restoredOriginal.original?.title).toBe("B3_APPEAL_SECRET_ORIGINAL_TITLE_6132");
+    expect(restoredOriginal.topicUnavailable).toBe(true);
+    expect(restoredOriginal.topicTitle).toBe("");
+    await service.setTopicVisibility(topicCommand(duplicate,"moderator1",false,1,"Restore duplicate"));
+    expect(await findCase()).toMatchObject({
+      topicTitle:"B3_APPEAL_SECRET_DUPLICATE_TITLE_6132",
+      original:{id:original.topicId,title:"B3_APPEAL_SECRET_ORIGINAL_TITLE_6132"},
+    });
+    expect(await count()).toBe(initialCount);
+
+    await service.setTopicVisibility(topicCommand(duplicate,"moderator1",true,2,"Hide duplicate for resolution"));
+    await service.resolveHelpDuplicateAppeal(duplicate.topicId,"moderator1","rejected",appealId);
+    expect(await count()).toBe(initialCount-1);
+    const resolved=await client.query<{status:string}>(
+      "select status from forum_help_duplicate_appeals where id=$1",[appealId],
+    );
+    expect(resolved.rows[0]?.status).toBe("rejected");
+  });
+});
+
+describe("B3 Help similar-question visible-only ranking", () => {
+  const similar = (term: string, limit = 5) =>
+    repository.searchHelpSolutionsSimilar({title:term,body:"",tags:[]},limit);
+
+  it("does not match hidden answer source and restores body matches without new activity", async () => {
+    const f=await fixture(
+      "B3_SIMILAR_VISIBLE_ROOT_6197", "B3_SIMILAR_UNRELATED_TOPIC_6197",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    const token="camelliaquartz";
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:`B3_SECRET_SIMILAR_ANSWER_6197 ${token}`,sourceLocale:"en"},
+    });
+    expect((await similar(token)).find(row=>row.id===f.topicId))
+      .toMatchObject({matchSource:"body",replyCount:1});
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide matching answer",
+    });
+    expect((await similar(token)).map(row=>row.id)).not.toContain(f.topicId);
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore matching answer",
+    });
+    expect((await similar(token)).find(row=>row.id===f.topicId))
+      .toMatchObject({matchSource:"body",replyCount:1});
+  });
+
+  it("filters a hidden exact-title hit before LIMIT so a visible body hit ranks", async () => {
+    const token="orionflintmatrix";
+    const visible=await fixture(
+      "B3_SIMILAR_VISIBLE_ROOT_6198","B3_SIMILAR_UNRELATED_TITLE_6198",
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const matchId=randomUUID(),matchRevisionId=randomUUID();
+    await repository.createPost({
+      id:matchId,topicId:visible.topicId,authorId:"ordinary",parentPostId:visible.postId,
+      bodyRevision:{id:matchRevisionId,originalContent:`Visible body match ${token}`,sourceLocale:"en"},
+    });
+    const hidden=await fixture(
+      "B3_SIMILAR_OTHER_ROOT_6198",token,
+      HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:hidden.topicId,matchSource:"title",
+    });
+    await service.setTopicVisibility(topicCommand(hidden));
+    expect(await repository.readTopicPage(hidden.topicId)).toBeUndefined();
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:visible.topicId,matchSource:"body",
+    });
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",false,1,"Restore ranked topic"));
+    expect((await similar(token,1))[0]).toMatchObject({
+      id:hidden.topicId,matchSource:"title",
+    });
+  });
+});
+
+describe("B3 public tag names require visible topic membership", () => {
+  it("removes hidden-only user tags from index and direct Tag while keeping shared tags", async () => {
+    const suffix=randomUUID().slice(0,8);
+    const shared={key:`b3-shared-${suffix}`,name:`B3 Shared ${suffix}`};
+    const secret={key:`b3-secret-${suffix}`,name:`B3_HIDDEN_TAG_NAME_${suffix}`};
+    async function taggedTopic(title: string, tags: {key:string;name:string}[]) {
+      const topicId=randomUUID(),postId=randomUUID();
+      const titleRevisionId=randomUUID(),bodyRevisionId=randomUUID();
+      await repository.createTopicWithInitialPost({
+        id:topicId,sectionId:"visibility-section",authorId:"author",
+        titleRevision:{id:titleRevisionId,originalContent:title,sourceLocale:"en"},
+        initialPost:{
+          id:postId,topicId,authorId:"author",
+          bodyRevision:{id:bodyRevisionId,originalContent:"Visible initial post",sourceLocale:"en"},
+        },
+        tags,
+      });
+      return {topicId,postId,titleRevisionId,bodyRevisionId};
+    }
+    const visible=await taggedTopic("B3_TAG_VISIBLE_TOPIC", [shared]);
+    const hidden=await taggedTopic("B3_TAG_HIDDEN_TOPIC", [shared,secret]);
+    const index=async()=>await repository.readTags();
+    const row=async(key:string)=>(await index()).find(item=>item.key===key);
+    expect(await row(shared.key)).toMatchObject({name:shared.name,topicCount:2});
+    expect(await row(secret.key)).toMatchObject({name:secret.name,topicCount:1});
+    expect((await repository.readTag(secret.key))?.topics.map(t=>t.id)).toEqual([hidden.topicId]);
+
+    await service.setTopicVisibility(topicCommand(hidden));
+    expect(await row(shared.key)).toMatchObject({name:shared.name,topicCount:1});
+    expect(await row(secret.key)).toBeUndefined();
+    expect(JSON.stringify(await index())).not.toContain(secret.name);
+    expect(await repository.readTag(secret.key)).toBeUndefined();
+    expect(await repository.readTag(`b3-nonexistent-${suffix}`)).toBeUndefined();
+    expect((await repository.readTag(shared.key))?.topics.map(t=>t.id)).toEqual([visible.topicId]);
+
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",false,1,"Restore tagged topic"));
+    expect(await row(shared.key)).toMatchObject({topicCount:2});
+    expect(await row(secret.key)).toMatchObject({name:secret.name,topicCount:1});
+    expect((await repository.readTag(secret.key))?.topics.map(t=>t.id)).toEqual([hidden.topicId]);
+
+    await service.setTopicVisibility(topicCommand(visible));
+    await service.setTopicVisibility(topicCommand(hidden,"moderator1",true,2,"Hide tagged topic again"));
+    expect(await row(shared.key)).toBeUndefined();
+    expect(await repository.readTag(shared.key)).toBeUndefined();
+    await service.setTopicVisibility(topicCommand(visible,"moderator1",false,1,"Restore visible shared tag"));
+    expect(await row(shared.key)).toMatchObject({topicCount:1});
+  });
+});
+
+describe("B3 public visibility projection and leak-safe discovery", () => {
+  it("retains a hidden selected Help solution while masking its source and profile counts", async () => {
+    const f=await fixture(
+      "B3_HELP_ROOT_2926", "B3_HELP_SELECTED_2926", HELP_SOLUTIONS_SERVICE_SECTION_ID,
+    );
+    const answerId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:answerId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_HIDDEN_BEST_SOURCE_2926",sourceLocale:"en"},
+    });
+    await repository.selectBestAnswer(f.topicId,answerId,"author");
+    await repository.markTopicSolved(f.topicId,"author");
+    const before=await repository.readProfile("ordinary");
+    const publicBefore=await repository.readTopicPage(f.topicId);
+    expect(publicBefore).toMatchObject({isSolved:true,bestAnswerPostId:answerId});
+    expect(publicBefore?.posts[1]).toMatchObject({
+      id:answerId,body:{originalContent:"B3_HIDDEN_BEST_SOURCE_2926"},
+    });
+    expect((await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId))
+      .toMatchObject({isSolved:true,hasBestAnswer:true,replyCount:1});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide selected solution",
+    });
+    const page=await repository.readTopicPage(f.topicId);
+    expect(page).toMatchObject({isSolved:true,bestAnswerPostId:answerId});
+    expect(page?.posts[1]).toEqual({
+      kind:"hidden",id:answerId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    expect(JSON.stringify(page)).not.toContain("B3_HIDDEN_BEST_SOURCE_2926");
+    expect(JSON.stringify(page)).not.toContain(revisionId);
+    const hiddenHelp=(await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId);
+    expect(hiddenHelp).toMatchObject({
+      isSolved:true,hasBestAnswer:true,replyCount:0,solutionModerationStatus:null,
+    });
+    expect(JSON.stringify(hiddenHelp)).not.toContain("B3_HIDDEN_BEST_SOURCE_2926");
+    expect((await repository.readProfile("ordinary"))?.messageCount).toBe(before!.messageCount-1);
+    expect((await repository.readProfile("ordinary"))?.bestAnswerCount).toBe(before!.bestAnswerCount-1);
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:answerId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore selected solution",
+    });
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toMatchObject({
+      id:answerId,body:{id:revisionId,originalContent:"B3_HIDDEN_BEST_SOURCE_2926"},
+    });
+    expect((await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===f.topicId))
+      .toMatchObject({isSolved:true,hasBestAnswer:true,replyCount:1});
+    expect((await repository.readProfile("ordinary"))?.messageCount).toBe(before!.messageCount);
+    expect((await repository.readProfile("ordinary"))?.bestAnswerCount).toBe(before!.bestAnswerCount);
+  });
+
+  it("ranks Popular by visible post activity before its period limits", async () => {
+    const first=await fixture("B3_POPULAR_FIRST_2926");
+    const second=await fixture("B3_POPULAR_SECOND_2926");
+    const replyId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:replyId,topicId:first.topicId,authorId:"ordinary",parentPostId:first.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_POPULAR_REPLY_2926",sourceLocale:"en"},
+    });
+    // The future reference isolates Popular ranking, but temporary future post dates
+    // must not poison the per-author write cooldown for later tests in this shared schema.
+    const reference=new Date("2035-05-01T12:00:00.000Z");
+    const originalDates=await client.query<{id:string;created_at:Date}>(
+      "select id,created_at from forum_posts where id in ($1,$2,$3)",
+      [first.postId,second.postId,replyId],
+    );
+    try {
+      for(const [id,time] of [
+        [first.postId,"2035-05-01T07:00:00.000Z"],
+        [second.postId,"2035-05-01T08:00:00.000Z"],
+        [replyId,"2035-05-01T09:00:00.000Z"],
+      ]){
+        await client.query("update forum_posts set created_at=$1 where id=$2",[new Date(time),id]);
+      }
+      const top=async() => {
+        const popular=await repository.readPopular(reference,1);
+        return ["24h","7d","30d"].map(period=>popular[period as "24h"|"7d"|"30d"][0]?.id);
+      };
+      expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+      await service.setPostVisibility({
+        topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide ranked Popular reply",
+      });
+      expect(await top()).toEqual([second.topicId,second.topicId,second.topicId]);
+      await service.setPostVisibility({
+        topicId:first.topicId,postId:replyId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked Popular reply",
+      });
+      expect(await top()).toEqual([first.topicId,first.topicId,first.topicId]);
+    } finally {
+      for(const row of originalDates.rows){
+        await client.query("update forum_posts set created_at=$1 where id=$2",[row.created_at,row.id]);
+      }
+    }
+  });
+
+
+  it("filters hidden reply from search body matching and reply counts, then restores it", async () => {
+    const f=await fixture("B3_UNIQUE_SEARCH_ROOT_20261120");
+    const postId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:postId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_UNIQUE_SEARCH_REPLY_20261120",sourceLocale:"en"},
+    });
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(2);
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide search reply"});
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(1);
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toEqual({
+      kind:"hidden",id:postId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore search reply"});
+    expect((await repository.search("B3_UNIQUE_SEARCH_REPLY_20261120")).map(x=>x.id)).toContain(f.topicId);
+    expect((await repository.search("B3_UNIQUE_SEARCH_ROOT_20261120")).find(x=>x.id===f.topicId)?.postCount).toBe(2);
+  });
+
+  it("ranks only visible post activity before search LIMIT and reverses rank on Restore", async () => {
+    const first=await fixture("Ranked root one", "B3_SEARCH_LIMIT_RANK_20261120");
+    const second=await fixture("Ranked root two", "B3_SEARCH_LIMIT_RANK_20261120");
+    const postId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:postId,topicId:first.topicId,authorId:"ordinary",parentPostId:first.postId,
+      bodyRevision:{id:revisionId,originalContent:"Activity raising first topic",sourceLocale:"en"},
+    });
+    // Separate the three activity levels deterministically without relying on wall-clock scheduling.
+    const [originalTopicDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_topics where id=$1", [second.topicId],
+    )).rows;
+    const [originalPostDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_posts where id=$1", [postId],
+    )).rows;
+    if (!originalTopicDate || !originalPostDate) throw new Error("missing rank fixtures");
+    try {
+      await client.query("update forum_topics set created_at=clock_timestamp()+interval '1 minute' where id=$1", [second.topicId]);
+      await client.query("update forum_posts set created_at=clock_timestamp()+interval '2 minutes' where id=$1", [postId]);
+      const top=async()=>(await repository.search("B3_SEARCH_LIMIT_RANK_20261120",1))[0]?.id;
+      expect(await top()).toBe(first.topicId);
+      await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide rank raising reply"});
+      expect(await top()).toBe(second.topicId);
+      await service.setPostVisibility({topicId:first.topicId,postId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore ranked reply"});
+      expect(await top()).toBe(first.topicId);
+    } finally {
+      await client.query("update forum_topics set created_at=$1 where id=$2",
+        [originalTopicDate.created_at,second.topicId]);
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [originalPostDate.created_at,postId]);
+    }
+  });
+
+  it("classifies unanswered using visible non-root replies with a hidden root", async () => {
+    const f=await fixture("B3_UNANSWERED_ROOT_20261120");
+    const postId=randomUUID(),revisionId=randomUUID();
+    const isUnanswered=async()=> (await repository.readUnanswered()).some(x=>x.id===f.topicId);
+    expect(await isUnanswered()).toBe(true);
+    await repository.createPost({
+      id:postId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:revisionId,originalContent:"B3_UNANSWERED_REPLY_20261120",sourceLocale:"en"},
+    });
+    expect(await isUnanswered()).toBe(false);
+    await service.setPostVisibility(postCommand(f));
+    expect(await isUnanswered()).toBe(false);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:revisionId,reason:"Hide sole answer"});
+    expect(await isUnanswered()).toBe(true);
+    await service.setPostVisibility({topicId:f.topicId,postId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:revisionId,reason:"Restore sole answer"});
+    expect(await isUnanswered()).toBe(false);
+  });
+
+  it("keeps trusted raw post and hierarchy usable under hidden post and topic while public readers deny source", async () => {
+    const categoryId="visibility-trusted-"+randomUUID();
+    const sectionId="visibility-trusted-"+randomUUID();
+    await repository.createCategory({id:categoryId,name:"Trusted test category"});
+    await repository.createSection({id:sectionId,categoryId,name:"Trusted test section"});
+    const source="B3_TRUSTED_HIDDEN_POST_SOURCE_20261121";
+    const f=await fixture(source,"B3_TRUSTED_HIDDEN_TOPIC_TITLE_20261121",sectionId);
+    const rawHierarchyTopic=async()=> (await repository.readHierarchy(categoryId))?.sections
+      .find(section=>section.id===sectionId)?.topics.find(topic=>topic.id===f.topicId);
+    expect((await repository.readPost(f.postId))?.body)
+      .toMatchObject({id:f.bodyRevisionId,originalContent:source});
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+
+    await service.setPostVisibility(postCommand(f));
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe(source);
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+    expect((await repository.readTopicPage(f.topicId))?.posts[0]).toEqual({
+      kind:"hidden",id:f.postId,topicId:f.topicId,parentPostId:null,createdAt:expect.any(Date),
+    });
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+
+    await service.setTopicVisibility(topicCommand(f));
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe(source);
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+    expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+    expect((await repository.search(source)).map(topic=>topic.id)).not.toContain(f.topicId);
+
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore trusted test topic"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0]).toMatchObject({kind:"hidden"});
+    await service.setPostVisibility(postCommand(f,"moderator1",false,1,"Restore trusted test post"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0])
+      .toMatchObject({body:{id:f.bodyRevisionId,originalContent:source}});
+  });
+
+  it("treats hidden topics as neutral absence across thread, lists, search and counts", async () => {
+    const f = await fixture("B3_SECRET_HIDDEN_ROOT_TEXT_6492");
+    const categoryBefore = await repository.readHomepage();
+    const sectionBefore = await repository.readSection("visibility-section");
+    const profileBefore = await repository.readProfile("author");
+    const publicVisible = await repository.readTopicPage(f.topicId);
+    expect(publicVisible?.posts[0]).toMatchObject({
+      body: { originalContent: "B3_SECRET_HIDDEN_ROOT_TEXT_6492" },
+    });
+    expect((await repository.search("B3_SECRET_HIDDEN_ROOT_TEXT_6492")).map(x=>x.id)).toContain(f.topicId);
+
+    await service.setTopicVisibility(topicCommand(f));
+    expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe("B3_SECRET_HIDDEN_ROOT_TEXT_6492");
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+    expect((await repository.search("B3_SECRET_HIDDEN_ROOT_TEXT_6492")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.search("PRIVATE TOPIC")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.readSection("visibility-section"))?.topics.map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.readUnreadForUser("ordinary")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.readHomepage()).find(x=>x.id==="visibility-category")?.topicCount)
+      .toBe(categoryBefore.find(x=>x.id==="visibility-category")!.topicCount-1);
+    expect((await repository.readCategory("visibility-category"))?.sections
+      .find(s=>s.id==="visibility-section")?.topicCount)
+      .toBe(sectionBefore!.topics.length-1);
+    expect((await repository.readProfile("author"))?.messageCount).toBe(profileBefore!.messageCount-1);
+
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore public topic"));
+    expect((await repository.readTopicPage(f.topicId))?.title.id).toBe(f.titleRevisionId);
+    expect((await repository.search("B3_SECRET_HIDDEN_ROOT_TEXT_6492")).map(x=>x.id)).toContain(f.topicId);
+  });
+
+  it("returns only a typed hidden post stub, retaining chronology, parent and unread anchors", async () => {
+    const f = await fixture("B3_SECRET_ROOT_TEXT_8953");
+    const childId=randomUUID(),childRevisionId=randomUUID();
+    await repository.createPost({
+      id:childId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:childRevisionId,originalContent:"B3_VISIBLE_CHILD_8953",sourceLocale:"en"},
+    });
+    const before=await repository.readTopicPage(f.topicId);
+    expect(before?.posts.map(x=>x.id)).toEqual([f.postId,childId]);
+    await repository.advanceTopicReadState("ordinary",f.topicId,f.postId);
+    await service.setPostVisibility(postCommand(f));
+    const page=await repository.readTopicPage(f.topicId);
+    expect(page).toBeDefined();
+    expect(page?.posts.map(x=>x.id)).toEqual([f.postId,childId]);
+    const stub=page!.posts[0]!;
+    expect(stub).toEqual({
+      kind:"hidden",id:f.postId,topicId:f.topicId,parentPostId:null,
+      createdAt:expect.any(Date),
+    });
+    expect(JSON.stringify(page)).not.toContain("B3_SECRET_ROOT_TEXT_8953");
+    expect(JSON.stringify(page)).not.toContain(f.bodyRevisionId);
+    expect(page?.posts[1]).toMatchObject({parentPostId:f.postId,body:{originalContent:"B3_VISIBLE_CHILD_8953"}});
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe("B3_SECRET_ROOT_TEXT_8953");
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+    expect((await repository.search("B3_SECRET_ROOT_TEXT_8953")).map(x=>x.id)).not.toContain(f.topicId);
+    expect((await repository.search("PRIVATE TOPIC")).map(x=>x.id)).toContain(f.topicId);
+    const read=await repository.readTopicReadState("ordinary",f.topicId);
+    expect(read).toMatchObject({
+      lastReadPostId:f.postId,firstUnreadPostId:childId,latestPostId:childId,state:"unread",
+    });
+    expect((await repository.readUnreadForUser("ordinary")).find(x=>x.id===f.topicId))
+      .toMatchObject({firstUnreadPostId:childId,latestPostId:childId,unreadCount:1});
+
+    await service.setPostVisibility(postCommand(f,"moderator1",false,1,"Restore hidden root"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0]).toMatchObject({
+      body:{id:f.bodyRevisionId,originalContent:"B3_SECRET_ROOT_TEXT_8953"},
+    });
+    expect((await repository.readTopicReadState("ordinary",f.topicId))?.firstUnreadPostId).toBe(childId);
+  });
+
+  it("preserves a hidden middle parent and visible descendant without manufacturing unread on Restore", async () => {
+    const f=await fixture("B3_VISIBLE_ROOT_BEFORE_HIDDEN_PARENT_3146");
+    const middleId=randomUUID(),middleRevisionId=randomUUID();
+    const childId=randomUUID(),childRevisionId=randomUUID();
+    await repository.createPost({
+      id:middleId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:middleRevisionId,originalContent:"B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146",sourceLocale:"en",
+      },
+    });
+    await repository.createPost({
+      id:childId,topicId:f.topicId,authorId:"author",parentPostId:middleId,
+      bodyRevision:{id:childRevisionId,originalContent:"B3_VISIBLE_DESCENDANT_3146",sourceLocale:"en"},
+    });
+    const original=await repository.readTopicPage(f.topicId);
+    expect(original?.posts.map(p=>p.id)).toEqual([f.postId,middleId,childId]);
+    expect(original?.posts[2]).toMatchObject({parentPostId:middleId});
+    await repository.advanceTopicReadState("ordinary",f.topicId,f.postId);
+    expect((await repository.readUnreadForUser("ordinary")).find(x=>x.id===f.topicId))
+      .toMatchObject({firstUnreadPostId:middleId,latestPostId:childId,unreadCount:2});
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:middleRevisionId,
+      reason:"Hide intermediate parent",
+    });
+    const hidden=await repository.readTopicPage(f.topicId);
+    expect(hidden?.posts.map(p=>p.id)).toEqual([f.postId,middleId,childId]);
+    expect(hidden?.posts[1]).toEqual({
+      kind:"hidden",id:middleId,topicId:f.topicId,parentPostId:f.postId,createdAt:expect.any(Date),
+    });
+    expect(hidden?.posts[2]).toMatchObject({
+      id:childId,parentPostId:middleId,
+      body:{id:childRevisionId,originalContent:"B3_VISIBLE_DESCENDANT_3146"},
+    });
+    expect(JSON.stringify(hidden)).not.toContain("B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146");
+    expect(JSON.stringify(hidden)).not.toContain(middleRevisionId);
+    expect((await repository.readPost(middleId))?.body.originalContent).toBe("B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146");
+    expect(await repository.readPostLocation(middleId)).toBeUndefined();
+    expect(await repository.readPostHistory(middleId,f.topicId)).toEqual([]);
+    expect((await repository.readTopicReadState("ordinary",f.topicId)))
+      .toMatchObject({lastReadPostId:f.postId,firstUnreadPostId:childId,latestPostId:childId,state:"unread"});
+    expect((await repository.readUnreadForUser("ordinary")).find(x=>x.id===f.topicId))
+      .toMatchObject({firstUnreadPostId:childId,latestPostId:childId,unreadCount:1});
+
+    await repository.advanceTopicReadState("ordinary",f.topicId,childId);
+    expect((await repository.readTopicReadState("ordinary",f.topicId)))
+      .toMatchObject({lastReadPostId:childId,firstUnreadPostId:null,state:"read"});
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:middleRevisionId,
+      reason:"Restore intermediate parent",
+    });
+    expect((await repository.readTopicPage(f.topicId))?.posts[1]).toMatchObject({
+      id:middleId,body:{
+        id:middleRevisionId,originalContent:"B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146",
+      },
+    });
+    expect(await repository.readTopicReadState("ordinary",f.topicId))
+      .toMatchObject({lastReadPostId:childId,firstUnreadPostId:null,state:"read"});
+    expect((await repository.readUnreadForUser("ordinary")).map(x=>x.id)).not.toContain(f.topicId);
+  });
+
+  it("does not disclose blocked authors whose only posts are hidden", async () => {
+    const f=await fixture("B3_VISIBLE_TOPIC_FOR_BLOCK_PROJECTION_6039");
+    const replyId=randomUUID(),revisionId=randomUUID();
+    await repository.createPost({
+      id:replyId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{
+        id:revisionId,originalContent:"B3_PRIVATE_BLOCKED_AUTHOR_POST_6039",sourceLocale:"en",
+      },
+    });
+    await repository.setUserBlock({actorId:"author",blockedUserId:"ordinary",blocked:true});
+    try {
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+
+      await service.setPostVisibility({
+        topicId:f.topicId,postId:replyId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:revisionId,
+        reason:"Hide the only post by a blocked author",
+      });
+      expect((await repository.readTopicPage(f.topicId))?.posts[1]).toEqual({
+        kind:"hidden",id:replyId,topicId:f.topicId,
+        parentPostId:f.postId,createdAt:expect.any(Date),
+      });
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual([]);
+
+      await service.setPostVisibility({
+        topicId:f.topicId,postId:replyId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:revisionId,
+        reason:"Restore blocked author's post",
+      });
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+
+      await service.setTopicVisibility(topicCommand(f));
+      expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual([]);
+      await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore visible topic"));
+      expect(await repository.readTopicBlockedAuthors("author",f.topicId)).toEqual(["ordinary"]);
+    } finally {
+      await repository.setUserBlock({actorId:"author",blockedUserId:"ordinary",blocked:false});
+    }
+  });
+
+  it("preserves retained duplicate state but removes a hidden canonical original's ID/title/link data", async () => {
+    const makeQuestion=async(title:string)=>{
+      const topicId=randomUUID(),postId=randomUUID(),titleRevisionId=randomUUID(),bodyRevisionId=randomUUID();
+      await repository.createTopicWithInitialPost({
+        id:topicId,sectionId:HELP_SOLUTIONS_SERVICE_SECTION_ID,authorId:"author",
+        titleRevision:{id:titleRevisionId,originalContent:title,sourceLocale:"en"},
+        initialPost:{id:postId,topicId,authorId:"author",
+          bodyRevision:{id:bodyRevisionId,originalContent:"Ordinary question",sourceLocale:"en"}},
+      });
+      return {topicId,postId,titleRevisionId,bodyRevisionId};
+    };
+    const original=await makeQuestion("B3_SECRET_CANONICAL_8472");
+    const duplicate=await makeQuestion("B3_VISIBLE_DUPLICATE_8472");
+    await service.confirmHelpDuplicate(duplicate.topicId,original.topicId,"owner");
+    const visible=await repository.readTopicPage(duplicate.topicId);
+    expect(visible?.duplicateOf).toMatchObject({
+      id:original.topicId,title:"B3_SECRET_CANONICAL_8472",
+    });
+    await service.setTopicVisibility(topicCommand(original));
+    const hidden=await repository.readTopicPage(duplicate.topicId);
+    expect(hidden?.duplicateOf).toEqual({id:"",title:"",unavailable:true});
+    expect(hidden?.duplicateRelationshipId).toBe(visible?.duplicateRelationshipId);
+    expect(JSON.stringify(hidden)).not.toContain(original.topicId);
+    expect(JSON.stringify(hidden)).not.toContain("B3_SECRET_CANONICAL_8472");
+    expect((await repository.readHelpSolutionsAll())?.questions.map(x=>x.id)).not.toContain(original.topicId);
+    const dup=(await repository.readHelpSolutionsAll())?.questions.find(x=>x.id===duplicate.topicId);
+    expect(dup?.duplicateOf).toEqual({id:"",title:"",unavailable:true});
+    await service.setTopicVisibility(topicCommand(original,"moderator1",false,1,"Restore canonical"));
+    expect((await repository.readTopicPage(duplicate.topicId))?.duplicateOf?.title)
+      .toBe("B3_SECRET_CANONICAL_8472");
+  });
+});
+
+describe("B3 F4 SQL page boundaries and persisted root chronology", () => {
+  it("matches title and tag without visible bodies, excluding hidden stronger matches before search LIMIT", async () => {
+    const token=`f4token${randomUUID().replaceAll("-","")}`;
+    const titleTopic=await fixture("F4 hidden root source",`F4 visible title ${token}`);
+    await service.setPostVisibility(postCommand(titleTopic));
+
+    const tag={key:`f4-tag-${randomUUID().slice(0,8)}`,name:`F4 tag ${token}`};
+    const tagTopic={
+      topicId:randomUUID(),postId:randomUUID(),
+      titleRevisionId:randomUUID(),bodyRevisionId:randomUUID(),
+    };
+    await repository.createTopicWithInitialPost({
+      id:tagTopic.topicId,sectionId:"visibility-section",authorId:"author",
+      titleRevision:{id:tagTopic.titleRevisionId,originalContent:"F4 tag-only topic",sourceLocale:"en"},
+      initialPost:{id:tagTopic.postId,topicId:tagTopic.topicId,authorId:"author",
+        bodyRevision:{id:tagTopic.bodyRevisionId,originalContent:"F4 tag-only hidden body",sourceLocale:"en"}},
+      tags:[tag],
+    });
+    await service.setPostVisibility(postCommand(tagTopic));
+
+    const suppressed=await fixture(`F4 strong hidden match ${token}`,`F4 suppressed ${token}`);
+    await service.setTopicVisibility(topicCommand(suppressed));
+    const one=await repository.search(token,1);
+    expect(one.map(row=>row.id)).toEqual([titleTopic.topicId]);
+    expect(one[0]?.postCount).toBe(0);
+    const two=await repository.search(token,2);
+    expect(two.map(row=>row.id)).toEqual([titleTopic.topicId,tagTopic.topicId]);
+    expect(two.map(row=>row.postCount)).toEqual([0,0]);
+    expect(JSON.stringify(two)).not.toContain(suppressed.topicId);
+    expect((await repository.readTag(tag.key))?.topics).toMatchObject([{id:tagTopic.topicId,postCount:0}]);
+  });
+
+  it("fills bounded category latest and pin ranks after hidden rows and ignores hidden post activity", async () => {
+    const categoryId=`b3-f4-category-${randomUUID()}`;
+    const sectionId=`b3-f4-section-${randomUUID()}`;
+    await repository.createCategory({id:categoryId,name:"F4 category"});
+    await repository.createSection({id:sectionId,categoryId,name:"F4 section"});
+    const topics:Fixture[]=[];
+    for(let index=0;index<8;index++){
+      const f=await fixture(`F4 root ${index}`,`F4 topic ${index}`,sectionId);
+      topics.push(f);
+      await client.query("update forum_topics set created_at=$1 where id=$2",
+        [new Date(Date.UTC(2034,0,1,0,index)),f.topicId]);
+    }
+    for(const index of [0,1,2,7]){
+      const topic=topics[index]!;
+      await repository.pinTopic(topic.topicId,"moderator1");
+      await client.query("update forum_topic_pins set pinned_at=$1 where topic_id=$2",
+        [new Date(Date.UTC(2035,0,1,0,index)),topic.topicId]);
+    }
+    const latePostId=randomUUID(),lateRevisionId=randomUUID();
+    await repository.createPost({
+      id:latePostId,topicId:topics[0]!.topicId,authorId:"ordinary",parentPostId:topics[0]!.postId,
+      bodyRevision:{id:lateRevisionId,originalContent:"F4 hidden late activity",sourceLocale:"en"},
+    });
+    const [originalLateDate] = (await client.query<{created_at:Date}>(
+      "select created_at from forum_posts where id=$1", [latePostId],
+    )).rows;
+    if (!originalLateDate) throw new Error("missing late reply fixture");
+    try {
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [new Date(Date.UTC(2037,0,1)),latePostId]);
+      await service.setPostVisibility({
+        topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:true,
+        expectedVisibilityVersion:0,expectedRevisionId:lateRevisionId,reason:"Hide late activity",
+      });
+      await service.setTopicVisibility(topicCommand(topics[7]!));
+      const section=(await repository.readCategory(categoryId,2))?.sections[0];
+      expect(section).toMatchObject({topicCount:7,postCount:7});
+      expect(section?.latestTopics.map(topic=>topic.id))
+        .toEqual([6,5,4,3,2,1].map(index=>topics[index]!.topicId));
+      expect(section?.pinnedTopics.map(topic=>topic.id))
+        .toEqual([topics[2]!.topicId,topics[1]!.topicId]);
+      expect((await repository.readSection(sectionId))?.topics.find(topic=>topic.id===topics[0]!.topicId)?.postCount).toBe(1);
+      await service.setTopicVisibility(topicCommand(topics[7]!,"moderator1",false,1,"Restore ranked topic"));
+      await service.setPostVisibility({
+        topicId:topics[0]!.topicId,postId:latePostId,actorId:"moderator1",hidden:false,
+        expectedVisibilityVersion:1,expectedRevisionId:lateRevisionId,reason:"Restore late activity",
+      });
+      const restored=(await repository.readCategory(categoryId,2))?.sections[0];
+      expect(restored).toMatchObject({topicCount:8,postCount:9});
+      expect(restored?.latestTopics[0]?.id).toBe(topics[0]!.topicId);
+      expect(restored?.pinnedTopics.map(topic=>topic.id))
+        .toEqual([topics[7]!.topicId,topics[2]!.topicId]);
+    } finally {
+      await client.query("update forum_posts set created_at=$1 where id=$2",
+        [originalLateDate.created_at,latePostId]);
+    }
+  });
+
+  it("counts only visible non-root Help replies when both root and intermediate parent are hidden", async () => {
+    const f=await fixture("F4 root source","F4 root chronology",HELP_SOLUTIONS_SERVICE_SECTION_ID);
+    const middleId=randomUUID(),middleRevisionId=randomUUID();
+    const childId=randomUUID(),childRevisionId=randomUUID();
+    await repository.createPost({
+      id:middleId,topicId:f.topicId,authorId:"ordinary",parentPostId:f.postId,
+      bodyRevision:{id:middleRevisionId,originalContent:"F4 hidden middle source",sourceLocale:"en"},
+    });
+    await repository.createPost({
+      id:childId,topicId:f.topicId,authorId:"author",parentPostId:middleId,
+      bodyRevision:{id:childRevisionId,originalContent:"F4 visible descendant",sourceLocale:"en"},
+    });
+    await service.setPostVisibility(postCommand(f));
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:middleRevisionId,reason:"Hide middle reply",
+    });
+    const has=async()=>(await repository.readHelpSolutionsAll({answers:"has"}))?.questions.find(topic=>topic.id===f.topicId);
+    const none=async()=>(await repository.readHelpSolutionsAll({answers:"none"}))?.questions.find(topic=>topic.id===f.topicId);
+    expect(await has()).toMatchObject({replyCount:1});
+    expect(await none()).toBeUndefined();
+    expect((await repository.readUnanswered()).map(topic=>topic.id)).not.toContain(f.topicId);
+    const thread=await repository.readTopicPage(f.topicId);
+    expect(thread?.posts.map(post=>post.id)).toEqual([f.postId,middleId,childId]);
+    expect(thread?.posts.slice(0,2).map(post=>post.kind)).toEqual(["hidden","hidden"]);
+    expect(thread?.posts[2]).toMatchObject({parentPostId:middleId,body:{originalContent:"F4 visible descendant"}});
+    expect(JSON.stringify(thread)).not.toContain("F4 hidden middle source");
+
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:childId,actorId:"moderator1",hidden:true,
+      expectedVisibilityVersion:0,expectedRevisionId:childRevisionId,reason:"Hide final visible reply",
+    });
+    expect(await has()).toBeUndefined();
+    expect(await none()).toMatchObject({replyCount:0});
+    expect((await repository.readUnanswered()).map(topic=>topic.id)).toContain(f.topicId);
+    await service.setPostVisibility({
+      topicId:f.topicId,postId:middleId,actorId:"moderator1",hidden:false,
+      expectedVisibilityVersion:1,expectedRevisionId:middleRevisionId,reason:"Restore middle reply",
+    });
+    expect(await has()).toMatchObject({replyCount:1});
+    expect(await none()).toBeUndefined();
+  });
 });

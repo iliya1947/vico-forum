@@ -1,6 +1,6 @@
-import type { ForumTopicPage } from "../../db/forum-repository";
+import type { ForumTopicPage, ForumVisibleThreadPost } from "../../db/forum-repository";
 
-type SourcePost = ForumTopicPage["posts"][number];
+type SourcePost = ForumVisibleThreadPost;
 
 export interface AdminTopicPost {
   id: string;
@@ -48,7 +48,7 @@ export function projectAdminTopic(topic: ForumTopicPage, canManageHelpDuplicate:
     needsDetails: topic.needsDetails,
     duplicateOf: topic.duplicateOf,
     duplicateRelationshipId: canManageHelpDuplicate ? topic.duplicateRelationshipId ?? null : null,
-    posts: topic.posts.map((post) => ({
+    posts: topic.posts.filter((post): post is ForumVisibleThreadPost => post.kind !== "hidden").map((post) => ({
       id: post.id,
       authorId: post.authorId,
       authorName: post.authorName,

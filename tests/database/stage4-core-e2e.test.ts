@@ -246,8 +246,8 @@ describe("Stage 4 connected forum authorization flow", () => {
       await replyState.close();
     }
     const withReply = await forum.readTopicPage(topicId);
-    expect(withReply?.posts.some((post) => post.body.originalContent === "Stale publication must roll back")).toBe(false);
-    const reply = withReply?.posts.find((post) => post.authorId === "e2e-replier");
+    expect(withReply?.posts.some((post) => post.kind !== "hidden" && post.body.originalContent === "Stale publication must roll back")).toBe(false);
+    const reply = withReply?.posts.find((post) => post.kind !== "hidden" && post.authorId === "e2e-replier");
     if (!reply) throw new Error("reply was not persisted");
     expect(reply.parentPostId).toBe(initialPostId);
 
@@ -269,7 +269,8 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const publicTopic = await forum.readTopicPage(topicId);
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
-    expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
+    const visibleReply = publicTopic?.posts.find((post) => post.id === reply.id);
+    expect(visibleReply?.kind !== "hidden" ? visibleReply?.body.originalContent : undefined).toBe("Connected reply");
 
     const newerTopicId = await createTopic("e2e-author", "Author", "Newer but inactive topic");
     await client.query(
