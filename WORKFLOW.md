@@ -101,16 +101,53 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - **B2 bounded PASS.** Next stacked rung is B3 from branch `feature/moderation-visibility-b2-commands`, only after owner continuation.
 
 
-## Moderation visibility B3 — MIRA COORDINATOR PASS — STOP BEFORE B4
+## Moderation visibility B3 — MIRA COORDINATOR PASS
 
-- Stacked Draft #359 current stable exact head: `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`; unchanged B2 base #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`; PR mergeable. B1/B2/B3 remain unmerged stacked rungs.
-- Prior full Mira checkpoint on old B3 head `3fa0740c...` reviewed the complete 34-file bounded scope and found one current-B3 blocker only: `VIS-B3-MIRA-01`, the accidental visibility filtering of trusted raw `readPost`. No second current-B3 finding was confirmed; B4–B7 gaps were explicitly classified as future rungs.
-- Correction delta old→new is exactly two files: `db/forum-repository.ts` (1 addition / 2 deletions) and `tests/database/moderation-visibility-commands.test.ts` (40 additions / 3 deletions). Raw `readPost` is byte-identical to accepted B2 trusted implementation.
-- New real-PG regression verifies hidden post/topic preserve trusted raw `readPost/readHierarchy`, while public `readTopicPage` still returns tombstone/404, `readPostLocation` returns unavailable, `readPostHistory` returns no public history, Search hides source, and Restore returns the original persisted content. The three old tests that encoded the wrong raw-reader contract were corrected.
-- Fresh exact-head author gate PASS. CI `44904360356` PASS: `checks` + `database` SUCCESS, **2782/2782 unit (218 files)** and **1600/1600 PostgreSQL17 (112 files)**; lint/typecheck/build/UI-preview, migration/schema/privilege/provisioning and Worker smoke green. **15/15 exact-head workflow runs SUCCESS**, including AP-10 and connected Chromium acceptance.
-- Fresh Mira delta review confirms `VIS-B3-MIRA-01 CLOSED`; correction does not weaken the separately-reviewed public projection/discovery/history/edit/recovery gates and introduces no scope drift. Current #359 changed-file inventory remains exactly 34 B3 files.
-- **B3 bounded coordinator checkpoint PASS.** No confirmed current-B3 blocker remains. This PASS permits only owner continuation to B4; it is not a whole-feature PASS, merge approval, or Leva review.
-- **STOP. Next owner continuation may authorize B4 — assets and translation boundaries — as a new stacked rung on current B3 head.** Do not merge B1/B2/B3 and do not start B5+.
+- #359 stable exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`, base B2 #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`.
+- `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
+- No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
+
+## Moderation visibility B4 — AUTHORIZED, LIRA IMPLEMENTATION NEXT
+
+Owner continuation received after B3 Mira PASS. Create the next stacked implementation PR with base = current B3 head `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. Keep earlier rungs Draft/unmerged.
+
+### B4 bounded result
+
+Deliver only accepted-plan **assets + translation boundaries**:
+
+- public published attachment access must enforce exact attachment→post→topic membership and effective visibility **before any bucket.get**, for ordinary download plus existing `view=inline|text` modes; hidden/missing must remain neutral 404 and bucket calls must be zero;
+- preserve legitimate non-publication paths: owner draft attachment access, shared attachment that still has another visible published membership, retained Complaint/evidence references and stored bytes/refs must not be deleted or invalidated by Hide;
+- do not expose a B6 private moderation surface in B4. B4 may establish/verify the lower-level asset boundary required by the accepted plan, but guarded private inspection/read routes and fresh capability admission remain B6;
+- translation planning visibility gates are **already present in B2**: title planner rejects hidden topic; post-body planner uses head/task → parent topic → post ordering and rejects hidden topic/post. Do not reimplement or widen them. Treat them as inherited foundation and verify B4 behavior around them;
+- new translation plans against hidden source must leave no new task/generation/budget/provider side effects; accepted revision-bound tasks may complete private persistence after Hide, without public source/translation disclosure, cancellation/refund, current-pointer mutation or new work on Restore;
+- Restore must reuse permissible persisted translation/asset state and must not enqueue a translation job, create a revision/provider call, or manufacture attachment state;
+- cover the B4 Hide/Restore × new-plan / accepted-execution boundaries with real database synchronization where concurrency matters; do not substitute JS promise ordering for a lock/race claim.
+
+### Scope classification already checked
+
+Current B3 source confirms:
+- `db/forum-attachments.ts::readPublishedAttachment` currently joins post+attachment but **does not join/check topic visibility or post visibility** — this is a real B4 gap;
+- `app/routes/attachment-download.ts` calls the published reader before `bucket.get`, so a correct store gate naturally protects all existing view modes;
+- B2 already changed `db/content-topic-title-task-store.ts` and `db/content-post-body-task-store.ts` to the planned visibility/lock behavior. Do not duplicate those changes unless a concrete B4 test proves a defect;
+- accepted execution stores are intentionally not to receive a new hidden-admission lock/gate merely because source became hidden.
+
+### Suggested bounded work packets
+
+1. **B4-A — public asset gate + bucket/no-bypass acceptance.**
+2. **B4-B — translation new-plan/accepted-execution + Restore invariants/races.**
+3. **B4-C — preservation/shared-ref/draft/evidence coverage + bounded author self-check and applicable final checks.**
+
+After each packet: record the result and STOP for owner continuation. Do not run broad CI after every packet; use targeted checks. At complete B4, run the applicable exact-head author check set once, then STOP for Mira coordinator checkpoint.
+
+### Explicitly outside B4
+
+- B5 Watch/Bookmarks/Mute/Block own-list/inbox behavior;
+- B6 queue/inspector/private moderation routes and permissioned hidden-source/private-asset UI;
+- B7 visibility POST intents/QuickActions/forms/UI;
+- B8 whole-feature connected acceptance and B9 closeout;
+- production/Stage6/deployed resources.
+
+**Next agent: Лира. Start only B4-A on a new stacked PR from exact B3 head, then STOP.**
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 

@@ -43,3 +43,7 @@ Implement the accepted B3 bounded scope from `stages/moderation-visibility/PLAN.
 Do not implement B4 asset/private-file work, B5 own preferences/inbox, B6 guarded private moderation surface, B7 canonical actions/QuickActions/UI, B8/B9, Stage6, #300, or general UI/UX.
 
 Translation-planning work already present in B2 overlaps part of future B4; do not duplicate it merely to satisfy stage labels. Reassess only the remaining B4 boundary when B4 becomes active.
+
+## 2026-11-21 — B4 authorized; start B4-A only
+
+B3 coordinator PASS is complete on #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. Owner authorized B4. Create the next stacked implementation PR with that exact B3 head as base. B4 planning gates are not greenfield: B2 already added title hidden-topic gating and post-body parent-topic→post visibility/lock ordering. First packet only is B4-A: public published attachment visibility gate before bucket access across download/inline/text, with targeted tests proving neutral hidden/missing behavior and bucket calls 0 while legitimate draft/shared-visible paths are not broken. Do not start B4-B or any B5–B7 scope before owner continuation. Full bounded B4 contract is in WORKFLOW.md.
