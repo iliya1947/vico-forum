@@ -130,7 +130,7 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 - Implementation PR #362. Lira completed an additional review of exact `898f71c2d408428ddf126d218c88c861ef29a10d`: 17 acceptance path filters were preserved and manual gates were statically consistent, but she found one current-scope issue — label consumption used `gh pr edit` with only `issues: write`, so runtime permission sufficiency was not established. Result was **finding / no PASS**.
 - Mira verified the supported GitHub Issues REST label-removal endpoint and corrected #362 without widening permissions. Current implementation head: `3387132aeed815fb93cf3094c3d70f5e343ce998`.
 - The correction uses `DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}`; GitHub documents that PR label operations use Issues endpoints and accept `Issues: write`.
-- #363 is the separate docs PR and must be synchronized to the corrected #362 head before its own review.
+- #363 is the separate docs PR and is synchronized on exact `b58423df68f05707142fe5c5335fec0db0e1f319` directly over corrected #362 head `3387132aeed815fb93cf3094c3d70f5e343ce998`.
 - The erroneous temporary service PR #361 is closed without merge and is not a source of truth.
-- Next process step: synchronize #363 to corrected #362, self-check exact heads, then independent review of #362 under current AGENTS.md.
+- Recovery self-check complete: #362 and #363 are mergeable, #363 diff is only `AGENTS.md` / `AGENT_LOGIC_ERRORS.md` / `PROJECT_STATE.md`, and neither new exact head spawned automatic PR tests. Next process step: independent review of #362 exact `3387132aeed815fb93cf3094c3d70f5e343ce998` under current `AGENTS.md`.
 
