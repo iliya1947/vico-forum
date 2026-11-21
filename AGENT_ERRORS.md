@@ -20,3 +20,10 @@
 - **What happened:** after the small-batch cadence was restored, Mira still left wording telling Lira to capture the automatically triggered full PR CI result before marking an intermediate B3 batch PASS.
 - **Why it was wrong:** GitHub automatically starting workflows on push is different from the workflow being required as a gate. Waiting/polling those broad runs recreated the same delay the cadence change was meant to remove.
 - **Prevention:** intermediate batches close on targeted checks. Auto-triggered broad CI may run, but agents do not wait for, poll, or rerun it at the batch boundary. Full exact-head CI is an end-of-bounded-stage gate unless a concrete relevant failure/risk justifies earlier escalation.
+
+## 2026-11-21 — unauthorized service-PR switch
+
+- **What happened:** while #342 was already the assigned service PR, Mira created #361 and started using it as the working channel for the same current work.
+- **Why it was wrong:** AGENTS.md explicitly says Mira must not change the assigned service PR without a direct developer command. Creating #361 as the replacement working channel was itself that forbidden switch; there was no genuine rule conflict to resolve.
+- **Prevention:** when a service PR is already assigned, keep all workflow/handoff state there unless the developer explicitly commands a switch. The generic rule about creating a service PR for a separate task applies only when no current assignment already governs the work.
+
