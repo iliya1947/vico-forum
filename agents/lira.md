@@ -1,18 +1,18 @@
 # agents/lira.md — текущий контекст Лиры в #342
 
-## Moderation visibility B5 — STOP после protected Complaint test fixture
+## Moderation visibility B5 — STOP после исправления M3 concurrency
 
-B1 #355, B2 #357, B3 #359, B4 #365 имеют Mira bounded checkpoint PASS и остаются stacked Draft/unmerged. Stable B4 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
+B1 #355 / B2 #357 / B3 #359 / B4 #365 имеют Mira bounded PASS, stacked Draft/unmerged. B4 exact base `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Owner разрешил только B5.
 
-[Draft #367](https://github.com/iliya1947/vico-forum/pull/367), exact `fbe1b931c77f91d6f14ed72c8982e6e7a10ee315` на неизменной B4 base. B5.1 Watch, B5.2 Bookmarks, B5.3 Mute/Block, B5.4a/b inbox реализованы. Code scope/acceptance в PR body и `WORKFLOW.md`.
+B5 [Draft #367](https://github.com/iliya1947/vico-forum/pull/367), exact `a2269fb0294feaccb433e76b66e800f3e869658d`. Реализованы B5.1 Watch, B5.2 Bookmarks, B5.3 Mute/Block, B5.4a/b inbox; описание всего scope и тестов в #367 body и `WORKFLOW.md`.
 
-### Exact-head проверки и оставшиеся блокеры
+### PostgreSQL current issue and correction
 
-- `998d7a964e414e24121dfd9fa1b5f979912f0acc`: 17/18 check-runs SUCCESS, включая `checks` lint/typecheck/unit/build и повторный `attachments_browser`. `database` FAILED: **27 tests failed / 1586 passed**, 2 test files.
-- `tests/database/forum-notification-actor-lifecycle.test.ts`: новый B5 protected Complaint Decision test attempted `markNotificationRead(g-recipient, g-n5)`, but case member check requires affected author or reporter; fixture recipient was neither. Actual production rejection was correct. Fixed by inserting real `forum_complaints` reporter row `g-report` for `g-recipient`, existing case `g-case`. One-test-file GitHub exact-head static diff at `fbe1b931…`, **no production/authority change**.
-- `tests/database/personal-filters-concurrency.test.ts`: **26 timeouts** across existing M3/M4/M5, including B5 new Mute×Hide, plus afterAll pool.end hook timeout. Root cause **not established**, do not alter production lock protocol or inflate test timeouts without tracing actual cause. Distinct next diagnostic subtask.
-- 18 new-head checks registered after fixture correction. **No current-head author PASS, no Mira handoff**. Old-head CI SUCCESS does not transfer.
+- Prior exact `fbe1b931…`: 17/18 check-runs SUCCESS; PostgreSQL `database` FAIL: 26 M3/M4/M5 timeouts in `tests/database/personal-filters-concurrency.test.ts` plus afterAll pool close timeout. Prior protected Complaint notification test now PASS.
+- Confirmed first failure causal chain by comparing B4/B5 implementation and inherited M3 test: publication `createPost`/`editPublishedPost` retains topic `FOR NO KEY UPDATE` while its candidate SQL is paused; B5 `setTopicMute(muted:true)` newly takes `FOR SHARE` (must serialize with Hide), which cannot complete before publication commits. Inherited test awaited Mute before releasing its own publishing gate, creating a test-owned interlock. B4 mute `FOR KEY SHARE` did not block publication. Subsequent suite timeouts plausibly cascade from the uncompleted first operation; **not yet proven that all later timeouts disappear**.
+- **One-file fix** in current head: in M3 four Mute ON cases, run Mute on separate node-postgres client, prove actual PG blocker with `pg_blocking_pids(mutePid)` pointing to publishingPid, release publishing gate, await publication and then Mute; assert notice remains delivered and no suppression receipt (Mute commits later). Block before/after candidate assertions unchanged. Cleanup now settles both promises. No production logic, lock protocol or timeout values changed. GitHub exact-head source/compare static PASS.
+- New `a2269fb0294feaccb433e76b66e800f3e869658d` **18 check-runs registered**, current-head PostgreSQL/author PASS **not established**. Do not claim M3/M4/M5 all corrected until exact-head DB suite exits SUCCESS.
 
 ## Next
 
-**Лира STOP после Case fixture.** Следующая owner `...`: investigate PostgreSQL M3/M4/M5 timeouts (barriers, pool/transaction waits, comparisons with last working base), inspect exact-head results, fix only verified current-B5 defects; rerun applicable checks if changed. After entire B5 exact-head PASS, STOP → **Мира bounded coordinator checkpoint**. B6/B7/merge/deployment запрещены.
+**Лира STOP.** Next owner `...` checks all current-head CI/acceptance, especially `database`; correct only confirmed further current-B5 failures and rerun exact-head as needed. After all PASS + author self-check → #342 handoff STOP → **Мира bounded coordinator checkpoint**. B6/B7, merge, deployment prohibited.
