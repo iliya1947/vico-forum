@@ -17,6 +17,6 @@ Docs #363:
 - `PROJECT_STATE.md` отражает фактический режим CI;
 - diff только этих двух документов.
 Ограничение: end-to-end label trigger нельзя проверить до merge #362, потому что labels/bootstrap ещё не существуют в main.
-Проверка: Мира — автор изменения, поэтому её self-check не является независимым whole-PR review. Независимый reviewer для этой процессной/workflow-задачи — Лира, поскольку она не участвовала в реализации. Лёва не подключается: отдельной технической эскалации или изменения технического плана нет.
+Проверка: Мира — автор изменения, поэтому её self-check не является независимым whole-PR review. По действующему `AGENTS.md` стандартный независимый технический reviewer — Лёва; специального правила, исключающего его для process/workflow-задач, нет.
 Блокер: нет.
-Следующий переход: независимый review Лиры #362 на stable exact head; после PASS — merge владельцем #362, post-merge bootstrap/label smoke, затем retarget/review/merge #363.
+Следующий переход: независимый review Лёвы #362 на stable exact head; после PASS — merge владельцем #362, post-merge bootstrap/label smoke, затем retarget/review/merge #363.
