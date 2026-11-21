@@ -2495,7 +2495,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
     expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
     const adminPanel = document.querySelector(".admin-panel") as HTMLElement;
-    expect(adminPanel).toHaveAttribute("data-density", "compact");
+    await waitFor(() => expect(adminPanel).toHaveAttribute("data-density", "compact"));
     expect(within(adminPanel).getByRole("link", { name: "Super-admin" })).toHaveAttribute(
       "href",
       "/en/super-admin",
@@ -2839,7 +2839,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     await openSettings(user);
     await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
 
-    const behavior = await screen.findByRole("combobox", { name: "On entry, open" });
+    const behavior = await screen.findByLabelText("On entry, open", { selector: "#settings-attention-entry" });
     const group = screen.getByRole("combobox", { name: "Default group" });
     expect(behavior).toHaveValue("default");
     expect(group).toHaveValue("needs-details");
