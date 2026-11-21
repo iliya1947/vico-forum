@@ -2,6 +2,8 @@ name: Personal Mute/Block connected acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - ".github/workflows/personal-filters-browser.yml"
       - "tests/browser/personal-filters/**"
@@ -18,11 +20,14 @@ on:
       - "db/schema.ts"
       - "drizzle/**"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   personal_filters_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
