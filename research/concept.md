@@ -485,3 +485,98 @@ Service Worker технически умеет перехватывать и fet
 Это сохраняет production resource loaders/actions, locale middleware, auth route и request context, а fake infrastructure остаётся только capability/state layer.
 
 Открытым остаётся только native attachment byte delivery через `<img>/<a>`; это отдельная presentation/browser boundary, а не причина возвращаться к второму backend или ручному route dispatcher.
+
+## 14. Native attachment bytes: не HTTP emulation, а presentation resource boundary
+
+Подэтап 5 закрыл последний browser-transport разрыв: raster/text/download presentation для вложений, которые браузер загружает напрямую через `<img>` и `<a>`.
+
+### 14.1. Почему оставлять этот разрыв как постоянное ограничение не следует
+
+GitHub Pages остаётся visual-progress preview и не является доказательством R2, authorization или production download runtime. Но attachment presentation уже относится к текущему реализованному Editor 2.0, а не к будущему Stage:
+
+- `PROJECT_STATE.md` фиксирует attachments/images как часть реализованного Editor 2.0;
+- `docs/EDITOR.md` определяет raster inline, inert text preview и controlled download как текущую presentation surface;
+- `docs/UI_UX_PASS.md` требует, чтобы Pages показывал representative visual progress на той же presentation реализации.
+
+Поэтому отсутствие raster/image attachment presentation в Pages ухудшало бы именно текущую задачу визуального preview. При этом воспроизводить реальный R2/controlled HTTP delivery в Pages не требуется: функциональная и security acceptance остаётся за реальным Worker/runtime.
+
+### 14.2. Фактическая поверхность URL generation узкая
+
+В current `main` production attachment byte URL вручную создаётся только в трёх application modules:
+
+1. `app/forum/views.tsx` — published topic/message attachments и inline Markdown attachment refs;
+2. `app/admin/topic.tsx` — тот же published attachment presentation в Admin topic;
+3. `app/forum/editor-attachments.tsx` — current operation/draft attachment preview.
+
+Дальше `ForumAttachmentDisplay` и `ForumInlineImage` используют эти URLs для download, raster inline и text preview.
+
+Следовательно, для preview не нужен DOM monkey-patch и не нужно перехватывать произвольные `src/href`. Достаточно централизовать уже существующую presentation responsibility: «получить display URL для attachment ref».
+
+### 14.3. Целевая presentation boundary
+
+Концептуально нужен один production presentation contract, который получает attachment reference и вид представления и возвращает browser URL.
+
+Attachment reference сохраняет существующие authoritative coordinates:
+
+- published: attachment ID + post ID;
+- current editor operation: attachment ID + operation ID + editor context.
+
+Режим ресурса:
+
+- download;
+- raster inline;
+- text preview.
+
+Production implementation этого contract возвращает **те же текущие controlled URLs** `/api/attachments/file/:id?...&view=...`. То есть public/backend contract не меняется.
+
+Preview implementation возвращает browser-local object URL из той же in-memory attachment byte store, которую test infrastructure использует вместо private R2.
+
+Browser object URLs (`blob:`) предназначены именно для представления in-memory `Blob` через URL-based APIs, включая `<img>`, navigation/open и download. Object URLs должны жить, пока ресурс доступен пользователю, и освобождаться при замене/удалении состояния или teardown preview:
+https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/blob
+https://developer.mozilla.org/en-US/docs/Web/API/File_API/Using_files_from_web_applications
+
+Это **presentation substitution**, а не второй attachment backend:
+
+- metadata/ownership/context/publication state остаются в общей test DB;
+- upload всё ещё выполняет настоящий production `attachment-upload` action через local transport;
+- production topic/editor routes и attachment-selection logic остаются настоящими;
+- preview bytes находятся в fake/private bucket implementation;
+- только финальный browser URL для визуального чтения bytes отличается, потому что static Pages не может обслужить production absolute HTTP resource route нативному `<img>/<a>`.
+
+Pages при этом не доказывает production ref authorization, R2 Range/content headers, download security или storage behavior.
+
+### 14.4. Почему не выбран вызов production attachment-download route перед каждым image
+
+Теоретически preview component мог бы асинхронно вызвать local `dispatchLocalRequest()`, получить `Response.blob()`, затем создать object URL.
+
+Для текущей цели это не даёт достаточной дополнительной ценности:
+
+- functional/security acceptance attachment-download route уже относится к Worker/local-R2/Chromium проверкам из `docs/EDITOR.md`, а не к Pages;
+- такой путь требует async resource lifecycle внутри presentation только ради повторной проверки authorization на representative non-private fixtures;
+- attachment metadata уже попадает в rendered production UI только через настоящие loaders/actions/test capabilities.
+
+Поэтому минимальный preview contract может читать bytes непосредственно из preview bucket/store по уже предъявленной attachment reference. Если технический план установит, что один общий async resolver заметно проще существующей композиции, он может выбрать его, но **концепция не требует повторно прогонять download loader для Pages byte rendering**.
+
+### 14.5. Отклонённые альтернативы
+
+1. **Оставить raster/open/download неработающими в Pages.** Не выбрано: attachments уже current product surface, а visual preview должен позволять видеть её representative layout.
+2. **Service Worker.** Уже отклонён: отдельный execution context/state bridge, lifecycle и scope сложнее необходимого.
+3. **DOM/HTML prototype interception или MutationObserver для `src/href`.** Отклонено как хрупкий browser hack, зависящий от способа React DOM assignment и допускающий лишние реальные 404 requests.
+4. **Скопировать representative files в Pages artifact под production URLs.** Не покрывает dynamic upload/test state и привязывает preview к hosting path вместо product state.
+5. **Preview-only копии `ForumAttachmentDisplay`/Markdown renderer.** Отклонено: это снова дублирование presentation продукта.
+
+## 15. Итог пятого подэтапа
+
+Transport/R2 boundary теперь концептуально закрыта целиком.
+
+- `fetch` и Better Auth -> общий local resource dispatcher;
+- upload XHR -> узкий adapter поверх того же dispatcher;
+- native `<img>/<a>` attachment bytes -> общий attachment presentation URL contract;
+- production contract -> controlled HTTP URL;
+- preview contract -> `blob:` URL из in-memory fake bucket.
+
+Ни real R2, ни Service Worker, ни второй backend, ни ручной endpoint/asset table для этого не нужны.
+
+Это также сохраняет важную границу acceptance: Pages показывает реальную product presentation и representative interaction state, но не становится доказательством production attachment authorization/storage/HTTP semantics.
+
+Следующий conceptual block уже не transport: определить **единый deterministic test state и управляющие preview controls** — как users/roles/forum/settings/complaints/notifications/personal state/Admin/Owner/empty/error states живут в одной базе, а identity/locale/viewport/scenario переключаются без переписывания ownership и без второй product logic.
