@@ -37,6 +37,43 @@ describe("shared notification card grid contract",()=>{
   expect(css).toMatch(/\.notification-card\.is-system\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 2\.65rem/s);
  });
 
+ it("shows unavailable source neutrally in EN/RU/HE without actor, title or source link", async () => {
+  const secret = "HIDDEN_NOTIFICATION_SOURCE_SENTINEL";
+  const english = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
+    .map(([key, descriptor]) => [key, descriptor.source]));
+  for (const [locale, localized] of [
+    ["en", {}], ["ru", russianCommonValues], ["he", hebrewCommonValues],
+  ] as const) {
+    const i18n = createInstance();
+    await i18n.init({ lng: locale, defaultNS: "common", fallbackLng: "en", initAsync: false,
+      resources: { [locale]: { common: { ...english, ...localized } } } });
+    const router = createMemoryRouter([{ path: `/${locale}/notifications`,
+      element: <NotificationsView locale={locale} notifications={[
+        { id: "hidden", kind: "reply", unavailable: true, actorName: secret,
+          topicId: "private-topic", topicTitle: secret, postId: "private-post",
+          createdAt: "2026-11-02T10:00:00.000Z", readAt: null },
+        { id: "visible", kind: "mention", actorName: "Visible author",
+          topicId: "visible-topic", topicTitle: "Public topic", postId: "visible-post",
+          createdAt: "2026-11-02T11:00:00.000Z", readAt: null },
+        { id: "decision", kind: "complaint-decision", actorName: null,
+          topicId: null, topicTitle: null, postId: null, caseId: "case-1",
+          createdAt: "2026-11-02T12:00:00.000Z", readAt: null },
+      ]} /> }], { initialEntries: [`/${locale}/notifications`] });
+    const html = renderToStaticMarkup(<I18nextProvider i18n={i18n}>
+      <RouterProvider router={router} />
+    </I18nextProvider>);
+    expect(html).toContain("Content unavailable");
+    expect(html).toContain("Public topic");
+    expect(html).toContain("Visible author");
+    expect(html).not.toContain(secret);
+    expect(html).not.toContain("private-topic");
+    expect(html).not.toContain("private-post");
+    expect((html.match(/class="notification-avatar"/g) || [])).toHaveLength(1);
+    expect(html).toContain('class="notification-card is-unread is-system"');
+    expect(html).toContain('value="hidden"');
+  }
+ });
+
  it("renders localized neutral reply/mention actors without retained initials in EN/RU/HE",async()=>{
   const secret="SECRET_RETAINED_CARD_ACTOR";
   const english=Object.fromEntries(Object.entries(canonicalEnglishCatalog.common)
