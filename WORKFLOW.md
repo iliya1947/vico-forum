@@ -21,24 +21,16 @@
 
 ## AGENTS layer
 
-1. Межслойный анализ завершён: AGENTS rules нельзя удалять только из-за User/Project coverage.
-2. Внутренний dedup classification: `research/agents-internal-dedup-classification.md`.
-3. Применены 5 SAFE-MERGE groups:
-   - Масштаб исправления 1 + 2;
-   - Рабочий процесс 4 + 5;
-   - Общие правила 6 + 7 + 8;
-   - Запуск PR-тестов 2 + 3;
-   - Полный аудит документации 2 + 3.
-4. Применены 2 SAFE-REFERENCE-DEDUPE:
-   - stacked checkpoint/final review details в Workflow заменены ссылкой на канонический Review section;
-   - documentation-PR lifecycle в state/history/contracts block заменён ссылкой на Workflow.
-5. Current → draft semantic diff: `research/agents-current-vs-draft-semantic-diff.md`.
-6. Numbered rules: 64 → 58.
-7. Volume: 2209 → 2179 whitespace words.
-8. Потерянных semantic guards: 0.
+1. Structural dedupe применён: 64 → 58 numbered rules, 0 lost guards.
+2. Semantic diff: `research/agents-current-vs-draft-semantic-diff.md`.
+3. Карта локального wording reduction завершена: `research/agents-58-wording-reduction-map.md`.
+4. Подтверждено 19 safe wording reductions.
+5. Draft на этом шаге не изменён.
+6. Оценочный объём после применения карты: 2179 → 2006 whitespace words (-173).
+7. Core roles, delivery/review gates и низкоценные микроизменения намеренно не трогаются.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: составить карту safe wording reductions для 58-rule `AGENTS.draft.md` без изменения draft.
+Следующий переход: применить только 19 подтверждённых wording reductions к `AGENTS.draft.md`, затем проверить изменённые пункты и semantic diff.
