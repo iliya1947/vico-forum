@@ -1,52 +1,54 @@
-# #362 — независимая проверка Лёвы
+# #362 — независимая повторная проверка Лёвы
 
-## Вердикт
+## Вердикт и scope
 
-**HOLD — два подтверждённых current-scope finding [P2].**
+**HOLD: MANUAL-CI-LEVA-01 CLOSED, MANUAL-CI-LEVA-02 [P2] остаётся OPEN.** Других подтверждённых current-scope findings в полном scope не выявлено.
 
-- Проверенный implementation head: `3387132aeed815fb93cf3094c3d70f5e343ce998`.
-- Base main: `6f50d6ad549f816e091282012d6201fa03291b82`.
-- Scope: весь diff #362 — 19 workflow-файлов; управление событиями, все jobs, labels/permissions, сохранение path-фильтров и резервный dispatch.
-- #363 `b58423df68f05707142fe5c5335fec0db0e1f319` проверен только как зависимая docs-ступень: base совпадает с #362, diff ограничен AGENTS/AGENT_LOGIC_ERRORS/PROJECT_STATE. Отдельный docs PASS не выдан.
+Проверен весь #362 exact c85214aa9a2706fb0cb1704cfcf18459aa97bcdb против main 6f50d6ad549f816e091282012d6201fa03291b82: 19 workflow-файлов, все jobs, triggers/labels/permissions, dispatch context/checkout/guard, path-фильтры и сохранение исходных проверок. Актуальный handoff — #342 comment7061333928; старый вердикт относился к 3387132 и не переносится автоматически.
 
-## MANUAL-CI-LEVA-01 [P2] — три AP-10 job обходят команду run:acceptance
+#363 b481f0a004c40a01f53dc9be3428c6d3d1ea2409 проверен только как зависимая docs-ступень: base exact #362, три docs-файла, mergeable, zero workflow runs. Отдельный docs PASS не выдавался.
 
-В [ap10-browser.yml:54](https://github.com/iliya1947/vico-forum/blob/3387132aeed815fb93cf3094c3d70f5e343ce998/.github/workflows/ap10-browser.yml#L54) условие добавлено только в `browser`. Остальные sibling jobs — `history_browser`, `settings_browser`, `settings_administrator_browser` — не имеют ни job-level условия, ни `needs` на gated job; их шаги выполняют полноценные PG/Worker/Chromium acceptance.
+## MANUAL-CI-LEVA-01 — CLOSED
 
-Воспроизводимый путь: PR меняет `db/forum-repository.ts` (входит в сохранённый AP-10 paths) → агент добавляет `run:ci`, либо кто-либо добавляет обычную `needs-review` → событие `pull_request:labeled` запускает workflow → `browser` пропускается, три остальных job запускаются. Снятие метки управляющим workflow не меняет уже полученное событие. До #362 `labeled` вообще не входил в default PR event types, поэтому это новый путь незапрошенного запуска acceptance.
+Все 20 acceptance jobs в 17 workflow, включая четыре AP-10 siblings, теперь имеют одинаковое условие run:acceptance/dispatch. Все 17 path-наборов совпадают с base; после нормализации только gate и intended IMPLEMENTATION_SHA изменения job bodies совпадают с base.
 
-Диагностика разобрала YAML всех изменённых workflow и каждый job. AP-10 — единственный acceptance workflow с пропущенными gates. Локальная матрица при совпадающем PR diff:
+Независимо прочитаны GitHub Actions run/job records на exact c85214a:
 
-| Метка | Допущенные AP-10 jobs |
+| Событие по контрольной метке | Проверенный результат |
 | --- | --- |
-| `run:ci` | history_browser, settings_browser, settings_administrator_browser |
-| `needs-review` | те же три |
-| `run:acceptance` | все четыре |
+| run:ci, batch 09:45:39Z | CI SUCCESS, controller SUCCESS, 17 acceptance workflow SKIPPED |
+| run:acceptance, batch 10:28:06Z | 17 acceptance workflow SUCCESS, controller SUCCESS, CI SKIPPED |
+| AP-10 по run:ci | все четыре job SKIPPED |
+| AP-10 по run:acceptance | все четыре job SUCCESS |
 
-Это вывод из реальной конфигурации и [документированной семантики независимых jobs и job-level if](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idif), не заявленный GitHub execution.
+Источники: [CI 44891093053](https://github.com/iliya1947/vico-forum/actions/runs/44891093053), [negative AP-10 44891093096](https://github.com/iliya1947/vico-forum/actions/runs/44891093096), [positive AP-10 44894478804](https://github.com/iliya1947/vico-forum/actions/runs/44894478804). CI checks/database и каждый обязательный шаг, включая migration guard/lint/typecheck/test/build, SUCCESS. Это прочитанные реальные результаты GitHub, не новый запуск Лёвой.
 
-Исправление должно применить тот же acceptance admission ко всем четырём job, сохраняя разрешённый dispatch. При повторной проверке: `run:ci`/посторонняя метка → ноль acceptance jobs; `run:acceptance` → четыре AP-10 job при совпадении paths; open/synchronize → отсутствие PR test runs.
+Controller consume-label и его DELETE step SUCCESS в [run:ci batch](https://github.com/iliya1947/vico-forum/actions/runs/44891093023) и [acceptance batch](https://github.com/iliya1947/vico-forum/actions/runs/44894478792). Добавленный pull-requests: write ограничен controller без checkout; новая реализация потребления меток подтверждена runtime. Старую оценку issues: write только по API contract нельзя использовать как runtime evidence.
 
-## MANUAL-CI-LEVA-02 [P2] — основной CI не поддерживает объявленный dispatch fallback
+## MANUAL-CI-LEVA-02 [P2] — base context всё ещё передаётся через зарезервированное имя
 
-[ci.yml:7](https://github.com/iliya1947/vico-forum/blob/3387132aeed815fb93cf3094c3d70f5e343ce998/.github/workflows/ci.yml#L7) добавляет `workflow_dispatch`, а условие `checks` допускает это событие. Но [обязательный шаг migration guard:49](https://github.com/iliya1947/vico-forum/blob/3387132aeed815fb93cf3094c3d70f5e343ce998/.github/workflows/ci.yml#L49) безусловно вызывает `verify-migration-history.mjs`. Скрипт на строках 12–13 требует `GITHUB_BASE_REF`; workflow его для dispatch не вычисляет и не передаёт.
+Разрешение PR context исправлено по существу: оба CI jobs запрашивают open PR, проверяют ожидаемые head SHA/base ref, отклоняют drift и checkout'ят разрешённый exact SHA. Однако [ci.yml:75–77](https://github.com/iliya1947/vico-forum/blob/c85214aa9a2706fb0cb1704cfcf18459aa97bcdb/.github/workflows/ci.yml#L75) передаёт base в migration guard через step env с именем GITHUB_BASE_REF. Сам guard не изменён и читает только process.env.GITHUB_BASE_REF.
 
-По [GitHub Variables reference](https://docs.github.com/en/actions/reference/workflows-and-actions/variables) `GITHUB_BASE_REF` задан только для `pull_request`/`pull_request_target`. Поэтому dispatch, даже после появления workflow на default branch, падает в guard до lint/typecheck/unit/build. Наличие независимого `database` job не делает основной CI успешным.
+По актуальному [GitHub Variables reference](https://docs.github.com/en/actions/reference/workflows-and-actions/variables#naming-conventions-for-environment-variables) default GITHUB_*/RUNNER_* нельзя переопределять через workflow env; такая assignment игнорируется. GITHUB_BASE_REF задан только для PR/PR-target, а у dispatch PR base в github context пустой.
 
-Выполнено локальное воспроизведение на Node `v24.22.1`: скопированы неизменённые `verify-migration-history.mjs` и его module из exact head, удалён `GITHUB_BASE_REF` из process environment, выполнен сам скрипт. Результат: exit 1, `AssertionError: GITHUB_BASE_REF is required; this guard is intended for pull_request CI`. Guard останавливается до Git/DB обращений. Это execution самого отказавшего звена, не полный GitHub dispatch run.
+Причинная цепочка проверена также по официальному runner source на pinned commit 7e211dc69c347b78fc398e630e74facb11a13235: [GitHubContext.cs](https://github.com/actions/runner/blob/7e211dc69c347b78fc398e630e74facb11a13235/src/Runner.Worker/GitHubContext.cs#L20) экспортирует base_ref как GITHUB_BASE_REF; [ScriptHandler.cs](https://github.com/actions/runner/blob/7e211dc69c347b78fc398e630e74facb11a13235/src/Runner.Worker/Handlers/ScriptHandler.cs#L291) перед выполнением shell записывает runtime context поверх Environment. Пустой dispatch base не заменяется заданной через step env веткой. Guard получает пустое значение и останавливает checks до lint/typecheck/unit/build; успешный PR-label путь этого не проверяет, поскольку на PR системная переменная уже заполнена.
 
-Исправление должно обеспечить достоверный PR/base context для fallback, включая stacked PR с base не `main`, и сохранить accepted-migration protection. Нельзя просто убрать guard либо молча подставить `main` для любого PR. При повторной проверке: обычный label-triggered PR путь и dispatch для обычного/stacked PR проходят history guard; попытка изменить принятую migration всё ещё отклоняется. Dispatch/browser evidence также должно идентифицировать реально проверенный SHA: сейчас acceptance `IMPLEMENTATION_SHA` берётся только из отсутствующего в dispatch `github.event.pull_request.head.sha`.
+Границы доказательств: реальный hosted workflow_dispatch **не выполнялся**; trigger пока отсутствует в default branch, и [GitHub ограничивает dispatch этим условием](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch). Это ограничение само по себе не finding. Finding — конкретное несоответствие способа передачи base документированному runner contract. Локальная модель именно context-over-step-env и неизменённый реальный guard дают exit 1 с GITHUB_BASE_REF is required; модель не выдаётся за hosted run.
 
-## Проверенный остальной scope и ограничения
+Минимальное направление исправления проверено отдельным локальным экспериментом без изменения проекта: передать разрешённую base через собственную переменную VICO_CI_BASE_REF, затем задать GITHUB_BASE_REF только для дочернего процесса непосредственно внутри run-команды guard. Это обходит проблему workflow env, сохраняет существующий guard и не требует новой подсистемы. В изолированном Git fixture реальные guard/module из exact head проходят для main и feature/moderation-visibility-b2-commands; изменение принятой SQL migration отклоняется в обоих случаях (4/4 ожидаемых результата). Эксперимент не является shipped fix.
 
-- Все YAML успешно разобраны. В 18 изменённых существующих workflow default open/synchronize заменены на единственный `labeled`; везде добавлен dispatch.
-- Все 17 исходных acceptance path-наборов совпадают с base без изменений. Все существующие job bodies после исключения нового `if` совпадают с base; unit/PG/browser команды не заменены.
-- Остальные 13 workflow byte-equal base: production/deploy, UI preview Pages и Codex bridge не изменены. Новый bootstrap ограничен push main по собственному path либо dispatch; checkout/выполнение PR source в управляющем job отсутствуют.
-- Исправление старого permission finding проверено: `gh api --method DELETE repos/$GH_REPO/issues/$PR_NUMBER/labels/$TEST_LABEL` использует документированный [Issues label endpoint](https://docs.github.com/en/rest/issues/labels#remove-a-label-from-an-issue), который принимает `issues: write` и применим к PR. Обе контрольные метки имеют допустимые имена, передаются через quoted env; conditions bootstrap/consume разделены по событиям. Старый finding о выборе API на этом head закрыт по контракту; реальный token/API execution не заявлен.
-- GitHub exact-head check-runs endpoint вернул `total_count: 0`. Это ожидаемо для новой политики отсутствия автоматического запуска; не PASS тестов и не отдельный finding. В review не добавлялись метки, не запускались Actions/production и не менялась реализация.
-- Локальная диагностическая сводка: `/workspace/work/manual-pr-tests-review-diagnostics/results.json`; фактический stderr guard — `dispatch-no-base.stderr.txt` там же. Существенные выводы полностью изложены выше и не требуют доступа следующего агента к локальному scratch.
-- Новых подтверждённых findings вне перечисленных двух в заданном scope не выявлено. Fork-token policy и repository rulesets не изменялись и не сертифицировались этим review.
+Критерий закрытия: resolved base доходит до реального guard без переопределения reserved workflow env, ordinary/stacked base проходят, accepted SQL mutation остаётся запрещена. Сохранить уже работающие expected head/base drift checks и exact checkout. После появления dispatch на main — один фактический dispatch smoke с ожидаемыми PR/head/base; до этого явно отделять contract/local verification от hosted execution.
+
+## Полная остальная проверка
+
+- 19 changed workflow успешно разобраны; все 17 acceptance path filters сохранены; все 20 acceptance jobs gated. Jobs не подменены упрощёнными тестами.
+- Исходные CI checks/database test commands сохранены; добавленные resolution/checkouts локально исполнены по 8 fixture-сценариям на каждый job: normal/stacked success, head drift, base drift, closed PR, null head, null base, API error. **16/16 ожидаемых результатов.** Это shell execution самого resolver с подменой только gh API response, не реальный dispatch.
+- Controller имеет только push main по собственному path, labeled и dispatch; bootstrap/consume разделены, checkout и исполнение PR source отсутствуют. Обе control labels потребляются; label payload передаётся через quoted env, не интерполируется в shell source.
+- Acceptance dispatch IMPLEMENTATION_SHA использует github.sha для выбранного ref; PR-label путь сохраняет PR head SHA. Новый CI dispatch использует resolved PR exact SHA, а не произвольный head выбранной workflow-ветки.
+- Остальные 13 workflow byte-equal base: production/deploy, UI preview Pages и Codex bridge не изменены. Зависимый #363 имеет zero workflow runs, что согласуется с отсутствием automatic synchronize запуска.
+- Локальные материалы: /workspace/work/manual-pr-tests-rereview-diagnostics/results.json, *-resolver-results.json, runner-context-model.stderr.txt, guard-child-process-experiment.json. Существенные факты полностью приведены здесь; следующий агент не зависит от локального scratch.
+- Новые labels/Actions/production действия Лёва не запускал; implementation не менял. Runtime evidence прочитано по API; GitHub-wide fork policy/rulesets не сертифицировались.
 
 ## Передача
 
-Мира возвращает исполнителю #362 два finding одним пакетом. После исправлений обновить зависимый #363, выполнить targeted event/job/context проверки и применимые exact-head checks, записать author self-check и вернуть стабильный head на повторную независимую проверку. До этого #362/#363 не готовы к merge. #342 остаётся единственным служебным каналом; B3 moderation visibility всё ещё отдельно ожидает coordinator checkpoint Миры, B4 не активирован.
+Мира возвращает исполнителю только остающийся MANUAL-CI-LEVA-02: локально исправить передачу resolved base в guard, targeted self-check, resync #363 и fresh stable-head handoff на повторный независимый review. Уже закрытый AP-10 finding не переоткрывать без относящихся изменений; широкие acceptance повторять только при новом основании. #362/#363 пока не готовы к merge. #342 — единственный service channel; moderation B3 отдельно ждёт checkpoint Миры, B4 не активирован.

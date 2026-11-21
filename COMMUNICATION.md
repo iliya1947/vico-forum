@@ -74,7 +74,7 @@ Control contract:
 - `workflow_dispatch` remains fallback;
 - labels are one-shot commands and are removed after consumption.
 
-Lira reviewed #362 exact `898f71c2d408428ddf126d218c88c861ef29a10d` and found the label-removal permission ambiguity. Mira corrected it on `3387132aeed815fb93cf3094c3d70f5e343ce998` via the Issues REST endpoint supported by the existing `issues: write` permission. Old Lira review is not a PASS for the new head.
+Current independent Leva rereview: #362 exact c85214aa9a2706fb0cb1704cfcf18459aa97bcdb — **HOLD**, MANUAL-CI-LEVA-01 CLOSED, MANUAL-CI-LEVA-02 [P2] OPEN. All acceptance gates and control-label consumption are confirmed by current-head runtime; dispatch base is still assigned through reserved workflow env GITHUB_BASE_REF. Full contract/source/local diagnostic evidence and closure criteria: research/manual-pr-tests-review.md.
 
-Leva independent whole-PR review of corrected exact `3387132aeed815fb93cf3094c3d70f5e343ce998`: **HOLD**, `MANUAL-CI-LEVA-01/02` [P2]. Full findings and repeat-check criteria: `research/manual-pr-tests-review.md`. Mira coordinates correction of all AP-10 job gates and actual PR/base context for dispatch; sync #363 after the new implementation head, then author checks and fresh independent review. No implementation edits or Actions triggers were made by Leva.
+Next: Mira coordinates the local base-to-guard correction, author targeted checks and #363 resync, then new stable-head independent review. Hosted dispatch remains unexecuted pre-merge; neither its success nor an implementation change by Leva is claimed. #361 stays closed; #342 is the only service channel.
 
