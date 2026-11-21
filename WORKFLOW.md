@@ -101,30 +101,16 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - **B2 bounded PASS.** Next stacked rung is B3 from branch `feature/moderation-visibility-b2-commands`, only after owner continuation.
 
 
-## Moderation visibility B3 — AUTHOR PASS, MIRA CHECKPOINT PENDING
+## Moderation visibility B3 — MIRA CHECKPOINT HOLD
 
-Owner continuation received after B2 Mira PASS.
-
-B3 author self-check and all applicable exact-head checks completed; next owner of the bounded checkpoint is **Мира**. Лира stops until coordinator findings or new owner continuation.
-
-Delivery:
-- create a new stacked implementation PR with base `feature/moderation-visibility-b2-commands`;
-- keep B1 #355 and B2 #357 Draft/unmerged;
-- implement only the B3 bounded result from the accepted stage plan;
-- split B3 into **small working batches of 2–3 related microsteps**; if a microstep starts to sprawl or becomes uncertain, stop the batch earlier;
-- after each batch run only the targeted checks needed for that batch, record the result, then **STOP for owner `...`** before taking the next batch; automatically triggered broad GitHub workflows are ignored completely at this boundary; do not open Actions/CI until whole B3 completion;
-- do not run full repository CI after each batch; full author self-check + one full exact-head CI/check set only when the entire B3 bounded scope is complete (or earlier only for a concrete cross-cutting risk);
-- after complete B3, STOP Mira for the coordinator checkpoint; B4 must not start before Mira B3 PASS and a new owner continuation.
-
-B3 result boundary: typed hidden tombstones/public topic 404, consistent thread snapshot/anchors, SQL visibility filtering before rank/count/LIMIT across B3 public discovery/read paths, safe unavailable solution/duplicate projections, public history/edit/recovery denial, and leak/pagination/rank/count/root/parent acceptance. Do not implement B4 assets/private-file work, B5 own/inbox, B6 private moderation surfaces, B7 actions/UI, or later stages.
-
-## B3 F5 — author self-check PASS; handoff to Мира — STOP
-
-- B3 stacked Draft [#359](https://github.com/iliya1947/vico-forum/pull/359), **stable exact head `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`**; base B2 #357 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`; B1 #355 `704d5a46d59841538524424296ac28eaa39aa5e6`, B2 #357 coordinator checkpoints already PASS. B1/B2/B3 remain Draft, unmerged.
-- Final exact-head [CI #44831833799](https://github.com/iliya1947/vico-forum/actions/runs/44831833799): **SUCCESS**, both `checks` and `database` SUCCESS, **2782/2782 unit (218 files)**, **1599/1599 PostgreSQL17 (112 files)**. Lint, Typecheck, build, UI-preview build, clean migrations, schema metadata/manifest, privileges/provisioning and local Worker/Better Auth smoke all SUCCESS. Exact-head **15/15 workflow runs SUCCESS**, including AP-10 and connected Chromium acceptance workflows. No cancellations/reruns or remaining failures on exact SHA.
-- Author self-check at this stable head: verified the **34-file B3-local diff inventory** against B2 and inspected representative critical SQL/public DTO, route/UI and test patches; checked scope and regression coverage against accepted `stages/moderation-visibility/PLAN.md` B3/V5/V7: topic-hidden public neutral 404, typed post tombstone with stable order/parent/anchor and no source/identity/assets, REPEATABLE READ page snapshot; public discovery SQL visibility before rank/count/LIMIT for section/category/tag/search/Popular/Unanswered/Help/profile/unread; unavailable selected answer/duplicate; public history/edit/recovery denies, neutral negative results and public `no-store` versus personalized `private, no-store`. Unit/real PostgreSQL regressions include no-leak sentinels, hidden root/parent, Help Similar exact-rank, pagination, read markers, blocked authors and cache headers. **No confirmed current-B3 blocking finding** identified. This is bounded author self-check **PASS**, not independent whole-feature approval or B4 acceptance.
-- Corrective work already included: SQL OR parentheses behind `is_hidden=false` for Help Similar; ru/he reviewed unavailable-topic UI key and canonical fingerprint; typed loader data assertions; repaired stale guest/raw loader and public cache-header tests (tests only on final packet). All are covered by full green exact-head CI.
-- **Next agent: Мира (ChatGPT-5.6 Sol)** — perform **bounded B3 coordinator checkpoint** on **exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`** against accepted scope and B2 baseline. Check B3 read/SQL leak boundaries and stacked compatibility, challenge author self-check independently; report PASS or confirmed current-B3 findings to #342. Only coordinator PASS permits next owner continuation to B4. No independent Codex review/merge at B3; #342 never merge. **Лира — STOP.**
+- Reviewed stacked Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` against B2 #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` and accepted `stages/moderation-visibility/PLAN.md` B3/V2/V5/V7. Head/base remain stable; PR mergeable. Existing exact-head evidence remains 15/15 workflows SUCCESS, including CI `44831833799`; no new CI was run because the head is unchanged.
+- Coordinator review covered the 34-file local diff: public DTO/tombstones, topic REPEATABLE READ snapshot, discovery/profile/unread SQL filtering, Help/Similar/Attention projections, duplicate/best-answer masking, old post-location/history/edit/recovery denial, route/cache/error metadata and real-PG/sentinel regressions.
+- **VIS-B3-MIRA-01 [P2] — current-B3 blocker:** B3 changed raw `DrizzleForumRepository.readPost(id)` from the accepted trusted service/fixture seam into a public-visibility-filtered reader by joining `forumTopics` and requiring both `post.is_hidden=false` and `topic.is_hidden=false`. This contradicts V2, which explicitly keeps raw `readTopic/readPost/readHierarchy` trusted.
+- The change has a concrete current regression: unchanged raw `readHierarchy(categoryId)` enumerates every persisted post and calls `readPost`; with any hidden post (or any post under a hidden topic), `readPost` now returns `undefined` and `readHierarchy` throws `ForumEntityNotFoundError("current body revision missing...")` instead of returning the trusted hierarchy.
+- Public denial does **not** require narrowing raw `readPost`: B3 already gates public/old paths through `readTopicPage`, `readPostLocation`, `readPostHistory` and route/action/recovery checks; B2 writer/source-locale paths already revalidate visibility under their mutation locks. B3 tests currently assert raw `readPost` becomes unavailable, encoding the wrong seam contract.
+- Required correction result: restore the accepted trusted raw-reader contract without weakening the B3 public denial/projection gates, and add/adjust targeted regression coverage so hidden content remains unavailable through public readers while trusted raw `readPost/readHierarchy` remain usable. Do not expand into B4–B7.
+- No second confirmed current-B3 finding after full checkpoint. Known remaining attachment-download/private-asset, own Bookmark/Mute/inbox, guarded private inspector, and visibility action/UI work belongs to B4–B7 and is not a B3 blocker.
+- **B3 HOLD.** B4 remains blocked. Next agent: Лира corrects only VIS-B3-MIRA-01 on #359, runs targeted checks applicable to that correction, updates the stable exact head, then STOP for a fresh Mira B3 checkpoint. No independent Leva review at this intermediate rung.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 

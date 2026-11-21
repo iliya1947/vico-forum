@@ -129,3 +129,7 @@ DOCS-363-MIRA-01 closed by rebuilding the docs branch directly from current main
 ## 2026-11-21 — manual PR-test process task COMPLETE
 
 Owner merged #363 unchanged reviewed head; main is now `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. #362 implementation, hosted dispatch smoke and #363 docs closeout are complete; there are no remaining process-side findings/debts. Resume the previously paused moderation visibility B3 coordinator checkpoint on Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`. Do not start B4 before B3 coordinator PASS and a new owner continuation.
+
+## 2026-11-21 — B3 coordinator checkpoint HOLD
+
+Reviewed #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` against B2 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` and the accepted B3 plan. One confirmed current-B3 blocker: VIS-B3-MIRA-01 [P2]. B3 narrowed raw `readPost` to visible-only even though V2 explicitly keeps raw `readTopic/readPost/readHierarchy` as trusted service/fixture seams. Because unchanged `readHierarchy` enumerates persisted posts through raw `readPost`, any hidden post/topic now makes the trusted hierarchy throw a false “current body revision missing” error. Public denial is already enforced by `readTopicPage/readPostLocation/readPostHistory` and route/action paths; writer/source-locale admission already rechecks visibility under locks. No second current-B3 finding confirmed; B4–B7 gaps were classified as future rungs, not findings. Return only this correction to Lira; B4 stays blocked until fresh B3 PASS.
