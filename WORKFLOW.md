@@ -107,7 +107,7 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B4 — B4-A IMPLEMENTED, OWNER STOP
+## Moderation visibility B4 — B4-B IMPLEMENTED, OWNER STOP
 
 Owner continuation received after B3 Mira PASS. Create the next stacked implementation PR with base = current B3 head `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. Keep earlier rungs Draft/unmerged.
 
@@ -139,6 +139,17 @@ Current B3 source confirms:
 - **17/17 focused static diff/source invariants PASS** on exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0`; local PostgreSQL/Vitest/Typecheck execution **NOT VERIFIED**. No broad CI triggered by agent during this packet. Do not claim author B4 PASS; this is a partial bounded packet only.
 - **Next owner `...` → Лира B4-B**: investigate inherited B2 translation plan/accepted execution gates and add only missing B4 real-PG Hide/Restore/new-plan/accepted-execution coverage, preserving safe private completion and no public disclosure; STOP after B4-B. Do not expand into B4-C or B5–B9 without continuation.
 
+### B4-B — translation Hide/Restore during accepted execution — DONE / STOP
+
+- Current stacked [Draft #365](https://github.com/iliya1947/vico-forum/pull/365) exact **`239b883c515b3f647077198f85e27a2be30d911a`**, base B3 unchanged `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. B4-A previous exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0` remains included.
+- **No production translation-planner/executor code edits**. Source confirmed inherited B2 contract: `content-topic-title-task-store.ts` locks topic and checks `isHidden`; `content-post-body-task-store.ts` locks parent topic before post and checks both visibility flags. Existing real PostgreSQL tests cover Hide/Restore × new planning in both committed lock orders, no task/generation/budget side effects for rejected work, accepted task private completion when Hide already committed.
+- Remaining gap was accepted translation task **in provider window** concurrently with committed visibility change, versus existing tests that Hide before execution. Added **two targeted real-PG test cases** only:
+  1. `tests/database/content-topic-title-execution.test.ts`: accepted task enters provider, separate PostgreSQL connection commits title-topic Hide, hidden re-plan denied/no queue or budget/task side effects; in-flight task completes private revision-bound storage; Restore reuses completed translation with no re-enqueue, revision/provider repetition.
+  2. `tests/database/content-post-body-task-planning.test.ts`: accepted body task enters provider, second PostgreSQL connection commits both topic/post Hide flags in one transaction; hidden re-plan denied/no queue; execution completes private result; partial/full Restore retains revision and completed task without new generation/budget/job/provider work.
+- Explicit independent PostgreSQL commit-before-provider-release synchronization is tested; **this is not a new lock-graph proof**. Prior B2 `pg_blocking_pids` barriers remain authoritative for visibility × planning order. Both tests ensure suspended provider can always release in `finally`.
+- Scope/diff and focused source invariants checked on current exact head: four files total in B4 (#365): B4-A two files and B4-B two test files; **no unrelated modules or new private route**. Focused source checks PASS. **Runtime PostgreSQL/Vitest/Typecheck not executed on `239b883c515b3f647077198f85e27a2be30d911a`; no CI label applied**, so B4 author PASS must not be asserted.
+- **Next owner `...` → Лира B4-C only:** check preserved shared refs/drafts/Complaint evidence and any missing B4 in-scope gaps; resolve real blockers, run applicable final exact-head checks once, perform author B4 self-check, then STOP for Mira bounded B4 checkpoint. No B5–B9, merge, or private moderator UI.
+
 ### Suggested bounded work packets
 
 1. **B4-A — public asset gate + bucket/no-bypass acceptance.**
@@ -155,7 +166,7 @@ After each packet: record the result and STOP for owner continuation. Do not run
 - B8 whole-feature connected acceptance and B9 closeout;
 - production/Stage6/deployed resources.
 
-**B4-A DONE — Лира STOP; next owner `...` starts only B4-B on existing Draft #365.**
+**B4-B DONE — Лира STOP; next owner `...` starts only B4-C on existing Draft #365.**
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 
@@ -164,5 +175,5 @@ After each packet: record the result and STOP for owner continuation. Do not run
 - Final implementation evidence remains: Leva independent PASS on #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`; post-merge hosted workflow_dispatch smoke `44900723276` PASS; final docs review PASS on #363 exact `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
 - Main now contains the manual PR-test policy: ordinary PR CI and browser/connected acceptance do not auto-run on open/head update; agents use one-shot `run:ci` / `run:acceptance`; `workflow_dispatch` is fallback; production/deploy workflows keep separate gates.
 - No open process-side finding or docs debt remains.
-- **Current active work:** B3 coordinator PASS; B4-A completed in Draft #365 exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0`, focused static checks 17/17 PASS; runtime not yet verified. Next owner continuation permits only B4-B.
+- **Current active work:** B3 coordinator PASS; B4-A/B4-B implemented in Draft #365 exact `239b883c515b3f647077198f85e27a2be30d911a`; targeted static checks PASS; runtime new-head tests not verified. Owner `...` permits only B4-C/final bounded B4 validation.
 
