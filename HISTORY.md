@@ -16,3 +16,4 @@
 - 2026-11-21 — к USER_INSTRUCTIONS.draft.md применены 9 подтверждённых structural merge-групп: 52 semantic guards упакованы в 42 нумерованных пункта без удаления или переформулировки исходных смыслов; diff сохранён в research/user-42-semantic-diff.md.
 - 2026-11-21 — локально исправлен USER draft rule 8: восстановлен общий evidence gate действующего current rule 8; повторная сверка подтвердила FULL coverage всех 15/15 действующих User rules.
 - 2026-11-21 — PROJECT_INSTRUCTIONS.draft.md очищен от подтверждённых дублей User layer: удалён old Project 10, удалён goal-дубль, partial duplicate про первую трактовку сокращён до project-context check; exact diff подтверждает отсутствие неожиданных изменений.
+- 2026-11-21 — Project draft очищен от подтверждённых межслойных дублей: removed current Project 10, removed generic goal duplicate, shortened interpretation duplicate; semantic diff confirms 0 lost project-specific guards.
