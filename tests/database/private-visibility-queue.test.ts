@@ -134,7 +134,7 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
     expect(topic).toMatchObject({kind:"topic",topicId:"hidden-topic-000",isHidden:true,
       visibilityVersion:1,currentRevisionId:"hidden-topic-000-title",
       lastEvent:{action:"topic.hidden",reason:"Reason topic 000"}});
-    expect(topic?.lastEvent?.at).toMatch(/^\\d{4}-\\d{2}-\\d{2}T/);
+    expect(topic?.lastEvent?.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     const post=await reader.inspect("queue-moderator",{kind:"post",topicId:"visible-topic",postId:"hidden-post-000"});
     expect(post).toMatchObject({kind:"post",id:"hidden-post-000",isHidden:true,
       currentRevisionId:"hidden-post-000-body",topicHidden:false,parentUnavailable:false,
