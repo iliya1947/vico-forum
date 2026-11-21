@@ -107,7 +107,7 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B4 — AUTHORIZED, LIRA IMPLEMENTATION NEXT
+## Moderation visibility B4 — B4-A IMPLEMENTED, OWNER STOP
 
 Owner continuation received after B3 Mira PASS. Create the next stacked implementation PR with base = current B3 head `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. Keep earlier rungs Draft/unmerged.
 
@@ -131,6 +131,14 @@ Current B3 source confirms:
 - B2 already changed `db/content-topic-title-task-store.ts` and `db/content-post-body-task-store.ts` to the planned visibility/lock behavior. Do not duplicate those changes unless a concrete B4 test proves a defect;
 - accepted execution stores are intentionally not to receive a new hidden-admission lock/gate merely because source became hidden.
 
+### B4-A — public asset visibility gate + no-bucket acceptance — DONE / STOP
+
+- Created stacked [Draft #365](https://github.com/iliya1947/vico-forum/pull/365) `feature/moderation-visibility-b4-assets-translations`, base B3 #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`, current exact head **`e30c763d4dd42e32537f2a6e6edfec194c6d2af0`**. Earlier B1–B3 rungs remain unmerged. **Only B4-A** implemented; B4-B/B4-C not started.
+- 2 files changed, 3 related microsteps: `db/forum-attachments.ts::readPublishedAttachment` adds `INNER JOIN forumTopics` via the post and requires **both post and topic `is_hidden=false`**, preserving exact post+attachment membership and type-checked status; existing `app/routes/attachment-download.ts` already invokes this reader before `bucket.get` and remains unchanged.
+- `tests/database/forum-attachments.test.ts`: real PostgreSQL + HTTP loader integration regression covers hidden post and hidden parent topic, missing post/ref, all existing `view=download(default)|inline|text` paths, neutral empty 404/headers and **bucket.get not called** for denied paths. Positive shared attachment survives via another visible post; authenticated owner-draft GET still reads the same retained asset; refs remain intact. Test transitions carry valid visibility versions and timestamps.
+- **17/17 focused static diff/source invariants PASS** on exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0`; local PostgreSQL/Vitest/Typecheck execution **NOT VERIFIED**. No broad CI triggered by agent during this packet. Do not claim author B4 PASS; this is a partial bounded packet only.
+- **Next owner `...` → Лира B4-B**: investigate inherited B2 translation plan/accepted execution gates and add only missing B4 real-PG Hide/Restore/new-plan/accepted-execution coverage, preserving safe private completion and no public disclosure; STOP after B4-B. Do not expand into B4-C or B5–B9 without continuation.
+
 ### Suggested bounded work packets
 
 1. **B4-A — public asset gate + bucket/no-bypass acceptance.**
@@ -147,7 +155,7 @@ After each packet: record the result and STOP for owner continuation. Do not run
 - B8 whole-feature connected acceptance and B9 closeout;
 - production/Stage6/deployed resources.
 
-**Next agent: Лира. Start only B4-A on a new stacked PR from exact B3 head, then STOP.**
+**B4-A DONE — Лира STOP; next owner `...` starts only B4-B on existing Draft #365.**
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 
@@ -156,5 +164,5 @@ After each packet: record the result and STOP for owner continuation. Do not run
 - Final implementation evidence remains: Leva independent PASS on #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`; post-merge hosted workflow_dispatch smoke `44900723276` PASS; final docs review PASS on #363 exact `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
 - Main now contains the manual PR-test policy: ordinary PR CI and browser/connected acceptance do not auto-run on open/head update; agents use one-shot `run:ci` / `run:acceptance`; `workflow_dispatch` is fallback; production/deploy workflows keep separate gates.
 - No open process-side finding or docs debt remains.
-- **Current active work:** B3 #359 corrected exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`: 15/15 exact-head workflows SUCCESS and author correction self-check PASS; next **Мира fresh bounded B3 checkpoint**. B4 blocked until coordinator PASS and owner continuation.
+- **Current active work:** B3 coordinator PASS; B4-A completed in Draft #365 exact `e30c763d4dd42e32537f2a6e6edfec194c6d2af0`, focused static checks 17/17 PASS; runtime not yet verified. Next owner continuation permits only B4-B.
 
