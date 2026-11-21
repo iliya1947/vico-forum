@@ -10,17 +10,14 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Состояние: подготовлены конкретные proposal верхних слоёв: `research/USER_INSTRUCTIONS.proposed.md`, `research/PROJECT_INSTRUCTIONS.proposed.md`; общий количественный разбор — `research/upper-layer-comparison.md`. Действующие инструкции не изменялись.
+Состояние: разработчик предоставил точный исходный набор из 55 пользовательских правил. Он зафиксирован без редактирования в `research/USER_INSTRUCTIONS_55_SOURCE.md` и является единственным source-of-truth для дальнейшего разбора пользовательского слоя.
 
-User current → proposed: 262 → 268 whitespace words (2.3%).
-Project current → proposed: 443 → 394 (-11.1%).
-AGENTS current → proposed: 2209 → 2143 (-3%).
-Все три слоя: 2914 → 2805 words (-3.7%), 22973 → 22305 chars (-2.9%).
+Все прежние reconstruction-based материалы (`C01–C19`, User proposal, derived classifications) считаются предварительными и не могут использоваться как основание для удаления/слияния правил без повторной сверки с точными 55.
 
-User layer немного вырос, но общий instruction load снизился; новые universal guards не размазаны по Project/AGENTS.
+Действующие User/Project instructions и `AGENTS.md` не изменялись.
 
 Проверяющий: не назначен.
 
-Блокер: перед применением остаётся policy-вопрос гранулярности PR permission; он не блокирует semantic validation User proposal.
+Блокер: нет.
 
-Следующий переход: построить semantic coverage table User proposal против старых U01–U15 и подтверждённых новых guards; проверить loss/overlap без новых стресс-тестов.
+Следующий переход: классифицировать **каждое из точных 55 правил** по фактической функции и покрытию в User / Project / AGENTS, без переписывания, сжатия или предварительного объединения.
