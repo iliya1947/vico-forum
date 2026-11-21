@@ -125,3 +125,11 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - No open process-side finding or docs debt remains.
 - **Current active work:** B4 Draft #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e` author self-check PASS with 9/9 workflows SUCCESS. Next **Мира bounded B4 coordinator checkpoint**. B5 blocked until coordinator PASS plus owner continuation.
 
+## Parallel side assignment — stale/legacy audit (Mira-2)
+
+- Direct owner assignment through service PR #342.
+- Agent: **Mira-2**.
+- Scope: systematic current-product stale/legacy audit only; no fixes.
+- Detailed handoff: `research/stale-legacy-audit-handoff.md`.
+- This side audit must not alter or block the active moderation visibility B4 chain unless it discovers a defect that directly invalidates that work.
+- Result: one classified registry, then STOP for owner decision.
