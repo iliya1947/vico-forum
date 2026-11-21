@@ -121,3 +121,7 @@ After owner merged #362 to main `7ae969e70e4028156252511b701dbb9b667a61e2`, the 
 ## 2026-11-21 — #363 docs review HOLD
 
 Reviewed #363 head `bbe72f09c34fc9bbae00f6434712ba45e49dfd80` against merged main `7ae969e70e4028156252511b701dbb9b667a61e2`. The three intended docs changes are substantively consistent with the merged manual-test mechanism and hosted dispatch evidence. One current docs-PR blocker remains: branch ancestry still carries the pre-merge #362 history, so GitHub reports 22 changed files. Direct recursive tree comparison proves the endpoint trees differ only in `AGENTS.md`, `AGENT_LOGIC_ERRORS.md`, `PROJECT_STATE.md`; the 19 workflow files are content-identical. DOCS-363-MIRA-01: rebuild the docs branch directly on current main before PASS. No content edits made during review.
+
+## 2026-11-21 — #363 final docs PASS
+
+DOCS-363-MIRA-01 closed by rebuilding the docs branch directly from current main `7ae969e70e4028156252511b701dbb9b667a61e2`. New exact head `7ae9f0f8d007cb7f2c2c007794476715881a13ef` is ahead 1 / behind 0 and PR diff contains exactly `AGENTS.md`, `AGENT_LOGIC_ERRORS.md`, `PROJECT_STATE.md`. The three blob SHAs are byte-identical to the content already reviewed before rebuild, so the content PASS carries; only ancestry changed. PR mergeable, no automatic PR test runs. Final docs review PASS; owner may merge #363.

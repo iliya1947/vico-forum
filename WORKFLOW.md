@@ -129,8 +129,9 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 ## Process side task — agent-triggered PR tests
 
 - #362 merged into main as `7ae969e70e4028156252511b701dbb9b667a61e2`; Leva independent implementation PASS was on exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`.
-- Post-merge hosted dispatch smoke PASS: CI run `44900723276` with PR #363 / exact head `bbe72f09c34fc9bbae00f6434712ba45e49dfd80` / base `main`; resolver, exact checkout, `VICO_CI_BASE_REF=main`, migration guard, checks and database all SUCCESS.
-- #363 docs content review against current main: AGENTS manual-test policy, logic-error entries and PROJECT_STATE CI-state wording are consistent with the merged mechanism; no separate content finding confirmed.
-- **DOCS-363-MIRA-01 — HOLD:** #363 branch ancestry was not rebuilt after #362 merged. GitHub's PR diff therefore currently reports 22 files (19 already-merged workflow files + 3 docs), although direct tree comparison main `7ae969e...` vs #363 `bbe72f09...` proves only the three docs blobs actually differ. This violates the intended docs-only PR boundary and must be corrected before docs PASS/merge.
-- Next subtask: rebuild #363 directly on current main while preserving only its three docs changes; then repeat the docs-only diff/scope check and issue PASS or remaining finding. Do not alter #362 or rerun implementation acceptance.
+- Post-merge hosted dispatch smoke PASS: CI run `44900723276` with PR #363 / exact docs head before rebuild `bbe72f09c34fc9bbae00f6434712ba45e49dfd80` / base `main`; resolver, exact checkout, `VICO_CI_BASE_REF=main`, migration guard, checks and database all SUCCESS.
+- #363 docs content review found no content finding. Initial review HOLD `DOCS-363-MIRA-01` was ancestry-only: GitHub still showed already-merged #362 workflow history in the PR.
+- #363 was rebuilt directly from current main without changing any of the three reviewed docs blobs. Current exact docs head: `7ae9f0f8d007cb7f2c2c007794476715881a13ef`.
+- Final #363 scope check: base exact `7ae969e70e4028156252511b701dbb9b667a61e2`, ahead 1 / behind 0, changed files exactly `AGENTS.md`, `AGENT_LOGIC_ERRORS.md`, `PROJECT_STATE.md`; all three blob SHAs equal the already-reviewed content; mergeable; automatic PR workflow runs = 0.
+- **DOCS-363-MIRA-01 CLOSED. Final docs review PASS.** #363 is ready for owner merge. No additional CI/acceptance required because only ancestry changed and reviewed docs content stayed byte-identical.
 
