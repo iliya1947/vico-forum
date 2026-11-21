@@ -153,8 +153,7 @@ const errorKeys: Record<ActionError, UiKey<"common">> = {
   unavailable: "settingsSecurityUnavailable",
 };
 
-export default function SettingsAccountRoute({ mutationMode = "all", googleLink }: {
-  mutationMode?: "all" | "sessions" | "revoke-one" | "none";
+export default function SettingsAccountRoute({ googleLink }: {
   googleLink?: (callbackURL: string, expectedUserId: string) => Promise<boolean>;
 } = {}) {
   const state = useLoaderData<typeof loader>();
@@ -190,13 +189,13 @@ export default function SettingsAccountRoute({ mutationMode = "all", googleLink 
           <h3 id="settings-account-methods">{t("settingsSecurityMethods")}</h3>
           <ul>{state.linkedMethods.map(method =>
             <li key={method}>{method === "password" ? t("settingsSecurityPasswordMethod") : "Google"}</li>)}</ul>
-          {mutationMode === "all" && !state.linkedMethods.includes("google")
+          {!state.linkedMethods.includes("google")
             ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)}
               expectedUserId={state.accountId} link={previewGoogleLink} />
             : null}
           {!state.hasPassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
-        {state.hasPassword && mutationMode === "all" ? <section className="settings-account-section" aria-labelledby="settings-account-password">
+        {state.hasPassword ? <section className="settings-account-section" aria-labelledby="settings-account-password">
           <h3 id="settings-account-password">{t("settingsSecurityPasswordHeading")}</h3>
           <Form method="post" className="settings-account-form" aria-busy={busy || undefined}>
             {identityFields}
@@ -224,7 +223,7 @@ export default function SettingsAccountRoute({ mutationMode = "all", googleLink 
                     <span>{t("settingsSecuritySessionExpires")}: <time dateTime={session.expiresAt}>
                       {formatDate(session.expiresAt)}</time></span>
                   </div>
-                  {mutationMode !== "none" && !session.current ? <Form method="post" className="settings-account-revoke-form">
+                  {!session.current ? <Form method="post" className="settings-account-revoke-form">
                     {identityFields}
                     <input type="hidden" name="intent" value="revoke-one" />
                     <input type="hidden" name="sessionId" value={session.id} />
@@ -232,8 +231,7 @@ export default function SettingsAccountRoute({ mutationMode = "all", googleLink 
                   </Form> : null}
                 </li>)}
               </ul>
-              {(mutationMode === "all" || mutationMode === "sessions") && otherSessions.length
-                ? <Form method="post" className="settings-account-revoke-all">
+              {otherSessions.length ? <Form method="post" className="settings-account-revoke-all">
                 {identityFields}
                 <input type="hidden" name="intent" value="revoke-others" />
                 <button type="submit" disabled={busy}>{t("settingsSecurityRevokeOthers")}</button>
