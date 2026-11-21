@@ -1,6 +1,6 @@
 # agents/lira.md — рабочая память Лиры по #342
 
-## Текущее назначение — B5; STOP после B5.3
+## Текущее назначение — B5; STOP после B5.4a
 
 B1 #355, B2 #357, B3 #359 и B4 #365 получили bounded Mira PASS и остаются Draft/unmerged. B4 stable exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`, [CI #44909767945](https://github.com/iliya1947/vico-forum/actions/runs/44909767945) SUCCESS, 9/9 workflows. B5 разрешён владельцем через #342 после B4 PASS.
 
@@ -24,6 +24,12 @@ Added PG-targeted Hide/Restore/actor-isolation/keyset/absent-target tests and re
 
 B5.3 changes 8 files on top of B5.1/B5.2, full B5 local diff 14 files/20 commits, no behind commits. GitHub static source/patch checks PASS. Tests authored: real PG Mute×Hide both orders, hidden/Restore, missing OFF, 50+2 pagination, Block hidden author and route/UI masking. **Local PostgreSQL/Vitest/CI cannot be executed via current environment; not run.** B5 author self-check/CI PASS remains pending for final whole-B5 checkpoint.
 
+## B5.4a — mixed/legacy inbox readers (recorded, STOP)
+
+[Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `a1daf50a52650bf00b6ba7cdeccf6176c02ee872`, unchanged base #365. Mixed and legacy reply/mention source joins now gate title/actor/post/topic on current topic+post visibility. Hidden/absent source projects `unavailable:true`, no actor or source metadata; notice ID/kind/time/read_at and existing count queries preserved. Existing Complaint Decision/Appeal result notices remain independent. Route additionally removes hidden fields on serialization; UI shows neutral label/no avatar. Added PG-targeted hidden post+topic, mixed/legacy counts/order/Restore/suppression/protected Case regression, private route DTO test, EN/RU/HE layout test.
+
+Static GitHub source/compare PASS on exact head: B5.4a changes 7 files, ahead 8/behind 0 relative to B5.3 head. **PostgreSQL/Vitest/typecheck/CI were not executed; no full B5 PASS.** B5.4b markNotificationRead/markReplyNotificationRead and open redirect still unresolved and must be handled next; the implementation PR remains Draft.
+
 ## Next
 
-**Лира STOP after B5.3.** On owner `...`, continue only B5.4: mixed/legacy inbox masking, mark/read/open, chronology and suppression receipts, Restore no fanout/reset. Then whole B5 exact-head checks/author self-check and Mira bounded coordinator checkpoint. Do not begin B6/B7, merge, Leva whole-feature review or Stage6.
+**Лира STOP after B5.4a.** Next owner `...` authorizes only B5.4b: mark-read/open hidden-source behavior, no lock inversion, idempotent read_at, badge/order/suppression/Restore/no-backfill assertions. Then whole B5 author self-check + exact-head CI/acceptance, Mira bounded coordinator checkpoint. Do not begin B6/B7, merge, Leva whole-feature review or Stage6.
