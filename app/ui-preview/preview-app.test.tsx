@@ -1762,7 +1762,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
   it("edits an authenticated author's own Help topic title", async () => {
     const user = userEvent.setup();
-    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-needs-review" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-current" identity="user" />);
 
     await user.click(screen.getByRole("button", { name: "Edit topic title" }));
     const title = screen.getByRole("textbox", { name: "Topic title" });
