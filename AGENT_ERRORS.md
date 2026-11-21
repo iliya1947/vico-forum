@@ -27,3 +27,9 @@
 - **Why it was wrong:** AGENTS.md explicitly says Mira must not change the assigned service PR without a direct developer command. Creating #361 as the replacement working channel was itself that forbidden switch; there was no genuine rule conflict to resolve.
 - **Prevention:** when a service PR is already assigned, keep all workflow/handoff state there unless the developer explicitly commands a switch. The generic rule about creating a service PR for a separate task applies only when no current assignment already governs the work.
 
+## 2026-11-21 — invented reviewer exception
+
+- **What happened:** after initially assigning Leva as the standard independent reviewer, Mira asserted a nonexistent project rule that process/workflow tasks exclude Leva and changed the handoff to Lira.
+- **Why it was wrong:** current `AGENTS.md` contains no such exception; Lira later corrected the service record. The conclusion was based on an invented condition rather than the actual source of truth.
+- **Prevention:** before overriding the standard reviewer route, verify the claimed exception in current `AGENTS.md` or an explicit owner instruction. Do not turn remembered/project-adjacent context into a binding rule without verification.
+
