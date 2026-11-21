@@ -1824,7 +1824,7 @@ export class DrizzleForumRepository {
       if (row.title === null || row.authorId === null || row.authorName === null
         || row.sectionId === null || row.sectionName === null
         || row.categoryId === null || row.categoryName === null) {
-        return { id: row.id, savedAt: row.savedAt, unavailable: true };
+        return { id: row.id, savedAt: row.savedAt, unavailable: true as const };
       }
       const author = projectForumPublicAuthor({
         authorId: row.authorId, authorName: row.authorName,
