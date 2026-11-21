@@ -155,7 +155,7 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
     ["edit", "mute", "before"], ["edit", "mute", "after"],
     ["edit", "block", "before"], ["edit", "block", "after"],
     ["initial", "block", "before"], ["initial", "block", "after"],
-  ] as const)("%s %s committed %s decision snapshot", async (path, kind, phase) => {
+  ] as const)("%s %s requested %s decision snapshot", async (path, kind, phase) => {
     const recipient = await person(), actor = await person();
     const topicAuthor = path === "reply" ? recipient : actor;
     const topicId = path === "initial" ? uuid() : await topic(topicAuthor);
@@ -168,8 +168,11 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
     }
     const client = new Client({ connectionString: url, options: options + " -c lock_timeout=7s" });
     await client.connect();
+    const publishingPid = (await client.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
     const gate = pauseSql(client, query => /with candidate_users as materialized/iu.test(query), phase);
     let pending: Promise<unknown> | undefined;
+    let muteClient: Client | undefined;
+    let pendingMute: Promise<boolean> | undefined;
     try {
       const isolated = writer(client);
       if (path === "initial") {
@@ -189,25 +192,38 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
       }
       await reached(gate.observed);
       if (kind === "mute") {
-        await forum.setTopicMute({ actorId: recipient, topicId, muted: true });
+        // B5 Mute ON uses topic FOR SHARE, which must wait behind the
+        // publication's FOR NO KEY UPDATE. A Mute cannot commit before
+        // this writer's candidate snapshot: verify the real PostgreSQL wait
+        // instead of awaiting it while the publication gate is paused.
+        muteClient = new Client({ connectionString: url, options: options + " -c lock_timeout=7s" });
+        await muteClient.connect();
+        const mutePid = (await muteClient.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
+        pendingMute = writer(muteClient).setTopicMute({ actorId: recipient, topicId, muted: true });
+        await blocked(mutePid, publishingPid);
       } else {
+        // Block retains KEY SHARE on target user, so it can commit before
+        // a paused publication notification candidate statement.
         await forum.setUserBlock({ actorId: recipient, blockedUserId: actor, blocked: true });
       }
       gate.resume();
       await pending;
+      if (pendingMute) await pendingMute;
       expect(gate.triggered).toBe(true);
       const relevant = (await notifications(postId)).filter(row => row.recipient_user_id === recipient);
-      expect(relevant).toHaveLength(phase === "before" ? 0 : 1);
-      expect((await receipts(postId)).includes(recipient)).toBe(phase === "before");
-      if (phase === "after") {
+      const delivered = kind === "mute" || phase === "after";
+      expect(relevant).toHaveLength(delivered ? 1 : 0);
+      expect((await receipts(postId)).includes(recipient)).toBe(!delivered);
+      if (delivered) {
         expect(relevant[0]!.read_at).toBeNull();
         if (path === "edit" || path === "initial") expect(relevant[0]!.kind).toBe("mention");
       }
     } finally {
       gate.resume();
       gate.restore();
-      await Promise.allSettled(pending ? [pending] : []);
+      await Promise.allSettled([pending, pendingMute].filter((p): p is Promise<unknown> => !!p));
       await client.end();
+      if (muteClient) await muteClient.end();
     }
   }, 25_000);
 
