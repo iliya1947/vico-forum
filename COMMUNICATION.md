@@ -76,3 +76,5 @@ Control contract:
 
 Lira reviewed #362 exact `898f71c2d408428ddf126d218c88c861ef29a10d` and found the label-removal permission ambiguity. Mira corrected it on `3387132aeed815fb93cf3094c3d70f5e343ce998` via the Issues REST endpoint supported by the existing `issues: write` permission. Old Lira review is not a PASS for the new head.
 
+Leva independent whole-PR review of corrected exact `3387132aeed815fb93cf3094c3d70f5e343ce998`: **HOLD**, `MANUAL-CI-LEVA-01/02` [P2]. Full findings and repeat-check criteria: `research/manual-pr-tests-review.md`. Mira coordinates correction of all AP-10 job gates and actual PR/base context for dispatch; sync #363 after the new implementation head, then author checks and fresh independent review. No implementation edits or Actions triggers were made by Leva.
+

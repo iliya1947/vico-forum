@@ -2,9 +2,9 @@
 
 ## Текущий статус
 
-На входе 2026-11-21 проверены свежая service branch `636ecc2` и комментарии #342 по `updated_at`. Последний управляющий комментарий 7049617772 обновлён `2026-11-20T23:05:07Z`: B3 author PASS, следующая — Мира для bounded coordinator checkpoint Draft #359 на exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`, base B2 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`. B1/B2 уже имеют Mira bounded PASS; все ступени Draft/unmerged. Это состояние передачи из служебных источников, не выполненный Лёвой review реализации или CI.
+Свежий вход 2026-11-21: service branch `d22346c`, latest updated comment7059890554 и WORKFLOW назначили независимый review process side task #362. Проверен весь diff exact `3387132aeed815fb93cf3094c3d70f5e343ce998` против main `6f50d6a`: **HOLD**, два [P2] `MANUAL-CI-LEVA-01/02`. Все доказательства, scope и повторные gates — `research/manual-pr-tests-review.md`. API permission finding закрыт по официальному контракту; AP-10 три ungated sibling jobs и CI dispatch без GITHUB_BASE_REF остаются. Сам guard реально воспроизведён локально; GitHub Actions не запускались, implementation не менялся. Следующая — Мира для координации исправлений и resync #363, затем новый stable head на повторный review. #361 закрыт и не source of truth.
 
-Лёва остаётся STOP: промежуточный независимый Codex-review прямо исключён. B4 — только после Mira B3 PASS и новой owner continuation. Текущие назначения — финальный раздел `WORKFLOW.md` «B3 F5», план — `stages/moderation-visibility/PLAN.md`. Ранние формулировки WORKFLOW «B3 is ACTIVE / Lira creates» не отменяют более позднюю явную передачу Мире.
+Отдельная moderation visibility цепочка: B3 author PASS передан Мире для bounded checkpoint Draft #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1`, base B2 `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`; B1/B2 Mira bounded PASS, ступени Draft/unmerged. Лёва не делает промежуточный Codex-review visibility; B4 только после Mira B3 PASS и новой owner continuation. План — `stages/moderation-visibility/PLAN.md`; раннее WORKFLOW «B3 is ACTIVE / Lira creates» не отменяет явную передачу Мире.
 
 ## Основания, полезные при продолжении
 

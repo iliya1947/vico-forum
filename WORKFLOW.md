@@ -2,6 +2,8 @@
 
 ## Активный этап
 
+**Текущая process side task #362: Leva independent review HOLD** на exact `3387132aeed815fb93cf3094c3d70f5e343ce998`; два current-scope finding (AP-10 sibling jobs без label gate; неработающий CI dispatch без PR base). Findings, доказательства и критерии перепроверки — `research/manual-pr-tests-review.md`. Следующая — Мира для возврата исполнителю и координации исправлений; #363 синхронизировать после нового #362 head. Moderation B3 параллельно остаётся на передаче Мире, не возобновлять реализацию по старым формулировкам ниже.
+
 Moderation visibility stacked delivery:
 
 - B1 Draft #355 — **Mira bounded PASS**, exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
@@ -132,5 +134,5 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 - The correction uses `DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}`; GitHub documents that PR label operations use Issues endpoints and accept `Issues: write`.
 - #363 is the separate docs PR and is synchronized on exact `b58423df68f05707142fe5c5335fec0db0e1f319` directly over corrected #362 head `3387132aeed815fb93cf3094c3d70f5e343ce998`.
 - The erroneous temporary service PR #361 is closed without merge and is not a source of truth.
-- Recovery self-check complete: #362 and #363 are mergeable, #363 diff is only `AGENTS.md` / `AGENT_LOGIC_ERRORS.md` / `PROJECT_STATE.md`, and neither new exact head spawned automatic PR tests. Next process step: independent review of #362 exact `3387132aeed815fb93cf3094c3d70f5e343ce998` under current `AGENTS.md`.
+- Recovery self-check complete: #362 and #363 are mergeable, #363 diff is only `AGENTS.md` / `AGENT_LOGIC_ERRORS.md` / `PROJECT_STATE.md`, and neither new exact head spawned automatic PR tests. **Independent Leva review completed: HOLD** on #362 exact `3387132aeed815fb93cf3094c3d70f5e343ce998`. `MANUAL-CI-LEVA-01/02` [P2] and the correction/review handoff are in `research/manual-pr-tests-review.md`; implementation was not changed during review. Old Issues API permission finding is closed by documented contract, but this does not close the two new findings. Next: Mira coordinates fixes, author checks and #363 resync, then fresh independent review of the new stable exact head.
 
