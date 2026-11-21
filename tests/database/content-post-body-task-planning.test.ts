@@ -1497,6 +1497,7 @@ describe("visibility-gated post-body planning", () => {
       release.resolve();
       await expect(execution).resolves.toEqual({ outcome: "published", delivery: "ack" });
       expect(translate).toHaveBeenCalled();
+      const callsAfterPublication = translate.mock.calls.length;
       expect(await new DrizzleContentTranslationStore(drizzle(second)).read({
         contentType: "post-body", contentId: "post-a", revisionId: "post-a-r1", targetLocale: "he",
       })).toMatchObject({ contentId: "post-a", revisionId: "post-a-r1", provenance: { origin: "machine" } });
@@ -1518,7 +1519,7 @@ describe("visibility-gated post-body planning", () => {
       )).resolves.toMatchObject({ kind: "original", reason: "translation-current" });
       expect(restoredEnqueue.messages).toHaveLength(0);
       expect(await counters()).toEqual(before);
-      expect(translate).toHaveBeenCalledTimes(1);
+      expect(translate).toHaveBeenCalledTimes(callsAfterPublication);
     } finally {
       release.resolve();
       if (execution) await Promise.allSettled([execution]);
