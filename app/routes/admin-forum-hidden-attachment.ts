@@ -42,7 +42,7 @@ export async function loader({request,params,context}:{
     if(!attachment)return failure(404);
     return await deliverAttachment(context,attachment,view);
   }catch(error){
-    if(error instanceof Response&&[401,403,404,503].includes(error.status))return failure(error.status);
+    if(error instanceof Response&&[400,401,403,404,503].includes(error.status))return failure(error.status);
     return failure(503);
   }
 }
