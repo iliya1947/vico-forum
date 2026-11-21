@@ -971,9 +971,12 @@ export class DrizzleForumRepository {
   async setTopicWatch(input: { topicId: string; actorId: string; watching: boolean }): Promise<boolean> {
     return this.database.transaction(async (tx) => {
       // Matches reply publication's topic mutex, so state changes and fanout are serialized.
-      const [topic] = await tx.select({ id: forumTopics.id }).from(forumTopics)
+      const [topic] = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden }).from(forumTopics)
         .where(eq(forumTopics.id, input.topicId)).for("no key update");
-      if (!topic) throw new ForumEntityNotFoundError("topic does not exist");
+      // New subscriptions require a visible topic. Own Unwatch remains safe even
+      // when the topic is hidden or absent, without probing target existence.
+      if (input.watching && (!topic || topic.isHidden))
+        throw new ForumEntityNotFoundError("topic does not exist");
       await assertActiveAccountForDrizzleMutation(tx, input.actorId);
       if (input.watching) {
         await tx.insert(forumTopicWatches).values({ userId: input.actorId, topicId: input.topicId })
