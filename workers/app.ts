@@ -38,6 +38,8 @@ import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telem
 import { RequestAuthFactCollector } from "../app/observability/auth-fact-collector.server";
 import { createHyperdriveAuthFactWriter } from "../db/hyperdrive-auth-facts";
 import {adminForumContext} from "../app/admin/forum.server";
+import {hiddenQueueContext} from "../app/admin/visibility-queue.server";
+import {createHyperdriveHiddenQueue} from "../db/hyperdrive-private-visibility-queue";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
 import { createHyperdriveAdminUsers } from "../db/hyperdrive-admin-users";
@@ -146,6 +148,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
       authorization, webConnectionString, undefined, ownerUserId,
     );
     context.set(authorizationContext, effectiveAuthorization);
+    context.set(hiddenQueueContext, createHyperdriveHiddenQueue(webConnectionString, effectiveAuthorization));
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization, undefined, ownerUserId));
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization, undefined, ownerUserId));
