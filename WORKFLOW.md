@@ -128,11 +128,13 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## Process side task — agent-triggered PR tests
 
-- Owner decision D-11: PR CI / browser acceptance только по команде агента: run:ci / run:acceptance, workflow_dispatch fallback. Production/deploy, UI preview Pages и Codex bridge вне этого механизма; #361 закрыт, не source of truth.
-- Current implementation #362 exact c85214aa9a2706fb0cb1704cfcf18459aa97bcdb, base main 6f50d6ad549f816e091282012d6201fa03291b82. Mira full self-review и label runtime evidence переданы по comment7061333928.
-- **Leva independent whole-PR rereview: HOLD.** MANUAL-CI-LEVA-01 CLOSED: все 20 acceptance jobs gated; verified real run:ci → 17 acceptance SKIPPED, run:acceptance → 17 acceptance SUCCESS, AP-10 4/4 соответствуют обоим событиям. CI и controller SUCCESS; label consumption с текущими permissions runtime-proven.
-- **MANUAL-CI-LEVA-02 [P2] OPEN:** resolved dispatch base передаётся через step env GITHUB_BASE_REF, но GitHub не разрешает override reserved GITHUB_*; runner context перезаписывает это значение перед shell. Контракт/source и локальная диагностика — research/manual-pr-tests-review.md. Исправление PR resolver/head pinning само по себе этот последний участок не закрывает.
-- Фактический hosted workflow_dispatch пока не исполнялся: trigger ещё не в default branch. Это ограничение явно сохраняется; local model/resolver checks не называются hosted runtime PASS.
-- #363 docs-only head b481f0a004c40a01f53dc9be3428c6d3d1ea2409, base exact #362; zero workflow runs. После нового implementation head синхронизировать docs; не merge до закрытия finding и fresh review.
-- **Next: Мира** возвращает исполнителю локальное исправление передачи base, targeted self-check (ordinary/stacked base и immutable migration denial), затем stable-head handoff Лёве. Полные доказательства/критерии — research/manual-pr-tests-review.md. Уже закрытые gates и широкую acceptance без нового основания не повторять.
+- Owner decision D-11: PR CI / browser acceptance только по команде агента: `run:ci` / `run:acceptance`; `workflow_dispatch` — fallback. Production/deploy, UI preview Pages и Codex bridge вне этого механизма; #361 закрыт и не source of truth.
+- Leva rereview of #362 exact `c85214aa9a2706fb0cb1704cfcf18459aa97bcdb` closed MANUAL-CI-LEVA-01 and left only MANUAL-CI-LEVA-02 [P2]: workflow env tried to override reserved `GITHUB_BASE_REF`.
+- Local correction applied in #362 exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`: resolved base now travels via `VICO_CI_BASE_REF`; only the child guard process is invoked as `GITHUB_BASE_REF="$VICO_CI_BASE_REF" node .github/scripts/verify-migration-history.mjs`. Resolver/head/base drift checks and exact checkout are unchanged.
+- Correction diff against previous reviewed head is only `.github/workflows/ci.yml`, 2 additions / 2 deletions. No acceptance workflow changed.
+- Targeted runtime `run:ci` on exact `5ed18dcf...`: controller SUCCESS; all 17 acceptance workflows SKIPPED; CI run `44897099641` `checks` SUCCESS + `database` SUCCESS; `Protect accepted migration history` SUCCESS through the corrected child-process path.
+- Previous current-scope evidence remains relevant where code did not change: `run:acceptance` on prior head `c85214aa...` had all 17 acceptance workflows SUCCESS, controller SUCCESS, CI SKIPPED; AP-10 4/4 SUCCESS. Broad acceptance was not repeated because the correction touches only CI base propagation.
+- Hosted `workflow_dispatch` still cannot be executed before the trigger exists on default branch. Leva's independent local experiment already covered ordinary and stacked base plus immutable migration denial for this exact propagation pattern; Mira does not claim hosted dispatch runtime PASS.
+- #363 resynchronized directly over #362: current docs head `bbe72f09c34fc9bbae00f6434712ba45e49dfd80`, docs-only. The reserved-variable miss from Mira's prior exhaustive review is recorded in both logic/error journals.
+- **Next:** fresh Leva review only of the new #362 exact head and remaining MANUAL-CI-LEVA-02 closure. Previously closed MANUAL-CI-LEVA-01 should not be re-opened absent relevant change.
 

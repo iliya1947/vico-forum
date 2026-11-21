@@ -38,3 +38,9 @@
 - **What happened:** after switching PR label removal to the documented Issues REST endpoint, Mira declared the permission finding closed because the endpoint documentation accepts `Issues: write`. A real `pull_request:labeled` run then returned HTTP 403 even though the runner reported `Issues: write`.
 - **Why it was wrong:** the documentation section cited fine-grained token permission sets; that was treated as sufficient proof for the built-in Actions `GITHUB_TOKEN` context without executing the available runtime check.
 - **Prevention:** when permission behavior depends on token type/event context and the current task can exercise it safely, verify that exact runtime path before declaring the permission finding closed. Keep documentation evidence and runtime evidence distinct.
+
+## 2026-11-21 — reserved GitHub env override was missed in exhaustive self-review
+
+- **What happened:** after a full self-review of #362, Mira declared no current-scope defect and handed the head to Leva, but the dispatch path still attempted to override reserved `GITHUB_BASE_REF` via workflow step env.
+- **Why it was wrong:** the review verified PR-label runtime and dispatch resolver logic but did not verify GitHub's reserved `GITHUB_*` environment-variable semantics. The normal PR path masked the defect because GitHub already provides `GITHUB_BASE_REF` there.
+- **Prevention:** when an unexecuted fallback path depends on event-specific GitHub context or default variables, verify the runner/default-variable contract explicitly; do not infer dispatch correctness from a successful PR-event path.
