@@ -17,3 +17,4 @@
 - 2026-11-21 — локально исправлен USER draft rule 8: восстановлен общий evidence gate действующего current rule 8; повторная сверка подтвердила FULL coverage всех 15/15 действующих User rules.
 - 2026-11-21 — PROJECT_INSTRUCTIONS.draft.md очищен от подтверждённых дублей User layer: удалён old Project 10, удалён goal-дубль, partial duplicate про первую трактовку сокращён до project-context check; exact diff подтверждает отсутствие неожиданных изменений.
 - 2026-11-21 — Project draft очищен от подтверждённых межслойных дублей: removed current Project 10, removed generic goal duplicate, shortened interpretation duplicate; semantic diff confirms 0 lost project-specific guards.
+- 2026-11-22 — после AGENTS cross-layer анализа Project draft сокращён до 16 numbered rules: removed current Project 3 as duplicate of AGENTS Review 5/7; repeated agent name/model table replaced by reference to AGENTS Roles. Semantic diff confirms 0 lost project-specific guards.
