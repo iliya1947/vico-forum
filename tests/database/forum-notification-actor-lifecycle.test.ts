@@ -244,8 +244,7 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     let changed = 0;
     let legacyChanged = 0;
     let caseChanged = 0;
-    let hiddenReplyReadAt: Date | null = null;
-    let hiddenMentionReadAt: Date | null = null;
+    const markedAt = new Map<string, Date | null>();
     try {
       // Post Hide alone is sufficient to mask the legacy notification target.
       await client.query("update forum_posts set is_hidden=true where id='g-post-mention-active'");
@@ -253,22 +252,22 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
       await expect(forum.markNotificationRead("g-topic-author", "g-n2")).rejects.toThrow();
       expect(await readAt("g-n2")).toBeNull();
       expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
-      hiddenMentionReadAt = await readAt("g-n2");
-      expect(hiddenMentionReadAt).not.toBeNull();
+      markedAt.set("g-n2", await readAt("g-n2"));
+      expect(markedAt.get("g-n2")).not.toBeNull();
       changed++;
       expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
-      expect(await readAt("g-n2")).toEqual(hiddenMentionReadAt);
+      expect(await readAt("g-n2")).toEqual(markedAt.get("g-n2"));
 
       // Topic Hide masks every ordinary destination, but not a protected Case result.
       await client.query("update forum_topics set is_hidden=true where id='g-topic'");
       expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
         .toEqual({ unavailable: true });
-      hiddenReplyReadAt = await readAt("g-n4");
-      expect(hiddenReplyReadAt).not.toBeNull();
+      markedAt.set("g-n4", await readAt("g-n4"));
+      expect(markedAt.get("g-n4")).not.toBeNull();
       legacyChanged++;
       expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
         .toEqual({ unavailable: true });
-      expect(await readAt("g-n4")).toEqual(hiddenReplyReadAt);
+      expect(await readAt("g-n4")).toEqual(markedAt.get("g-n4"));
 
       expect(await forum.markNotificationRead(recipient, "g-n5"))
         .toEqual({ kind: "complaint-decision", caseId: "g-case" });
