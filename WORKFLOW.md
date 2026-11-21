@@ -107,18 +107,19 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B4 — MIRA COORDINATOR PASS — STOP BEFORE B5
+## Moderation visibility B5 — AUTHORIZED; Lira implementation pending
 
-- Stacked Draft #365 stable exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`, base = accepted B3 #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`; mergeable, four changed files only.
-- Production delta is limited to `db/forum-attachments.ts::readPublishedAttachment`: exact attachment→post→topic membership now requires both post and topic visible before metadata can reach the route. `attachment-download.ts` still resolves store membership before any bucket access, so default/inline/text all fail neutral 404 with zero public bucket GET when hidden/missing.
-- Shared visible publication membership remains usable; hidden publication membership does not remove another visible ref. Owner draft access remains independent and usable. Existing Complaint review/appeal evidence routes remain separate protected paths behind reviewer admission and exact Case/evidence membership; B4 adds no B6 private moderation route.
-- Accepted-plan translation behavior is preserved: B2 new-planning gates remain unmodified; new plans against hidden source do not enqueue/write budget/task generation, while already accepted title/body work may complete revision-bound private translation persistence after Hide. Restore reuses persisted translation and creates no new provider/job/revision work. New tests exercise provider-window Hide on an independent PostgreSQL connection; earlier accepted B2 lock-order tests remain the planning×Hide/Restore race foundation.
-- Evidence-only attachment retention is verified across topic+post Hide, cleanup and Restore: Complaint evidence membership and object metadata remain; cleanup does not delete the object; no synthetic public membership is created.
-- Alternate `bucket.get` call sites checked: public attachment download is the only public file route; Complaint evidence calls are protected reviewer routes and therefore are the retained protected-domain exception required by the plan.
-- Exact-head author self-check PASS. CI run `44909767945` SUCCESS; 2782/2782 unit, 1604/1604 PG17; focused attachment 44/44, title execution 16/16, body planning 30/30. All **9/9 exact-head workflow runs SUCCESS**, including SA04-K5 R2/Worker/Chromium, SA07 and SA08.
-- **B4 bounded coordinator checkpoint PASS.** No confirmed current-B4 blocker remains. No B5, merge, Leva whole-feature review or production action is authorized by this PASS.
-- Process note: Lira was explicitly assigned B4-A only with STOP, but implemented B4-B and B4-C before owner continuation. The extra work remained inside the already accepted B4 technical contract and introduced no current-B4 defect, so the completed B4 is reviewed as-is; the gate violation is recorded separately in `AGENT_ERRORS.md`.
-- **STOP. B5 requires a new owner continuation.**
+- Owner continuation after B4 coordinator PASS authorizes **B5 only**.
+- Stack base: B4 Draft #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Create the next stacked implementation PR with base = B4 head branch; do not merge B1–B4.
+- B5 scope is exactly the accepted **own preferences / inbox integration** boundary:
+  - Watch / Bookmark / Mute ON/save against hidden topic is denied without exposing hidden metadata; own OFF/undo remains possible for hidden or absent targets without an existence oracle.
+  - Bookmarks and muted lists preserve a manageable unavailable row for retained own state; pagination/re-add semantics remain correct.
+  - Personal Block stays below moderation visibility: hidden/tombstoned authors cannot be exposed through Block/Reveal paths; `readTopicBlockedAuthors` only reasons over visible authors.
+  - Mixed and legacy notification families retain existing notification identity/read state/count chronology, but current hidden targets project unavailable; mark/read/open must not reveal hidden content.
+  - Hide/Restore must not manufacture notifications, backfill, reset read state, or change suppression receipts.
+- Required checks are the B5 rows of the accepted matrix: hidden/absent OFF safe, unavailable own-list rows + undo, retained notice/read_at/badge, generic mark/read/open, chronology, suppressed receipts, Restore no fanout/backfill/read reset.
+- Keep B6 guarded private queue/inspection/assets, B7 canonical Hide/Restore UI/actions, B8 whole acceptance and B9 closeout out of scope.
+- After implementation: author self-check + applicable exact-head CI/acceptance, update #342 handoff, then **STOP → Mira bounded coordinator checkpoint**. Do not start B6 without fresh owner continuation.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 

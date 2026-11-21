@@ -13,3 +13,7 @@ B1 #355 / B2 #357 / B3 #359 (Mira bounded PASS) remain Draft/unmerged. B4 [Draft
 ## Next
 
 **Мира** independently checks bounded B4 on stable `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Only after coordinator PASS and owner `...` may Лира begin B5. Do not start B5–B9, merge, private moderator asset route (B6), independent Leva review or Stage6. **Лира STOP.**
+
+## 2026-11-21 — B5 owner-authorized handoff
+
+Owner continuation after B4 PASS authorizes B5 only. Create next stacked PR from B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Implement Watch/Bookmarks/Mute-Block/inbox visibility integration exactly per accepted B5 contract, run author self-check and applicable exact-head checks, then STOP for Mira. Do not enter B6/B7.
