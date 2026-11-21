@@ -310,8 +310,8 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     expect(await forum.markReplyNotificationRead(recipient, "g-n4")).toEqual({
       topicId: "g-topic", postId: "g-post-reply-active",
     });
-    expect(await readAt("g-n2")).toEqual(hiddenMentionReadAt);
-    expect(await readAt("g-n4")).toEqual(hiddenReplyReadAt);
+    expect(await readAt("g-n2")).toEqual(markedAt.get("g-n2"));
+    expect(await readAt("g-n4")).toEqual(markedAt.get("g-n4"));
     expect((await forum.readNotifications(recipient, 0)).total).toBe(beforeTotal);
     expect(await forum.countUnreadNotifications(recipient))
       .toBe(beforeUnread - changed - legacyChanged - caseChanged);
