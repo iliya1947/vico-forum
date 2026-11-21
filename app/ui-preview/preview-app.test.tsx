@@ -2459,6 +2459,49 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     );
   });
 
+  it("projects Manager Admin and Needs attention destinations into the header", async () => {
+    const key = "vico:administrator-workspace:v1:maya";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
+
+    await openSettings(user);
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
+
+    const adminDestination = await screen.findByRole("combobox", { name: "Default Admin section" });
+    expect(Array.from(adminDestination.querySelectorAll("option"), (option) => option.value)).toEqual([
+      "overview", "forum", "users", "measures", "roles", "history",
+    ]);
+    await user.selectOptions(adminDestination, "roles");
+    expect(document.querySelector(".auth-admin-link")).toHaveAttribute("href", "/en/admin/authorization");
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "Default mode" }), "complaints");
+    expect(document.querySelector(".header-attention-link")).toHaveAttribute(
+      "href",
+      "/en/attention?mode=complaints&group=group1",
+    );
+  });
+
+  it("keeps Owner Administrator preferences active on ordinary Admin pages and exposes Super-admin", async () => {
+    const key = "vico:administrator-workspace:v1:owner";
+    window.localStorage.removeItem(key);
+    const user = userEvent.setup();
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="owner" />);
+
+    await openSettings(user);
+    await openSettingsSection(user, "Administrator preferences", "Administrator preferences");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Density" }), "compact");
+    await user.click(screen.getByRole("link", { name: "Open Admin workspace" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Overview" })).toBeInTheDocument();
+    const adminPanel = document.querySelector(".admin-panel") as HTMLElement;
+    expect(adminPanel).toHaveAttribute("data-density", "compact");
+    expect(within(adminPanel).getByRole("link", { name: "Super-admin" })).toHaveAttribute(
+      "href",
+      "/en/super-admin",
+    );
+  });
+
   it("shows Administrator preferences to Manager in Settings and opens it from navigation", async () => {
     const user = userEvent.setup();
     await renderEmbeddedPreview(<EmbeddedPreview scenarioId="section-user" identity="manager" />);
