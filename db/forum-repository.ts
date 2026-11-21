@@ -149,7 +149,14 @@ export interface ForumTopicReadState {
 }
 
 export type ForumTopicBookmarkSummary = { id: string; savedAt: Date } & (
-  | { unavailable: true }
+  | {
+    unavailable: true;
+    title?: never;
+    authorName?: never;
+    authorIdentityKind?: never;
+    section?: never;
+    category?: never;
+  }
   | {
     unavailable?: false;
     title: string;
