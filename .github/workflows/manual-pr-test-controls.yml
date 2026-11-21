@@ -40,4 +40,4 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TEST_LABEL: ${{ github.event.label.name }}
-        run: gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "$TEST_LABEL"
+        run: gh api --method DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/$TEST_LABEL"
