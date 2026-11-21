@@ -10,18 +10,14 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Состояние: завершена проверка целевой архитектуры на исполнимость в `research/instruction-executability-validation.md`. Действующие инструкции не изменялись.
+Состояние: завершён внутренний аудит актуального `AGENTS.md` в `research/agents-internal-audit.md`. Действующий файл не изменялся.
 
-Ключевые corrections:
-- модель `15 - 2 + 6 = 19` отклонена как не решающая instruction-load проблему;
-- U07 и U09 признаны слишком составными для прямого сохранения;
-- C03 + C11 сведены к одному evidence/applicability guard, поэтому новых самостоятельных U-смыслов осталось пять;
-- U10 и команда `...` не должны интерпретироваться как новые permissions;
-- A-level PR gate совместим с workflow только если workflow явно не считается permission;
-- до финальных редакций нужен внутренний аудит `AGENTS.md` на реальные дубли.
+Главный вывод: A-L1–A-L6 следует сохранять как shared ChatGPT/Codex reasoning core. Реальное сокращение нужно делать ниже: удалить повтор generic logic из Diagnosis, operational details из Roles, дубли review protocol из Workflow 7, handoff duplicate из Developer action и частичный future-work duplicate из Review 5.
+
+Подтверждён правильный слой общего PR-permission contract: Workflow, до правил создания service/implementation PR.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: внутренний аудит `AGENTS.md` на семантические дубли и instruction load без изменения действующего файла.
+Следующий переход: построить точную change-map `AGENTS.md` по категориям KEEP / DELETE-DUPLICATE / MOVE / REPLACE-WITH-REFERENCE / ADD-PERMISSION, не изменяя действующий файл.
