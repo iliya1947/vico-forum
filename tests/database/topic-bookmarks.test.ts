@@ -138,7 +138,8 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     const foreign=await topic(author);
     await repository.setTopicBookmark({actorId:b,topicId:foreign.id,bookmarked:true});
     await fixture.query("update forum_topic_bookmarks set saved_at='2026-11-18T12:00:00.123Z' where user_id=$1",[a]);
-    await fixture.query("update forum_topics set is_hidden=true where id=$1", [ids[0]]);
+    const hiddenId = ids[0]!;
+    await fixture.query("update forum_topics set is_hidden=true where id=$1", [hiddenId]);
     const first=await repository.readTopicBookmarks(a);
     expect(first.items).toHaveLength(50);
     expect(first.next).not.toBeNull();
@@ -147,7 +148,7 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     expect(second.next).toBeNull();
     expect([...first.items,...second.items].map(item=>item.id)).toEqual(ids.sort().reverse());
     expect([...first.items,...second.items].some(item=>item.id===foreign.id)).toBe(false);
-    expect([...first.items,...second.items].find(item=>item.id===ids[0])?.unavailable).toBe(true);
+    expect([...first.items,...second.items].find(item=>item.id===hiddenId)?.unavailable).toBe(true);
     await repository.setTopicBookmark({actorId:a,topicId:first.items[0]!.id,bookmarked:false});
     const refreshed=await repository.readTopicBookmarks(a);
     expect(refreshed.items).toHaveLength(50);
