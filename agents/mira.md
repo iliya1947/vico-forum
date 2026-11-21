@@ -102,3 +102,8 @@ Reviewed #357 exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb` as local B1→B2 
 
 Temporary service PR #361 was created in violation of the fixed #342 assignment and is closed without merge. Recovered Lira review from #361: #362 old exact `898f71c2...` had one finding around `gh pr edit` label removal permissions. Corrected #362 now uses the documented Issues REST label-removal endpoint with the existing `issues: write` permission; new exact head `3387132aeed815fb93cf3094c3d70f5e343ce998`. Old review does not carry PASS across the head change. #342 remains the only service channel.
 
+
+
+## 2026-11-21 — #362 Leva HOLD corrections applied
+
+Leva independently reviewed #362 exact `3387132aeed815fb93cf3094c3d70f5e343ce998` and returned HOLD with two current-scope P2 findings: three AP-10 sibling jobs bypassed the `run:acceptance` gate, and manual CI dispatch lacked trustworthy PR/base context for the migration guard (with dispatch acceptance evidence also lacking a tested SHA). I corrected both in #362. New exact head `cdeb3e428bb1fb06329a4ae588d4219fe07c3327`: all AP-10 jobs share the admission gate; CI dispatch requires a PR number and resolves exact head/base before checkout/guard; all existing acceptance evidence SHA fields fall back to dispatch `github.sha`. No automatic workflow runs appeared on the new head. #363 resync and fresh Leva rereview remain pending.
