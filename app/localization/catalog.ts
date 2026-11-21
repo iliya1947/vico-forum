@@ -1308,6 +1308,7 @@ export const canonicalEnglishCatalog = {
     notificationMentionBy: message("notificationMentionBy", "Mention from {{actor}}", "Notification summary identifying the author who mentioned the recipient.", ["actor"]),
     notificationUnread: message("notificationUnread", "Unread", "Status label for an unread reply notification."),
     notificationRead: message("notificationRead", "Read", "Status label for a read reply notification."),
+    notificationUnavailable: message("notificationUnavailable", "Content unavailable", "Neutral notification text for a hidden or missing topic or post; do not expose author or content."),
     notificationOpen: message("notificationOpen", "Open reply", "Action that marks a reply notification read and opens the referenced reply."),
     forumHomeNav: message("forumHomeNav", "Home", "Primary navigation link to the forum homepage."),
     helpSolutionsHeading: message("helpSolutionsHeading", "Help & solutions", "Heading for the dedicated Help & solutions Q&A page."),
