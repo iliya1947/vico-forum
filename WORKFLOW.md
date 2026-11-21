@@ -15,24 +15,27 @@
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
 2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — пока идентичен current.
+4. `PROJECT_INSTRUCTIONS.draft.md` — 17 numbered rules после первого dedup-pass против User layer.
 5. `AGENTS.current.md` — неизменяемый эталон.
 6. `AGENTS.draft.md` — пока идентичен current.
 
-## Project layer classification
+## Project layer
 
-Завершён первый проход против User draft: `research/project-vs-user-classification.md`.
-
-Результат:
-- из 18 numbered Project rules: 17 KEEP-PROJECT, 1 DELETE-SAFE;
-- DELETE-SAFE: Project 10;
-- DELETE-SAFE: ненумерованное «Всегда рассуждай от цели…»;
-- PARTIAL-DUPLICATE: ненумерованный абзац «Перед ответом…» — сохранить context-check, удалить уже покрытую User 20 часть про первую трактовку;
-- agent-name block KEEP-PROJECT;
-- Project draft на этом этапе не изменён.
+1. Первый classification-pass против User draft завершён.
+2. Применены только подтверждённые изменения:
+   - удалён old Project 10;
+   - удалён ненумерованный goal-дубль;
+   - partial duplicate «Перед ответом…» сокращён до project-context check;
+   - old 11–18 перенумерованы в 10–17 без изменения текста.
+3. Exact semantic diff: `research/project-current-vs-draft-semantic-diff.md`.
+4. Validation:
+   - numbered rules 18 → 17;
+   - unexpected text changes: 0;
+   - whole-file transform matches expected.
+5. Все project-specific смыслы первого pass сохранены.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: применить к `PROJECT_INSTRUCTIONS.draft.md` только подтверждённые изменения — удалить Project 10 и goal-дубль, сократить partial duplicate до project-context check, перенумеровать 11–18; затем выполнить current-vs-draft semantic diff Project layer.
+Следующий переход: проверить внутреннее дублирование и безопасные structural merges внутри текущего Project draft, пока без изменения AGENTS layer.
