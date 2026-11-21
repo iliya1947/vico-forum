@@ -1762,7 +1762,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
 
   it("edits an authenticated author's own Help topic title", async () => {
     const user = userEvent.setup();
-    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-current" identity="user" />);
+    await renderEmbeddedPreview(<EmbeddedPreview scenarioId="help-solution-needs-review" identity="user" />);
 
     await user.click(screen.getByRole("button", { name: "Edit topic title" }));
     const title = screen.getByRole("textbox", { name: "Topic title" });
@@ -3407,7 +3407,7 @@ describe("interactive Pages preview", { timeout: 10_000 }, () => {
     );
     await owner.click(screen.getByRole("button", { name: "Mark solution outdated" }));
     expect(await screen.findByText("Solution outdated")).toBeInTheDocument();
-    await waitFor(() => expect(document.querySelector(".help-solution-outdated-reason"))
+    await waitFor(() => expect(document.querySelector(".solution-outdated-reason"))
       .toHaveTextContent("The current guidance no longer works."));
   });
 
