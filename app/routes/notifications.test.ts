@@ -297,6 +297,27 @@ describe("notifications route", () => {
     })).rejects.toBe(bug);
   });
 
+  it("opens a hidden reply/mention through a neutral inbox redirect after marking read", async () => {
+    for (const locale of ["en", "ru", "he"]) {
+      const value = context();
+      const markNotificationRead = vi.fn(async () => ({ kind: "unavailable" as const }));
+      value.set(forumWriterContext, { markNotificationRead } as never);
+      const response = await action({
+        request: openRequest({ notificationId: "hidden-reply" }),
+        params: { locale }, context: value,
+      });
+      expect(response).toBeInstanceOf(Response);
+      expect((response as Response).status).toBe(302);
+      expect((response as Response).headers.get("Location")).toBe(`/${locale}/notifications`);
+      expect((response as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect(JSON.stringify([...((response as Response).headers.entries())]))
+        .not.toMatch(/hidden-topic|hidden-post|secret-title/iu);
+      expect(markNotificationRead).toHaveBeenCalledExactlyOnceWith({
+        userId: "user-1", notificationId: "hidden-reply",
+      });
+    }
+  });
+
   it("marks the selected notification read and redirects to its reply", async () => {
     const value = context();
     const markNotificationRead = vi.fn(async () => ({ kind:"reply" as const,topicId: "topic-1", postId: "post-2" }));
