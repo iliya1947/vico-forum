@@ -10,3 +10,4 @@
 - 2026-11-21 — внутренний аудит AGENTS.md показал, что shared logic A-L1–A-L6 нужно сохранять для Codex, а реальное сокращение искать в повторениях Diagnosis/Roles/Workflow/Review/Developer-action; подтверждён Workflow как место единого PR permission contract.
 - 2026-11-21 — составлена точная change-map AGENTS.md: подтверждены KEEP/MOVE/REFERENCE/DELETE-DUPLICATE и единый Workflow PR-permission gate; действующий AGENTS.md не изменялся.
 - 2026-11-21 — подготовлен полный proposed AGENTS.md как research draft и количественно сравнён с current; действующий файл не изменён. Выявлен единственный unresolved policy-вопрос: гранулярность разрешения на создание PR.
+- 2026-11-21 — подготовлены конкретные User/Project proposals и суммарное сравнение всех трёх instruction layers; общий whitespace-word load снизился с 2914 до 2805, при этом User layer получил подтверждённые новые guards.
