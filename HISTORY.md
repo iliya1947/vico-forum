@@ -57,4 +57,4 @@
 - Lira reviewed #362 exact `898f71c2d408428ddf126d218c88c861ef29a10d` and identified one label-consumption permission issue; no PASS was issued.
 - Mira corrected #362 to the documented Issues REST label-removal endpoint on exact `3387132aeed815fb93cf3094c3d70f5e343ce998`.
 - Erroneous service PR #361 was closed without merge; #342 remains the assigned service channel.
-
+- 2026-11-21: moderation visibility B5 #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d` received Mira bounded coordinator PASS; owner then authorized B6-A only.

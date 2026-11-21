@@ -15,3 +15,7 @@ B5 [Draft #367](https://github.com/iliya1947/vico-forum/pull/367), stable **`a22
 ## Next / STOP
 
 **Лира STOP. Мира (ChatGPT-5.6 Sol) — next reviewer**, independent bounded coordinator checkpoint B5 on exact `a2269fb0294feaccb433e76b66e800f3e869658d`: verify scope and tests and interaction with accepted B1–B4; return any confirmed B5 findings to Лире through #342. After Mira PASS, owner decides continuation to B6. Do not start B6/B7, Leva independent whole-feature review, merge or deploy without separate authorization.
+
+## 2026-11-21 — B6-A owner-authorized handoff
+
+Owner continuation after B5 PASS authorizes B6-A only. Create the next stacked PR from B5 #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d`. Deliver only the guarded private hidden-content queue foundation: private reader/capability, fresh visibility-management admission, `/:locale/admin/forum/content` queue with topic/post filter, 25+lookahead, strict `(changed_at,id)` cursor, effective-parent status, private no-store/fail-closed behavior, and targeted positive/negative/revoke/AP-10/outage checks. Full inspector, revision history, private assets and B7 actions/UI are not authorized. After author self-check/checks, STOP for Mira.

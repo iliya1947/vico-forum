@@ -102,25 +102,28 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B5 — MIRA COORDINATOR PASS — STOP BEFORE B6
+## Moderation visibility B6-A — AUTHORIZED; Lira implementation pending
 
-- Stacked Draft #367 stable exact `a2269fb0294feaccb433e76b66e800f3e869658d`, base = accepted B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`; mergeable, 22 B5-scoped files, ahead 41 / behind 0.
-- Watch / Bookmark / Mute:
-  - ON/save requires a visible topic and serializes with Hide using the accepted topic row locks.
-  - Own OFF/remove remains active-actor-gated and safe for hidden/absent targets without an existence oracle.
-  - Canonical topic action handles personal intents before public visibility reads, so unavailable Bookmark/Mute rows can actually undo retained state on a hidden topic.
-  - Bookmarks and muted-topic lists page by retained own pairs; hidden targets project only own retained id/date + unavailable state, with no title/author/location/source link, and preserve keyset/undo/Restore behavior.
-- Personal Block remains below moderation visibility: retained block state is not deleted; `readTopicBlockedAuthors` only returns blocked authors of visible posts in a visible topic, so moderation-hidden content cannot be revealed through Block/Reveal presentation.
-- Mixed and legacy inbox:
-  - retained reply/mention notification rows, ids, created_at/read_at, total/unread counts and unread-first chronology remain intact across Hide/Restore;
-  - hidden topic/post source projects a neutral unavailable DTO with no actor/title/topic/post source metadata;
-  - generic `markNotificationRead` and legacy `markReplyNotificationRead` still mark the retained row read idempotently and return a neutral unavailable target for hidden source;
-  - canonical notification open redirects unavailable ordinary notices back to the private inbox; protected Complaint Decision/Appeal result destinations remain governed by their existing Case-participant admission and are not masked by ordinary content visibility.
-- Suppression receipts are unchanged; Hide/Restore does not manufacture notifications, backfill old mentions/replies, reset read state or recreate consumed suppression pairs.
-- Concurrency correction independently checked: B5 Mute ON `FOR SHARE` intentionally waits behind publication `FOR NO KEY UPDATE`; the corrected M3 test now observes the real PostgreSQL blocker before releasing the publication gate instead of awaiting an operation that is required to block. Runtime lock semantics were not weakened.
-- Exact-head verification: **18/18 check-runs SUCCESS, 14/14 workflow runs SUCCESS** on `a2269fb...`, including full PostgreSQL `database`, lint/typecheck/unit/build, Watch, Bookmarks, Personal Mute/Block and relevant connected Chromium acceptance.
-- **B5 bounded coordinator checkpoint PASS.** No confirmed current-B5 blocker remains. No B6/B7, merge, Leva whole-feature review or production action is authorized by this PASS.
-- **STOP. B6 requires fresh owner continuation.**
+- Owner continuation after B5 coordinator PASS authorizes **B6-A only**.
+- Stack base: B5 Draft #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d`. Create the next stacked implementation PR with base = B5 head branch; do not merge B1–B5.
+- B6-A result is the **guarded private queue foundation**:
+  - private hidden-content queue at the accepted `/:locale/admin/forum/content` boundary;
+  - topic/post kind filter;
+  - 25 + lookahead pagination;
+  - descending `(changed_at, id)` cursor with strict bounded canonical query handling;
+  - hidden-post row exposes only the accepted private moderation projection, including effective-parent status;
+  - data is obtained through a private reader/capability boundary, not through the public reader;
+  - every request performs fresh admission for the existing visibility-management capability; no generic Admin, history-only, complaint-only or ordinary-author implicit bypass;
+  - private responses/errors remain `private, no-store` and dependency failures fail closed.
+- Required targeted checks for B6-A:
+  - positive current visibility moderator/Owner path as applicable to existing policy;
+  - guest/inactive and negative ordinary author / generic Admin without grant / history-only / Complaint-only;
+  - dynamic grant/revoke freshness and AP-10/admission behavior;
+  - queue topic/post filtering, 25+1 cursor boundaries and hidden-post effective-parent status;
+  - storage/authorization outage classification without raw hidden source leakage;
+  - existing Complaints and retained History authority remain unchanged.
+- **Out of B6-A:** full hidden topic/post inspector, hidden revision history, private attachment GET/helper, Restore controls/actions, public/private QuickActions and all B7 interaction work.
+- After B6-A implementation: targeted author self-check + applicable exact-head checks, update #342 handoff, then **STOP → Mira B6-A bounded checkpoint**. Do not start B6-B without fresh owner continuation.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
 
