@@ -4,7 +4,7 @@ import { Client, Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccountInactiveError } from "../../db/account-state";
 import { DrizzleForumAttachments } from "../../db/forum-attachments";
-import { DrizzleForumRepository } from "../../db/forum-repository";
+import { DrizzleForumRepository, ForumEntityNotFoundError } from "../../db/forum-repository";
 
 const url = process.env.DATABASE_URL;
 if (!url || !["localhost", "127.0.0.1"].includes(new URL(url).hostname)
@@ -286,6 +286,51 @@ describe("Mute/Block M3: real READ COMMITTED candidate decision snapshots", () =
 });
 
 describe("Mute/Block M4: real actor mutex, reciprocal Block and AccountState races", () => {
+  it("serializes committed Mute ON and Hide in both PostgreSQL lock orders", async () => {
+    const author = await person(), viewer = await person();
+    for (const muteFirst of [true, false]) {
+      const x = await topic(author);
+      const [muteClient, hideClient] = await twoClients();
+      const gate = muteFirst
+        ? pauseSql(muteClient, text => /from "forum_topics"/iu.test(text) && /for share\b/iu.test(text), "after")
+        : null;
+      const mutePid = (await muteClient.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
+      const hidePid = (await hideClient.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0]!.pid;
+      let writing: Promise<boolean> | undefined;
+      let hiding: Promise<unknown> | undefined;
+      let hideOpen = false;
+      try {
+        if (muteFirst) {
+          writing = writer(muteClient).setTopicMute({ actorId: viewer, topicId: x, muted: true });
+          await reached(gate!.observed);
+          hiding = hideClient.query("update forum_topics set is_hidden=true where id=$1", [x]);
+          await blocked(hidePid, mutePid);
+          gate!.resume();
+          expect(await writing).toBe(true);
+          await hiding;
+          expect((await forum.readMutedTopics(viewer)).items.find(item => item.id === x))
+            .toMatchObject({ id: x, unavailable: true });
+        } else {
+          await hideClient.query("begin");
+          hideOpen = true;
+          await hideClient.query("update forum_topics set is_hidden=true where id=$1", [x]);
+          writing = writer(muteClient).setTopicMute({ actorId: viewer, topicId: x, muted: true });
+          await blocked(mutePid, hidePid);
+          await hideClient.query("commit");
+          hideOpen = false;
+          await expect(writing).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+          expect(await forum.readTopicMute(viewer, x)).toBe(false);
+        }
+      } finally {
+        gate?.resume();
+        gate?.restore();
+        if (hideOpen) await hideClient.query("rollback");
+        await Promise.allSettled([writing, hiding].filter((p): p is Promise<unknown> => !!p));
+        await Promise.all([muteClient.end(), hideClient.end()]);
+      }
+    }
+  }, 45_000);
+
   it("reciprocal A->B and B->A do not create a new cross-user lock cycle", async () => {
     const a = await person(), b = await person();
     const [left, right] = await twoClients();
