@@ -74,7 +74,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Protect accepted migration history
         env:
-          GITHUB_BASE_REF: ${{ github.event_name == 'workflow_dispatch' && steps.dispatch-pr.outputs.base_ref || github.base_ref }}
+          VICO_CI_BASE_REF: ${{ github.event_name == 'workflow_dispatch' && steps.dispatch-pr.outputs.base_ref || github.base_ref }}
         run: |
           node --test .github/scripts/migration-history.test.mjs
           node --test .github/scripts/production-privileges.test.mjs
@@ -94,7 +94,7 @@ jobs:
           node --test .github/scripts/production-migration-contract.test.mjs
           node --test .github/scripts/runtime-migration-evidence.test.mjs
           node --test .github/scripts/verify-production-migration-identity.test.mjs
-          node .github/scripts/verify-migration-history.mjs
+          GITHUB_BASE_REF="$VICO_CI_BASE_REF" node .github/scripts/verify-migration-history.mjs
       - name: Lint
         run: pnpm lint
       - name: Typecheck
