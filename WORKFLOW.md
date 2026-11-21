@@ -2,16 +2,9 @@
 
 ## Активный этап
 
-**Текущая process side task #362: Leva independent review PASS** на exact 5ed18dcffb856564fd0e8df9ec9d43020cd7f807; оба finding CLOSED. #362 готов к owner merge. Затем Мира выполняет post-merge dispatch smoke и ведёт зависимый #363 по docs review маршруту. Evidence/ограничения — research/manual-pr-tests-review.md. Moderation B3 отдельно остаётся на checkpoint Миры; B4 не активирован.
+**Moderation visibility B5 — Лира, in progress.** После B4 bounded coordinator PASS Мира и owner continuation разрешён только B5. Stacked implementation [Draft #367](https://github.com/iliya1947/vico-forum/pull/367) создан от B4 #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`.
 
-Moderation visibility stacked delivery:
-
-- B1 Draft #355 — **Mira bounded PASS**, exact `704d5a46d59841538524424296ac28eaa39aa5e6`.
-- B2 Draft #357 — **Mira bounded PASS**, exact `778568e83b89fd0ac14827cbeeaff3e2fd4dc5eb`.
-- B1/B2 remain Draft/unmerged.
-- **B3 is ACTIVE.** Lira creates the next stacked implementation PR with base = `feature/moderation-visibility-b2-commands` and implements only B3 core public projection/discovery.
-
-B2 checkpoint covered the local B1→B2 diff: desired-state topic/post CAS/reason/no-op; fresh active actor + AP-10 + direct RBAC before no-op; append-last atomic neutral History; writer/parent/receipt/recovery visibility gates; real PostgreSQL stale/no-op/overflow/two-moderator/deactivation/History-failure and lock-order/race coverage. Final exact-head CI and all associated workflows SUCCESS. No confirmed current-B2 blocker remains.
+B1 #355, B2 #357, B3 #359, B4 #365 — accepted Mira checkpoints, остаются Draft/unmerged. B5 микропакет Watch ON/OFF записан в #367 exact `7bb6b652e2b23568e86471005364177031761bc1`; PostgreSQL/CI ещё не выполнялись. Следующий пакет — Bookmarks ON/OFF и unavailable own-list semantics, только после owner continuation. Не начинать B6/B7.
 
 ## Baseline
 
@@ -107,7 +100,7 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - `VIS-B3-MIRA-01` CLOSED. Exact-head CI `44904360356` PASS: 2782/2782 unit, 1600/1600 PG17; 15/15 workflows SUCCESS.
 - No current-B3 blocker remains. B3 is an accepted stacked rung only; B1/B2/B3 remain unmerged.
 
-## Moderation visibility B5 — AUTHORIZED; Lira implementation pending
+## Moderation visibility B5 — AUTHORIZED; implementation in progress
 
 - Owner continuation after B4 coordinator PASS authorizes **B5 only**.
 - Stack base: B4 Draft #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e`. Create the next stacked implementation PR with base = B4 head branch; do not merge B1–B4.
@@ -119,6 +112,7 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
   - Hide/Restore must not manufacture notifications, backfill, reset read state, or change suppression receipts.
 - Required checks are the B5 rows of the accepted matrix: hidden/absent OFF safe, unavailable own-list rows + undo, retained notice/read_at/badge, generic mark/read/open, chronology, suppressed receipts, Restore no fanout/backfill/read reset.
 - Keep B6 guarded private queue/inspection/assets, B7 canonical Hide/Restore UI/actions, B8 whole acceptance and B9 closeout out of scope.
+- **B5.1 Watch micro-package — STATIC REVIEW ONLY:** [Draft #367](https://github.com/iliya1947/vico-forum/pull/367) exact `7bb6b652e2b23568e86471005364177031761bc1` on unchanged B4 #365. `setTopicWatch` now uses existing topic `FOR NO KEY UPDATE` lock, reads `isHidden`, denies hidden/missing ON with neutral not-found, admits own OFF for hidden/missing after active actor admission. Real-PG-targeted Hide/Unwatch/Restore/missing/inactive regression added. Exactly 2 B5 files changed (`db/forum-repository.ts`, `tests/database/topic-watch.test.ts`), GitHub compare ahead 2/behind 0. **Real PostgreSQL/Vitest/CI execution not performed**; no author B5 PASS.
 - After implementation: author self-check + applicable exact-head CI/acceptance, update #342 handoff, then **STOP → Mira bounded coordinator checkpoint**. Do not start B6 without fresh owner continuation.
 
 ## Process side task — agent-triggered PR tests — COMPLETE
