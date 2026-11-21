@@ -33,3 +33,8 @@
 - **Why it was wrong:** current `AGENTS.md` contains no such exception; Lira later corrected the service record. The conclusion was based on an invented condition rather than the actual source of truth.
 - **Prevention:** before overriding the standard reviewer route, verify the claimed exception in current `AGENTS.md` or an explicit owner instruction. Do not turn remembered/project-adjacent context into a binding rule without verification.
 
+## 2026-11-21 — fine-grained token permission contract was treated as Actions GITHUB_TOKEN runtime proof
+
+- **What happened:** after switching PR label removal to the documented Issues REST endpoint, Mira declared the permission finding closed because the endpoint documentation accepts `Issues: write`. A real `pull_request:labeled` run then returned HTTP 403 even though the runner reported `Issues: write`.
+- **Why it was wrong:** the documentation section cited fine-grained token permission sets; that was treated as sufficient proof for the built-in Actions `GITHUB_TOKEN` context without executing the available runtime check.
+- **Prevention:** when permission behavior depends on token type/event context and the current task can exercise it safely, verify that exact runtime path before declaring the permission finding closed. Keep documentation evidence and runtime evidence distinct.
