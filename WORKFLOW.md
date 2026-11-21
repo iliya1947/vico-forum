@@ -128,11 +128,9 @@ B3 result boundary: typed hidden tombstones/public topic 404, consistent thread 
 
 ## Process side task — agent-triggered PR tests
 
-- #362 merged by owner into main as `7ae969e70e4028156252511b701dbb9b667a61e2`; Leva independent PASS was on exact implementation head `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`.
-- Required post-merge hosted dispatch smoke is now **PASS**: CI run `44900723276`, event `workflow_dispatch`, workflow ref `main`.
-- Smoke inputs/log evidence: `PR_NUMBER=363`, `EXPECTED_HEAD_SHA=bbe72f09c34fc9bbae00f6434712ba45e49dfd80`, `EXPECTED_BASE_REF=main`; dispatch checkout actually switched HEAD to exact `bbe72f09c34fc9bbae00f6434712ba45e49dfd80`.
-- Guard propagation is runtime-proven on hosted GitHub Actions: `VICO_CI_BASE_REF=main`, shipped command `GITHUB_BASE_REF="$VICO_CI_BASE_REF" node .github/scripts/verify-migration-history.mjs`; Protect accepted migration history SUCCESS.
-- Run final: `checks` SUCCESS, `database` SUCCESS. Thus the previously explicit hosted-dispatch verification boundary is closed for the ordinary `base_ref=main` case.
-- #363 is open docs PR; GitHub now reports base main at merged #362 commit. Its docs content has not yet received the required separate docs review after implementation merge.
-- **Next subtask:** review/currentize #363 as a docs-only PR against current main, then prepare owner merge if PASS. Do not reopen #362 or rerun broad acceptance without a new relevant change.
+- #362 merged into main as `7ae969e70e4028156252511b701dbb9b667a61e2`; Leva independent implementation PASS was on exact `5ed18dcffb856564fd0e8df9ec9d43020cd7f807`.
+- Post-merge hosted dispatch smoke PASS: CI run `44900723276` with PR #363 / exact head `bbe72f09c34fc9bbae00f6434712ba45e49dfd80` / base `main`; resolver, exact checkout, `VICO_CI_BASE_REF=main`, migration guard, checks and database all SUCCESS.
+- #363 docs content review against current main: AGENTS manual-test policy, logic-error entries and PROJECT_STATE CI-state wording are consistent with the merged mechanism; no separate content finding confirmed.
+- **DOCS-363-MIRA-01 — HOLD:** #363 branch ancestry was not rebuilt after #362 merged. GitHub's PR diff therefore currently reports 22 files (19 already-merged workflow files + 3 docs), although direct tree comparison main `7ae969e...` vs #363 `bbe72f09...` proves only the three docs blobs actually differ. This violates the intended docs-only PR boundary and must be corrected before docs PASS/merge.
+- Next subtask: rebuild #363 directly on current main while preserving only its three docs changes; then repeat the docs-only diff/scope check and issue PASS or remaining finding. Do not alter #362 or rerun implementation acceptance.
 
