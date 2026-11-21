@@ -2785,6 +2785,43 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     expect(await isUnanswered()).toBe(false);
   });
 
+  it("keeps trusted raw post and hierarchy usable under hidden post and topic while public readers deny source", async () => {
+    const categoryId="visibility-trusted-"+randomUUID();
+    const sectionId="visibility-trusted-"+randomUUID();
+    await repository.createCategory({id:categoryId,name:"Trusted test category"});
+    await repository.createSection({id:sectionId,categoryId,name:"Trusted test section"});
+    const source="B3_TRUSTED_HIDDEN_POST_SOURCE_20261121";
+    const f=await fixture(source,"B3_TRUSTED_HIDDEN_TOPIC_TITLE_20261121",sectionId);
+    const rawHierarchyTopic=async()=> (await repository.readHierarchy(categoryId))?.sections
+      .find(section=>section.id===sectionId)?.topics.find(topic=>topic.id===f.topicId);
+    expect((await repository.readPost(f.postId))?.body)
+      .toMatchObject({id:f.bodyRevisionId,originalContent:source});
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+
+    await service.setPostVisibility(postCommand(f));
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe(source);
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+    expect((await repository.readTopicPage(f.topicId))?.posts[0]).toEqual({
+      kind:"hidden",id:f.postId,topicId:f.topicId,parentPostId:null,createdAt:expect.any(Date),
+    });
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+
+    await service.setTopicVisibility(topicCommand(f));
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe(source);
+    expect((await rawHierarchyTopic())?.posts[0]?.body.originalContent).toBe(source);
+    expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+    expect(await repository.readPostLocation(f.postId)).toBeUndefined();
+    expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
+    expect((await repository.search(source)).map(topic=>topic.id)).not.toContain(f.topicId);
+
+    await service.setTopicVisibility(topicCommand(f,"moderator1",false,1,"Restore trusted test topic"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0]).toMatchObject({kind:"hidden"});
+    await service.setPostVisibility(postCommand(f,"moderator1",false,1,"Restore trusted test post"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0])
+      .toMatchObject({body:{id:f.bodyRevisionId,originalContent:source}});
+  });
+
   it("treats hidden topics as neutral absence across thread, lists, search and counts", async () => {
     const f = await fixture("B3_SECRET_HIDDEN_ROOT_TEXT_6492");
     const categoryBefore = await repository.readHomepage();
@@ -2798,7 +2835,7 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
 
     await service.setTopicVisibility(topicCommand(f));
     expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
-    expect(await repository.readPost(f.postId)).toBeUndefined();
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe("B3_SECRET_HIDDEN_ROOT_TEXT_6492");
     expect(await repository.readPostLocation(f.postId)).toBeUndefined();
     expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
     expect((await repository.search("B3_SECRET_HIDDEN_ROOT_TEXT_6492")).map(x=>x.id)).not.toContain(f.topicId);
@@ -2840,7 +2877,7 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     expect(JSON.stringify(page)).not.toContain(f.bodyRevisionId);
     expect(page?.posts[1]).toMatchObject({parentPostId:f.postId,body:{originalContent:"B3_VISIBLE_CHILD_8953"}});
     expect(await repository.readPostLocation(f.postId)).toBeUndefined();
-    expect(await repository.readPost(f.postId)).toBeUndefined();
+    expect((await repository.readPost(f.postId))?.body.originalContent).toBe("B3_SECRET_ROOT_TEXT_8953");
     expect(await repository.readPostHistory(f.postId,f.topicId)).toEqual([]);
     expect((await repository.search("B3_SECRET_ROOT_TEXT_8953")).map(x=>x.id)).not.toContain(f.topicId);
     expect((await repository.search("PRIVATE TOPIC")).map(x=>x.id)).toContain(f.topicId);
@@ -2895,7 +2932,7 @@ describe("B3 public visibility projection and leak-safe discovery", () => {
     });
     expect(JSON.stringify(hidden)).not.toContain("B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146");
     expect(JSON.stringify(hidden)).not.toContain(middleRevisionId);
-    expect(await repository.readPost(middleId)).toBeUndefined();
+    expect((await repository.readPost(middleId))?.body.originalContent).toBe("B3_PRIVATE_MIDDLE_PARENT_SOURCE_3146");
     expect(await repository.readPostLocation(middleId)).toBeUndefined();
     expect(await repository.readPostHistory(middleId,f.topicId)).toEqual([]);
     expect((await repository.readTopicReadState("ordinary",f.topicId)))
