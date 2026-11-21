@@ -15,29 +15,29 @@
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
 2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — очищенный Project draft: 17 numbered rules + unique project-only unnumbered guards.
-5. `AGENTS.current.md` — неизменяемый эталон.
+4. `PROJECT_INSTRUCTIONS.draft.md` — очищенный Project draft, но после AGENTS cross-layer анализа найдены ещё 1 full + 1 partial duplicate.
+5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
 6. `AGENTS.draft.md` — пока идентичен current.
 
-## User layer
+## AGENTS cross-layer analysis
 
-- Current coverage: 15/15 FULL.
-- Draft является semantic superset current User rules.
+Полный анализ: `research/agents-vs-upper-layers-classification.md`.
 
-## Project layer
+Проверено:
+- актуальный `main` по-прежнему `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
+- `main:AGENTS.md` blob `9037fc15fd2b5fbf8c86ee677d00198dfcfbe442`;
+- он полностью совпадает с `AGENTS.current.md`;
+- AGENTS прочитан полностью.
 
-1. Классификация против User draft: `research/project-vs-user-classification.md`.
-2. Подтверждённые изменения уже находятся в `PROJECT_INSTRUCTIONS.draft.md`, commit `46ceb0fe8f42b11da4ccb553bc6111489739617c`.
-3. Current→draft semantic diff: `research/project-current-vs-draft-diff.md`.
-4. Удалено:
-   - current Project 10 как полный дубль User 2 + 7;
-   - ненумерованный goal-дубль как полный дубль User 19 + 22 + 26 + 39.
-5. Partial duplicate «Перед ответом…» сокращён до уникального project-context check; трактовочная часть покрыта User 20.
-6. Потерянных Project-specific guards: 0.
-7. Draft numbered rules: 18 → 17.
+Результат:
+1. DELETE-SAFE из AGENTS по межслойному сравнению: **0**.
+2. Причина: AGENTS — общий repository-visible contract для Codex + ChatGPT; User/Project coverage не заменяет его для Codex.
+3. Новый DELETE-SAFE в Project draft: Project 3, полностью покрытый AGENTS Review 5.
+4. Новый PARTIAL-DUPLICATE в Project draft: таблица имён/моделей; mapping уже содержится в AGENTS Roles, но короткое требование использовать закреплённые имена надо сохранить.
+5. `AGENTS.draft.md` не изменён.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: перейти к `AGENTS.current.md` против User + Project drafts и классифицировать межслойные дубли. Первый проход — только анализ, без изменения `AGENTS.draft.md`.
+Следующий переход: применить к `PROJECT_INSTRUCTIONS.draft.md` два результата AGENTS cross-layer прохода — удалить Project 3 и заменить таблицу имён/моделей короткой ссылкой на актуальные AGENTS roles; затем сделать Project semantic diff повторно.
