@@ -245,3 +245,99 @@ Test infrastructure на этой boundary предоставляет тольк
 Концептуально production route modules, loaders/actions и application `.server` helpers можно сохранить едиными. Browser graph нужно разрывать только на реальной infrastructure boundary через preview-only module resolution. Поэтому гипотеза «production product logic + test infrastructure» после этого подэтапа остаётся жизнеспособной без массового production refactor.
 
 Следующий отдельный вопрос перед завершением концепции: как получить **один источник истины для route table** — использовать production `app/routes.ts` / его производное так, чтобы Data Router preview не содержал вручную продублированный список маршрутов. После этого нужно связать тот же router с local transport для прямых application `fetch()`.
+
+## 9. Один source of truth для route table
+
+Подэтап 3 проверил, можно ли убрать ручную preview-копию URL-структуры и строить Data Router непосредственно из production `app/routes.ts`.
+
+### 9.1. Production route config уже содержит достаточную структуру
+
+В актуальном `main` `app/routes.ts` содержит 77 route entries и остаётся единственным production-описанием URL hierarchy.
+
+В точной используемой версии React Router 8.3.1 `RouteConfigEntry` имеет публичную форму:
+
+- `id?`;
+- `path?`;
+- `index?`;
+- `caseSensitive?`;
+- `file`;
+- `children?`.
+
+Это подтверждено исходником release commit React Router 8.3.1 (`da2a0f0`):
+https://github.com/remix-run/react-router/blob/da2a0f0/packages/react-router-dev/config/routes.ts
+
+Следовательно, для preview не нужен второй список путей. Нужен только общий адаптер `RouteConfigEntry -> RouteObject`, который рекурсивно сохраняет matching-поля и связывает `file` с настоящим production route module.
+
+Текущий `app/ui-preview/preview-app.tsx` как раз делает то, от чего нужно уйти: вручную создаёт отдельный `createMemoryRouter([...])` с повторно записанными `/:locale/...` paths и вручную выбранными views.
+
+### 9.2. Route config следует читать на build-time, а не тащить dev package в browser runtime
+
+`app/routes.ts` импортирует helpers из `@react-router/dev/routes`. В React Router 8.3.1 этот модуль предназначен для Framework route configuration и содержит не только `route/index`, но также validation/path utility code.
+
+Поэтому предпочтительная conceptual boundary:
+
+1. preview Vite config при сборке читает настоящий `app/routes.ts`;
+2. resolved plain route descriptors передаются preview runtime как build-time data;
+3. browser runtime не импортирует `@react-router/dev/routes` и не имеет собственной копии route table.
+
+Конкретный механизм передачи — `define`, virtual module или эквивалент — уже техническая деталь. Существенное решение: **источник route hierarchy только `app/routes.ts`**.
+
+Использовать private/internal `configRoutesToRouteManifest` из `@react-router/dev` не требуется: в публичном `@react-router/dev/routes` он не экспортируется. Зависеть от внутреннего compiler API ради preview было бы хрупче, чем небольшой generic adapter над публичной `RouteConfigEntry` shape.
+
+### 9.3. Production route modules можно привязать без перечисления файлов вручную
+
+Vite 8 поддерживает `import.meta.glob`: literal glob превращается в registry module paths -> import functions; по умолчанию modules загружаются lazy, при `eager: true` — заранее:
+https://vite.dev/guide/features.html#glob-import
+
+Поэтому preview runtime может иметь один общий module registry для `app/routes/**/*.{ts,tsx}`. Для каждого `RouteConfigEntry.file` адаптер находит соответствующий production module автоматически.
+
+Добавление нового production route в `app/routes.ts` при наличии route module не должно требовать добавлять ещё один preview route. Отдельная preview-работа нужна только если новому route требуется новая infrastructure capability или representative state.
+
+### 9.4. Совместимость production route-module exports
+
+Текущий repository не требует второй presentation-реализации для перехода в Data Router:
+
+- route components используют Data Router hooks (`useLoaderData`, `useActionData` и т. п.); использование Framework-only `Route.ComponentProps` в текущих production route modules не обнаружено;
+- `default` route export может быть подключён как Data Router `Component`;
+- настоящие `loader`, `action`, `ErrorBoundary`, `shouldRevalidate`, `handle`, `HydrateFallback` могут быть перенесены в RouteObject generic adapter;
+- `createBrowserRouter`/Data Router в React Router v8 имеет `getContext`, который выдаёт свежий `RouterContextProvider` для client loaders/actions/middleware:
+  https://api.reactrouter.com/v8/interfaces/react-router.DOMRouterOpts.html.
+
+Есть два текущих Framework-specific края, но оба решаются внутри generic adapter, а не отдельными routes:
+
+1. **`middleware`.** Сейчас production route middleware есть у `locale-boundary.tsx`; он устанавливает `localeContext` перед loader. В React Router 8.3.1 Data RouteObject поддерживает `middleware`. Точная v8.3.1 implementation также показывает, что object-form `route.lazy` может lazy-load `middleware`, тогда как function-form `lazy()` не может:
+   https://github.com/remix-run/react-router/blob/da2a0f0/packages/react-router/lib/router/utils.ts
+2. **`clientAction`.** Три production routes — `category.tsx`, `section.tsx`, `topic.tsx` — экспортируют общий `editorClientAction`. Framework contract требует, чтобы `clientAction` имел приоритет и при необходимости вызывал `serverAction()`:
+   https://reactrouter.com/start/framework/actions.
+   В preview это можно сохранить generic composition: clientAction остаётся production, а его `serverAction` вызывает тот же production `action` локально.
+
+`clientLoader` и `clientMiddleware` в текущих non-test application routes не обнаружены. Если они появятся позже, adapter должен рассматривать их как новый route-module contract, а не создавать ручной preview route.
+
+### 9.5. Неявный Framework root не создаёт второй route table
+
+Framework автоматически помещает все `app/routes.ts` entries под специальный `app/root.tsx`.
+
+В production `app/root.tsx` default `App` сейчас только рендерит `<Outlet />`; document `Layout` содержит `<html>/<head>/<body>`, `Meta`, `Links`, `Scripts`.
+
+Static Pages уже имеет собственный `app/ui-preview/index.html`, а `main.tsx` импортирует production `styles.css`. Поэтому Data Router preview нужен один технический root над converted production children; это composition root, а не дублирование URL hierarchy. Framework-only document exports (`Layout`, `meta`, `links`, HTTP `headers`) не являются backend/product route behavior и не должны заставлять preview эмулировать SSR document pipeline.
+
+### 9.6. Рассмотренные альтернативы
+
+1. **Продолжить ручной `createMemoryRouter` route list.** Отклонено: это непосредственное дублирование production routing и уже является источником расхождения.
+2. **Создать второй neutral route manifest и заставить production + preview читать его.** Работоспособно, но ненужно меняет production routing ради preview: `app/routes.ts` уже является достаточным source of truth.
+3. **Использовать private React Router compiler/manifest API.** Отклонено: публичного converter `RouteConfig -> Data RouteObject` в `@react-router/dev/routes` нет; внутренний API создаёт ненужную version coupling.
+4. **Запустить preview через React Router Framework Vite plugin.** Не решает исходную задачу: Framework client/server bundling снова исключает server loaders/actions и `.server` imports, которые static preview намеренно должен исполнять локально поверх fake infrastructure.
+
+## 10. Итог третьего подэтапа
+
+**Один source of truth для routes достижим без production route refactor.**
+
+Целевая модель:
+
+`app/routes.ts` -> build-time plain route config -> generic Data Router adapter -> production route modules.
+
+Preview не хранит собственные URL patterns, route/view switch и отдельные loaders/actions. Его route-specific код сводится к общему adapter contract для Framework exports, а не к описанию каждого маршрута.
+
+Это убирает главный structural drift нынешнего `preview-app.tsx`: новый production route автоматически попадает в preview routing из `app/routes.ts`.
+
+Следующий отдельный вопрос: как **тот же Data Router route tree** использовать как local application transport для прямых browser `fetch()` (`/api/auth/*`, attachments, mentions, presence, complaint activity, Owner deactivation) без отдельного endpoint dispatcher и без сетевого запроса к GitHub Pages.
