@@ -10,14 +10,17 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Состояние: завершён внутренний аудит актуального `AGENTS.md` в `research/agents-internal-audit.md`. Действующий файл не изменялся.
+Состояние: завершена точная change-map актуального `AGENTS.md` в `research/agents-change-map.md`. Действующий файл не изменялся.
 
-Главный вывод: A-L1–A-L6 следует сохранять как shared ChatGPT/Codex reasoning core. Реальное сокращение нужно делать ниже: удалить повтор generic logic из Diagnosis, operational details из Roles, дубли review protocol из Workflow 7, handoff duplicate из Developer action и частичный future-work duplicate из Review 5.
-
-Подтверждён правильный слой общего PR-permission contract: Workflow, до правил создания service/implementation PR.
+Подтверждено:
+- reasoning core и project-specific guards остаются;
+- три прямых/частичных внутренних дубля можно удалить;
+- operational details из Roles переносим в Workflow/Review;
+- Workflow 7 должен ссылаться на Review 1/2 вместо повторения review protocol;
+- единый PR permission gate добавляется в Workflow и заменяет частный запрет в роли Миры.
 
 Проверяющий: не назначен.
 
 Блокер: нет.
 
-Следующий переход: построить точную change-map `AGENTS.md` по категориям KEEP / DELETE-DUPLICATE / MOVE / REPLACE-WITH-REFERENCE / ADD-PERMISSION, не изменяя действующий файл.
+Следующий переход: подготовить draft-редакцию только `AGENTS.md` по change-map и сравнить её с current по смыслу/объёму, не применяя изменения.
