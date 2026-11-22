@@ -105,6 +105,8 @@ jobs:
         run: pnpm build
       - name: Build UI preview
         run: pnpm ui-preview:build
+      - name: Build isolated P0 browser import candidate
+        run: pnpm ui-preview:p0-build
       - name: Validate migration metadata
         run: pnpm db:check
       - name: Verify Drizzle schema parity
