@@ -132,13 +132,6 @@ function admission(kind: Kind, f: Target) {
     requester: { name: name + "-requester", version: "b8-a-mira-01", limit: 100 },
   };
 }
-function requested(kind: Kind, f: Target) {
-  return kind === "title"
-    ? { contentType: "topic-title" as const, contentId: f.topicId, revisionId: f.titleId,
-        originalContent: "Caller is not authoritative", sourceLocale: "und" }
-    : { contentType: "post-body" as const, contentId: f.postId, revisionId: f.bodyId,
-        originalContent: "Caller is not authoritative", sourceLocale: "und" };
-}
 function titlePlanner(c: Client, enqueuer: FakeTranslationTaskEnqueuer) {
   return new ContentTopicTitleTranslationPlanner({
     localeRegistry, sourceLocaleResolver: resolver(),
