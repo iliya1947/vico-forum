@@ -1,24 +1,26 @@
-# WORKFLOW.md — текущее оперативное состояние задачи.
+# WORKFLOW.md — текущее оперативное состояние
 
-## Current state
+## Текущий этап
 
-- Service #369, не merge; проверенный main 9cff976a9621d9fe5dfef28ea5367e390ff435b1.
-- Владелец уточнил цель и подтвердил: общие UI/routes/application interactions main, GitHub + браузер, без внешней среды. Реальная запись необязательна; simulated success, включая «успешно сохранено», разрешён.
-- Эти owner decisions записаны в DECISIONS.md D-06–D-08.
-- **Лёва обновил упрощённое предложение:** research/leva-chat-plan.md. Обязательные browser SQL/WASM, migrations, transactions и database-compatibility gate сняты.
-- Выбранный базовый вариант предложения: production route modules/UI/application handlers + raw test data + typed in-memory infrastructure adapters. Storage может подтвердить операцию без изменения baseline; минимальный transient state используется только для согласованной навигации/result UI.
-- Автоматическое обновление main обеспечивается общими imports и generated route manifest, а не синхронизацией второй preview-копии.
-- Старые выводы WORKFLOW о необходимости SQL parity/проверки browser SQL candidate superseded последним owner clarification. Не возвращать требование полноценной системы записи без новой причины.
-- Research/concept.md — предшествующее исследование. Новая техническая детализация находится в предложении Лёвы; общая архитектура не объявлена принятой владельцем автоматически.
-- P0 теперь проверяет browser route/context/handler seams и simulated-save vertical path, а не совместимость SQL engine.
-- Канонический PLAN.md не активирован как approved implementation plan. Product/preview code, #322, dependencies и deployment не менялись; P0/реализация не начинались.
+- Служебный PR #369, ветка `service/ui-progress-preview-architecture`; не merge.
+- Проверенная основа main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- **Концепция принята владельцем.** Его прямое назначение: «Концепцию принимаю. Оформляй финальный технический PLAN.md на её основе».
+- **Лёва завершил финальный технический [PLAN.md](PLAN.md).** Он канонический; прежнее предложение в research больше не является отдельным активным планом.
+- Действующие ограничения: D-06–D-09 в DECISIONS.md. Общие UI/routes/application handlers main; только GitHub и браузер; сохранение необязательно, simulated success разрешён.
+- В PLAN определены runtime/import/context/transport/resource boundaries, fixture database, зависимости P0→P6 и критерии проверок/готовности.
+- Авторская проверка полноты документа выполнена. Независимый review, browser proof P0 и implementation PASS не заявляются.
+- Реализация/P0 не назначены и не запускались. Product/preview code, зависимости, #322 и deployment в этом назначении не менялись.
 
-## Next transition
+## Следующая работа
 
-**Лёва завершил авторскую проверку полноты предложения — STOP. Следующая Мира.**
+**Лёва завершил назначение на технический PLAN. Следующая — Мира для проверки финального плана и организации реализации.**
 
-Мира выполняет scope/fit review всего research/leva-chat-plan.md (§1–16) против D-06–D-08: один product source и автоматический main update, общие handlers/application validation, допустимые test storage acknowledgements, links/buttons/forms/pending/error/success, raw state/identity/resource coherence и Pages/browser boundaries. Отдельно проверить, что proposed neutral seams минимальны и adapters не становятся вторым UI/application layer.
+Контекст для входа: актуальный AGENTS.md → RULES.md → TASK.md → этот WORKFLOW → PLAN.md; D-06–D-09 при необходимости.
 
-Результат — подтверждённые замечания либо scope/fit вывод в #369. Не требовать SQL/write parity и не возвращать запрет simulated «успешно сохранено». Не выдавать author self-check за независимую проверку, acceptance владельца либо runtime proof.
+Мире:
+1. Проверить scope/fit всего PLAN и достаточность зависимостей/gates: один product source, реальное выполнение общих handlers, минимальные neutral seams, локальные HTTP/XHR/native resources, Pages navigation, все interactions при необязательной записи.
+2. Не возвращать SQL/write parity или запрет «успешно сохранено» без записи. Не запрашивать повторное принятие уже принятой концепции.
+3. Выбрать delivery mode по AGENTS.md с учётом рекомендации stack до atomic cutover; подготовить отдельное bounded назначение P0 и зафиксировать исполнителя/implementation PR после назначения.
+4. При подтверждённом дефекте технического решения вернуть конкретное замечание Лёве до реализации зависимого участка.
 
-PLAN.md ссылается на актуальное предложение; author check и оставшиеся implementation-unknowns — §16. P0 и реализация не запускались. После Mira review остаётся решение владельца; implementation назначается отдельно. #369 не merge, #322 не менять.
+PLAN §15 содержит полное задание и gate P0. Это будущий этап реализации, а не уже выполненный эксперимент. #322 не является автоматически активным implementation PR. #369 не merge.
