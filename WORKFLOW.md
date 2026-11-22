@@ -15,21 +15,24 @@
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
 2. `USER_INSTRUCTIONS.draft.md` — compact User draft: 20 rules / 4999 chars.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules; semantic PASS до User compact rewrite.
+4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — 58 rules; semantic PASS до User compact rewrite.
+6. `AGENTS.draft.md` — 58 rules.
 
-## User compact status
+## Финальный semantic status
 
-1. Expanded semantic coverage: 52/52 — `research/user-5000-semantic-coverage.md`.
-2. Current User coverage: 15/15 FULL — `research/user-current-vs-compact-coverage.md`.
-3. PARTIAL: 0.
-4. LOST: 0.
-5. Размер: 4999 characters — transfer-size blocker снят.
-6. Draft на этом coverage-шаге не менялся.
+1. User current coverage: 15/15 FULL — `research/user-current-vs-compact-coverage.md`.
+2. Expanded User guards: 52/52 — `research/user-5000-semantic-coverage.md`.
+3. Three-layer consistency после compact rewrite: PASS — `research/three-layer-final-consistency.md`.
+4. Project draft: PASS.
+5. AGENTS draft: PASS.
+6. Подтверждённых межслойных противоречий: 0.
+7. Новых DELETE-SAFE authority/routing дублей: 0.
+8. Потерянных guards из-за compact User rewrite: 0.
+9. Draft-файлы на consistency-шаге не менялись.
 
 Проверяющий: не назначен.
 
-Блокер: transfer ещё не финализирован до повторной three-layer consistency-проверки после User compact rewrite.
+Блокер: semantic/consistency blockers отсутствуют.
 
-Следующий переход: повторная consistency-проверка `USER_INSTRUCTIONS.draft.md` + `PROJECT_INSTRUCTIONS.draft.md` + `AGENTS.draft.md`; сначала только анализ, без изменения drafts.
+Следующий переход: отдельный transfer-readiness recheck для финальных exact drafts и актуального OpenAI UI/лимита; реальные instruction sources без прямой команды разработчика не менять.
