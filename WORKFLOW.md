@@ -10,29 +10,36 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-## Канонические рабочие файлы
+## Финальные drafts
 
-1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — compact User draft: 20 rules / 4999 chars.
-3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules.
-5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — 58 rules.
+1. User: `USER_INSTRUCTIONS.draft.md`
+   - blob `f042613fa65d2484895c5bf3f9e427d5fb3b27cc`
+   - 20 rules / 4999 chars
+   - 15/15 current FULL
+   - 52/52 retained semantic guards
 
-## Финальный semantic status
+2. Project: `PROJECT_INSTRUCTIONS.draft.md`
+   - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
+   - 16 rules / 2713 chars
+   - PASS
 
-1. User current coverage: 15/15 FULL — `research/user-current-vs-compact-coverage.md`.
-2. Expanded User guards: 52/52 — `research/user-5000-semantic-coverage.md`.
-3. Three-layer consistency после compact rewrite: PASS — `research/three-layer-final-consistency.md`.
-4. Project draft: PASS.
-5. AGENTS draft: PASS.
-6. Подтверждённых межслойных противоречий: 0.
-7. Новых DELETE-SAFE authority/routing дублей: 0.
-8. Потерянных guards из-за compact User rewrite: 0.
-9. Draft-файлы на consistency-шаге не менялись.
+3. AGENTS: `AGENTS.draft.md`
+   - blob `170ef5ed10715e416a376c75c3dae188ae0a3d24`
+   - 58 rules / 16186 chars
+   - PASS
+
+## Transfer readiness
+
+Полный статус: `research/instruction-transfer-readiness.md`.
+
+1. User — READY: 4999 ≤ official 5000-char limit.
+2. Project — READY: draft 2713 chars < current active baseline 3341 chars; three-layer conflict count 0.
+3. AGENTS — READY FOR SEPARATE REPO PR.
+4. Безопасный порядок: **User → AGENTS → Project**.
+5. Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: semantic/consistency blockers отсутствуют.
+Блокер: нет.
 
-Следующий переход: отдельный transfer-readiness recheck для финальных exact drafts и актуального OpenAI UI/лимита; реальные instruction sources без прямой команды разработчика не менять.
+Следующий переход: подготовить фактический transfer package и точную последовательность действий; реальные sources менять только по прямой команде разработчика.
