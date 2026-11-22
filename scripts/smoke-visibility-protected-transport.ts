@@ -142,7 +142,7 @@ export async function verifyModerationProtectedDomainTransport({
   }
 
   async function change(kind: "post" | "topic",hidden:boolean,version:number) {
-    const data=visibility(kind,hidden,version,reviewer,postId,
+    const data=visibility(kind,hidden,version-1,reviewer,postId,
       kind==="post"?currentRevision:titleRevisionId);
     const table=kind==="topic"?"forum_topics":"forum_posts";
     const id=kind==="topic"?topicId:postId;
@@ -233,7 +233,11 @@ export async function verifyModerationProtectedDomainTransport({
   await assertCaseSnapshot("fault/recovery");
   await change("topic",false,2);
   await assertCaseSnapshot("Restore");
-  await confirmed(await http(topic), "public topic after Restore",titleSource);
+  const restored=await http(topic);
+  assert.equal(restored.status,200,"public topic after Restore");
+  assert.match(restored.headers.get("Cache-Control")??"",/no-store/,
+    "restored public topic must disable caching");
+  assert.ok((await restored.text()).includes(titleSource),"restored title not public");
 
   const actions=(await client.query<{action:string;target_id:string}>(
     "select action,target_id from admin_history where " +
