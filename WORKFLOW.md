@@ -2,14 +2,13 @@
 
 ## Активный этап
 
-**Moderation visibility B8-A active — A1 scoped PostgreSQL coverage inventory complete; Лира STOP before A2.**
+**Moderation visibility B8-A active — A2 first real-PG race tests committed; Лира STOP before A3.**
 
-- Accepted B7 [#371](https://github.com/iliya1947/vico-forum/pull/371) exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, Mira coordinator PASS, unmerged. Current owner authorization **B8-A only** (PG State/History/Authority/real lock races). B8-B Worker/Better Auth/R2, B8-C Chromium/UI/cache, B9/fold/review/merge/deploy are blocked.
-- **B8-A1 result:** new stacked branch `feature/moderation-visibility-b8-acceptance` created **at accepted B7 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`**, behind0/ahead0/no changed files. Draft B8 PR is opened only with first B8-A test commit; no empty PR or B7 modification.
-- Detailed audited source map in [`research/b8-a-pg-coverage.md`](research/b8-a-pg-coverage.md). Existing real PG test suite `tests/database/moderation-visibility-commands.test.ts` already covers topic/post Hide/Restore CAS/reason/no-op/overflow, two moderators, active actor/deactivation, owner/AP-10 grants, History rollback, writer gates and real `pg_blocking_pids` order cases: topic title planning, topic/post body planning, reply/parent, edit and protected Complaint both relevant orders. `tests/database/visibility-history-append.test.ts` and `moderation-visibility-foundation.test.ts` cover PG History/schema constraints. Avoid duplicating these.
-- **A1 is source inventory only; no new PG tests were added/run and B8-A is not accepted**. The adjacent dedicated PG suites for source/solution/duplicate, accepted execution and generic Admin/History/Complaint authority have not yet been exhaustively cross-checked for real lock-order coverage. Missing V8 cells are not asserted without that check.
-- **STOP after A1. Next owner `...` → B8-A2:** cross-check adjacent PG suites for real *two-order PG barriers*, identify confirmed gaps in source/solution/duplicate/accepted execution and authority; implement first narrow missing PG acceptance test(s) on new B8 branch, open **Draft stacked B8 PR with base `feature/moderation-visibility-b7-actions-ui`** and STOP again. Continue only within B8-A until its PG matrix/targeted checks complete.
-- Do not begin B8-B/B8-C/B9/fold/review/merge/deploy.
+- B7 Mira PASS on stacked [Draft #371](https://github.com/iliya1947/vico-forum/pull/371), stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`. Owner authorization remains **B8-A only**. B8-B/B8-C/B9/fold/review/merge/deploy blocked.
+- **B8-A1**: PostgreSQL coverage inventory in `research/b8-a-pg-coverage.md`; existing barriers in `tests/database/moderation-visibility-commands.test.ts` already cover topic/post state, writer-planning/reply/edit/Complaints and actor/FK cases. No duplicate coverage.
+- **B8-A2**: inspected adjacent source-locale, solution, duplicate, accepted translation execution, planning, and authority test suites. First confirmed real-lock matrix gap: same-locale source-locale admission versus topic Hide/Restore, both transaction orders. Added four tests with actual `pg_blocking_pids` waits and final state/revision/History/Restore assertions; **test-only**, +110 lines in `tests/database/moderation-visibility-commands.test.ts`. Commit `20df9b8d3601b75372e3395cca5dbdaf35f11f15`.
+- Stacked **[Draft #376](https://github.com/iliya1947/vico-forum/pull/376)** opened with base `feature/moderation-visibility-b7-actions-ui` (accepted B7 exact unchanged). One B8 file, ahead1/behind0 at commit. **No real PG test execution or CI yet; B8-A is incomplete and NOT PASS.**
+- **STOP after A2. Next owner `...` → B8-A3**: continue bounded real PG matrix, prioritize remaining source-locale changed-write and solution/duplicate order gaps where verified; add only confirmed missing tests and run appropriate targeted PostgreSQL checks. The B8-A acceptance/checkpoint and Worker/Chromium stages remain inactive until their own gates.
 
 ## Baseline
 
