@@ -16,9 +16,10 @@
 3. Built-in role permissions — изменяемые DB-данные; `INITIAL_ROLE_GRANTS` — только initial seed. Per-user overrides являются штатным contract.
 4. `EditorDraftContext` и `forum_attachment_draft_contexts` остаются действующей attachment-моделью независимо от удаления text drafts/autosave.
 5. `PROJECT_STATE.md` и `ROADMAP.md` остаются global Stage/current-state source-of-truth. Локальные `TASK.md`/`WORKFLOW.md` #342 задают маршрут только этой service task.
-6. Новых подтверждённых A-пропусков в fresh review не установлено.
+6. Второй fresh review снял ещё один ложный A: прежний A-085 (`TopicView` optional Block snapshot / `hasBlockSnapshot`) имеет живых current consumers в static UI preview и responsive browser fixture и прямо задокументирован как intentional view-only fallback.
+7. Новых подтверждённых A-пропусков в fresh review не установлено.
 
-**Исправленный exact итог: 85 уникальных A-элементов.**
+**Исправленный exact итог: 84 уникальных A-элемента.**
 
 ## Обозначения
 
@@ -28,7 +29,7 @@
 - **D** — historical text only.
 - **E** — stale classification not established / current-valid candidate.
 
-## A — exact registry, 85 элементов
+## A — exact registry, 84 элемента
 
 | ID | Capability | Stale artifact | Current contract → contradiction | Effect | Possible later action — NOT executed |
 | --- | --- | --- | --- | --- | --- |
@@ -116,7 +117,6 @@
 | A-082 | Translation preview | Russian Manager generation state | Title generation state is `current` while title presentation remains original EN. | Canonical generation view cannot produce this combination. | Make presentation/status consistent. |
 | A-083 | Super-admin helper seam | `app/super-admin/owner-snapshot.ts` — `viewerId===undefined` | All current Super-admin request loaders supply exact admitted viewer ID; permissive fallback has no production consumer. | Helper can present viewer-bound data without identity binding. | Make viewerId required/remove bypass. |
 | A-084 | Super-admin API seam | `Timeline` — `viewerId?: string` | All current runtime callers supply viewer ID; optional API only enables obsolete helper bypass. | Component contract preserves impossible runtime state. | Make viewerId required. |
-| A-085 | Topic API seam | `TopicView` — optional Block snapshot + `hasBlockSnapshot` | Canonical Topic loader always supplies explicit Block snapshot even for guests; absence exists only for legacy view fixtures. | Component contract preserves impossible canonical-loader state. | Require explicit snapshot; update fixtures. |
 
 ## B — намеренная совместимость
 
@@ -132,6 +132,7 @@
 10. Omitted attachment-selection marker для legacy text-only submissions остаётся intentional compatibility; current first-party editor передаёт явный selection.
 11. Legacy notification / Owner History / schema readers, необходимые для уже сохранённых старых записей и cursor compatibility, не являются stale сами по себе.
 12. GitHub Pages preview — representative visual surface, а не обязательная 1:1 backend/runtime parity.
+13. `TopicView` optional Block snapshot / `hasBlockSnapshot` — intentional compatibility boundary для representative/view-only preview и responsive test fixtures без private filter metadata; canonical runtime loader при этом всегда передаёт explicit Block snapshot.
 
 ## C — действительно незавершённое по текущему contract
 
@@ -171,7 +172,7 @@ Capability map и обязательные projection-классы handoff пр�
 
 ## Итог
 
-- **A: 85 unique exact candidate registry after fresh-review correction.**
+- **A: 84 unique exact candidate registry after second fresh-review correction.**
 - B/C/D/E отделены от cleanup и не являются автоматическим списком изменений.
 - **Ни один test file, product/runtime file или implementation PR этим audit этапом не изменяется.**
 - Тесты в рамках audit side-task не запускались.
