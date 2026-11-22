@@ -118,6 +118,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
   let canManageHelpDuplicate = false;
   let canConfirmOwnSolution = false;
   let canCorrectTitleSourceLocale = false, canManagePin = false, canManageClosure = false, canGenerateTranslations = false;
+  let canManageVisibility = false;
   let canUseAdminPanel = false, canManageAnySolution = false, canCorrectAnySourceLocale = false;
   let correctablePostIds: string[] = [];
   let editablePostIds: string[] = [];
@@ -166,7 +167,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
 
     try {
       const resolver = authorizationForRequest(context).forUser(session.user.id);
-      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate, titleEditOwn] = await Promise.all([
+      const [reply, solutionAny, solutionOwn, duplicateManage, sourceAny, sourceOwn, generate, pin, closure, editOwn, historyRead, complaintCreate, titleEditOwn, visibilityManage] = await Promise.all([
         resolver.has("forum.reply.create"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.solution.manageOwn"),
@@ -180,7 +181,9 @@ export const loader = forumReadLoader(async function loader({ params, context }:
         resolver.has("forum.post.history.read"),
         resolver.has("forum.complaint.create"),
         resolver.has("forum.topic.title.editOwn"),
+        resolver.has("forum.content.visibility.manage"),
       ]);
+      canManageVisibility = visibilityManage;
       canReply = reply;
       canEditOwnTitle = titleEditOwn && topic.authorId === session.user.id;
       editablePostIds = editOwn ? visiblePosts.filter((post) => post.authorId === session.user.id).map((post) => post.id) : [];
@@ -293,6 +296,7 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     canCorrectAnySourceLocale,
     canManagePin,
     canManageClosure,
+    canManageVisibility,
     canUseAdminPanel,
     correctablePostIds,
     editablePostIds,

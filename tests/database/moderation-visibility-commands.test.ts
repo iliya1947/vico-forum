@@ -76,6 +76,35 @@ afterAll(async () => {
 });
 
 describe("V4 topic/post authoritative visibility commands", () => {
+  it("B7-B1a returns observed versions only for visible public topic/post and excludes hidden tombstones", async () => {
+    const f = await fixture("PRIVATE_B7_POST", "PRIVATE_B7_TOPIC");
+    const initial = await repository.readTopicPage(f.topicId);
+    expect(initial).toMatchObject({
+      id: f.topicId, visibilityVersion: 0,
+      title: { id: f.titleRevisionId },
+      posts: [{ id: f.postId, visibilityVersion: 0, body: { id: f.bodyRevisionId } }],
+    });
+    await service.setPostVisibility(postCommand(f));
+    const hiddenPost = await repository.readTopicPage(f.topicId);
+    expect(hiddenPost?.visibilityVersion).toBe(0);
+    expect(hiddenPost?.posts[0]).toEqual({
+      kind: "hidden", id: f.postId, topicId: f.topicId,
+      parentPostId: null, createdAt: expect.any(Date),
+    });
+    expect(JSON.stringify(hiddenPost)).not.toContain("PRIVATE_B7_POST");
+    expect(JSON.stringify(hiddenPost?.posts[0])).not.toContain("visibilityVersion");
+    await service.setPostVisibility(postCommand(f, "moderator1", false, 1, "Reviewed"));
+    expect((await repository.readTopicPage(f.topicId))?.posts[0])
+      .toMatchObject({ id: f.postId, visibilityVersion: 2, body: { id: f.bodyRevisionId } });
+    await service.setTopicVisibility(topicCommand(f));
+    expect(await repository.readTopicPage(f.topicId)).toBeUndefined();
+    await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed topic"));
+    expect(await repository.readTopicPage(f.topicId)).toMatchObject({
+      id: f.topicId, visibilityVersion: 2,
+      posts: [{ id: f.postId, visibilityVersion: 2 }],
+    });
+  });
+
   it("topic Hide/Restore has exact CAS, neutral History and admitted no-op", async () => {
     const f = await fixture();
     expect(await service.setTopicVisibility(topicCommand(f, "moderator1", false, 0, "")))

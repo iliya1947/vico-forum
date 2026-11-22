@@ -433,6 +433,8 @@ export interface ForumSectionPage {
 
 export interface ForumVisibleThreadPost extends ForumPost {
   kind?: "visible";
+  /** Publicly visible post's exact observed CAS baseline, absent from hidden tombstones. */
+  visibilityVersion?: number;
   authorIdentityKind?: "deleted";
   attachments?: Array<{ id: string; fileName: string; byteSize: number; detectedType: string }>;
   authorImage?: string | null;
@@ -453,6 +455,8 @@ export interface ForumHiddenThreadPost {
 export type ForumThreadPost = ForumVisibleThreadPost | ForumHiddenThreadPost;
 
 export interface ForumTopicPage extends ForumTopic {
+  /** Only supplied for a publicly visible topic, in the current read snapshot. */
+  visibilityVersion?: number;
   authorIdentityKind?: "deleted";
   createdAt: Date;
   needsDetails: boolean;
@@ -3622,6 +3626,7 @@ export class DrizzleForumRepository {
         originalContent: forumTopicTitleRevisions.originalContent, sourceLocale: forumTopicTitleRevisions.sourceLocale,
         isSolved: forumTopics.isSolved, bestAnswerPostId: forumTopics.bestAnswerPostId,
         isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+        visibilityVersion: forumTopics.visibilityVersion,
         needsDetails: forumTopics.needsDetails,
         isPinned: sql<boolean>`${forumTopicPins.topicId} is not null`,
       })
@@ -3643,6 +3648,7 @@ export class DrizzleForumRepository {
       .select({
         id: forumPosts.id, topicId: forumPosts.topicId, authorId: forumPosts.authorId,
         isHidden: forumPosts.isHidden,
+        visibilityVersion: forumPosts.visibilityVersion,
         parentPostId: forumPosts.parentPostId,
         authorName: user.name, authorImage: user.image,
         authorDeactivatedAt: user.deactivatedAt, authorDeactivatedByUserId: user.deactivatedByUserId,
@@ -3685,6 +3691,7 @@ export class DrizzleForumRepository {
       ...(topicAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
       isSolved: topic.isSolved, bestAnswerPostId: topic.bestAnswerPostId,
       isClosed: topic.isClosed, closureVersion: topic.closureVersion,
+      visibilityVersion: topic.visibilityVersion,
       needsDetails: topic.needsDetails,
       duplicateOf: duplicatePresentation?.duplicateOf ?? null,
       duplicateRelationshipId: duplicatePresentation?.duplicateRelationshipId ?? null,
@@ -3711,6 +3718,7 @@ export class DrizzleForumRepository {
         authorName: postAuthor.name, authorImage: postAuthor.image,
         ...(postAuthor.kind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
         createdAt: post.createdAt, editedAt: post.editedAt,
+        visibilityVersion: post.visibilityVersion,
         attachments: attachmentsByPost.get(post.id) ?? [],
         solutionModerationStatus: post.solutionModerationStatus as HelpSolutionModerationStatus | null,
         solutionOutdatedReason: post.solutionOutdatedReason,
