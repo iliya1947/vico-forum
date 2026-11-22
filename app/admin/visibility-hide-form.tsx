@@ -13,6 +13,8 @@ export function VisibilityHideForm({ locale, topicId, actorId, revisionId, visib
   const fetcher = useFetcher<VisibilityActionResult>();
   const revalidator = useRevalidator();
   const refreshedDeniedResponse = useRef<unknown>(null);
+  // The submission guard is synchronous: a second submit can overtake a React render.
+  const submittedInCurrentSnapshot = useRef(false);
   // A stale CAS must be reviewed against a fresh loader; never resubmit it.
   const [submitted, setSubmitted] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -51,6 +53,8 @@ export function VisibilityHideForm({ locale, topicId, actorId, revisionId, visib
       // Only explicit user verification can unlock an unchanged fresh snapshot.
       // A changed target/version/actor is remounted by its caller's snapshot key.
       await revalidator.revalidate();
+      // Explicit current-state verification permits a new deliberate command.
+      submittedInCurrentSnapshot.current = false;
       setVerified(true);
     } finally {
       setVerifying(false);
@@ -58,7 +62,17 @@ export function VisibilityHideForm({ locale, topicId, actorId, revisionId, visib
   }
   return <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
     className="topic-admin-form visibility-hide-form"
-    onSubmit={() => { setSubmitted(true); setVerified(false); }}>
+    aria-busy={fetcher.state !== "idle"}
+    onSubmit={(event) => {
+      if (submittedInCurrentSnapshot.current || fetcher.state !== "idle"
+        || revalidator.state !== "idle" || verifying || conflicted || denied || unconfirmed || confirmed) {
+        event.preventDefault();
+        return;
+      }
+      submittedInCurrentSnapshot.current = true;
+      setSubmitted(true);
+      setVerified(false);
+    }}>
     <input type="hidden" name="intent" value={isPost ? "setPostVisibility" : "setTopicVisibility"}/>
     <input type="hidden" name="editorActorId" value={actorId}/>
     <input type="hidden" name="hidden" value="true"/>
@@ -68,9 +82,10 @@ export function VisibilityHideForm({ locale, topicId, actorId, revisionId, visib
     <label>{t("visibilityHideReason")}
       <textarea name="reason" rows={2} required maxLength={2000}/>
     </label>
-    <button type="submit" disabled={fetcher.state !== "idle" || conflicted || denied || unconfirmed || verifying}>
+    <button type="submit" disabled={fetcher.state !== "idle" || conflicted || denied || unconfirmed || verifying || confirmed}>
       {t(isPost ? "visibilityHidePost" : "visibilityHideTopic")}
     </button>
+    {submitted && fetcher.state !== "idle" ? <p role="status" className="visibility-pending">{t("visibilityPending")}</p> : null}
     {denied ? <p role="alert" className="visibility-denied">{t("visibilityDenied")}</p> : null}
     {conflicted ? <div className="visibility-conflict">
       <p role="alert">{t("visibilityConflict")}</p>
