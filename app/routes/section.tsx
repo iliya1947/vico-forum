@@ -4,8 +4,8 @@ import { useActionData, useLoaderData, type RouterContextProvider, type HeadersA
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import type { ForumTopicReadKind } from "../../db/forum-repository";
 import { forumReaderForRequest } from "../forum/request-context";
 import type { ForumMutationError } from "../forum/mutations.server";
