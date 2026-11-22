@@ -18,7 +18,8 @@ const POST_FIELDS = [...TOPIC_FIELDS, "postId"];
 const VERSION = /^(?:0|[1-9][0-9]*)$/u;
 const TEXT_LIMIT_BYTES = 2048;
 
-function invalid(error: ForumMutationError["error"] = "invalid", status = 400) {
+/** Neutral visibility action failure used even before FormData can be read. */
+export function visibilityActionFailure(error: ForumMutationError["error"] = "invalid", status = 400) {
   return data<VisibilityActionResult>({ operation: "contentVisibility", error }, {
     status, headers: { "Cache-Control": "private, no-store" },
   });
@@ -48,22 +49,22 @@ export async function visibilityTopicAction(
   request: Request, context: RouterContextProvider, topicId: string, form: FormData,
 ) {
   if (!containsVisibilityInput(form)) return undefined;
-  if (request.method !== "POST") return invalid();
+  if (request.method !== "POST") return visibilityActionFailure();
   const guard = forumMutationGuard(request, context);
-  if (guard) return invalid(guard.data.error, guard.init?.status ?? 403);
+  if (guard) return visibilityActionFailure(guard.data.error, guard.init?.status ?? 403);
   // Fresh request grant is an early 403/503 boundary; the writer independently
   // rechecks effective grant, active actor and AP-10 under the target row lock.
   const forbidden = await requireForumPermission(context, "forum.content.visibility.manage");
-  if (forbidden) return invalid(forbidden.data.error, forbidden.init?.status ?? 403);
+  if (forbidden) return visibilityActionFailure(forbidden.data.error, forbidden.init?.status ?? 403);
 
   const intent = form.get("intent");
-  if (intent !== "setTopicVisibility" && intent !== "setPostVisibility") return invalid();
+  if (intent !== "setTopicVisibility" && intent !== "setPostVisibility") return visibilityActionFailure();
   const isPost = intent === "setPostVisibility";
   const fields = isPost ? POST_FIELDS : TOPIC_FIELDS;
   if (fields.some(field => form.getAll(field).length !== 1)
-    || [...form.keys()].some(key => !fields.includes(key))) return invalid();
+    || [...form.keys()].some(key => !fields.includes(key))) return visibilityActionFailure();
   // Every expected field must be a scalar string: Files, duplicates and mixed intents fail.
-  if (fields.some(field => typeof form.get(field) !== "string")) return invalid();
+  if (fields.some(field => typeof form.get(field) !== "string")) return visibilityActionFailure();
   const actorExpectation = canonicalIdentity(form.get("editorActorId"));
   const expectedRevisionId = canonicalIdentity(form.get("expectedRevisionId"));
   const postId = isPost ? canonicalIdentity(form.get("postId")) : null;
@@ -75,10 +76,10 @@ export async function visibilityTopicAction(
     || typeof rawVersion !== "string" || !VERSION.test(rawVersion)
     || Number(rawVersion) > 2_147_483_647
     || typeof rawReason !== "string" || rawReason.includes("\0")
-    || [...rawReason].length > 2000) return invalid();
+    || [...rawReason].length > 2000) return visibilityActionFailure();
   // A frozen UI actor expectation is a conflict guard, never authorization.
   const actorId = authSessionForRequest(context)?.user.id;
-  if (actorId !== actorExpectation) return invalid("conflict", 409);
+  if (actorId !== actorExpectation) return visibilityActionFailure("conflict", 409);
 
   const requested = hidden === "true";
   const baseline = Number(rawVersion);
@@ -97,9 +98,9 @@ export async function visibilityTopicAction(
       { headers: { "Cache-Control": "private, no-store" } });
   }).catch(error => {
     if (error instanceof AccountStateUnavailableError || error instanceof AuthorizationUnavailableError)
-      return invalid("unavailable", 503);
+      return visibilityActionFailure("unavailable", 503);
     throw error;
   });
-  if ("error" in result.data) return invalid(result.data.error, result.init?.status ?? 503);
+  if ("error" in result.data) return visibilityActionFailure(result.data.error, result.init?.status ?? 503);
   return result;
 }
