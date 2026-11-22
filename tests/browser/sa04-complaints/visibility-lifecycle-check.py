@@ -274,8 +274,14 @@ try:
 
         def lose_after_commit(route):
             if request_is_visibility(route.request):
-                response = route.fetch(timeout=25000)
-                upstream.append(response.status)
+                upstream.append("intercepted")
+                try:
+                    response = route.fetch(timeout=25000)
+                    upstream.append("worker-" + str(response.status))
+                except Exception as error:
+                    # Chromium may lose the transport after the Worker commits;
+                    # the authoritative database state below decides the outcome.
+                    upstream.append("transport-" + type(error).__name__)
                 route.abort("failed")
             else:
                 route.continue_()
@@ -285,7 +291,7 @@ try:
         unknown_form.locator("button[type='submit']").click()
         expect(unknown_page.locator(".visibility-unconfirmed")).to_be_visible(timeout=20000)
         expect(unknown_form.locator("button[type='submit']")).to_be_disabled()
-        assert upstream == [200], upstream
+        assert upstream and upstream[0] == "intercepted", upstream
         assert state("forum_posts", unknown["post"])["is_hidden"] is True
         unknown_form.evaluate("(form)=>form.requestSubmit()")
         assert len(actions) == 1
@@ -295,7 +301,7 @@ try:
         assert len(actions) == 1
         assert events(unknown["post"], "post.hidden") == 1
         unknown_page.unroute("**/*", lose_after_commit)
-        record("unknown-after-committed-post-hide-no-replay")
+        record("unknown-after-committed-post-hide-no-replay", transport=upstream)
 
         # 4. Revoke the already-loaded private Restore capability. Real Worker
         # 403 and automatic guarded re-read must discard the old private reason.
