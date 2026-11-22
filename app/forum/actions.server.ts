@@ -20,7 +20,7 @@ import {
   type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
-import { visibilityTopicAction } from "./visibility-actions.server";
+import { visibilityActionFailure, visibilityTopicAction } from "./visibility-actions.server";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
@@ -198,19 +198,20 @@ export async function topicAction({ request, params, context }: {
   const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
+  const isVisibilitySubmission = request.method === "POST"
+    && new URL(request.url).searchParams.get("visibilityAction") === "1";
   const denied = forumMutationGuard(request, context);
   if (denied) {
-    // Preserve the visibility action discriminant even for preflight 401/403.
-    // Other topic intents retain their existing generic early denial.
-    if (request.method === "POST") {
-      let deniedForm: FormData;
-      try { deniedForm = await request.formData(); } catch { return denied; }
-      return await visibilityTopicAction(request, context, topicId, deniedForm) ?? denied;
-    }
-    return denied;
+    // The UI marks visibility POSTs in the action URL so preflight can return
+    // the typed 401/403 without reading the rejected request's body.
+    // This hint grants no access and is not trusted for any accepted mutation.
+    return isVisibilitySubmission
+      ? visibilityActionFailure(denied.data.error, denied.init?.status ?? 403) : denied;
   }
   let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  try { formData = await request.formData(); } catch {
+    return isVisibilitySubmission ? visibilityActionFailure() : mutationFailure("invalid", 400);
+  }
   const intent = requiredFormText(formData, "intent") ?? "reply";
   // Handle both visibility intents before any ordinary public-availability reader.
   // A malformed mixed-intent payload cannot fall through to an unrelated mutation.
