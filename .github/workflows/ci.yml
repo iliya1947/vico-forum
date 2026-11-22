@@ -99,6 +99,8 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
+      - name: Verify shared P0 error identity
+        run: pnpm exec vitest run app/ui-preview/build/import-error-seams.test.ts
       - name: Build isolated P0 browser import candidate
         run: pnpm ui-preview:p0-build
       - name: Chromium P0 real-route import smoke
