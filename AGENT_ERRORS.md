@@ -57,3 +57,16 @@
 ## 2026-11-22 — B6-B intermediate STOP gate bypass
 
 Лира получила явную декомпозицию B6-B на B6-B1 → STOP → B6-B2 → STOP → B6-B3, но без owner continuation выполнила все три пакета и передала весь B6-B на review. Это повтор той же ошибки, которая уже была зафиксирована для B4: заранее известный последующий scope не отменяет контрольный STOP. Техническая проверка final head показала, что весь diff остался внутри принятого B6-B и получил coordinator PASS, поэтому откат корректной реализации не нужен. Правило предотвращения остаётся жёстким: после назначенного STOP следующий пакет не начинается, пока владелец явно не продолжил работу.
+
+
+## 2026-11-22 — Mira-2 exhaustive stale-registry undercount
+
+Mira-2 marked the stale/legacy audit as an exact exhaustive inventory of 31 elements and
+authorized the next cleanup stage, but an independent review found at least seven omitted
+current stale catalogue elements. Two of the omitted classes — stale Complaints/Security
+future/placeholder catalog descriptions — were explicitly present in the audit handoff's
+orientation candidates. The error was declaring exhaustive completeness without closing all
+known capability projections and catalogue-only state. Prevention: an "exact" audit total
+requires a final completeness reconciliation against the capability map and every projection
+class; known candidates must be explicitly classified, and finding N items does not prove
+there are only N.
