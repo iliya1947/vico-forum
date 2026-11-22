@@ -2,18 +2,19 @@
 
 ## Current state
 
-- Service #369, не merge. Main на текущем входе: 9cff976a9621d9fe5dfef28ea5367e390ff435b1.
-- Мира-3 завершила первоначальное conceptual research: research/concept.md. Концепция не объявлена принятой владельцем.
-- Владелец уточнил обязательный критерий: preview является самим форумом с общей UI/route/product logic; всё необходимое работает через GitHub/Actions/Pages и браузер. Изменения main должны попадать в preview без отдельной реализации функции.
-- По прямому продолжению владельца Лёва пересмотрел своё предложение: research/leva-chat-plan.md. Прежний вариант с внешним runtime/хостом/socket-сервером отозван.
-- **Пересмотренное предложение готово к обсуждению, не утверждено.** Оно рассматривает внутреннее SQL-исполнение в браузере ниже общих repositories, чтобы не повторять product SQL/domain behavior. Browser SQL candidate не испытан и не объявлен совместимым.
-- Существенное расхождение с прежней концепцией: §20 разрешал representative persistence semantics вместо общих DB rules; §14.4 разрешал byte display без исходного resource admission. Это не доказывает уточнённый критерий владельца. Нельзя переносить прежние выводы как принятые решения для нового требования.
-- Предложены P0–P6 с обязательным browser viability gate. При неуспехе P0 — HOLD/пересмотр, без внешнего fallback и без самописных domain writers.
-- Реализация, установка зависимостей, прототипы и deployment не начинались. #322 не менялся.
-- Канонический PLAN.md не активирован как принятый implementation plan; актуальное предложение и ограничения находятся в research/leva-chat-plan.md.
+- Service #369, не merge; проверенный main 9cff976a9621d9fe5dfef28ea5367e390ff435b1.
+- Владелец уточнил цель и подтвердил: общие UI/routes/application interactions main, GitHub + браузер, без внешней среды. Реальная запись необязательна; simulated success, включая «успешно сохранено», разрешён.
+- Эти owner decisions записаны в DECISIONS.md D-06–D-08.
+- **Лёва обновил упрощённое предложение:** research/leva-chat-plan.md. Обязательные browser SQL/WASM, migrations, transactions и database-compatibility gate сняты.
+- Выбранный базовый вариант предложения: production route modules/UI/application handlers + raw test data + typed in-memory infrastructure adapters. Storage может подтвердить операцию без изменения baseline; минимальный transient state используется только для согласованной навигации/result UI.
+- Автоматическое обновление main обеспечивается общими imports и generated route manifest, а не синхронизацией второй preview-копии.
+- Старые выводы WORKFLOW о необходимости SQL parity/проверки browser SQL candidate superseded последним owner clarification. Не возвращать требование полноценной системы записи без новой причины.
+- Research/concept.md — предшествующее исследование. Новая техническая детализация находится в предложении Лёвы; общая архитектура не объявлена принятой владельцем автоматически.
+- P0 теперь проверяет browser route/context/handler seams и simulated-save vertical path, а не совместимость SQL engine.
+- Канонический PLAN.md не активирован как approved implementation plan. Product/preview code, #322, dependencies и deployment не менялись; P0/реализация не начинались.
 
 ## Next transition
 
-**Обсуждение пересмотренного предложения владельцем.**
+Проверка/обсуждение упрощённого предложения по research/leva-chat-plan.md против D-06–D-08. Предмет — отсутствие второго UI, исполнимость общих handlers на Pages, полнота links/buttons/forms/visual states и согласованность simulation responses.
 
-Нужно отдельно оценить предложенную нижнюю границу browser test database с учётом полного запрета внешней среды. Одобрение новой архитектуры или запуск P0 автоматически не предполагаются. До отдельного implementation назначения не создавать implementation PR, не устанавливать зависимости и не менять product/preview код.
+Сохранение не является gate. Новых implementation PR и SQL-runtime proof-of-concept задач сейчас нет. До отдельного implementation назначения не начинать код.
