@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, data, RouterProvider } from "react-router";
@@ -43,7 +44,7 @@ const topicProps={
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();});
 
-function mount(element:React.ReactNode,actor="actor-1"){
+function mount(element:ReactNode,actor="actor-1"){
   const action=vi.fn(async({request}:{request:Request})=>{
     const body=await request.formData();
     return data({operation:"contentVisibility",ok:true,hidden:true,
@@ -110,8 +111,9 @@ describe("B7-B1b visible-only Hide forms",()=>{
     await waitFor(()=>expect(action).toHaveBeenCalledTimes(1));
     const req=action.mock.calls[0]?.[0]?.request;
     expect(req?.method).toBe("POST");
-    const submitted=await req!.clone().formData();
-    expect(Object.fromEntries(submitted.entries())).toEqual({
+    // The route action has already consumed the Request body; inspect captured action data.
+    const result=await action.mock.results[0]!.value;
+    expect(Object.fromEntries(result.data.received)).toEqual({
       intent:"setPostVisibility",editorActorId:"actor-1",hidden:"true",
       expectedVisibilityVersion:"2",expectedRevisionId:"post-r2",
       postId:"post/visible",reason:"  Review moderation report  ",
