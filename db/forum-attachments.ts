@@ -1,4 +1,5 @@
 import { isForumAttachmentUuid } from "./forum-attachment-id";
+import { InvalidForumAttachmentError } from "./forum-attachment-errors";
 import {withOperationalFacts,type OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
 import { assertActiveAccountForDrizzleMutation } from "./account-state";
@@ -20,7 +21,7 @@ import {
   resolveAttachmentDraftGeneration,
 } from "./attachment-draft-generation";
 
-export { ForumAttachmentDraftConflictError } from "./attachment-draft-generation";
+export { ForumAttachmentDraftConflictError } from "./forum-attachment-errors";
 
 export interface ForumAttachmentMetadata {
   id: string;
@@ -73,12 +74,7 @@ export interface ForumAttachmentSecurityEventPage {
   page: number;
 }
 
-export class InvalidForumAttachmentError extends Error {
-  constructor() {
-    super("invalid forum attachment");
-    this.name = "InvalidForumAttachmentError";
-  }
-}
+export { InvalidForumAttachmentError } from "./forum-attachment-errors";
 
 export { isForumAttachmentUuid } from "./forum-attachment-id";
 const privateObjectKey = /^private\/(?:fenced-v1\/)?[0-9a-f-]{36}$/iu;
