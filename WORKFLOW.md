@@ -2,25 +2,14 @@
 
 ## Активный этап
 
-**Moderation visibility B8-C activated — only B8-C1 is assigned; STOP after B8-C1.**
+**Moderation visibility B8-C1 connected Chromium author-check PASS; Лира STOP before B8-C2.**
 
-- B8-B coordinator PASS: Draft #376 stable accepted exact `cd9ffd1adc30853ecf297fea15ea6188f851ca98`, stacked on accepted B7 #371, unmerged.
-- Continue in the **same B8 Draft #376 / branch `feature/moderation-visibility-b8-acceptance`**. No new B8 implementation PR.
-- B8-C is split for owner control:
-  1. **B8-C1 — connected Chromium core visibility UI/locales/RTL/keyboard** — **ACTIVE NOW**.
-  2. B8-C2 — connected pending/stale/unknown, account-switch/revoke/late-response and retained-buffer lifecycle — inactive.
-  3. B8-C3 — browser-level cache/outage/unexpected/completeness reconciliation — inactive.
-- Existing browser suites do not currently provide a dedicated moderation-visibility Chromium matrix; reuse established Playwright/connected Worker infrastructure where practical instead of inventing a parallel harness.
-- **B8-C1 required result:**
-  - exercise the actual built Worker in Chromium with real Better Auth sessions and disposable PostgreSQL;
-  - cover representative visible → Hide → private inspector/Restore → visible flows for topic and post using the actual rendered controls, not direct HTTP mutation helpers;
-  - verify EN/RU/HE rendering for visibility controls and outcomes, including HE RTL and a narrow viewport;
-  - verify keyboard reachability/activation of the relevant Hide/Restore/inspection controls and that hidden public source is not present in rendered DOM after transition;
-  - verify queue/inspector navigation and Restore from the guarded private UI with current actor/session;
-  - retain B8-B transport/R2 assertions rather than duplicating them at browser level.
-- If C1 exposes a real current visibility UI defect, diagnose through the actual Chromium path and fix only that bounded defect.
-- Run the applicable connected Chromium workflow/checks on the resulting exact head.
-- **Mandatory STOP after B8-C1.** Report exact head, changed/test scope, browser evidence and any current-stage correction. Do not start B8-C2/C3, B9, fold, final reviews, merge or deploy.
+- Owner authorized only **B8-C1** after Mira **B8-B coordinator PASS**. Existing [Draft B8 #376](https://github.com/iliya1947/vico-forum/pull/376), branch `feature/moderation-visibility-b8-acceptance`, stable exact **`0970ceff647068a72dd8ec56192036db58e68465`**. Prior accepted B8-B exact `cd9ffd1adc30853ecf297fea15ea6188f851ca98`; original stacked B7 #371 base unchanged, behind 0.
+- **B8-C1 implementation:** added only `tests/browser/sa04-complaints/visibility-check.py` (+234) and its invocation in existing `.github/workflows/sa04-n-complaints-browser.yml` (+6), 2 files / 3 commits compared with accepted B8-B. Reuses SA04-N disposable PG17, built Worker, live Better Auth cookie sessions and Playwright Chromium. No production/schema/permission/runtime/R2 changes.
+- Real keyboard-operated rendered UI flows: **EN topic**, **EN post**, **RU post**, **HE topic at 360px RTL**. For each: public visible source before Hide; mod opens QuickActions with Enter, types reason, Tabs to submit and activates with Enter; SQL confirms hidden state; fresh public browser document has neutral topic 404 or post tombstone, never hidden title/body/reason; mod navigates guarded `/:locale/admin/forum/content` queue link to private inspection with Enter; private current reason and Restore form; keyboard Restore commits, SQL confirms visible and fresh public browser again renders original source. HE queue/inspector retain RTL and no horizontal overflow; localized action labels differ across EN/RU/HE. No browser exceptions or external network requests.
+- **Exact-head verification, first attempt 3/3 workflow SUCCESS:** [CI #45079095928](https://github.com/iliya1947/vico-forum/actions/runs/45079095928): checks 2951/2951 unit, database 1689/1689 PostgreSQL17 plus Worker B8-B1/B8-B3 smoke, lint/typecheck/build; [SA04-N #45079095897](https://github.com/iliya1947/vico-forum/actions/runs/45079095897): existing N suite and five explicit `B8_C1_CHROMIUM` PASS logs; [SA04-K5 #45079095827](https://github.com/iliya1947/vico-forum/actions/runs/45079095827): connected local-R2/Chromium SUCCESS. No confirmed current B8-C1 defect.
+- **Mandatory STOP after C1.** B8-C2 (pending/stale/unknown, account switching/revocation/late replies, retained buffers) and B8-C3 (browser cache/failure/completeness) remain inactive. The next bounded assignment is **B8-C2 only after a fresh owner continuation**; B9, stack fold, whole-feature review, merge and deployment blocked. B8-C1 author-check PASS does not imply full B8 coordinator PASS or whole-feature acceptance.
+
 
 ## Baseline
 
