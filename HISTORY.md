@@ -21,3 +21,4 @@
 - 2026-11-22 — AGENTS draft structurally deduplicated: 5 safe merge groups + 2 internal reference-dedupes applied; numbered rules 64 → 58, semantic diff confirms 0 lost guards.
 - 2026-11-22 — применены 19 safe wording reductions к AGENTS draft; exact diff подтвердил, что изменены только эти 19 из 58 numbered rules, объём 2179 → 2006 whitespace words.
 - 2026-11-22 — исправлены 3 semantic regressions AGENTS wording-pass; повторная трёхслойная проверка дала PASS для User, Project и AGENTS drafts, 0 межслойных противоречий и 0 consistency blockers.
+- 2026-11-22 — transfer-readiness выявил реальный лимитный блокер: финальный User draft 8364 chars не помещается в официальный 5000-char global Custom Instructions limit; безопасный transfer order зафиксирован как User → AGENTS → Project.
