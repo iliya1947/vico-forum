@@ -63,7 +63,7 @@ function postedForm(container:HTMLElement):HTMLFormElement{
   const form=container.querySelector<HTMLFormElement>(".visibility-hide-form");
   expect(form).not.toBeNull();
   expect(form?.method).toBe("post");
-  expect(form?.getAttribute("action")).toBe("/en/topics/topic%2Fvisible");
+  expect(form?.getAttribute("action")).toBe("/en/topics/topic%2Fvisible?visibilityAction=1");
   const reason=form!.querySelector<HTMLTextAreaElement>('textarea[name="reason"]');
   expect(reason?.required).toBe(true);
   expect(reason?.maxLength).toBe(2000);
