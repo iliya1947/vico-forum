@@ -52,12 +52,13 @@ function fixture(options:{signedIn?:boolean;allowed?:boolean;permissionError?:Er
   context.set(forumReaderContext,{readTopicPage} as never);
   const submit=async(body:FormData=form(),{method="POST",origin="https://forum.example",pathTopicId=topicId}:
     {method?:string;origin?:string|null;pathTopicId?:string}={})=>{
-    const headers=origin===null?{}:{Origin:origin};
+    const headers=new Headers();
+    if(origin!==null)headers.set("Origin",origin);
     const request=new Request("https://forum.example/en/topics/"+encodeURIComponent(pathTopicId),{
       method,headers,body,
     });
     const result=await topicAction({request,params:{locale:"en",topicId:pathTopicId},context});
-    if(!("data" in result))throw new Error("Visibility POST must return action data, not redirect");
+    if(!result||!("data" in result))throw new Error("Visibility POST must return action data, not redirect");
     return result;
   };
   return {context,granted,has,setTopicVisibility,setPostVisibility,createReply,
