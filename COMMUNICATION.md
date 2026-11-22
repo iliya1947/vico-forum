@@ -4,8 +4,10 @@
 
 Пользовательский слой должен содержать только действительно универсальные требования к поведению ChatGPT. Проектные и GitHub/workflow-specific правила должны оставаться в проектном слое или `AGENTS.md`.
 
-После transfer-readiness выполнена отдельная сверка с исходной behavioural/executability целью. Она выявила текущий blocker: финальный User compact draft укладывается в 5000 символов и сохраняет 52/52 guards, но снова упаковывает несколько независимых мыслительных операций в составные «суперпункты». Это тот тип instruction-load проблемы, который ранее был отдельно признан FAIL по исполнимости.
+Первый compact User draft 20 rules / 4999 chars сохранил все смыслы, но провалил structural executability: 9/17 stress-сценариев попали в перегруженные «суперпункты».
 
-До bounded executability/stress validation финальной 20-rule User версии фактический transfer package не готовится. Подробности: `research/original-goal-executability-recheck.md`.
+Этот blocker локально исправлен новым User draft: 35 rules / 4999 chars, blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`. Проблемные former groups 5, 7, 9, 10, 13, 14 разбиты; preservation-check подтвердил 52/52 guards и 15/15 current rules.
+
+Новый exact blob ещё не прошёл повторный stress-test, поэтому transfer package по-прежнему не готовится. Подробности: `research/user-35-redesign-preservation-check.md`.
 
 Рабочий PR является временным аналитическим пространством и не предназначен для merge.
