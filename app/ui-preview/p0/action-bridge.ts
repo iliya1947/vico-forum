@@ -41,7 +41,15 @@ export function previewAction(
       url: new URL(localRequest.url),
       serverAction: async () => {
         console.info("P0_ACTION_CHAIN_SERVER", id);
-        return await server({ request: localRequest.clone(), params, context });
+        const result: unknown = await server({ request: localRequest.clone(), params, context });
+        const status = result instanceof Response ? result.status
+          : result && typeof result === "object" && "init" in result
+            && result.init && typeof result.init === "object" && "status" in result.init
+            ? result.init.status : 200;
+        const payload = result && typeof result === "object" && "data" in result ? result.data : null;
+        const error = payload && typeof payload === "object" && "error" in payload ? payload.error : null;
+        console.info("P0_ACTION_SERVER_RESULT", id, status, error);
+        return result;
       },
     } as ClientActionFunctionArgs;
     return await client(args);
