@@ -11,7 +11,7 @@ import { ProfileView } from "../forum/profile-view";
 import { readProfilePrivilegedSections } from "../profile/sections.server";
 import { ForumRouteError } from "../forum/ui";
 import { ForumEntityNotFoundError } from "../../db/forum-repository";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 
