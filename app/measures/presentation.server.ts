@@ -1,6 +1,6 @@
 import type { RouterContextProvider } from "react-router";
 import { USER_MEASURE_RESTRICTION_IDS, type UserMeasureRestrictionId } from "../admin/user-measure-restrictions";
-import { UserMeasuresUnavailableError } from "../../db/hyperdrive-user-measures";
+import { UserMeasuresUnavailableError } from "../../db/user-measures-error";
 import { userMeasuresForRequest } from "./request-context";
 
 /**

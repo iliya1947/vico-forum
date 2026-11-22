@@ -23,14 +23,12 @@ import { forumTopicPath } from "./paths";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
-import {
-  ContentGenerationPlanningUnavailableError,
-  type ContentGenerationActionResult,
-} from "../localization/content-generation-action.server";
+import { ContentGenerationPlanningUnavailableError } from "../localization/content-generation-error";
+import type { ContentGenerationActionResult } from "../localization/content-generation-action.server";
 import {
   contentGenerationActionForRequest,
   contentGenerationAdmissionForRequest,

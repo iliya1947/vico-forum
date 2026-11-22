@@ -1,3 +1,4 @@
+import { UserMeasuresUnavailableError } from "./user-measures-error";
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { AccountStateUnavailableError } from "./account-state";
@@ -7,7 +8,7 @@ import { PostgresUserMeasuresRepository, UserMeasuresService,
 import { PostgresUserMeasureReader } from "./user-measure-read";
 import type { UserMeasureCapability } from "../app/measures/request-context";
 
-export class UserMeasuresUnavailableError extends Error {}
+export { UserMeasuresUnavailableError } from "./user-measures-error";
 
 function unavailable(error: unknown): boolean {
   const seen = new Set<unknown>();

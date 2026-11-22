@@ -3,7 +3,7 @@ import { data, useActionData, useLoaderData, type RouterContextProvider, type He
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { forumReaderForRequest } from "../forum/request-context";
 import {
   contentGenerationActionForRequest,
@@ -26,7 +26,7 @@ import type {
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import type { ForumTopicReadState } from "../../db/forum-repository";
 import type { TopicWatchState } from "../forum/topic-watch-control";
 import type { PersonalFilterState } from "../forum/personal-filter-control";
