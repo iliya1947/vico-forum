@@ -5249,6 +5249,57 @@ describe("personal Block presentation in ordinary TopicView", () => {
     }
   });
 
+  it("B7-SC1-01 invalidates a hidden-post inspector link across A→B→A until a fresh public loader GET", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "hidden/post-1", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden] };
+    const privateFlags = { canManageVisibility: true, watchActorId: "moderator1" };
+    let snapshot = topicRenderData(page, privateFlags);
+    const loader = vi.fn(() => snapshot);
+    const router = createMemoryRouter([
+      { id: "page", path: "*", Component: TopicRoute, loader },
+    ], { initialEntries: [forumTopicPath("en", topic.id)] });
+    const i18n = runtime("en", "ltr");
+    const moderator: HeaderAuthUser = { id: "moderator1", name: "Moderator" };
+    const other: HeaderAuthUser = { id: "other-user", name: "Other" };
+    const tree = (viewer: HeaderAuthUser | null) =>
+      <I18nextProvider i18n={i18n}>
+        <HeaderAuthProvider initialUser={viewer}>
+          <RouterProvider router={router} />
+        </HeaderAuthProvider>
+      </I18nextProvider>;
+    const view = render(tree(moderator));
+    const inspectorLink = () =>
+      view.container.querySelector<HTMLAnchorElement>(".topic-message-private-inspection a");
+    try {
+      await screen.findByText("This message is unavailable.");
+      await waitFor(() => expect(inspectorLink()).not.toBeNull());
+      for (const newViewer of [other, null]) {
+        const before = loader.mock.calls.length;
+        await act(async () => { view.rerender(tree(newViewer)); });
+        expect(inspectorLink()).toBeNull();
+        await act(async () => { view.rerender(tree(moderator)); });
+        // The header switched back, but the same loader still carries stale authority.
+        expect(inspectorLink()).toBeNull();
+        expect(loader).toHaveBeenCalledTimes(before);
+
+        // Only a new GET/snapshot may re-enable the link for the current actor.
+        snapshot = topicRenderData(page, privateFlags);
+        await act(async () => { router.revalidate(); });
+        await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(before));
+        await waitFor(() => expect(inspectorLink()).not.toBeNull());
+        expect(inspectorLink()?.getAttribute("href"))
+          .toBe("/en/admin/forum/topics/typed%2Fapi/inspect?postId=hidden%2Fpost-1");
+        expect(view.container.querySelector("[data-moderation-hidden-post] [data-message-body]")).toBeNull();
+      }
+    } finally {
+      router.dispose();
+      view.unmount();
+    }
+  });
+
   it("renders a hidden middle parent with stable message numbers and bidirectional descendant anchors", async () => {
     const root = {
       ...topic.posts[0]!, id: "tree-root", authorId: "ada", authorName: "Ada", parentPostId: null,
