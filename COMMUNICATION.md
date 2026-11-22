@@ -32,3 +32,13 @@ Evidence: `research/current-compression-whole-system-check.md`.
 После дополнительной межслойной проверки безопасно удалены только два служебных title и повтор agent mapping из Project (заменён ссылкой на обязательный AGENTS Roles). Остальные похожие правила сохраняются из-за различий scope/audience/frequency.
 
 Итог Задачи 1: 22363 → 19921 chars (-10.92%), 97 → 97 rules, новых требований 0. Evidence: `research/current-deep-dedup-pass.md`.
+
+## Межслойный dedupe — применено
+
+К Project draft применены только подтверждённые D1–D4:
+- удалены 2 полных дубля поведения из AGENTS;
+- mapping имён/моделей оставлен ссылкой на AGENTS Roles;
+- удалён поясняющий дубль из rule 2;
+- Stage/future-groundwork rule сохранён.
+
+Evidence: `research/project-cross-layer-dedupe-application.md`.
