@@ -2,17 +2,20 @@
 
 ## Активный этап
 
-**Moderation visibility B8-C — MIRA COORDINATOR PASS; STOP BEFORE B9.**
+**Moderation visibility B9 activated — final exact-head author self-check only; STOP before stack fold.**
 
-- Draft B8 #376 stable exact `108e0ba31ed34f891e8b46e411991b893b9da56b`, stacked on accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, behind0, unmerged. B8-A and B8-B coordinator PASS remain valid.
-- B8-C cumulative diff from accepted B8-B is limited to one connected Chromium workflow update plus three Playwright acceptance files; **no production/schema/runtime/permission/R2 implementation changes**.
-- **C1 core UI:** actual built Worker + live Better Auth + PostgreSQL + Chromium performs topic/post Hide → guarded queue/inspector → Restore through rendered controls, including EN/RU/HE, 360px HE RTL, keyboard activation and fresh public DOM source suppression/recovery.
-- **C2 lifecycle:** real PostgreSQL lock holds a pending Hide and proves one POST/one History plus retained reply buffer; two Chromium tabs establish stale Hide/Restore 409; a real Worker commit with deliberately lost Chromium response produces unconfirmed/no replay; fresh revoke removes private Restore/source; sign-out and new Better Auth actor do not reuse old pending/private state.
-- **C3 cache/fault:** browser document plus connected data/legacy paths prove no-store neutral404/private401/403/revoke and fresh Restore; real PostgreSQL reader lock yields fail-closed 503 and recovers; scoped History exception yields 500/unconfirmed with atomic rollback and only a later explicit user retry commits.
-- Coordinator review confirmed the scenarios use real UI actions where the UI behavior is under test, real PG/Worker/Better Auth state, and the accepted B8-B transport/R2 evidence rather than synthetic replacements.
-- Exact-head evidence independently verified on `108e0ba31ed34f891e8b46e411991b893b9da56b`: **4/4 check-runs SUCCESS** — CI `checks`, CI `database`, `complaints_browser`, `attachments_browser`. CI #45083893513, SA04-N #45083893569 and SA04-K5 #45083893627 are all SUCCESS on attempt 1.
-- No remaining confirmed current-B8-C blocker.
-- **B8-C coordinator PASS. Лира STOP. B9 requires fresh owner continuation.** Stack fold, final whole-feature Mira review, Leva independent review, merge and deploy remain blocked.
+- B8-A/B/C coordinator checkpoints are PASS. Current Draft B8 #376 stable accepted pre-B9 exact `108e0ba31ed34f891e8b46e411991b893b9da56b`, stacked on accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, unmerged.
+- **B9 is one indivisible closeout packet:** reconcile the complete #376 diff and V1–V9 acceptance evidence, then perform the final author self-check on a single stable exact head.
+- Required final evidence on that exact head:
+  - lint, typecheck, unit tests, full PostgreSQL suite, build and preview;
+  - migration-history/metadata/schema-manifest checks;
+  - runtime privilege/provisioning checks required by current CI;
+  - dedicated connected Worker/Better Auth/Chromium/local-R2 visibility acceptance covering the B8 matrix retained from A/B/C;
+  - current check-runs/workflow results must all be tied to the same final SHA; no claim based on mixed heads.
+- Reconcile cumulative #376 scope against accepted B7: distinguish implementation files from B8-only acceptance/CI additions; verify no unauthorized Stage6/deploy/docs/product-scope work entered the PR.
+- If B9 finds a real current visibility defect, classify and correct only that current-stage defect, then rerun the affected final evidence on the new exact head.
+- Update #376 and service handoff with the stable final SHA, complete evidence and any correction.
+- **Mandatory STOP after B9 author self-check.** Do not fold the stack into B1, close intermediate PRs, start Mira whole-feature review, invoke Leva, merge, docs closeout or deploy without fresh owner continuation.
 
 ## Baseline
 
