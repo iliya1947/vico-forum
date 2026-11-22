@@ -872,6 +872,7 @@ export const reviewedCommonFingerprints = {
   visibilityReload: "0f726a7bb4d166dfb78bbf1e9b5fb838b0923f76a666bce94c3b2b23e044e6a4",
   visibilityDenied: "5031ebc115637ce9d8a94ac6a3804b0316730deaa465af505ecd323e6d157d39",
   visibilityUnconfirmed: "a8e825efa6c8424a49c1205a90c8ff00b44fe41779f4812124278116b194f106",
+  visibilityPending: "e6a54d3815edee43655aef180f6914ad2b707cf23483a01bccfa488c0f9b7a60",
   topicClosedStatus: "f3839100cc2948e6bd7ef1ae36e907a0a04b22077be6eee5d41c980c231824ac",
   topicClosedNotice: "4fff57d72b6b8e259e6b0d7901259d06743889ee316cc68ef424b2385617dc80",
   topicClose: "2308206f82a1aef7a28413588a575d941658af25122d356719ed46e1f66ad07b",
