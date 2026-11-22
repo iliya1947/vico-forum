@@ -207,7 +207,7 @@ try:
             expect(form.locator("button[type='submit']")).to_be_disabled()
             expect(pending_page.locator(".visibility-pending")).to_be_visible()
             assert draft.input_value() == draft_text
-            pending_page.locator("form.visibility-hide-form").evaluate("(form)=>form.requestSubmit()")
+            form.evaluate("(element)=>element.requestSubmit()")
             assert len(submitted) == 1, submitted
             assert events(pending["post"], "post.hidden") == 0
         finally:
