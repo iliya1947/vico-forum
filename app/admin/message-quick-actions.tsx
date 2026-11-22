@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useFetcher, useRevalidator } from "react-router";
+import { useFetcher, useMatches, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { forumTopicPath } from "../forum/paths";
@@ -129,9 +129,14 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
 /** Changing actor, target or permission unmounts private fetchers and their responses. */
 export function MessageQuickActions(props: MessageQuickActionsProps) {
   const headerActorId = useHeaderAuthUser()?.id ?? null;
+  const loaderSnapshot = useMatches().at(-1)?.data;
+  // A stale loader cannot regain authority when its original viewer returns.
+  const actorLifetime = useRef({ snapshot: loaderSnapshot, invalidated: false });
+  if (actorLifetime.current.snapshot !== loaderSnapshot)
+    actorLifetime.current = { snapshot: loaderSnapshot, invalidated: false };
+  if (props.actorId && props.actorId !== headerActorId) actorLifetime.current.invalidated = true;
+  if (actorLifetime.current.invalidated) return null;
   const actorId = props.actorId ?? headerActorId;
-  // A stale private admin loader must not keep displaying an earlier actor's history.
-  if (props.actorId && props.actorId !== headerActorId) return null;
   const canHide = props.canHideVisibility && typeof props.visibilityVersion==="number"
     && Number.isInteger(props.visibilityVersion) && props.visibilityVersion>=0
     && props.visibilityVersion<=2_147_483_647;
