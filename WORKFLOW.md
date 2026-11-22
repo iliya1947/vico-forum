@@ -33,16 +33,22 @@
 
 ## Текущий этап
 
-Этап 3 — compression/fix-pass действующего `AGENTS.md` завершён.
+Этап 4 — whole-system проверка трёх current-based compression drafts завершена.
 
 Результаты:
-- `AGENTS.draft.md` заново построен только из current baseline;
-- 64 → 64 нумерованных правил;
-- 17720 → 16082 chars;
-- 2209 → 2015 whitespace-words;
+- User: 1302 → 1190 chars, 15 → 15 rules;
+- Project: 3341 → 2737 chars, 18 → 18 rules;
+- AGENTS: 17720 → 16082 chars, 64 → 64 rules;
+- total: 22363 → 20009 chars (**-10.53%**);
+- words: 2837 → 2557 (**-9.87%**);
+- самостоятельные нумерованные требования: 97 → 97;
 - новых требований: 0;
-- все 11 разделов и их rule counts сохранены;
-- semantic check: смысл/модальность/субъект/область/условия/исключения/полномочия сохранены;
-- evidence: `research/agents-current-compression-pass.md`.
+- подтверждённых semantic regressions: 0;
+- новых межслойных конфликтов: 0;
+- evidence: `research/current-compression-whole-system-check.md`.
 
-Следующий bounded-этап: whole-system проверка трёх current-based drafts на semantic preservation, межслойные конфликты и фактическое снижение общего объёма.
+Задача 1 — conservative compression/fix-pass действующих инструкций — завершена на уровне drafts.
+
+Реальные User/Project Instructions и `main:AGENTS.md` не изменены.
+
+Следующий отдельный этап требует решения разработчика: принять/доработать эти exact drafts перед любым переносом. Задача 2 с новыми интеллектуально-логическими улучшениями остаётся отложенной.
