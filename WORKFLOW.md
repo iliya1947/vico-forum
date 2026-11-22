@@ -33,16 +33,19 @@
 
 ## Текущий этап
 
-Этап 11 — внутренний duplicate-pass `PROJECT_INSTRUCTIONS.draft.md` завершён без изменения draft.
+Этап 12 — внутренний duplicate-pass `USER_INSTRUCTIONS.draft.md` завершён без изменения draft.
 
-Результат: `research/project-internal-duplicates-pass.md`.
+Результат: `research/user-internal-duplicates-pass.md`.
 
 Подтверждено:
 - полных internal delete-safe дублей: 0;
 - частичных internal delete-safe дублей: 0;
-- P9/P10/P11 и P12/P13 похожи, но имеют разные triggers/actions и сохраняются;
-- Project draft остаётся 2423 chars / 325 words / 18 numbered rules.
+- U3/U7/U8/U13 — разные epistemic guards;
+- U4/U5/U6 — verification/fallback/action-provenance с разными triggers;
+- U9/U10 и U11/U15 — разные behavior/continuation contracts;
+- старое упоминание U08/U13 относится к rejected архитектуре и не применяется к current draft;
+- User draft остаётся 1159 chars / 164 words / 15 rules.
 
-Внутренний delete-safe резерв Project слоя после межслойной чистки исчерпан.
+Внутренний delete-safe резерв User слоя исчерпан.
 
-Следующий bounded-этап: искать внутренние дубли в `USER_INSTRUCTIONS.draft.md`.
+Следующий bounded-этап: финальный whole-system recheck текущих exact drafts после всех применённых межслойных и внутренних dedupe-изменений.
