@@ -21,3 +21,14 @@ Status: **scoped source inventory only, not a test run, not B8-A acceptance/PASS
 4. Run **targeted PG tests on B8-A exact head**, resolve only confirmed *current B8 visibility* defects. B8-B Worker/Better Auth/R2 and B8-C Chromium/UI/cache stay inactive.
 
 This is an initial inventory, not evidence of B8 acceptance. Updated working assignment is maintained in `WORKFLOW.md` and `agents/lira.md`.
+
+## A2 — adjacent suites cross-check and first real-PG test commit
+
+- Source correction: `tests/database/source-locale-correction.test.ts` covers authority, same-locale admission, source revision invariants and actor deactivation, but not topic Hide/Restore row-lock ordering. Main visibility suite covers hidden denial/Restore state, not concurrent source no-op admission.
+- Solution and duplicate: `tests/database/sa04-forum-solution-lifecycle.test.ts` and `sa04-forum-duplicate-lifecycle.test.ts` cover existing signal/appeal/actor/Complaint races. The visibility suite covers hidden state denials and protected appeal exception; full Hide/Restore crossed ordering remains a separate matrix verification.
+- Accepted execution: `content-topic-title-execution.test.ts` and `content-post-body-task-planning.test.ts` already verify private translation completion during Hide provider window and reuse on Restore. Provider-window concurrency is not by itself a PG row-lock-barrier test. Existing title/body planning barriers in the visibility suite already cover fresh task admission and budget; do not duplicate.
+- Authority: visibility suite currently covers Owner, overrides, AP-10 and actor deactivation with real PG locks. Cross-check finer generic Admin/history/Complaint-only and fresh-revoke cases before adding more.
+
+**Confirmed first gap:** Hide/Restore × topic same-locale source-correction no-op had no real PostgreSQL two-order test in inspected suites. No-op must revalidate visibility inside its own transaction despite not changing the revision. Implemented `it.each` with four cases in `tests/database/moderation-visibility-commands.test.ts`: a real topic `FOR UPDATE` holder, `pg_blocking_pids` observation of both contenders, release, admitted/denied outcome, exact visibility version/History and unchanged current title revision; Restore readmission. Commit `20df9b8d3601b75372e3395cca5dbdaf35f11f15`, stacked [Draft #376](https://github.com/iliya1947/vico-forum/pull/376). Test diff +110 lines only; B7 baseline unchanged.
+
+**Verification status:** new PG tests **not executed**, CI **not launched**. B8-A not PASS. A3 remains for remaining bounded matrix and targeted PG execution; do not infer missing global coverage solely from neighboring suite names.
