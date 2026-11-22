@@ -1,207 +1,271 @@
-# Технический план Лёвы из чата: UI progress preview
+# Пересмотренный план Лёвы: один форум, GitHub Pages и внутренняя тестовая инфраструктура
 
-Содержит самостоятельное техническое предложение Лёвы, ранее опубликованное в чате и перенесённое в #369 по прямой просьбе разработчика.
+## Статус и исходные требования
 
-- Исследованная база: main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Статус: предложение для обсуждения, не утверждённый implementation plan.
-- Этот перенос не заменяет `research/concept.md`, не означает принятие концепции или назначение реализации и не меняет текущий этап #369.
-- Текст сохраняет предложенное в чате направление, включая необходимость проверки PGlite и отдельного исполняющего preview runtime. Сопоставление с концепцией #369 этим переносом не выполнялось.
+Дата: 2026-11-22. Проверенная база main: 9cff976a9621d9fe5dfef28ea5367e390ff435b1; новых изменений main на входе не обнаружено.
 
----
+Прежний вариант этого файла с Node-контейнером, socket-сервером, отдельным хостом и fallback на PostgreSQL-сервер **отозван как не соответствующий задаче**. Его история остаётся в Git.
 
-Нужен настоящий форум из актуального `main`, запущенный на тестовой инфраструктуре из репозитория. У preview должны остаться только запуск среды, тестовые данные и небольшая панель управления просмотром.
+Текущий результат — техническое предложение для обсуждения. Реализация, установка зависимостей, прототипирование и deployment в этой работе не выполнялись. Концепция research/concept.md не заменена и не объявлена принятой: её допущения о representative repository behavior требуют пересмотра под уточнённый критерий владельца.
 
-## 1. Что сейчас создаёт дублирование
+Обязательные требования владельца:
 
-Текущий [preview-app.tsx](https://github.com/iliya1947/vico-forum/blob/9cff976/app/ui-preview/preview-app.tsx) — около 2 200 строк. Он переиспользует настоящие компоненты, но самостоятельно:
+1. Для использования preview достаточно GitHub и браузера. Репозиторий, Actions и Pages — единственная платформа; никаких новых серверов, контейнеров, внешних БД, OAuth/provider credentials и дополнительных хостов.
+2. Preview — тот же форум: общие route source, route modules, интерфейс и продуктовые правила. Не отдельная похожая реализация.
+3. Изменение общей кнопки, ссылки, существующей функции либо правила в main попадает в preview обычной пересборкой, без второго изменения preview-кода.
+4. Подменяется внутренняя тестовая инфраструктура; исходные тестовые данные находятся в репозитории.
+5. Количество файлов — ориентир простоты, а не разрешение скрыть в двух больших файлах второй backend.
+6. Реализация пока не начинается.
 
-- регистрирует маршруты через `createMemoryRouter`;
-- собирает представления тем, сообщений, профилей и уведомлений;
-- определяет доступность действий по выбранной preview-identity;
-- блокирует отправку форм и часть authentication-действий;
-- подключает отдельную сборку локализации.
+## 1. Проверенный разрыв в прежней концепции
 
-Поэтому изменение настоящего loader, permissions или механики действия не обязательно попадает в preview. Общих компонентов для этого недостаточно.
+Одного переиспользования views/loaders/actions недостаточно.
 
-При этом в [workers/app.ts](https://github.com/iliya1947/vico-forum/blob/9cff976/workers/app.ts) уже есть подходящая основа: приложение собирает зависимости и передаёт их настоящим маршрутам через request context.
+В main бизнес-семантика находится также внутри db/forum-repository.ts, db/personal-notification-policy.ts, db/authorization-repository.ts, repositories Complaints и других DB-модулей. Например, SQL определяет recipients/suppression уведомлений, фильтры и ранжирование списков, переходы состояния и проверки при транзакционной записи.
 
-## 2. Какую архитектуру я предлагаю
+research/concept.md §20 уже признаёт, что ForumService связан с concrete DrizzleForumRepository, а отдельные in-memory capabilities не переиспользуют эту семантику автоматически. Допущение «покажем representative behavior, SQL correctness проверим отдельно» недостаточно для нового требования владельца: изменение функции в main может снова потребовать отдельной правки preview.
 
-Preview становится отдельным способом запуска того же приложения:
+Поэтому отвергается подмена высокого уровня вида отдельного PreviewForumWriter.setTopicWatch/createPost или отдельных реализаций Search/Unread/notification fanout. Также не подходят SQL handlers с ветвлениями по имени метода, таблице либо тексту конкретного product query.
 
-```mermaid
-flowchart LR
-    A[Браузер] --> B[Настоящий форум из main]
-    B --> C[Настоящие loaders/actions и сервисы]
-    C --> D[pg + Drizzle]
-    D --> E[Тестовая БД]
-    C --> F[Локальное файловое хранилище]
-```
+## 2. Выбранное направление и обязательный feasibility gate
 
-Без второго router, второго набора экранов и preview-версий форумных команд.
+Целевая граница подмены — ниже product repositories: **внутреннее SQL-исполнение в браузере**, общее для всех настоящих Drizzle/raw SQL запросов.
 
-Путь открытия темы, например, должен быть полностью настоящим:
+Кандидат — браузерный PGlite/WASM, загружаемый как часть статического Pages artifact. Это библиотека в памяти браузера, а не PostgreSQL-сервис, TCP/socket server, Node runtime или удалённая БД. Основное состояние экземпляра локально в браузере. Внешний fallback запрещён.
 
-`/:locale/topics/:topicId → настоящий loader → настоящий repository → тестовая БД → настоящий TopicView`.
+Причина выбора — сохранение текущей продуктовой семантики SQL без второй реализации. Это не требование превратить Pages в acceptance настоящего PostgreSQL/Hyperdrive.
 
-Ответ, редактирование, закладка или административное действие проходят такой же настоящий путь через action, проверки и транзакцию.
+Официальные источники:
+- Browser/runtime support: https://pglite.dev/docs/
+- Query API, rowMode/parsers/serializers: https://pglite.dev/docs/api
+- Memory/IndexedDB storage: https://pglite.dev/docs/filesystems
+- Текущий upstream имеет node-postgres connection adapter; его наличие само по себе не доказывает browser compatibility: https://github.com/electric-sql/pglite/blob/main/packages/pglite/src/node-postgres/index.ts
 
-**Подменять я предлагаю инфраструктуру ниже репозиториев.** Тогда нам не придётся заново реализовывать поиск, unread, permissions, уведомления, History и остальные правила.
+**Пригодность кандидата для Vico не доказана исполнением.** Первый bounded этап P0 обязан проверить её до реализации всего preview. Версию и конкретный bridge закреплять только по результату этой проверки, не брать mutable upstream main как зависимость.
 
-## 3. Что делать с базой
+Если браузерный кандидат не выполняет неизменённые migrations/queries и не позволяет сохранить product rules, этап получает HOLD. Нельзя подменить результат сервером, урезанными writers, готовыми ответами или переписыванием accepted migrations. В таком случае потребуется отдельный пересмотр общей архитектурной границы; этот план не объявляется подтверждённым.
 
-Обычная JSON-база с самописными readers/writers здесь быстро станет новым параллельным backend. В текущем коде используются PostgreSQL-транзакции, блокировки, immutable revisions, триггеры, ограничения и системные каталоги. Их достоверная имитация не поместится в небольшой адаптер.
+Простая in-memory graph с отдельными domain writers рассмотрена и отклонена именно по требованию отсутствия второго product behavior. Массовый перенос всей SQL-семантики в новую универсальную domain/query DSL также не выбран: это существенно более широкий рефакторинг production ради preview.
 
-Самый близкий к твоей идее вариант — **встроенный PGlite с PostgreSQL socket-сервером**:
+## 3. Исполняемый код должен быть общим
 
-- тестовая база хранится в локальной папке;
-- отдельный внешний PostgreSQL-сервис не требуется;
-- приложение продолжает работать через нынешние `pg` и Drizzle;
-- текущие repositories и SQL остаются общими с форумом.
+Preview напрямую использует:
+- app/routes.ts и соответствующие production route modules;
+- components/views, middleware, loader/action, editor clientAction;
+- application validation, permission/admission и response/error mapping;
+- ForumService и настоящие repositories;
+- существующие authorization/measure policies;
+- настоящие queries, transitions, History producers, notification logic;
+- locale registry/resource loading и revision-bound translation presentation.
 
-У PGlite есть [официальный socket-сервер для PostgreSQL-клиентов](https://pglite.dev/docs/pglite-socket). Но его несколько подключений обслуживаются через один внутренний connection, и авторы прямо ограничивают гарантии совместимости.
+Подмена:
+- PostgreSQL connection/driver transport на внутренний browser SQL bridge;
+- authentication/session provider на локальный test AuthRuntime;
+- R2 transport на Blob/byte store;
+- недоступные внешние provider/Queue capabilities на явно configured/unconfigured test infrastructure;
+- runtime facts, требующие внешней платформы, на обозначенные fixture/unavailable facts.
 
-Поэтому первый этап реализации — обязательная проверка пригодности:
+Запрещено alias'ить db/forum-repository.ts, db/personal-notification-policy.ts и аналогичные product modules на самописные representative equivalents. Alias/resolution allowlist ограничен действительно инфраструктурными модулями.
 
-- применить неизменённые migrations `main`;
-- проверить Better Auth и его нативные hooks;
-- выполнить настоящие чтения и записи форума;
-- проверить несколько подключений, транзакции, rollback и используемые блокировки;
-- открыть Admin и Owner Monitoring, включая запросы к PostgreSQL-каталогам;
-- проверить работу под нынешними database deadlines.
+Если небольшая необходимая contract/error extraction нужна для browser graph, она сохраняет один production source ошибки/правила. Ошибки должны иметь одну class identity внутри preview bundle, чтобы instanceof в настоящих handlers оставался корректным.
 
-**Если PGlite проходит этот набор — используем его. Если нет — берём изолированный PostgreSQL 17 в контейнере.** Не исправляем несовместимость переписыванием production SQL или обходами в доменной логике. Остальной план при такой замене не меняется.
+## 4. Единый route source и Framework contract
 
-Совместимость PGlite с этим проектом исполнением сейчас не проверялась; выдавать её за установленный факт было бы неправильно.
+Preview build читает настоящий app/routes.ts на build-time и создаёт виртуальный модуль с resolved route descriptors. Browser bundle не получает @react-router/dev.
 
-## 4. Как организовать файлы
+Production modules находятся через generated import registry, без ручного перечня URLs/screens. Generic adapter сохраняет:
+- вложенность, path/index/caseSensitive;
+- Framework route IDs, включая root и routes/locale-boundary;
+- default component, loader/action, ErrorBoundary;
+- middleware, handle, shouldRevalidate и применимые fallback exports;
+- настоящий editor clientAction с локальным serverAction, который вызывает production action.
 
-Ориентировочная структура:
+Основа browser execution — React Router Data Router плюс Static Handler для resource requests, проверенные на pinned версии проекта 8.3.1. Это техническое исполнение одного manifest, не второй router по смыслу URL topology.
 
-```text
-preview/
-  runtime.ts              запуск и остановка тестовой среды
-  seed.ts                 загрузка исходного набора данных
+getContext выдаёт свежий RouterContextProvider на операцию; состояние БД/файлов общее для экземпляра preview. Middleware для resource requests выполняется через поддерживаемый queryRoute/generateMiddlewareResponse contract.
+
+Root document требует явной технической границы: production app/root.tsx остаётся source для presentation, locale/theme/meta/links. Нельзя завести другую preview-версию шапки/меню/Layout. Необходимая browser document/runtime adaptation должна быть общей и generic; Framework script/hydration wiring не копируется в виде второго продукта. P0 проверяет этот край, а не предполагает, что одного RouterProvider достаточно.
+
+Появление нового неподдержанного Framework export должно ломать contract/build check, а не тихо игнорироваться.
+
+## 5. Browser SQL bridge
+
+Bridge реализует используемый настоящим кодом контракт Client/Pool/query/transaction lifecycle, а не forum methods.
+
+Проверить:
+- query config, параметры, rowMode array/object, типы PostgreSQL и null;
+- Date/timestamp, arrays, json/jsonb, bytea, bigint/string precision;
+- multi-statements, RETURNING, CTE, constraints, triggers и functions;
+- BEGIN/COMMIT/ROLLBACK/savepoints;
+- корректные SQLSTATE/error objects для текущих product branches;
+- логические Client/Pool leases и освобождение;
+- что end одного client не уничтожает общую test DB;
+- что parallel loader/telemetry calls не смешивают транзакции разных clients.
+
+Один PostgreSQL backend у WASM-кандидата — существенный риск. Транзакционный lease должен удерживаться до commit/rollback, остальные подключения ожидают; нельзя просто отправлять все queries в общую очередь между чужими BEGIN/COMMIT. Не обещать реальные многопользовательские locks/performance и не добавлять per-feature обходы.
+
+Репозиторий продолжает использовать текущий Drizzle node-postgres path, если совместимость bridge подтверждена. Если для сохранения того же SQL нужен другой generic driver integration, это отдельно фиксируется в P0; изменение driver не даёт разрешения менять domain queries или их результаты.
+
+Не загружать polyfill «всего Node» без разбора. Browser graph получает только нужные JS primitives; net/TCP/fs/remote connections должны оставаться недоступны. Официальный node-postgres connector не считается готовым browser adapter без browser build/runtime проверки.
+
+## 6. Request context и общая композиция
+
+Сейчас workers/app.ts собирает контексты приложения. Необходимо переиспользовать этот composition contract, не поддерживать два независимых списка разрешений/возможностей.
+
+Возможная небольшая production extraction: общая request-context composition, которая принимает infrastructure factories; Worker передаёт существующие defaults, browser preview — локальные transports. Это не перенос permissions или policies в preview.
+
+Все настоящие DB-backed capabilities, которые можно запустить через общий browser SQL bridge, используют настоящие factories/repositories. AuthRuntime и byte transport подменяются отдельно как инфраструктура.
+
+Новая обязательная context dependency в main проверяется типами/contract test; отсутствие binding не превращается в fake success. Product changes существующих capabilities должны проходить без новой preview реализации.
+
+## 7. Локальный application transport
+
+Все запросы к application routes обслуживаются одним dispatcher поверх generated manifest и production resource handlers. Никакого ручного switch по /mentions, /presence, /topics и т. п.
+
+Предусмотреть:
+- Request/Response, method, headers, body/FormData, AbortSignal;
+- redirect, thrown Response, validation errors и error boundaries;
+- правильный порядок middleware;
+- native fetch и существующий XHR upload;
+- auth-client initialization после установки transport: Better Auth client захватывает fetch при создании;
+- отсутствие background API calls за пределы Pages/static assets.
+
+Патч fetch сам по себе не перехватывает img/src, native download/navigation и HTML form submit. Эти поверхности учитываются отдельно. Не считать работу mentions доказательством работы всех запросов.
+
+GitHub project Pages subpath — явная часть контракта. Сохраняется один URL codec между Pages base и virtual application URL; source routes при matching видят обычные /:locale/* и /api/*. Ссылки, параметры, fragments, redirects и returnTo проходят round-trip без ручных endpoint исключений.
+
+Для прямого открытия используется Pages bootstrap/entry, затем нужный virtual application path. Не требуется Service-Worker-Allowed header, новый origin или внешний reverse proxy. Обычные app links обрабатываются общим router/navigation boundary. Использование нового unsupported native navigation primitive выявляется browser gate до cutover, а не маскируется.
+
+## 8. Вложения: настоящие handlers перед показом байтов
+
+Metadata и references находятся в общей test DB; байты — в локальном Blob store, реализующем transport contract PrivateAttachmentBucket.
+
+Upload использует настоящий attachment-upload action и его validation/state transitions. Local bucket реализует только byte/etag/precondition primitives, не attachment domain policy.
+
+Узкая общая resource-address boundary нужна для browser-managed image/text/download. Production implementation сохраняет текущие controlled HTTP URLs. Preview resolver:
+1. строит ту же resource request по authoritative reference;
+2. выполняет настоящий download loader через local dispatcher;
+3. при успешном ответе создаёт object URL;
+4. сохраняет error/result semantics;
+5. освобождает URL при изменении ресурса, identity, reset и teardown.
+
+Не читать bucket напрямую в обход product admission. Это сознательно строже допущения research/concept.md §14.4: владелец требует настоящую механику, а не только representative image.
+
+Generation/identity защищают от выдачи старого async result после переключения пользователя или reset. Native filename, text/image mode и download behavior проверяются в браузере.
+
+## 9. Auth, authorization и Owner
+
+Test AuthRuntime хранит текущие synthetic sessions в локальном состоянии. Переключатель identity выбирает существующий user ID; не меняет authorship/ownership/roles/grants темы.
+
+PermissionResolver, stored role grants/overrides, AccountState/measure checks и Owner authority используют общие production rules и test facts. Нельзя задавать UI-флаги canReply/isAdmin по выбранной подписи роли.
+
+Auth client/экраны и /api/auth route остаются production. Fake auth provider предоставляет необходимый local contract для test sign-in/out/account/session operations. В нём не появляется вторая версия forum authorization.
+
+Google/email/provider внешние обмены не выполняются. Неподдержанный внешним провайдером сценарий обозначается как test infrastructure capability/unavailable, а не как успешно выполненный Google OAuth. Preview не заявляет real authentication/security acceptance, HttpOnly guarantees или server secrecy.
+
+## 10. Данные и состояние
+
+В Git хранятся исходные raw fixtures и файлы. Не View props, HTML snapshots или готовые actionData.
+
+Данные: synthetic users, роли/grants/overrides, Owner binding, категории/разделы/темы/posts/revisions, Help states, personal Watch/Bookmarks/Mute/Block/read-state, notifications/suppression receipts, Settings, measures/appeals, Complaints/evidence/History, locales/translations и attachment references/bytes.
+
+Схема строится из настоящих immutable migrations main. Accepted SQL не редактировать и не пропускать «неудобные» migrations. Browser bootstrap или подготовленный Actions snapshot должны использовать ту же схему. Snapshot — generated artifact с ключом source SHA + migration/seed/engine versions, не отдельная ручная schema.
+
+Один baseline плюс небольшие raw overlays. Сценарий выбирает исходные facts/actor/start URL и fault profile; затем состояние меняется настоящими actions. Переключение viewport/locale не пересоздаёт авторов и контент.
+
+По умолчанию состояние отдельное на preview-tab/instance, в памяти. IndexedDB persistence — только при доказанной необходимости, с version/reset contract; не обещать глобальное сохранение между браузерами/пользователями через GitHub.
+
+Время: seed timestamps формируются от зафиксированного instance reference time; IDs стабильны/seeded. Для exact visual snapshots нужен согласованный clock boundary JS и SQL. Нельзя заморозить только Date в UI и объявить истекающие DB меры детерминированными; этот контракт проверяется в P0 либо используется честный documented relative-time mode.
+
+Reset отменяет/дожидается выполняющихся операций, создаёт новую generation DB/files/session state, освобождает object URLs и исключает применение старых responses к новому состоянию.
+
+## 11. Локализация, providers и runtime facts
+
+Production locale registry, URL negotiation, manual packs, canonical English/fallback и revision-bound presentation настоящие. Удаляется отдельный preview-i18n со своим фиксированным universe языков.
+
+Примеры EN/RU/HE — fixtures, а не hard-coded поддерживаемые locales. Переводы привязаны к текущим revisions.
+
+В main generation runtime сейчас disabled; preview не изображает отсутствующую работающую функцию. Сохранённые pending/success/failure данные могут показывать реальные screens без provider calls. Если в main появится новая внешняя transport dependency, ей потребуется infrastructure implementation/explicit unavailable contract, а не копия product command.
+
+Owner domain counts/History вычисляются настоящими queries на test data. Внешние platform facts не подделываются как измеренные production показатели.
+
+## 12. Физическая структура — ориентир
+
+app/ui-preview/
+  main.tsx                     минимальная entry
+  runtime.ts                   общая композиция/router/controller
+  infrastructure/
+    database.ts                generic browser DB/connection bridge
+    transport.ts               generic request/XHR/resource transport
+    auth-and-bytes.ts           локальные auth provider и byte primitives
   data/
-    users.json
-    forum.json
-    personal-state.json
-    moderation.json
-    translations.json
+    baseline.*                 raw fixture facts
+    overlays/
     assets/
-  scenarios.json          стартовые адреса и описания состояний
+  vite.config.ts               route manifest и узкий resolution allowlist
 
-.preview-state/           созданная БД и файловое хранилище; вне Git
-```
+Это ориентир, не обязательный шаблон. Можно объединять мелкие transports, но нельзя делать две гигантские тысячи-строчные product реализации ради цифры «два файла».
 
-Названия пока условные.
+Production changes ограничены необходимыми нейтральными seams: context composition, resource address/runtime presentation и clock при необходимости. Не менять внешний runtime/forum behavior ради preview.
 
-Таким образом, **1–2 управляющих файла плюс папка данных — разумная цель**. Но весь implementation diff ими не ограничится: понадобятся изменения команд запуска, конфигурации preview, workflow и проверки.
+Старые Preview*Route, manual route table, generated per-screen props, fake action handlers, отдельные permissions/locale copies и blanket submit blockers удаляются при cutover.
 
-В Git должны храниться читаемые исходные данные, а не постоянно изменяющиеся бинарные файлы БД. Рабочая база создаётся из migrations и seed. Её можно сбросить и воспроизвести.
+## 13. Автоматическое следование main
 
-Новой ручной копии схемы БД не будет: схема берётся из текущего `drizzle/`.
+Actions на новом main SHA собирает **тот же product source** с preview infrastructure build configuration. Всё необходимое — JS, WASM, schema/seed assets и файлы — включено в Pages artifact. При просмотре нет CDN/database/server dependencies.
 
-## 5. Какие данные нужны
+Одна опубликованная версия содержит согласованные source SHA, manifest, schema, seed и engine version. Controller показывает SHA; старая сборка не подписывается новой.
 
-Seed должен описывать связанные сущности, а не готовые props экранов.
+До merge product PR применимый CI gate собирает preview и проверяет архитектурный контракт. Обычные UI/route/domain изменения не требуют второго preview PR. Новая unsupported infrastructure/runtime primitive должна быть обнаружена до merge, а не оставлять скрыто устаревший preview.
 
-| Группа | Необходимые состояния |
-|---|---|
-| Пользователи | обычные пользователи, moderator, admin, отдельный synthetic Owner, ограниченный и деактивированный аккаунты |
-| Авторизация | настоящие назначения ролей, grants и overrides из действующего каталога |
-| Форум | категории, разделы, темы, сообщения, revisions, ответы на сообщения, теги |
-| Состояния тем | обычная, закрытая, закреплённая, решённая, лучший ответ, duplicate и Help signals |
-| Личное | Watch, Bookmarks, Mute/Block, read-state, уведомления |
-| Административное | меры, appeals, Complaints, решения, History |
-| Локализация | активные locales, оригиналы и сохранённые revision-bound переводы |
-| Файлы | реальные тестовые изображения и вложения с согласованными DB references |
+Push main автоматически обновляет Pages. Feature/service branches не перезаписывают main preview; при необходимости у них отдельные artifacts/addresses в GitHub. При неуспешной сборке сохраняется последний рабочий artifact с его реальным SHA и видимым статусом обновления.
 
-Не нужно хранить отдельно «число сообщений для карточки» или «права для кнопки». Они вычисляются настоящим кодом из тестовой БД.
+## 14. Этапы, зависимости и STOP gates
 
-В seed нужны устойчивые идентификаторы, чтобы ссылки были воспроизводимыми. Временные состояния — сроки мер, unread и недавняя активность — формируются относительно времени создания sandbox, чтобы набор не переставал работать через месяц.
+P0 — минимальная проверка browser viability.
+Вне published entry проверить browser bundle реальных route handlers + repositories, all migrations, generic driver, root/middleware/clientAction и Pages subpath. Execute: guest read, actual sign-in test session, create/edit/reply, Watch/notification suppression, real permission denial, attachment upload/download, Owner Data/Localization queries. Проверить transaction isolation между logical clients и JS/SQL type fidelity. Результат: PASS с измеренными bundle/startup/memory либо HOLD с точной причиной. Никакой внешней среды как fallback.
 
-Загрузка должна учитывать FK, immutable revisions и связанные состояния. Где удобно, использовать настоящие domain-команды; где нужен подготовленный исторический набор — корректные fixture inserts с последующей проверкой целостности.
+P1 — общий composition/router/transport.
+Зависит от P0 PASS. Generated route manifest, production exports, contexts, fetch/XHR, root document и URL codec. Без ручных route/API handlers. Gate: same exports/IDs, middleware/clientAction, redirect/error, deep link/refresh и native resource paths.
 
-## 6. Какие части инфраструктуры заменяются
+P2 — browser state/infrastructure и raw baseline.
+Настоящие repositories работают над внутренней DB; auth/bytes — infrastructure adapters. Gate: FK/revisions/history consistency, role/Owner switching без ownership rewrite, reset/in-flight/teardown.
 
-| Зависимость | Решение для preview |
-|---|---|
-| PostgreSQL/Hyperdrive | локальная тестовая БД; существующие bindings направляются на неё |
-| R2 | локальное хранилище через текущий Cloudflare/Miniflare tooling |
-| Better Auth | настоящий Better Auth с тестовыми аккаунтами и настоящими cookies |
-| Google OAuth | внешний вход недоступен; для preview используются тестовые email/password аккаунты |
-| Переводы | настоящий registry, manual packs и сохранённые тестовые content translations |
-| Внешние providers/Queues | не вызываются; используются фактические возможности `main` и подготовленные состояния данных |
+P3 — полная current-main feature matrix.
+Расширить fixtures, не product logic: public discovery, editor, personal state/inbox, Help, Settings, Admin/measures, Complaints/appeals, Owner surfaces. Gate: реальные связные read→action→revalidation sequences, а не отдельные красивые screens.
 
-[Локальные подключения Hyperdrive](https://developers.cloudflare.com/hyperdrive/configuration/local-development/) и [локальное R2](https://developers.cloudflare.com/r2/api/workers/workers-api-usage/) уже поддерживаются инструментами. В проекте есть Worker/Better Auth/PostgreSQL browser acceptance и локальное R2 — этот опыт можно переиспользовать.
+P4 — anti-drift/browser acceptance.
+Проверить shared component/route changes, product rule changes в SQL, отсутствие manual route/endpoint registry, no external backend/CDN requests, EN/RU/HE/RTL, mobile/desktop, identity/cache/resource lifecycle и upgrade/reset. Проверки должны показывать, что изменение общей функции выполняется в preview без изменения adapter.
 
-Тестовый Owner задаётся через отдельный synthetic `VICO_OWNER_USER_ID`. Переключатель роли не должен просто сообщать компонентам `isAdmin=true`.
+P5 — atomic cutover и удаление второго продукта.
+До готовности весь новый результат живёт в implementation workspace; старый published preview не смешивается с новым route-by-route. При cutover одна entry, одни data и одна версия. Удалить старый manual product layer; повторить final author self-check → Mira whole-feature review → independent Leva review → owner merge по актуальному AGENTS. Implementation PR/режим поставки назначаются отдельно, сейчас PR не создаётся.
 
-Действия, отсутствующие в `main`, preview не изображает работающими. Например, отключённая в настоящем runtime генерация переводов не получает самостоятельную preview-реализацию.
+P6 — GitHub Pages publication verification.
+Проверить deployed SHA, cold start, reload/direct links, cache upgrade и полную ключевую browser цепочку. Это Pages/UI verification, не Worker/PostgreSQL/real-provider acceptance.
 
-## 7. Что останется от панели preview
+Между этапами — отдельные bounded результаты и применимые targeted проверки. Не повторять весь CI после каждого внутреннего микрошагa; полный набор — на соответствующем завершённом scope.
 
-Небольшой controller вне интерфейса форума:
+## 15. Обязательный acceptance contract
 
-- выбор тестового аккаунта;
-- стартового сценария;
-- размера viewport;
-- сброс sandbox;
-- отображение используемого SHA.
+- App UI не существует в виде копии preview; изменение общего component видно после rebuild.
+- Новая route entry из app/routes.ts попадает в preview без второго path definition.
+- Изменение общего loader/action/validation выполняется напрямую.
+- Изменение repository SQL/domain transition не требует PreviewWriter rewrite.
+- Create/edit/reply действительно меняют состояние; lists, unread, notifications и History читают результаты тех же переходов.
+- Guest/member/moderator/admin/Owner видят результат настоящих permission rules на test identities.
+- Мутации не отключены blanket submit handlers; права не выдаются role-based UI booleans.
+- Attachment byte display проходит тот же product resource admission; нет тихих 404 на Pages origin.
+- Отдельно проверены native navigation/download, параметры, fragments, locale и Pages base.
+- Reset/actor change не применяет старое состояние/ответы.
+- Нет application API dependencies вне GitHub Pages и браузера.
+- В published artifact нет серверных credentials, Net/TCP driver, Node server, внешнего DB URL или socket process.
+- Bootstrap/driver incompatibility не маскируется fake success или prepared View props.
+- Несовпадение SHA/fixtures/schema явно обнаруживается; новая версия не смешивается со старой.
 
-Сценарий — это ссылка на реальные данные, например «открыть эту закрытую тему под этим пользователем». Он не создаёт другую страницу темы.
+## 16. Границы установленного
 
-Выбор пользователя выполняет настоящий вход тестового аккаунта. После переключения форум заново загружается с настоящей session и server-side permissions.
+Исследование подтвердило current-main coupling product logic с SQL, существующие request-context seams, отдельный manual preview router и ограничения Pages/native resources. Проверены официальные API React Router и browser PGlite, а также source текущего node-postgres connection adapter.
 
-Тема, язык, навигация и остальные пользовательские настройки работают через интерфейс самого форума. Отдельный `preview-i18n.ts` больше не нужен.
+Browser build/runtime, migration compatibility, bundle size, memory, startup и перечисленная end-to-end matrix **не выполнялись**. Поэтому этот документ не является доказательством готовой реализации и не разрешает начинать P1, пока P0 не даст фактический PASS.
 
-Сброс должен согласованно восстанавливать БД и файлы, завершать прежние сессии и возвращать исходное состояние. Управляющие операции существуют только в preview runtime и не попадают в production Worker.
-
-## 8. Важное ограничение размещения
-
-Сохранить настоящий форум с SSR, серверными actions и authentication **только статическими файлами GitHub Pages нельзя**. Нынешняя [Pages-сборка](https://github.com/iliya1947/vico-forum/blob/9cff976/.github/workflows/ui-preview-pages.yml) именно статическая.
-
-Для нового preview нужен исполняющий процесс.
-
-Я предлагаю один изолированный preview-контейнер: Node, локальный Worker runtime, встроенная тестовая БД и локальные файлы. Он собирается из репозитория и открывается по браузерной ссылке. Отдельные production БД, R2, OAuth и translation credentials ему не нужны.
-
-Controller и форум следует разместить на одном origin. Это сохранит обычные cookies, forms и redirects и позволит избежать проблем с authentication внутри iframe на другом сайте.
-
-GitHub Pages можно оставить переходной ссылкой на новый preview. Полностью браузерный перенос серверного приложения был бы отдельным, значительно более крупным проектом; для этой задачи я его не выбираю.
-
-Конкретный хост такого контейнера пока не определён. Это оставшийся вопрос размещения, а не причина создавать вторую реализацию форума.
-
-## 9. Как preview будет автоматически следовать за main
-
-При обновлении `main` pipeline:
-
-1. Берёт конкретный новый SHA.
-2. Собирает обычное приложение.
-3. Создаёт чистую тестовую БД из migrations этого SHA.
-4. Загружает seed и тестовые файлы.
-5. Проверяет запуск и основные сценарии.
-6. Только после успеха переключает ссылку preview на новую сборку.
-
-Нельзя незаметно показывать старую сборку под подписью нового `main`. При ошибке подготовки сохраняется предыдущий рабочий preview с его фактическим SHA.
-
-Основной адрес обновляется только из `main`. При необходимости отдельные feature-preview получают собственные адреса и не перезаписывают его.
-
-Новые маршруты появляются автоматически из настоящего `app/routes.ts`. Новая предметная сущность иногда потребует новых fixture-данных, но не повторной реализации экрана или поведения.
-
-## 10. Последовательность реализации и критерии готовности
-
-| Этап | Работа | Условие завершения |
-|---|---|---|
-| 1 | Проверить PGlite на существующем backend; при несовместимости выбрать PostgreSQL 17 | Движок выбран на основании выполнения критических путей |
-| 2 | Поднять настоящий Worker с тестовыми bindings и минимальным seed | Работают реальные public routes, SSR, вход и одна запись |
-| 3 | Добавить связанный набор данных для всех нынешних областей форума | Основные состояния доступны через настоящие маршруты и permissions |
-| 4 | Подключить controller, переключение аккаунтов и reset | Нет поддельных permissions, blocked forms и параллельного router |
-| 5 | Настроить сборку из `main` и размещение по ссылке | Успешное обновление SHA автоматически обновляет preview |
-| 6 | Переключить просмотр и удалить старую реализацию | `preview-app.tsx` больше не поддерживает отдельную механику форума |
-
-До удаления старого preview проверяется полный связанный проход: вход → создание темы → ответ → редактирование → Watch/Bookmarks/Mute/Block → уведомления → соответствующие Admin/Complaints действия. Отдельно — права гостя, пользователя, moderator/admin и Owner, RU/EN/HE и RTL, мобильный viewport, вложения, прямое открытие URL и перезагрузка.
-
-Ключевой критерий отсутствия дублирования: **изменение маршрута, компонента или доменной команды в `main` должно менять preview без правки preview-реализации этой функции**.
-
-Это направление я считаю правильным: небольшой воспроизводимый стенд вокруг настоящего приложения. Основная сложность будет в качественном наборе связанных данных и запуске среды; повторять сам форум больше не потребуется.
+Главное изменение относительно прежних материалов: нельзя назвать preview «тем же форумом», оставив отдельную representative реализацию существующих domain commands/queries. Подмена должна находиться ниже их общих правил; вся исполняющая среда при этом остаётся внутри браузера и GitHub.
