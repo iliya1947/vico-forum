@@ -16,12 +16,8 @@ export interface OwnerUserHistoryPage {
 export interface OwnerUserHistoryReader {
   readHistory(targetId: string, before?: string): Promise<OwnerUserHistoryPage>;
 }
-export class InvalidOwnerUserHistoryCursorError extends Error {
-  constructor() {
-    super("Invalid Owner user history cursor");
-    this.name = "InvalidOwnerUserHistoryCursorError";
-  }
-}
+export { InvalidOwnerUserHistoryCursorError } from "./owner-profile-errors";
+import { InvalidOwnerUserHistoryCursorError } from "./owner-profile-errors";
 
 const RESOURCE = "profile-history";
 const ORIGINS: readonly string[] = ["auth-event", "account-event", "admin-history", "attachment-evidence", "attempt-pattern", "operational-event", ...NATIVE_HISTORY_ORIGINS];
