@@ -2,23 +2,14 @@
 
 ## Активный этап
 
-**Moderation visibility B7 ACTIVATED — only B7-A is assigned to Лира.**
+**Moderation visibility B7-A implementation and focused test sources authored — Лира STOP; B7 UI not authorized.**
 
-Accepted stack:
-- B6 #370 coordinator PASS exact `51a9ebe03f16c438faae5bec99a5856287630958`.
-- B7 must be a new stacked Draft implementation PR based directly on branch `feature/moderation-visibility-b6-guarded-queue` at that accepted exact head.
-- B1–B6 remain Draft/unmerged; no stack fold, Leva final review, merge or deployment yet.
-
-### Current assignment — B7-A only: canonical visibility action contract
-
-Required result:
-1. Expose the already implemented transactional topic/post visibility commands through the canonical topic POST surface using the accepted intents `setTopicVisibility` / `setPostVisibility`.
-2. Enforce the accepted strict request contract: exact intent/actor expectation/desired hidden state/current version/current revision/reason, post ID only for post intent; reject duplicate, mixed, extra, File or malformed scalar input. Visibility handling must use fresh session/capability/AP-10 admission and be reachable for Restore before the ordinary public-availability gate.
-3. Return the accepted neutral status/result contract: invalid 400, guest/inactive 401, permission/measure 403, missing 404, stale 409, typed dependency 503; no hidden current source in errors; no optimistic retry/rebase. Add focused route/action tests for these boundaries.
-
-**STOP after B7-A.** Do not implement public/private QuickActions, inspector Restore controls, tombstone controls, pending/conflict UI, redirects, EN/RU/HE action presentation or actor-switch/late-response UI yet. Those remain later B7 work and are inactive until a new owner continuation.
-
-Cadence: targeted checks only for B7-A; no full repository CI is required at this intermediate STOP unless a concrete cross-cutting failure makes it necessary.
+- B6 #370 received Mira coordinator PASS on `51a9ebe03f16c438faae5bec99a5856287630958`; unchanged direct stacked base.
+- New [Draft B7 #371](https://github.com/iliya1947/vico-forum/pull/371), branch `feature/moderation-visibility-b7-actions-ui`, exact head `dedaff7a7783df1a8666926a911c0f1790540ac9`. Diff **7 commits / 4 app/forum files ahead, 0 behind** vs accepted B6; #370 unchanged; neither PR merged.
+- B7-A HTTP-only delivery: canonical topic POST recognizes `setTopicVisibility` / `setPostVisibility` before other action/public paths and routes to the accepted B2 atomic writers. Strict distinct topic/post scalar allowlists: unique intent, session-actor expectation, exact `hidden=true|false`, canonical 0..2147483647 version, expected current revision id, reason, postId only for post intent; unknown/mixed/duplicate/File/overlong/NUL invalid 400. Real transitions require nonblank reason in existing writer; admitted no-op may submit blank reason. Same-origin/session/method admission; early fresh visibility permission and in-transaction fresh active actor/RBAC/AP-10 even on no-op. Stale actor 409; no public read/automatic retry/rebase.
+- Only explicit safe success fields `operation:contentVisibility`, `target:topic|post`, ids, session actor, hidden, visibilityVersion, changed; all responses private no-store. Neutral errors: 400 invalid including missing transition reason, 401 guest/inactive, 403 origin/permission/AP-10, 404 missing, 409 stale, 503 typed storage/account/authorization failure. Unexpected internal failures remain handled by existing neutral route error boundary, not turned into false 503.
+- New `app/forum/visibility-actions.test.ts` scoped regression matrix authored: topic/post Hide+Restore, hidden-target Restore before public read, no-op, strict payload and duplicate/mixed/File cases, actor/account and Origin, deny/revoke, AP-10, 400/401/403/404/409/503, safe response/no auto retry. **21/21 scoped static source assertions PASS. Vitest, PostgreSQL, real Worker/browser and CI have NOT been executed for this B7-A exact head; no runtime PASS claimed.** Per owner cadence, full B7 CI remains for later B7 closeout unless a concrete blocker requires earlier run.
+- **STOP after B7-A.** QuickActions/UI, redirects, private inspector Restore, tombstone controls, conflict/pending/actor-switch/late-response presentation and EN/RU/HE B7 action UI remain explicitly inactive. Next B7 package requires owner continuation; no Mira B7 coordinator checkpoint, Leva final review, stack fold, merge or deploy yet.
 
 ## Baseline
 
