@@ -20,6 +20,7 @@ import {
   type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
+import { visibilityTopicAction } from "./visibility-actions.server";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
@@ -202,6 +203,10 @@ export async function topicAction({ request, params, context }: {
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  // Handle both visibility intents before any ordinary public-availability reader.
+  // A malformed mixed-intent payload cannot fall through to an unrelated mutation.
+  const visibility = await visibilityTopicAction(request, context, topicId, formData);
+  if (visibility) return visibility;
   const muteIntent = formData.getAll("intent").includes("setTopicMute") || formData.has("muted");
   if (muteIntent) {
     const fields = ["intent", "editorActorId", "muted"];
