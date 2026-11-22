@@ -30,29 +30,23 @@
    - 58 rules / 16186 chars
    - PASS
 
-## Goal-level readiness
+## Three-layer consistency
 
-Previous failing stress-test: `research/user-compact-executability-stress-test.md` — относится к superseded User blob `f042613...`.
+Current exact check: `research/three-layer-35-final-consistency.md`.
 
-Current preservation check: `research/user-35-redesign-preservation-check.md`.
-
-Current stress recheck: `research/user-35-executability-stress-recheck.md`.
-
-Установлено для current User blob:
-1. character limit PASS: 4999/5000;
-2. retained semantic guards PASS: 52/52;
-3. current User coverage PASS: 15/15 FULL;
-4. повторный тот же 17-сценарный stress matrix: semantic PASS 17/17, EXEC PASS 17/17, EXEC RISK 0;
-5. structural executability blocker закрыт.
-
-Это structural executability PASS, не эмпирический A/B-test частоты ошибок модели.
-
-Project/AGENTS PASS не отменён.
+Result:
+1. User exact blob — PASS;
+2. Project exact blob — PASS;
+3. AGENTS exact blob — PASS;
+4. межслойных противоречий — 0;
+5. новых DELETE-SAFE inter-layer дублей — 0;
+6. permission/authority/continuation blockers — 0;
+7. three-layer consistency blockers — 0.
 
 Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: **новый User exact blob ещё не прошёл повторную three-layer consistency-проверку с Project/AGENTS drafts.**
+Блокер: **текущие exact blobs ещё не прошли повторный transfer-readiness после User redesign.**
 
-Следующий переход: отдельным bounded этапом повторить three-layer consistency для exact User blob `ef1c0efd...`; только после PASS возвращаться к transfer-readiness/package.
+Следующий переход: отдельным bounded этапом повторить transfer-readiness для current User/Project/AGENTS exact blobs; только после PASS готовить transfer package.
