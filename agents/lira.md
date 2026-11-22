@@ -1,7 +1,7 @@
-# agents/lira.md — B7-B2b authored; STOP before B7-B3a
+# agents/lira.md — B7-B3a authored; STOP before B7-B3b
 
-- B6 #370 accepted exact `51a9ebe03f16c438faae5bec99a5856287630958`. B7 stacked Draft #371 exact current head `378ac6fd056cc8545a8d9a2316fbf90d5a7053a7`, base B6 unchanged.
-- B7-A/B1a/B1b/B2a previously authored; code/static checks recorded in WORKFLOW.md; none received B7 runtime Vitest/PG/browser/CI.
-- B7-B2b changes only `app/forum/views.tsx` and `app/forum/public-read.test.tsx`, 3 commits, behind 0: publicly visible topic's sanitized hidden message stub contains a guarded private-inspection **link only for current visibility-granted same actor** (header actor must match server loader's watchActorId). Uses typed AdministrativeRouting `hiddenInspectionPath`, only topicId/postId, no version/revision/source, message-number aria-label. No control for guest, revoked/missing capability, stale/changed account or unknown actor. Existing private B6 reader/queue/inspector remain untouched and authoritative.
-- Added focused EN/HE rendering, link query strictness, no raw content/CAS and 4 negative-gate variants. **23/23 static checks PASS; tests not run**, no runtime/whole B7 PASS.
-- **STOP.** On owner `...` next B7-B3a successful topic Hide redirect from public to guarded private inspector, then STOP. 409/reload, pending/unknown/revoke/late responses separate B7 slices. No B8/merge/deploy.
+- Accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`; stacked B7 Draft #371 exact head `7ce9fdd3c71fb0092ddfdd41fd66ec3e71002a96`, base B6 unchanged.
+- B7-A/B1a/B1b/B2a/B2b source and targeted test matrices previously authored, scoped static checks only.
+- B7-B3a scoped changes: `app/routes/topic.tsx` + new `app/routes/topic-visibility-redirect.test.tsx` (three commits / two files, behind 0). Existing `editorClientAction` result is examined ONLY after server action: for confirmed topic Hide with matching route topicId (including admitted no-op), clientAction returns typed private-inspector React Router `replace` with private no-store. Before public revalidation 404, browser leaves old source without stale rendering; post Hide, topic Restore, failures, unrelated action redirects/returns unchanged. No new server endpoint/authorization or public hidden-source data.
+- Direct + mounted fetcher/404 regression source authored; **25/25 scoped static assertions PASS**, official React Router 8.3.1 semantics checked. Vitest/PG/browser/CI NOT run, no runtime PASS claim.
+- **STOP.** On owner `...` start only B7-B3b post Hide→sanitized tombstone revalidation + narrow DOM regression. Other B7 errors/refresh/pending/revoke/actor switch and private Restore outcomes in later packages. No B8/merge/deploy.
