@@ -13,12 +13,12 @@
 ## Drafts
 
 1. User: `USER_INSTRUCTIONS.draft.md`
-   - blob `f042613fa65d2484895c5bf3f9e427d5fb3b27cc`
-   - 20 rules / 4999 chars
+   - blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`
+   - 35 rules / 4999 chars
    - 15/15 current FULL
    - 52/52 retained semantic guards
-   - semantic/limit checks PASS
-   - **goal-level executability FAIL**
+   - overloaded former rules 5, 7, 9, 10, 13, 14 atomized
+   - **stress revalidation pending**
 
 2. Project: `PROJECT_INSTRUCTIONS.draft.md`
    - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
@@ -32,26 +32,23 @@
 
 ## Goal-level readiness
 
-Recheck: `research/original-goal-executability-recheck.md`.
+Previous failing stress-test: `research/user-compact-executability-stress-test.md` — относится к superseded User blob `f042613...`.
 
-Bounded stress-test: `research/user-compact-executability-stress-test.md`.
+Current redesign preservation check: `research/user-35-redesign-preservation-check.md`.
 
-Stress result:
-1. 17/17 tested failure modes имеют semantic guard;
-2. EXEC PASS: 8/17;
-3. EXEC RISK: 9/17;
-4. missing semantic guard: 0;
-5. критическая перегрузка сосредоточена в User rules 5, 7, 9, 10, 13, 14;
-6. compact draft повторяет ранее запрещённую архитектуру «несколько независимых мыслительных операций в одном суперпункте».
+Установлено для current User blob:
+1. character limit PASS: 4999/5000;
+2. retained semantic guards PASS: 52/52;
+3. current User coverage PASS: 15/15 FULL;
+4. подтверждённые overloaded groups разбиты на более локальные rules;
+5. goal-level executability пока не присвоен: новый exact blob ещё не прошёл тот же stress matrix.
 
-Это не эмпирическое доказательство частоты ошибок модели, а подтверждённый structural executability blocker относительно принятого критерия задачи.
-
-Project/AGENTS PASS этим результатом не отменён.
+Project/AGENTS PASS не отменён.
 
 Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: **User compact layer требует перепроектирования до ≤5000 chars без потери 52/52 guards и 15/15 current coverage.**
+Блокер: **новый User exact blob должен пройти повторный bounded executability stress-test.**
 
-Следующий переход: отдельным bounded этапом перепроектировать только User rules 5, 7, 9, 10, 13, 14; затем повторить stress matrix и three-layer consistency.
+Следующий переход: повторить тот же 17-сценарный stress matrix на `ef1c0efd...`; только после PASS переходить к three-layer consistency.
