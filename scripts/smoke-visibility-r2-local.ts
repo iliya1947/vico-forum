@@ -74,6 +74,20 @@ async function denied(response: Response, status: number, label: string) {
   assert.equal((await response.arrayBuffer()).byteLength, 0, label + " no hidden bytes");
   assert.equal(response.headers.get("Content-Disposition"), null, label + " no filename");
 }
+async function deniedComplaintEvidence(response: Response, attachment: Attachment) {
+  // Existing Complaint authorization errors are generic private text/HTML,
+  // rather than empty attachment-resource failures. Do not impose the
+  // visibility-private-resource failure shape on this separate domain.
+  assert.equal(response.status, 403, "ordinary actor protected Complaint evidence");
+  const cache = (response.headers.get("Cache-Control") ?? "").toLowerCase();
+  assert.match(cache, /\bprivate\b/);
+  assert.match(cache, /\bno-store\b/);
+  assert.equal(response.headers.get("Content-Disposition"), null);
+  const body = await response.text();
+  assert.ok(!body.includes(attachment.fileName), "no private filename in Complaint denial");
+  assert.ok(!body.includes(new TextDecoder().decode(attachment.bytes)),
+    "no private R2 bytes in Complaint denial");
+}
 async function signup(label: string): Promise<Actor> {
   const response = await http("/api/auth/sign-up/email", {
     method: "POST", headers: { Origin: base, "Content-Type": "application/json" },
@@ -230,8 +244,7 @@ async function main() {
   await denied(await http(draftPath, {}, ordinary.cookie), 404, "foreign draft reference");
   await content(await http(evidencePath, {}, moderator.cookie), text,
     "private Complaint evidence before Hide", "download");
-  await denied(await http(evidencePath, {}, ordinary.cookie), 403,
-    "ordinary actor cannot inspect protected evidence");
+  await deniedComplaintEvidence(await http(evidencePath, {}, ordinary.cookie), text);
 
   await acceptedVisibility(primary.topicId, moderator,
     visibility("post", true, 0, primary.titleId, primary.postId, primary.bodyId, moderator),
