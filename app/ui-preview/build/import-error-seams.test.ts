@@ -289,3 +289,17 @@ describe("shared P1 Admin Users import errors", () => {
     expect(forum.cause).toBe(cause);
   });
 });
+
+import { OwnerSystemUnavailableError as neutralOwnerSystem } from "../../../db/owner-system-error";
+import { OwnerSystemUnavailableError as productionOwnerSystem } from "../../../db/hyperdrive-owner-system";
+
+describe("shared P1 Super-admin import errors", () => {
+  it("keeps the Owner monitoring production constructor and cause", () => {
+    expect(neutralOwnerSystem).toBe(productionOwnerSystem);
+    const cause = new Error("database disconnected");
+    const error = new productionOwnerSystem("Owner monitoring unavailable", { cause });
+    expect(error).toBeInstanceOf(neutralOwnerSystem);
+    expect(error.message).toBe("Owner monitoring unavailable");
+    expect(error.cause).toBe(cause);
+  });
+});
