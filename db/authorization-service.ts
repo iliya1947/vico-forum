@@ -1,4 +1,3 @@
-import { AuthorizationUnavailableError } from "./authorization-error";
 import { isPermissionKey, PERMISSION_CATALOG, type PermissionKey } from "../app/authorization/catalog";
 import { PostgresAuthorizationRepository, type OverrideEffect, type UserAuthorization } from "./authorization-repository";
 
