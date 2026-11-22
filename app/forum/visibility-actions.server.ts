@@ -1,4 +1,5 @@
 import { data, type RouterContextProvider } from "react-router";
+import { authSessionForRequest } from "../auth/request-context";
 import { forumMutationGuard, requireForumPermission, runForumMutation,
   type ForumMutationError } from "./mutations.server";
 
@@ -75,7 +76,7 @@ export async function visibilityTopicAction(
     || typeof rawReason !== "string" || rawReason.includes("\0")
     || [...rawReason].length > 2000) return invalid();
   // A frozen UI actor expectation is a conflict guard, never authorization.
-  const actorId = context.get((await import("../auth/request-context")).authSessionContext)?.user.id;
+  const actorId = authSessionForRequest(context)?.user.id;
   if (actorId !== actorExpectation) return invalid("conflict", 409);
 
   const requested = hidden === "true";
