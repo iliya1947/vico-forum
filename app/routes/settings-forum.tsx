@@ -7,10 +7,11 @@ import { authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { registrationSettingsContext } from "../settings/request-context";
-import { RegistrationSettingsConflictError, RegistrationSettingsForbiddenError,
-  RegistrationSettingsValidationError } from "../../db/registration-settings";
-import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import {
+  RegistrationSettingsConflictError, RegistrationSettingsForbiddenError,
+  RegistrationSettingsValidationError, RegistrationSettingsUnavailableError,
+} from "../../db/registration-settings-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
 import {
   AuthorizationManagementContent, type AuthorizationFailure,
 } from "../authorization/admin-view";

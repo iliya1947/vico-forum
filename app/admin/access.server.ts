@@ -1,7 +1,7 @@
 import type { RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { ADMIN_ADMISSION_PERMISSIONS, adminAccess } from "./access";
 
 export async function requireAdminAccess(context: RouterContextProvider) {

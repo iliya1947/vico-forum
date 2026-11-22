@@ -27,11 +27,14 @@ export interface AuthorizationUserManagementState {
   elevatedRoleIds?: string[];
 }
 
-export class AuthorizationForbiddenError extends Error {}
-export { AuthorizationNotFoundError } from "./authorization-error";
-import { AuthorizationNotFoundError } from "./authorization-error";
-export class AuthorizationRoleAssignedError extends Error {}
-export class AuthorizationRoleSlugConflictError extends Error {}
+import {
+  AuthorizationForbiddenError, AuthorizationNotFoundError,
+  AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError,
+} from "./authorization-error";
+export {
+  AuthorizationForbiddenError, AuthorizationNotFoundError,
+  AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError,
+} from "./authorization-error";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 

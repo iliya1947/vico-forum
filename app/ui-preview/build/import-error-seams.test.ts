@@ -192,3 +192,50 @@ describe("shared P1 registration settings error identity", () => {
     expect(error.cause).toBe(cause);
   });
 });
+
+import {
+  RegistrationSettingsForbiddenError as neutralRegistrationForbidden,
+  RegistrationSettingsConflictError as neutralRegistrationConflict,
+  RegistrationSettingsValidationError as neutralRegistrationValidation,
+  RegistrationSettingsInvariantError as neutralRegistrationInvariant,
+} from "../../../db/registration-settings-error";
+import {
+  RegistrationSettingsForbiddenError as productionRegistrationForbidden,
+  RegistrationSettingsConflictError as productionRegistrationConflict,
+  RegistrationSettingsValidationError as productionRegistrationValidation,
+  RegistrationSettingsInvariantError as productionRegistrationInvariant,
+} from "../../../db/registration-settings";
+import {
+  AuthorizationForbiddenError as neutralAuthorizationForbidden,
+  AuthorizationRoleAssignedError as neutralAuthorizationAssigned,
+  AuthorizationRoleSlugConflictError as neutralAuthorizationSlug,
+  InvalidAuthorizationInputError as neutralAuthorizationInvalid,
+} from "../../../db/authorization-error";
+import {
+  AuthorizationForbiddenError as productionAuthorizationForbidden,
+  AuthorizationRoleAssignedError as productionAuthorizationAssigned,
+  AuthorizationRoleSlugConflictError as productionAuthorizationSlug,
+} from "../../../db/authorization-repository";
+import { InvalidAuthorizationInputError as productionAuthorizationInvalid } from "../../../db/authorization-service";
+import { AdminHistoryUnavailableError as neutralHistoryUnavailable } from "../../../db/admin-history-error";
+import { AdminHistoryUnavailableError as productionHistoryUnavailable } from "../../../db/hyperdrive-admin-history";
+
+describe("shared P1 settings-forum import errors", () => {
+  it("preserves exact production constructors used by the original routes and handlers", () => {
+    const pairs = [
+      [neutralRegistrationForbidden, productionRegistrationForbidden],
+      [neutralRegistrationConflict, productionRegistrationConflict],
+      [neutralRegistrationValidation, productionRegistrationValidation],
+      [neutralRegistrationInvariant, productionRegistrationInvariant],
+      [neutralAuthorizationForbidden, productionAuthorizationForbidden],
+      [neutralAuthorizationAssigned, productionAuthorizationAssigned],
+      [neutralAuthorizationSlug, productionAuthorizationSlug],
+      [neutralAuthorizationInvalid, productionAuthorizationInvalid],
+      [neutralHistoryUnavailable, productionHistoryUnavailable],
+    ] as const;
+    for (const [neutral, production] of pairs) {
+      expect(neutral).toBe(production);
+      expect(new production("test")).toBeInstanceOf(neutral);
+    }
+  });
+});
