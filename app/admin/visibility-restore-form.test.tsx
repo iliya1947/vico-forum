@@ -87,7 +87,7 @@ async function restoreForm(container:HTMLElement):Promise<HTMLFormElement>{
   await waitFor(()=>expect(container.querySelector("form.visibility-restore-form")).not.toBeNull());
   const form=container.querySelector<HTMLFormElement>("form.visibility-restore-form")!;
   expect(form.getAttribute("method")).toBe("post");
-  expect(form.getAttribute("action")).toBe("/en/topics/topic%2Fhidden");
+  expect(form.getAttribute("action")).toBe("/en/topics/topic%2Fhidden?visibilityAction=1");
   expect(form.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')?.required).toBe(true);
   expect(form.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')?.maxLength).toBe(2000);
   expect(form.querySelector('input[name="inlineQuickAction"]')).toBeNull();
