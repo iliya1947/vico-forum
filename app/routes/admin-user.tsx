@@ -2,7 +2,7 @@ import { redirect, type RouterContextProvider } from "react-router";
 import { requireAdminUsersAccess, adminObjectId, adminPrivateHeaders } from "../admin/users.server";
 import { forumReaderForRequest } from "../forum/request-context";
 import { forumProfilePath } from "../forum/paths";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { ForumRouteError } from "../forum/ui";
 export { headers, meta } from "./admin";
 
