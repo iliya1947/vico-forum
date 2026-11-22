@@ -8,13 +8,14 @@ import { remarkTableCellCode } from "./table-code";
 import { segmentTechnicalMarkdown, type MarkdownTable } from "./technical-markdown";
 import { isAttributedQuoteHeader } from "./quote-markdown";
 import { ForumQuotedBlock } from "./quote-presentation";
+import { useAttachmentUrlResolver, type AttachmentReference } from "./attachment-url";
 
 export interface ForumInlineAttachment {
   id: string;
   fileName: string;
   byteSize: number;
   detectedType: string;
-  url: string;
+  reference: AttachmentReference;
 }
 
 const InlineAttachmentsContext = createContext<readonly ForumInlineAttachment[]>([]);
@@ -36,11 +37,12 @@ function forumUrlTransform(url: string, key: string): string {
 
 export function ForumInlineImage({ src }: { src?: string }) {
   const attachments = useContext(InlineAttachmentsContext);
+  const resolve = useAttachmentUrlResolver();
   const match = src ? inlineImageId.exec(src) : null;
   if (!match) return null;
   const attachment = attachments.find((item) => item.id === match[1]);
   if (!attachment || !rasterTypes.has(attachment.detectedType)) return null;
-  const inlineUrl = attachment.url + "&view=inline";
+  const inlineUrl = resolve(attachment.reference, "inline");
   return <a href={inlineUrl} target="_blank" rel="noopener noreferrer"
     aria-label={attachment.fileName}>
     <img src={inlineUrl} alt={attachment.fileName} loading="lazy" decoding="async" />

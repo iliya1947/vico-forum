@@ -7,9 +7,18 @@ import { createPreviewDocumentAdapter } from "./document";
 import { createP0Context, P0_ACTOR_ID, P0_TOPIC_ID } from "./fixture";
 import { createPagesAddressCodec } from "./pages-address";
 import { installPagesLocationAdapter } from "./pages-location";
+import { AttachmentUrlProvider, publishedAttachmentReference } from "../../forum/attachment-url";
+import { createPreviewAttachmentUrls } from "./attachment-urls";
+import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64 } from "./attachment-fixture";
 import { installPreviewResourceTransport } from "./resource-transport";
 
 /** P0-only browser proof. This never replaces the published Pages preview. */
+const attachmentUrls = createPreviewAttachmentUrls([{
+  reference: publishedAttachmentReference("p0-first-post", P0_ATTACHMENT_ID),
+  fileName: P0_ATTACHMENT_NAME, detectedType: "png",
+  bytes: Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (char) => char.charCodeAt(0)),
+}]);
+
 const mount = document.getElementById("root");
 if (!mount) throw new Error("P0 candidate mount is missing");
 
@@ -59,12 +68,14 @@ async function boot() {
     refreshDocument();
   });
   refreshDocument();
-  createRoot(mount!).render(createElement(RouterProvider, { router }));
+  createRoot(mount!).render(createElement(AttachmentUrlProvider, { resolve: attachmentUrls.resolve },
+    createElement(RouterProvider, { router })));
   mount!.dataset.status = "router-mounted";
 }
 
 void boot().catch((error: unknown) => {
   transport.dispose();
+  attachmentUrls.dispose();
   mount!.dataset.status = "boot-failed";
   mount!.textContent = error instanceof Error ? error.stack ?? error.message : String(error);
   console.error("P0_BOOT_FAILURE", error);

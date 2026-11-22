@@ -1,6 +1,7 @@
 """P0 browser proof: actual Framework route modules, no real backend requests."""
 import argparse
 import json
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs, urlencode, urljoin
 from playwright.sync_api import sync_playwright
 
@@ -64,6 +65,30 @@ with sync_playwright() as playwright:
     assert document_state["themeBootstraps"] == 1, document_state
     assert document_state["moduleScripts"] == 1, document_state
     assert document_state["stylesheets"] > 0, document_state
+    # Both the original ForumMarkdown image and the shared post attachment UI
+    # consume the same verified fixture bytes through mode-aware Blob URLs.
+    inline_image = page.locator(".topic-message-body img[alt='p0-preview-swatch.png']").first
+    attachment_image = page.locator(".topic-message-attachments img[alt='p0-preview-swatch.png']").first
+    inline_image.wait_for(timeout=30000)
+    attachment_image.wait_for(timeout=30000)
+    inline_image.scroll_into_view_if_needed()
+    attachment_image.scroll_into_view_if_needed()
+    inline_url = inline_image.get_attribute("src")
+    display_url = attachment_image.get_attribute("src")
+    assert inline_url and inline_url.startswith("blob:") and inline_url == display_url, (inline_url, display_url)
+    page.wait_for_function("""() => [...document.querySelectorAll('img[alt="p0-preview-swatch.png"]')]
+      .every((img) => img.complete && img.naturalWidth === 2 && img.naturalHeight === 2)""")
+    download_link = page.locator(".topic-message-attachments a[download='p0-preview-swatch.png']").first
+    download_href = download_link.get_attribute("href")
+    assert download_href and download_href.startswith("blob:") and download_href != inline_url, download_href
+    with page.expect_download() as attachment_download_event:
+        download_link.click()
+    attachment_download = attachment_download_event.value
+    assert attachment_download.suggested_filename == "p0-preview-swatch.png"
+    downloaded_png = Path(attachment_download.path()).read_bytes()
+    assert len(downloaded_png) == 79 and downloaded_png[:8] == b"\x89PNG\r\n\x1a\n", len(downloaded_png)
+    assert not external, external
+
     # The real MarkdownEditor prepares and replays a native Form submission.
     reply_form = page.locator("form.topic-reply-form")
     form_action = reply_form.get_attribute("action") or ""
@@ -168,6 +193,8 @@ with sync_playwright() as playwright:
         "client_action": True,
         "server_action": True,
         "fetcher_read_state": True,
+        "attachment_inline_loaded": True,
+        "attachment_download": {"filename": "p0-preview-swatch.png", "byte_size": len(downloaded_png)},
         "resource_results": resource_results,
         "resource_network": len(resource_network),
         "pages_base": urlparse(base).path + "/",

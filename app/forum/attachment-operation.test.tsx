@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { useEditorAttachments } from "./editor-attachments";
+import { publishedAttachmentReference, type AttachmentReference } from "./attachment-url";
 function canonicalCommonResources(): Record<string, string> {
     const resources: Record<string, string> = {};
     for (const [key, descriptor] of Object.entries(canonicalEnglishCatalog.common)) {
@@ -88,7 +89,7 @@ function Harness({ owner = "alice", published = [], publishedEdit = false }: {
     publishedEdit?: boolean;
     published?: Array<{
         id: string;
-        url: string;
+        reference: AttachmentReference;
         fileName: string;
         byteSize: number;
         detectedType: string;
@@ -169,7 +170,7 @@ describe("in-memory attachment operation", () => {
         expect(fetch).not.toHaveBeenCalled();
     });
     it("Remove of a published file changes only the mounted selection", async () => {
-        renderHarness({ published: [{ id: attachmentId, url: "/file?post=p", fileName: "published.txt", byteSize: 5, detectedType: "text" }] });
+        renderHarness({ published: [{ id: attachmentId, reference: publishedAttachmentReference("p", attachmentId), fileName: "published.txt", byteSize: 5, detectedType: "text" }] });
         expect(current.retainedAttachmentIds).toEqual([attachmentId]);
         expect(current.selectedAttachmentIds).toEqual([]);
         fireEvent.click(screen.getByText("Remove"));
@@ -275,7 +276,7 @@ describe("in-memory attachment operation", () => {
             await retry.complete(201, { ...stored(), attachment: { ...stored().attachment, id } });
         }
         view.rerender(<I18nextProvider i18n={runtime()}><Harness publishedEdit published={[{ id: attachmentId,
-            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", reference: publishedAttachmentReference("p", attachmentId) }]}/></I18nextProvider>);
         act(() => { current.rebasePublishedAttachments(); });
         expect(current.operationId).toBe(next);
         expect(current.retainedAttachmentIds).toEqual([attachmentId]);
@@ -288,7 +289,7 @@ describe("in-memory attachment operation", () => {
         await attach().complete(201, stored());
         const completed = current.operationId;
         view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[{ id: attachmentId,
-            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", reference: publishedAttachmentReference("p", attachmentId) }]}/></I18nextProvider>);
         act(() => { (current.rebasePublishedAttachments as (completed?: string) => boolean)(completed); });
         expect(current.operationId).not.toBe(completed);
         expect(current.retainedAttachmentIds).toEqual([attachmentId]);
@@ -318,16 +319,16 @@ describe("in-memory attachment operation", () => {
         const completed = current.operationId;
         fireEvent.click(screen.getByRole("button", { name: "Remove" }));
         view.rerender(<I18nextProvider i18n={runtime()}><Harness published={[{ id: attachmentId,
-            fileName: "notes.txt", byteSize: 5, detectedType: "text", url: "/file?post=p" }]}/></I18nextProvider>);
+            fileName: "notes.txt", byteSize: 5, detectedType: "text", reference: publishedAttachmentReference("p", attachmentId) }]}/></I18nextProvider>);
         act(() => { current.rebasePublishedAttachments(completed); });
         expect(current.retainedAttachmentIds).toEqual([]);
         expect(current.selectedAttachmentIds).toEqual([]);
         expect(current.operationId).not.toBe(completed);
     });
     it.each([false,true])("rebase preserves local Remove=%s and a private upload across repeated published revisions",async(removeA)=>{
-        const a={id:"23b93562-0550-4eef-88af-f951d6ea6139",url:"/file?post=p",fileName:"A.txt",byteSize:5,detectedType:"text"};
-        const b={...a,id:"23b93562-0550-4eef-88af-f951d6ea6140",fileName:"B.txt"};
-        const d={...a,id:"23b93562-0550-4eef-88af-f951d6ea6141",fileName:"D.txt"};
+        const a={id:"23b93562-0550-4eef-88af-f951d6ea6139",reference:publishedAttachmentReference("p","23b93562-0550-4eef-88af-f951d6ea6139"),fileName:"A.txt",byteSize:5,detectedType:"text"};
+        const b={...a,id:"23b93562-0550-4eef-88af-f951d6ea6140",reference:publishedAttachmentReference("p","23b93562-0550-4eef-88af-f951d6ea6140"),fileName:"B.txt"};
+        const d={...a,id:"23b93562-0550-4eef-88af-f951d6ea6141",reference:publishedAttachmentReference("p","23b93562-0550-4eef-88af-f951d6ea6141"),fileName:"D.txt"};
         const view=renderHarness({published:[a]});
         if(removeA)fireEvent.click(screen.getByRole("button",{name:"Remove"}));
         const initialOp=current.operationId;

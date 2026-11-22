@@ -19,6 +19,7 @@ import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
+import { publishedAttachmentReference } from "./attachment-url";
 
 class UploadRequest {
   static all: UploadRequest[] = [];
@@ -149,13 +150,13 @@ describe("real topic action and mounted editor recovery", () => {
     // Both authored forms are supported before recovery; after Save the same
     // real renderer must resolve the new selected ref at the inline position.
     const before = render(<I18nextProvider i18n={i18n()}><div data-testid="image-before">
-      <ForumInlineAttachmentProvider attachments={[{ id: old, fileName: file.name, byteSize: file.size, detectedType: "png", url: "/file?post=p1" }]}>
+      <ForumInlineAttachmentProvider attachments={[{ id: old, fileName: file.name, byteSize: file.size, detectedType: "png", reference: publishedAttachmentReference("p1", old) }]}>
         <ForumMarkdown>{source}</ForumMarkdown>
       </ForumInlineAttachmentProvider></div></I18nextProvider>);
     expect(within(before.getByTestId("image-before")).getByRole("img")).toBeInTheDocument();
     before.unmount();
     const after = render(<I18nextProvider i18n={i18n()}><div data-testid="image-after">
-      <ForumInlineAttachmentProvider attachments={[{ id: next, fileName: file.name, byteSize: file.size, detectedType: "png", url: "/file?post=p1" }]}>
+      <ForumInlineAttachmentProvider attachments={[{ id: next, fileName: file.name, byteSize: file.size, detectedType: "png", reference: publishedAttachmentReference("p1", next) }]}>
         <ForumMarkdown>{expected}</ForumMarkdown>
       </ForumInlineAttachmentProvider></div></I18nextProvider>);
     expect(within(after.getByTestId("image-after")).getByRole("img")).toBeInTheDocument();

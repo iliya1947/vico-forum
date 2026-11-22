@@ -1,4 +1,8 @@
 import { ForumAttachmentDisplay } from "./attachment-presentation";
+import {
+  draftAttachmentReference, parseAttachmentReference, resolveAttachmentUrl,
+  type AttachmentReference,
+} from "./attachment-url";
 import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
@@ -32,7 +36,7 @@ interface Props {
     publishedEdit?: boolean;
     publishedAttachments?: readonly {
         id: string;
-        url: string;
+        reference: AttachmentReference;
         fileName: string;
         byteSize: number;
         detectedType: string;
@@ -152,7 +156,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, allowNewUp
     const removedPublishedIds = useRef(new Set<string>());
     const headers = { "X-Vico-Editor-Context": encoded(contextKey ?? ""), "X-Vico-Operation-Id": draftId };
     function initialEntries(): UploadEntry[] {
-        return publishedAttachments.map((file) => restoredEntry({ ...file, responseMime: "application/octet-stream", verificationStatus: "type-checked" }, draftId, file.url));
+        return publishedAttachments.map((file) => restoredEntry({ ...file, responseMime: "application/octet-stream", verificationStatus: "type-checked" }, draftId, resolveAttachmentUrl(file.reference, "download")));
     }
     const [initialized, setInitialized] = useState(false);
     useEffect(() => {
@@ -171,8 +175,9 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, allowNewUp
         return () => { identityRef.current = ""; for (const request of requests.values())
             request.abort(); requests.clear(); };
     }, [identity]);
-    const attachmentUrl = (entry: UploadEntry) => entry.publishedUrl
-        ?? `/api/attachments/file/${encoded(entry.id)}?operation=${encoded(entry.draftId)}&context=${encoded(contextKey ?? "")}`;
+    const attachmentReference = (entry: UploadEntry) => entry.publishedUrl
+        ? parseAttachmentReference(entry.publishedUrl)
+        : draftAttachmentReference(entry.draftId, contextKey ?? "", entry.id);
     const canAdd = !!ownerId && !!contextKey && initialized && !disabled && allowNewUploads;
     const hasUnsettled = entries.some((entry) => entry.status !== "stored");
     const blocking = !!contextKey && (!initialized || hasUnsettled);
@@ -340,7 +345,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, allowNewUp
                   </span>) : entry.status === "stored" ? (<span>{t("editorAttachmentUploaded")}</span>) : entry.status === "removing" ? (<span>{t("editorAttachmentRemoving")}</span>) : (<span className="is-error">{t(uploadErrorKey(entry.error))}</span>)}
                 {entry.removeError ? (<span className="is-error">{t("editorAttachmentRemoveError")}</span>) : null}
               </div>
-              {entry.status === "stored" && entry.attachment && contextKey ? (<ForumAttachmentDisplay attachment={entry.attachment} url={attachmentUrl(entry)} deferImage compact/>) : null}
+              {entry.status === "stored" && entry.attachment && contextKey ? (<ForumAttachmentDisplay attachment={entry.attachment} reference={attachmentReference(entry)} deferImage compact/>) : null}
               <div className="markdown-editor-attachment-actions">
                 {entry.status === "error" ? (<button type="button" disabled={disabled || !allowNewUploads} onClick={() => retry(entry)}>
                     {t("editorAttachmentRetry")}
@@ -373,7 +378,7 @@ export function useEditorAttachments({ ownerId, contextKey, disabled, allowNewUp
             fileName: entry.fileName,
             byteSize: entry.byteSize,
             detectedType: entry.attachment!.detectedType,
-            url: attachmentUrl(entry),
+            reference: attachmentReference(entry),
         })),
         controls,
         details,

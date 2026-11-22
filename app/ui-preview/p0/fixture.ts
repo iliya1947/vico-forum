@@ -14,6 +14,7 @@ import {
 } from "../../localization/request-context";
 import { loadPersistentRegistry } from "../../localization/persistent-registry";
 import { ContentTranslationPresentationService } from "../../localization/content-translation-presentation";
+import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_BYTE_SIZE } from "./attachment-fixture";
 
 /** Only raw synthetic entities for the single P0 rendering proof. */
 export const P0_TOPIC_ID = "p0-preview-topic";
@@ -57,12 +58,15 @@ const sampleTopic = {
     solutionOutdatedReasonKind: null,
     body: {
       id: "p0-post-body-revision",
-      originalContent: P0_POST_BODY,
+      originalContent: P0_POST_BODY + "\n\n![P0 fixture image](vico-attachment:" + P0_ATTACHMENT_ID + ")",
       sourceLocale: "en",
     },
     authorName: "Preview author",
     createdAt: new Date("2026-01-01T10:01:00.000Z"),
-    attachments: [],
+    attachments: [{
+      id: P0_ATTACHMENT_ID, fileName: P0_ATTACHMENT_NAME,
+      byteSize: P0_ATTACHMENT_BYTE_SIZE, detectedType: "png",
+    }],
   }],
 } satisfies ForumTopicPage;
 

@@ -10,6 +10,7 @@ import { TopicQuickActions } from "./quick-actions";
 import { MessageQuickActions } from "./message-quick-actions";
 import { TopicTitlePresentation, PostBodyPresentation } from "../forum/content-translation-view";
 import { ForumAttachmentDisplay } from "../forum/attachment-presentation";
+import { publishedAttachmentReference } from "../forum/attachment-url";
 import { ForumInlineAttachmentProvider } from "../forum/markdown";
 import { forumTopicPath, forumProfilePath } from "../forum/paths";
 
@@ -107,7 +108,7 @@ export function AdminTopicView({
               <div className="forum-post-content">
                 <ForumInlineAttachmentProvider attachments={post.attachments.map((attachment) => ({
                   ...attachment,
-                  url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                  reference: publishedAttachmentReference(post.id, attachment.id),
                 }))}>
                   <PostBodyPresentation presentation={presentation}/>
                 </ForumInlineAttachmentProvider>
@@ -125,7 +126,7 @@ export function AdminTopicView({
                 {post.attachments.length ? <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                   {post.attachments.map((attachment) => <ForumAttachmentDisplay
                     key={attachment.id} attachment={attachment}
-                    url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`}
+                    reference={publishedAttachmentReference(post.id, attachment.id)}
                   />)}
                 </div> : null}
                 <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
