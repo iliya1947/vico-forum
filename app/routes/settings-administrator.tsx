@@ -5,7 +5,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { isBoundOwner } from "../authorization/owner";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { ADMIN_ADMISSION_PERMISSIONS, adminAccess } from "../admin/access";
 import type { PermissionKey } from "../authorization/catalog";
 import {
