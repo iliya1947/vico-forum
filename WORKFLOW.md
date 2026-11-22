@@ -13,25 +13,23 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — compact User draft: 20 rules / 4999 chars; 52/52 expanded semantic guards mapped.
+2. `USER_INSTRUCTIONS.draft.md` — compact User draft: 20 rules / 4999 chars.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
 4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules; semantic PASS до User compact rewrite.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
 6. `AGENTS.draft.md` — 58 rules; semantic PASS до User compact rewrite.
 
-## User compact pass
+## User compact status
 
-1. Было: 42 rules / 8364 chars.
-2. Стало: 20 rules / 4999 chars.
-3. Compact blob: `f042613fa65d2484895c5bf3f9e427d5fb3b27cc`.
-4. 52/52 semantic guards mapped: `research/user-5000-semantic-coverage.md`.
-5. Намеренно отсутствуют только ранее подтверждённые DELETE-SAFE old 17, 29, 44.
-6. Character-limit blocker снят по размеру.
-7. Current 15-rule coverage после compact rewrite ещё требует отдельного exact recheck.
-8. Three-layer consistency после User rewrite ещё не перепроверена.
+1. Expanded semantic coverage: 52/52 — `research/user-5000-semantic-coverage.md`.
+2. Current User coverage: 15/15 FULL — `research/user-current-vs-compact-coverage.md`.
+3. PARTIAL: 0.
+4. LOST: 0.
+5. Размер: 4999 characters — transfer-size blocker снят.
+6. Draft на этом coverage-шаге не менялся.
 
 Проверяющий: не назначен.
 
-Блокер: transfer ещё не готов до exact current-coverage + three-layer consistency recheck.
+Блокер: transfer ещё не финализирован до повторной three-layer consistency-проверки после User compact rewrite.
 
-Следующий переход: exact recheck `USER_INSTRUCTIONS.current.md` → compact `USER_INSTRUCTIONS.draft.md`; drafts не менять на этом шаге.
+Следующий переход: повторная consistency-проверка `USER_INSTRUCTIONS.draft.md` + `PROJECT_INSTRUCTIONS.draft.md` + `AGENTS.draft.md`; сначала только анализ, без изменения drafts.
