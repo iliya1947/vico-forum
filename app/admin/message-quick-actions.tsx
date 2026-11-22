@@ -129,7 +129,7 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
 /** Changing actor, target or permission unmounts private fetchers and their responses. */
 export function MessageQuickActions(props: MessageQuickActionsProps) {
   const headerActorId = useHeaderAuthUser()?.id ?? null;
-  const loaderSnapshot = useMatches().at(-1)?.data;
+  const loaderSnapshot = useMatches().at(-1)?.loaderData;
   // A stale loader cannot regain authority when its original viewer returns.
   const actorLifetime = useRef({ snapshot: loaderSnapshot, invalidated: false });
   if (actorLifetime.current.snapshot !== loaderSnapshot)
