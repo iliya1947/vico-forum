@@ -24,7 +24,7 @@ function invalid(error: ForumMutationError["error"] = "invalid", status = 400) {
   });
 }
 
-function canonicalIdentity(value: FormDataEntryValue | null): string | null {
+function canonicalIdentity(value: ReturnType<FormData["get"]>): string | null {
   if (typeof value !== "string" || !value || value !== value.trim()
     || new TextEncoder().encode(value).length > TEXT_LIMIT_BYTES
     || [...value].some(char => char.codePointAt(0)! < 32 || char.codePointAt(0) === 127)) {
