@@ -6,7 +6,7 @@
 
 Финальный технический [PLAN.md](PLAN.md) подготовлен в #369. Это текущий канонический план всей задачи. Концептуальный этап завершён; прежний запрет формировать технический план до принятия концепции больше не блокирует работу, поскольку условие выполнено.
 
-Оформление плана завершено. Мира дала PASS по плану и назначила Лиру исполнителем P0 в stacked-режиме. P0-F1 real screen PASS (`45014003839`). P0-F2 document adapter PASS on exact `ad5661574482ba5b9cf59ca260584ebecf6f7d46` ([CI `45020006913`](https://github.com/iliya1947/vico-forum/actions/runs/45020006913): checks/database SUCCESS, 223 test files, Chromium theme/lang/dir/CSS without JS or external errors). P0 remaining clientAction→action, resource, Pages URLs and attachments. #322 и опубликованный Pages entry не менялись. Дальнейший маршрут — WORKFLOW.md.
+Оформление плана завершено. Мира дала PASS по плану и назначила Лиру исполнителем P0 в stacked-режиме. P0-F1 real screen PASS (`45014003839`). P0-F2 document adapter PASS on exact `ad5661574482ba5b9cf59ca260584ebecf6f7d46` ([CI `45020006913`](https://github.com/iliya1947/vico-forum/actions/runs/45020006913): checks/database SUCCESS, 223 test files, Chromium theme/lang/dir/CSS without JS or external errors). P0-F3 real editor Form/clientAction→action PASS on exact `a0b81160c0144b2957f9b7c71d3981c8f0ce116f` ([CI #45024496140](https://github.com/iliya1947/vico-forum/actions/runs/45024496140), checks/database SUCCESS, 224 test files). P0 remaining resource/middleware, Pages URLs and attachments; local presence API currently yields 404 until generic dispatcher. #322 и опубликованный Pages entry не менялись. Дальнейший маршрут — WORKFLOW.md.
 
 ## Цель архитектуры
 
