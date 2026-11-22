@@ -288,7 +288,11 @@ try:
 
         unknown_page.route("**/*", lose_after_commit)
         unknown_form.locator("textarea[name='reason']").fill("Commit may be hidden")
-        unknown_form.locator("button[type='submit']").click()
+        # A transient idle render is not a settled unknown outcome. Await the
+        # actual failed Chromium request after the Worker request was forwarded.
+        with unknown_page.expect_event("requestfailed",
+            predicate=request_is_visibility, timeout=30000):
+            unknown_form.locator("button[type='submit']").click()
         expect(unknown_page.locator(".visibility-unconfirmed")).to_be_visible(timeout=20000)
         expect(unknown_form.locator("button[type='submit']")).to_be_disabled()
         assert upstream and upstream[0] == "intercepted", upstream
