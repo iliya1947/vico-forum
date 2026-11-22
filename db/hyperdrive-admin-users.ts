@@ -2,7 +2,8 @@ import { PostgresAdminUsersReader, type AdminUsersReader } from "./admin-users";
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 
-export class AdminUsersUnavailableError extends Error {}
+import { AdminUsersUnavailableError } from "./admin-users-error";
+export { AdminUsersUnavailableError } from "./admin-users-error";
 
 export function createHyperdriveAdminUsers(connectionString: string): AdminUsersReader {
   return {

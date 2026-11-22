@@ -1,7 +1,8 @@
 import { PostgresAdminForumReader, type AdminForumReader } from "./admin-forum";
 import {createWebPool,bestEffortDiscardClient,isPostgresConnectionTimeout,isPostgresQueryTimeout} from "./postgres-deadlines";
 import {isPostgresAvailabilityFailure} from "../app/localization/persistent-registry";
-export class AdminForumUnavailableError extends Error {}
+import { AdminForumUnavailableError } from "./admin-forum-error";
+export { AdminForumUnavailableError } from "./admin-forum-error";
 export function createHyperdriveAdminForum(connectionString:string):AdminForumReader {
   async function read<T>(operation:(reader:PostgresAdminForumReader)=>Promise<T>) {
     const pool=createWebPool(connectionString);

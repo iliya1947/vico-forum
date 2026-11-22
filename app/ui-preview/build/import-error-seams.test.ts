@@ -268,3 +268,24 @@ describe("shared P1 Settings privacy import", () => {
     expect(error.cause).toBe(cause);
   });
 });
+
+import { AdminUsersUnavailableError as neutralAdminUsers } from "../../../db/admin-users-error";
+import { AdminUsersUnavailableError as productionAdminUsers } from "../../../db/hyperdrive-admin-users";
+import { AdminForumUnavailableError as neutralAdminForum } from "../../../db/admin-forum-error";
+import { AdminForumUnavailableError as productionAdminForum } from "../../../db/hyperdrive-admin-forum";
+
+describe("shared P1 Admin Users import errors", () => {
+  it("preserves both production exception constructors and their causes", () => {
+    expect(neutralAdminUsers).toBe(productionAdminUsers);
+    expect(neutralAdminForum).toBe(productionAdminForum);
+    const cause = new Error("database disconnected");
+    const users = new productionAdminUsers("Admin Users read unavailable", { cause });
+    const forum = new productionAdminForum("Forum administration unavailable", { cause });
+    expect(users).toBeInstanceOf(neutralAdminUsers);
+    expect(forum).toBeInstanceOf(neutralAdminForum);
+    expect(users.message).toBe("Admin Users read unavailable");
+    expect(forum.message).toBe("Forum administration unavailable");
+    expect(users.cause).toBe(cause);
+    expect(forum.cause).toBe(cause);
+  });
+});
