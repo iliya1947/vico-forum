@@ -20,6 +20,7 @@ with sync_playwright() as playwright:
                   else (external.append(route.request.url), route.abort())[-1])
     page = context.new_page()
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("console", lambda message: print("P0_BROWSER_CONSOLE " + message.type + " " + message.text, flush=True) if message.type in {"error", "info"} else None)
     response = page.goto(base + "/", wait_until="domcontentloaded")
     assert response is not None and response.status == 200
     page.locator("#root[data-status]").wait_for(timeout=30000)
