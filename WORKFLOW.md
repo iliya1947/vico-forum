@@ -33,15 +33,16 @@
 
 ## Текущий этап
 
-Этап 10 — 7 exact-проверенных внутренних AGENTS dedupe-изменений применены.
+Этап 11 — внутренний duplicate-pass `PROJECT_INSTRUCTIONS.draft.md` завершён без изменения draft.
 
-Результаты:
-- `AGENTS.draft.md`: 16082 → 15363 chars;
-- words: 2015 → 1923;
-- numbered rules: 64 → 64;
-- экономия: 719 chars / 92 words;
-- снятые кандидаты Workflow 11, Review 1/Mark и Review 6/plan-change не изменялись;
-- semantic/authority coverage exact-check: PASS;
-- evidence: `research/agents-internal-dedupe-application.md`.
+Результат: `research/project-internal-duplicates-pass.md`.
 
-Следующий bounded-этап: искать внутренние дубли в `PROJECT_INSTRUCTIONS.draft.md` после межслойной чистки.
+Подтверждено:
+- полных internal delete-safe дублей: 0;
+- частичных internal delete-safe дублей: 0;
+- P9/P10/P11 и P12/P13 похожи, но имеют разные triggers/actions и сохраняются;
+- Project draft остаётся 2423 chars / 325 words / 18 numbered rules.
+
+Внутренний delete-safe резерв Project слоя после межслойной чистки исчерпан.
+
+Следующий bounded-этап: искать внутренние дубли в `USER_INSTRUCTIONS.draft.md`.
