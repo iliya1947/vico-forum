@@ -26,3 +26,9 @@ Whole-system check трёх current-based drafts завершён:
 Evidence: `research/current-compression-whole-system-check.md`.
 
 Реальные instruction sources не изменены. Новые интеллектуально-логические улучшения всё ещё отложены.
+
+## Deep dedup closeout
+
+После дополнительной межслойной проверки безопасно удалены только два служебных title и повтор agent mapping из Project (заменён ссылкой на обязательный AGENTS Roles). Остальные похожие правила сохраняются из-за различий scope/audience/frequency.
+
+Итог Задачи 1: 22363 → 19921 chars (-10.92%), 97 → 97 rules, новых требований 0. Evidence: `research/current-deep-dedup-pass.md`.
