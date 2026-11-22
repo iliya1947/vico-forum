@@ -1,14 +1,22 @@
-# agents/lira.md — B6-B AUTHOR PASS; STOP → Мира
+# agents/lira.md — moderation visibility B7-A active assignment
 
-## Accepted stack
+## Accepted foundation
 
-- B5 #367 coordinator PASS `a2269fb0294feaccb433e76b66e800f3e869658d`.
-- B6-A #370 accepted coordinator PASS `91cb332d6acf60ebf572f57582c13acfeab8eada`.
-- B6-B authored exact `51a9ebe03f16c438faae5bec99a5856287630958`, 12 commits / 17 changed files vs B6-A; Draft stacked/unmerged, base unchanged.
-- Private queue (accepted B6-A) plus B6-B inspector/current visibility event, EN/RU/HE read-only UI, separately gated hidden post history, exact-member private hidden published assets. Generic Admin, public download and protected Complaint evidence remain independent.
-- First CI exposed three B6-local issues (immutable revision test UPDATE, AdminAccess DTO extra property, malformed private asset 400 mapping); all corrected locally. Final [Actions 44958936946](https://github.com/iliya1947/vico-forum/actions/runs/44958936946) on this exact SHA: **22/22 check-runs and 18/18 workflows SUCCESS; 2812 unit and 1627 PG17 tests PASS**.
-- Full author self-check B6-B: no current-stage blocker known. Next **Мира bounded coordinator checkpoint B6-B**; details in `WORKFLOW.md` and Draft #370. Do not act on B7 until Mira PASS and owner instruction.
+- B6 #370 received Mira coordinator PASS on exact `51a9ebe03f16c438faae5bec99a5856287630958`.
+- Create the new stacked B7 Draft from the accepted B6 branch/head; do not continue implementation inside #370.
+- Owner authorized **B7**, but your current assignment is intentionally limited to **B7-A only**.
+- Existing B2 transactional Hide/Restore commands and B3–B6 read/private boundaries are accepted foundations; do not redesign them without new evidence.
 
-## Guardrails
+## Current task — B7-A only
 
-Do not implement B7 Hide/Restore POST intents, QuickActions, Restore controls, public tombstone actions or conflict UI in B6-B. Do not add schema/migrations/dependencies or Stage 6/external changes. If an actual current-B6-B defect outside these files blocks correctness, diagnose it under AGENTS rules and keep any correction minimal.
+Deliver the canonical server action contract for topic/post Hide/Restore:
+
+1. Route exposure for accepted intents `setTopicVisibility` and `setPostVisibility` on the canonical topic POST surface, reusing the existing transactional commands.
+2. Strict accepted payload/admission boundary: exact scalar fields, duplicate/mixed/extra/File rejection, method/origin/session identity checks, fresh `forum.content.visibility.manage` + AP-10/active-account authority, and visibility handling before ordinary public availability so Restore of hidden targets remains possible.
+3. Accepted neutral outcomes and focused regressions: 400 invalid, 401 guest/inactive, 403 permission/measure, 404 missing, 409 stale, 503 typed dependency; discriminated success result without hidden current source; no automatic retry/rebase.
+
+Use targeted tests sufficient for this server/action seam. Update #342 handoff with the B7 PR number, exact head, changed scope and test result.
+
+## Mandatory STOP
+
+After B7-A, **STOP**. Do not start QuickActions, inspector Restore UI, tombstone Restore links/controls, redirect-after-Hide, pending/conflict/reload presentation, EN/RU/HE action UI, account-switch/late-response handling or final B7 CI. Those are not part of the current assignment even though they are described in the accepted stage plan.
