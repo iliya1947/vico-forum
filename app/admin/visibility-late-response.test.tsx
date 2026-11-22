@@ -143,7 +143,8 @@ describe("B7-B5b old visibility responses cannot reopen a new viewer's controls"
           });
           fireEvent.submit(form);
           await waitFor(()=>expect(instance.action).toHaveBeenCalledTimes(1));
-          await act(async()=>{instance.rerender(instance.tree(nextActor));});
+          // Cover both account replacement and sign-out while the old POST is unresolved.
+          await act(async()=>{instance.rerender(instance.tree(kind==="topic"?nextActor:null));});
           await waitFor(()=>expect(instance.container.querySelector(selector)).toBeNull());
           if(mode==="restore"){
             expect(instance.container.textContent).not.toContain(secret);
