@@ -2,20 +2,24 @@
 
 ## Активный этап
 
-**Moderation visibility B8-A — MIRA COORDINATOR PASS; STOP BEFORE B8-B.**
+**Moderation visibility B8-B activated — only B8-B1 is assigned; STOP after B8-B1.**
 
-- Accepted B7 base remains Draft #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`.
-- Draft B8 #376 stable exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`, stacked correctly on B7, behind0, unmerged. Cumulative B8-A diff is test-only: 5 PostgreSQL test files, no runtime/schema changes.
-- Prior blocker `B8-A-MIRA-01` is **CLOSED**:
-  - new full-schema `tests/database/visibility-accepted-execution.test.ts` loads current migrations rather than the selective historical fixtures used by A7;
-  - 8 cases cover title/body × Hide/Restore × publication-first/visibility-first;
-  - accepted publication and the actual `ForumService.setTopicVisibility/setPostVisibility` command both queue on real PostgreSQL row locks, with `pg_blocking_pids` observing the intended contenders before release;
-  - the actual visibility transaction therefore includes its real topic/post lock order, actor/current permission/AP-10 admission path, revision/version CAS and append-last neutral History while accepted translation still completes privately;
-  - assertions cover task completion, immutable current revision, visibility state/version, neutral History without source leakage and no new translation enqueue after Restore.
-- Mira re-reviewed the correction diff `8942509ee94927c5c0dc1014381bfcf5ad18da84..a9ade36165c6af6767f7322d9f642bf24c68ca41`: one new 342-line PG test file only. No B8-B/C implementation was started.
-- Exact-head evidence independently verified: CI #45064673116 is SUCCESS on attempt 2; current exact head has **2/2 check-runs SUCCESS**. The first checks attempt on the same SHA had one unchanged B7 UI test failure; checks-only same-SHA rerun passed, with no unrelated code changes. Database suite executed **1689/1689 PostgreSQL tests**, including the 8 new integrated cases.
-- No remaining confirmed current-B8-A blocker after the full B8-A matrix review and correction.
-- **B8-A coordinator PASS. Лира STOP. B8-B requires fresh owner continuation.** B8-C, B9, fold, whole-feature review, Leva review, merge and deploy remain blocked.
+- B8-A coordinator PASS: Draft #376 stable accepted exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`, stacked on B7 #371, unmerged.
+- Continue in the **same B8 implementation PR #376 / branch `feature/moderation-visibility-b8-acceptance`**. Do not open another B8 implementation PR.
+- B8-B is split for owner control:
+  1. **B8-B1 — actual Worker + Better Auth public/private transport acceptance** — **ACTIVE NOW**.
+  2. B8-B2 — local R2 asset/download/private exact-membership acceptance — inactive.
+  3. B8-B3 — protected-domain/old-alias/fault-injection transport acceptance — inactive.
+- **B8-B1 required result:**
+  - exercise the built Worker through actual HTTP with Better Auth/session context for the visibility public/private transport boundary;
+  - close public HTML/.data/single-fetch/old route aliases that belong to this transport seam, including neutral hidden-topic 404 and hidden-post tombstone behavior;
+  - sentinel-scan responses so hidden title/body/translation/reason/private metadata do not appear in public document/data/error/meta/Original/status surfaces;
+  - prove guarded queue/inspector/action responses remain private/no-store and guest/ordinary/revoked access fails closed without hidden source;
+  - verify document/data/404 cache headers and actual post-Hide/post-Restore public transition behavior;
+  - use existing Worker/Better Auth smoke infrastructure where practical; do not duplicate PostgreSQL race coverage already accepted in B8-A and do not start R2/asset-specific cases reserved for B8-B2.
+- If B8-B1 exposes a real current visibility defect, diagnose it through the actual HTTP path and fix only the bounded defect required for this packet.
+- Run the applicable Worker/Better Auth connected checks needed to establish B8-B1 on the exact head.
+- **Mandatory STOP after B8-B1.** Report exact head, changed/test scope, actual HTTP evidence and any defect/correction. Do not start B8-B2/B8-B3, B8-C, B9, fold, final reviews, merge or deploy.
 
 ## Baseline
 
