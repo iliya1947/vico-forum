@@ -1,5 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { data, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, redirect, useActionData, useLoaderData, type ClientActionFunctionArgs, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -26,6 +26,8 @@ import type {
 import type { ContentGenerationActionResponse } from "../localization/content-generation-response";
 import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
+import { editorClientAction } from "../forum/editor-action";
+import { hiddenInspectionPath } from "../admin/visibility-queue-path";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import type { ForumTopicReadState, ForumVisibleThreadPost } from "../../db/forum-repository";
 import type { TopicWatchState } from "../forum/topic-watch-control";
@@ -316,4 +318,25 @@ export default function TopicRoute() {
 
 export const ErrorBoundary = ForumRouteError;
 
-export { editorClientAction as clientAction } from "../forum/editor-action";
+/**
+ * Redirect after the canonical server action confirms a topic Hide. A fetcher
+ * otherwise revalidates the newly hidden public topic into a transient 404,
+ * unmounting its controller before it could navigate to private inspection.
+ * All other outcomes retain their existing action response and revalidation.
+ */
+export async function clientAction(args: ClientActionFunctionArgs) {
+  const result = await editorClientAction(args);
+  const payload: unknown = result && typeof result === "object" && "data" in result
+    ? result.data : result;
+  if (payload && typeof payload === "object"
+    && "operation" in payload && payload.operation === "contentVisibility"
+    && "ok" in payload && payload.ok === true
+    && "target" in payload && payload.target === "topic"
+    && "hidden" in payload && payload.hidden === true
+    && "topicId" in payload && typeof payload.topicId === "string"
+    && payload.topicId === args.params.topicId) {
+    return redirect(hiddenInspectionPath(args.params.locale ?? "en",
+      {kind:"topic",topicId:payload.topicId}));
+  }
+  return result;
+}
