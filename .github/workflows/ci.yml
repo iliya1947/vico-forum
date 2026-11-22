@@ -127,6 +127,30 @@ jobs:
             tail -n 120 "$RUNNER_TEMP/ui-p0-vite.log"
             exit 1
           }
+      - name: Build P1 complete browser route import candidate
+        run: pnpm ui-preview:p1-import-build
+      - name: Chromium P1 full Framework module import proof
+        run: |
+          pnpm exec vite preview --config app/ui-preview/p1/vite.config.ts --base /preview-sandbox/ --host 127.0.0.1 --port 4250 --strictPort > "$RUNNER_TEMP/ui-p1-vite.log" 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in $(seq 1 50); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:4250/preview-sandbox/ > /dev/null; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            tail -n 120 "$RUNNER_TEMP/ui-p1-vite.log"
+            exit 1
+          fi
+          "$RUNNER_TEMP/ui-p0-playwright/bin/python" tests/browser/ui-preview-p1/check.py --url http://127.0.0.1:4250/preview-sandbox || {
+            tail -n 120 "$RUNNER_TEMP/ui-p1-vite.log"
+            exit 1
+          }
       - name: Test
         run: pnpm test
       - name: Build
