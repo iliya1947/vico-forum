@@ -68,6 +68,21 @@ export async function verifyModerationProtectedDomainTransport({
     [topicId,postId],
   )).rows[0]?.current_revision_id;
   assert.ok(currentRevision,"B8-B3 requires edited current post revision");
+  // B8-B1 is intentionally exercised first on its original 0→1→2 CAS
+  // fixture. B8-B3 reads its own starting versions without changing B8-B1.
+  const initialPostVersion=(await client.query<{visibility_version:number}>(
+    "select visibility_version from forum_posts where topic_id=$1 and id=$2",
+    [topicId,postId],
+  )).rows[0]!.visibility_version;
+  const initialTopicVersion=(await client.query<{visibility_version:number}>(
+    "select visibility_version from forum_topics where id=$1",[topicId],
+  )).rows[0]!.visibility_version;
+  const initialHistoryCount=Number((await client.query<{n:string}>(
+    "select count(*)::text as n from admin_history where " +
+      "(target_id=$1 and action in ('topic.hidden','topic.restored')) or " +
+      "(target_id=$2 and action in ('post.hidden','post.restored'))",
+    [topicId,postId],
+  )).rows[0]!.n);
   const originalSource="P7 immutable report text";
   const secrets=[titleSource,currentPostSource,originalSource];
   const originalCase=(await client.query<{version:number;state:string}>(
@@ -178,7 +193,7 @@ export async function verifyModerationProtectedDomainTransport({
     )).rows,[{is_hidden:hidden,visibility_version:version}],
       "real Worker visibility state and CAS");
   }
-  await change("post",true,1);
+  await change("post",true,initialPostVersion+1);
   await assertProtected("post Hidden");
   // An exact operation replay must not create a second Complaint or alter
   // Case, even though the reported revision's current post is hidden/edited.
@@ -189,8 +204,8 @@ export async function verifyModerationProtectedDomainTransport({
     await denied(await http(alias,{},author.cookie),404,
       "legacy post edit while post hidden",secrets);
   }
-  await change("post",false,2);
-  await change("topic",true,1);
+  await change("post",false,initialPostVersion+2);
+  await change("topic",true,initialTopicVersion+1);
   await assertProtected("topic Hidden");
   await assertCaseSnapshot("topic Hide");
   for(const path of [topic,topic+".data",topic+"?view=original",
@@ -231,7 +246,7 @@ export async function verifyModerationProtectedDomainTransport({
   }
   await assertProtected("protected DB recovered");
   await assertCaseSnapshot("fault/recovery");
-  await change("topic",false,2);
+  await change("topic",false,initialTopicVersion+2);
   await assertCaseSnapshot("Restore");
   const restored=await http(topic);
   assert.equal(restored.status,200,"public topic after Restore");
@@ -245,11 +260,13 @@ export async function verifyModerationProtectedDomainTransport({
       "(target_id=$2 and action in ('post.hidden','post.restored')) " +
       "order by position",[topicId,postId],
   )).rows;
-  assert.deepEqual(actions,[
+  assert.equal(actions.length,initialHistoryCount+4,
+    "B8-B3 must add exactly four visibility History events");
+  assert.deepEqual(actions.slice(-4),[
     {action:"post.hidden",target_id:postId},
     {action:"post.restored",target_id:postId},
     {action:"topic.hidden",target_id:topicId},
     {action:"topic.restored",target_id:topicId},
-  ],"one ID-only Admin History event per actual visibility transition");
+  ],"one ID-only Admin History event per B8-B3 visibility transition");
   console.log("B8-B3 real Worker protected Complaint/replay/legacy/fault transport: PASS");
 }
