@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `97a9784eb956dadcacbfa52af3b09be3e16596f2`, base `main` `9cff976a...`.
+- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`, base `main` `9cff976a...`.
 - Delivery: **stacked**, P0 — первая ступень от актуального main; P1+ зависят от PASS предыдущей ступени.
 - Канонический технический план: `PLAN.md`; P0 — §15.
 - Цель P0: browser proof одного реального vertical path без второго route/action и без внешнего runtime.
@@ -19,4 +19,6 @@
 
 - P0-F5 PASS exact `97a9784eb956dadcacbfa52af3b09be3e16596f2` ([CI #45031091293](https://github.com/iliya1947/vico-forum/actions/runs/45031091293): checks/database SUCCESS, 226 test files). `createPagesAddressCodec` derives arbitrary Pages base and validates virtual path/actor/scenario; `installPagesLocationAdapter` adapts public `router.createHref` for real relative/production Links while keeping Form/fetcher matching virtual; syncs browser history. Chromium project-subpath `/preview-sandbox/`: direct bootstrap + refresh, real topic reply/302, profile Link new-tab bootstrap, Back/Forward and query/hash all pass; 0 external calls/page errors. Profile route itself not in P0. Unbundled `/api/attachments` cleanup fail-closes before network; attachment port remains. **Full P0 NOT PASS.**
 
-- STOP P0-F5. Next owner `...`: P0-F6 image/download attachment through shared mode-aware resolver and test bytes, real product surfaces + browser evidence. No P1/merge/deploy.
+- P0-F6 PASS exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8` ([CI #45032800400](https://github.com/iliya1947/vico-forum/actions/runs/45032800400): checks/database SUCCESS, 227 Vitest test files). Shared production-default `resolveAttachmentUrl(reference,mode)` seam and React context provider applied to real forum/admin/editor attachment links, inline Markdown and previews; production URLs/flags identical. P0 synthetic PNG bytes under typed published reference serve mode-specific Blob URLs, dispose revokes, unrecognized assets/modes fail. Chromium `ForumMarkdown` and `ForumAttachmentDisplay` both decode 2×2 PNG, native download 79 B named `p0-preview-swatch.png`; 0 external requests/page errors and earlier route/action/nav checks still pass. Real upload/XHR attachment API outside bounded P0-F6, local unbundled request fail-closed. Full P0 final author self-check / Мира checkpoint not yet done.
+
+- STOP P0-F6. Next owner `...`: P0-F7 author self-check of whole #373 against P0 gate and CI, inventory shared seams; if clean pass stable exact head to Мира coordinator and STOP. No P1/merge/deploy.
