@@ -48,14 +48,14 @@ describe("React Router public createHref seam", () => {
     const codec = createPagesAddressCodec(new URL(window.location.href), id);
     const router = createMemoryRouter([{
       path: "/en/topics/:topicId",
-      Component: () => createElement(Link, { to: ".", "data-testid": "relative-link" }, "same topic"),
+      Component: () => createElement(Link, { to: "." }, "same topic"),
     }], {
       initialEntries: ["/en/topics/p0-preview-topic?state=x"],
     });
     const adapter = installPagesLocationAdapter(router, { codec });
     try {
       render(createElement(RouterProvider, { router }));
-      const link = await screen.findByTestId("relative-link");
+      const link = await screen.findByRole("link", { name: "same topic" });
       const url = new URL(link.getAttribute("href")!, window.location.origin);
       expect(url.pathname).toBe("/preview-sandbox/");
       expect(url.searchParams.get("path")).toBe("/en/topics/p0-preview-topic");
