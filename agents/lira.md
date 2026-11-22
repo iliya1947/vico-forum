@@ -1,7 +1,6 @@
-# agents/lira.md — B7-MIRA-01 author correction PASS; STOP, fresh Mira checkpoint
+# agents/lira.md — B7 MIRA PASS; STOP before B8
 
-- Draft [B7 #371](https://github.com/iliya1947/vico-forum/pull/371) stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, accepted B6 #370 base `51a9ebe03f16c438faae5bec99a5856287630958`, behind0/unmerged. Mira's earlier B7 HOLD remains until **fresh checkpoint**.
-- Corrected current-B7 `B7-MIRA-01`: no pre-auth FormData read for denied ordinary POST; visibility `?visibilityAction=1` action hint selects typed 401/Origin403 error response only, never an authority grant. Strict accepted payload and fresh server permissions untouched. Both forms classify Origin403 as denied with safe loader refresh/no replay; real `topicAction` regressions including mounted Hide/Restore pass.
-- **[Exact-head CI #45036679050](https://github.com/iliya1947/vico-forum/actions/runs/45036679050): 15/15 workflows SUCCESS** (CI checks+database, 14/14 connected). Unit **2951/2951** in 232 files; canonical visibility 67/67, denial UI 15/15, Lint/Typecheck/Build/UI Preview success. PostgreSQL17 **1628/1628** in 113 files, actual Worker B7 HTTP document/.data/404/private cache and P7 local Worker/Better Auth smoke PASS.
-- Initial DB job 1628 tests passed but unhandled `reported revision changed` in unrelated SA04 Complaint test caused job fail. Direct same-head rerun of only DB job `137263562553` succeeded; no Complaint code edits and no B7 changes. All gates green on stable head.
-- **Лира STOP.** Next reviewer **Мира (ChatGPT-5.6 Sol)** for new bounded B7 coordinator checkpoint on this exact head, with independent decision. No B8/B9/fold/merge/deploy before Mira PASS and owner continuation. See service `WORKFLOW.md`.
+- Draft B7 #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` on accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`, behind0 and unmerged.
+- Mira fresh coordinator checkpoint: **PASS**. `B7-MIRA-01` is closed; the corrected preflight visibility denial envelope preserves no-body-read and unrelated topic-action behavior, and no new current-B7 blocker was confirmed.
+- Exact-head evidence: **19/19 checks SUCCESS, 15/15 workflows SUCCESS**; CI #45036679050 SUCCESS after database-only retry on the same exact SHA. No code change for the retry.
+- **Лира STOP.** Do not create/start B8, B9, stack fold, Leva final review, merge or deployment until fresh owner continuation is recorded in service #342.
