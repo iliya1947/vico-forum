@@ -124,3 +124,35 @@ describe("shared P1 profile section error identity", () => {
     expect(new neutralOwnerHistory().message).toBe("Invalid Owner user history cursor");
   });
 });
+
+import * as neutralOwnerLifecycle from "../../../db/owner-account-lifecycle-contract";
+import * as productionOwnerLifecycle from "../../../db/owner-account-lifecycle";
+import { OwnerAccountLifecycleUnavailableError as productionLifecycleUnavailable } from "../../../db/hyperdrive-owner-account-lifecycle";
+import { AccountInactiveError as neutralAccountInactive, AccountStateUnavailableError as neutralAccountUnavailable } from "../../../db/account-state-errors";
+import { AccountInactiveError as productionAccountInactive, AccountStateUnavailableError as productionAccountUnavailable } from "../../../db/account-state";
+
+describe("shared P1 Owner lifecycle contract identity", () => {
+  it("preserves production error constructors and validation semantics", () => {
+    for (const name of [
+      "OwnerAccountLifecycleForbiddenError", "OwnerAccountLifecycleValidationError",
+      "OwnerAccountLifecycleTargetMissingError", "OwnerAccountLifecycleConflictError",
+      "OwnerAccountLifecycleInvariantError", "OwnerAccountLifecycleCommitUncertainError",
+      "OwnerAccountLifecycleUnavailableError",
+    ] as const) {
+      expect(neutralOwnerLifecycle[name]).toBe(productionOwnerLifecycle[name]);
+    }
+    expect(neutralOwnerLifecycle.OwnerAccountLifecycleUnavailableError).toBe(productionLifecycleUnavailable);
+    expect(neutralAccountInactive).toBe(productionAccountInactive);
+    expect(neutralAccountUnavailable).toBe(productionAccountUnavailable);
+    expect(neutralOwnerLifecycle.validateOwnerAccountDeactivationInput)
+      .toBe(productionOwnerLifecycle.validateOwnerAccountDeactivationInput);
+    const valid = { actorId: "owner", targetId: "target", operationId: "ABCDEF12-1234-4321-ABCD-123456789ABC" };
+    expect(neutralOwnerLifecycle.validateOwnerAccountDeactivationInput(valid)).toEqual({
+      ...valid, operationId: valid.operationId.toLowerCase(),
+    });
+    expect(() => neutralOwnerLifecycle.validateOwnerAccountDeactivationInput({ ...valid, targetId: "" }))
+      .toThrow(neutralOwnerLifecycle.OwnerAccountLifecycleValidationError);
+    const cause = new Error("storage failure");
+    expect(new productionLifecycleUnavailable({ cause }).cause).toBe(cause);
+  });
+});
