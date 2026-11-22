@@ -106,10 +106,10 @@ with sync_playwright() as playwright:
     # Browser Back/Forward follows the Pages URL while preserving virtual
     # React Router route rendering and the simulated in-memory reply.
     page.evaluate("window.history.back()")
-    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", virtual_initial)
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", arg=virtual_initial)
     page.locator("main.topic-shell").wait_for(timeout=30000)
     page.evaluate("window.history.forward()")
-    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", after_reply)
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", arg=after_reply)
     page.locator("li#post-p0-reply-1").wait_for(timeout=30000)
     assert any(item.startswith("P0_PAGES_POP ") for item in logs), logs
     resource_results = page.evaluate("""async () => {
