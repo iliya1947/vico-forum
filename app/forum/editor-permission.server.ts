@@ -1,8 +1,8 @@
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import type { RouterContextProvider } from "react-router";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { forumReaderForRequest } from "./request-context";
 import { parseEditorDraftContextKey } from "../../db/editor-draft-context";
 
