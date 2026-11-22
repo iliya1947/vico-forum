@@ -116,10 +116,16 @@ describe("B7-B4c unconfirmed visibility result requires an explicit fresh GET",(
             const before=instance.loader.mock.calls.length;
             fireEvent.click(screen.getByRole("button",{name:"Reload visibility state"}));
             await waitFor(()=>expect(instance.loader.mock.calls.length).toBeGreaterThan(before));
-            const fresh=await formIn(instance.container,mode);
-            await waitFor(()=>expect(
-              fresh.querySelector<HTMLInputElement>('input[name="expectedRevisionId"]')?.value,
-            ).toBe("revision-fresh"));
+            // Revalidation remounts the form under a new frozen CAS key.
+            // Read the active DOM on every poll, not the detached previous form.
+            const selector=mode==="hide"?"form.visibility-hide-form":"form.visibility-restore-form";
+            const fresh=await waitFor(()=>{
+              const current=instance.container.querySelector<HTMLFormElement>(selector);
+              expect(current?.querySelector<HTMLInputElement>('input[name="expectedRevisionId"]')?.value)
+                .toBe("revision-fresh");
+              return current!;
+            });
+            expect(fresh).not.toBe(original);
             expect(fresh.querySelector<HTMLInputElement>('input[name="expectedVisibilityVersion"]')?.value)
               .toBe("4");
             expect(fresh.querySelector<HTMLButtonElement>('button[type="submit"]')).toBeEnabled();
