@@ -1540,7 +1540,7 @@ describe("visibility-gated post-body planning", () => {
       const observer = await secondClient();
       const started = deferred(), release = deferred();
       let task: ReturnType<ContentPostBodyTaskExecutor["execute"]> | undefined;
-      let change: ReturnType<Client["query"]> | undefined;
+      let change: Promise<unknown> | undefined;
       let held = false;
       try {
         const enqueuer = new FakeTranslationTaskEnqueuer();
