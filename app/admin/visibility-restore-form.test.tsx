@@ -148,7 +148,16 @@ describe("B7-B2a private-inspector Restore",()=>{
       {currentRevisionId:" stale-revision "},
     ] satisfies Options[]){
       const mounted=mount(options);
-      await waitFor(()=>expect(mounted.container.querySelector("#admin-hidden-inspector-heading")).not.toBeNull());
+      await waitFor(()=>expect(mounted.loader).toHaveBeenCalled());
+      const staleActor=(options.actorId??"moderator")!==(options.viewerId??"moderator");
+      if(staleActor){
+        // A retained private inspection must disappear on actor mismatch,
+        // including its heading and last-event reason, not merely its Restore form.
+        expect(mounted.container.querySelector("#admin-hidden-inspector-heading")).toBeNull();
+        expect(mounted.container.textContent).not.toContain("PRIVATE HISTORY REASON");
+      }else{
+        await waitFor(()=>expect(mounted.container.querySelector("#admin-hidden-inspector-heading")).not.toBeNull());
+      }
       expect(mounted.container.querySelector("form.visibility-restore-form")).toBeNull();
       expect(mounted.action).not.toHaveBeenCalled();
       mounted.unmount();mounted.router.dispose();
