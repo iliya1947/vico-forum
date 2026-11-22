@@ -804,6 +804,8 @@ export const canonicalEnglishCatalog = {
     visibilityRestoreTopic: message("visibilityRestoreTopic", "Restore topic", "Restore a hidden topic from current guarded private inspection."),
     visibilityRestorePost: message("visibilityRestorePost", "Restore message", "Restore a hidden published message from current guarded private inspection."),
     visibilityRestoreReason: message("visibilityRestoreReason", "Reason for restoring", "Required explanation for restoring a hidden topic or message."),
+    visibilityConflict: message("visibilityConflict", "The content or account changed. Reload the current visibility state before trying again.", "CAS conflict for visibility Hide/Restore; never retry the submitted mutation automatically."),
+    visibilityReload: message("visibilityReload", "Reload visibility state", "Explicit refresh after visibility action conflict without reposting the command."),
     topicClosedStatus: message("topicClosedStatus", "Closed", "Persisted topic closure status, distinct from solved and duplicate."),
     topicClosedNotice: message("topicClosedNotice", "New replies are disabled until this topic is reopened.", "Public reading notice for a closed topic."),
     topicClose: message("topicClose", "Close topic", "Administrative command to stop new replies to a topic."),

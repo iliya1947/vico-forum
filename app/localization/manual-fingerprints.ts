@@ -868,6 +868,8 @@ export const reviewedCommonFingerprints = {
   visibilityRestoreTopic: "1c14ac8108515d1a227bcbd94004af6a8a572c02d150fd2b5845579c45b063ba",
   visibilityRestorePost: "270ce464c26ef9878f0b94db3b1b0021cbbe1c9dffd693f17dc94f358b83c3e1",
   visibilityRestoreReason: "f308d4ac725b6f1961df513da8a74485dbb1296bb6703390bfca6faaed2f4bb3",
+  visibilityConflict: "790faf74838294319d443c7e7eecffa876addb7977409f043593dca6fa0aa494",
+  visibilityReload: "0f726a7bb4d166dfb78bbf1e9b5fb838b0923f76a666bce94c3b2b23e044e6a4",
   topicClosedStatus: "f3839100cc2948e6bd7ef1ae36e907a0a04b22077be6eee5d41c980c231824ac",
   topicClosedNotice: "4fff57d72b6b8e259e6b0d7901259d06743889ee316cc68ef424b2385617dc80",
   topicClose: "2308206f82a1aef7a28413588a575d941658af25122d356719ed46e1f66ad07b",
