@@ -1,7 +1,24 @@
-# agents/lira.md — B8-A1–A9 PostgreSQL author check PASS; STOP for Mira
+# agents/lira.md — B8-A-MIRA-01 correction only
 
-- Owner permits **B8-A only**; B7 #371 Mira checkpoint accepted exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, unchanged. Stacked [Draft B8 #376](https://github.com/iliya1947/vico-forum/pull/376) base B7, exact `8942509ee94927c5c0dc1014381bfcf5ad18da84`; 4 PG test files, cumulative +1316 test lines only; no runtime/schema changes.
-- A1–A8: inventory and 48 real-PG lock-order cases +2 cross-permission authority regressions covering visibility state/History, Source Locale/solution/Duplicate/accepted translation, with role grants/revokes/Owner/AP-10/negative protected routes and private History evidenced cross-suite. Research: `research/b8-a-pg-coverage.md`.
-- **A9**: 3 real PG tests in `tests/database/complaints-foundation.test.ts`, commit `8942509ee94927c5c0dc1014381bfcf5ad18da84`; hidden topic/title, hidden topic/post, individually hidden post. Existing submitted Complaint continues through private Case/evidence/context, initial Decision, own Appeal and protected resolution; retained History/own result accessible to previous authorized actors, outsiders still denied, Restore preserves facts; neutral visibility History alone changes. No production changes.
-- [**Exact-head CI #45058154131**](https://github.com/iliya1947/vico-forum/actions/runs/45058154131) **SUCCESS first attempt**, checks 2951/2951 unit + lint/typecheck/build, database 1681/1681 PG17 plus Worker smoke; stable SHA and base verified.
-- **Лира STOP; B8-A PG author-check PASS, not Mira checkpoint.** Next performer **Мира**: bounded B8-A coordinator checkpoint of stable `8942509e` against accepted B7, scope and PG matrix, via #342. A future finding returns to Лира for correction at a new exact head. B8-B/C/B9/fold/review/merge/deploy blocked pending new authorization.
+## Reviewed head
+
+- Draft B8 #376 exact `8942509ee94927c5c0dc1014381bfcf5ad18da84`, stacked on accepted B7 #371 `f92778606f1c8ea4e64f53c1660910f34c48b84c`.
+- Mira coordinator checkpoint: **HOLD with one confirmed current-B8-A acceptance blocker**.
+- Existing exact-head CI #45058154131 is green; this is a semantic coverage gap, not a failed test.
+
+## Current task — B8-A-MIRA-01 only
+
+Close the V8 matrix cell for **real Hide/Restore × accepted translation execution**.
+
+Current A7 limitation:
+- title/body publication races use historical selective fixtures and direct SQL `UPDATE is_hidden`;
+- that proves the publication/content-row lock seam but does not exercise the actual visibility transaction and its CAS/version, topic→post ordering, actor/AP-10/current permission admission and append-last History.
+
+Done criteria:
+1. Add the smallest full-schema real-PostgreSQL barrier regression(s) that race accepted title/body execution with the actual `setTopicVisibility/setPostVisibility` command in the relevant two orders.
+2. Assert task/private translation completion contract, visibility final state/version and neutral History invariants; no new task on Restore where applicable.
+3. Do not replace existing useful A7 low-level tests unless necessary; avoid duplicating unrelated B8-A coverage.
+4. If the actual race exposes a current visibility defect, fix only that bounded defect and prove it.
+5. Run applicable PostgreSQL checks on the new exact head and update #342/#376.
+
+**Mandatory STOP after this correction.** Do not start B8-B/C, B9, fold, final review, merge or deploy.
