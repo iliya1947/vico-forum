@@ -173,8 +173,6 @@ export async function verifyModerationProtectedDomainTransport({
       check(response,200,kind+(hidden?" Hide":" Restore")+" command");
       await response.arrayBuffer();
     }
-    const table=kind==="topic"?"forum_topics":"forum_posts";
-    const id=kind==="topic"?topicId:postId;
     assert.deepEqual((await client.query<{is_hidden:boolean;visibility_version:number}>(
       "select is_hidden,visibility_version from "+table+" where id=$1",[id],
     )).rows,[{is_hidden:hidden,visibility_version:version}],
