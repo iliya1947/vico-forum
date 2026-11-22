@@ -146,5 +146,5 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - Classified registry and exact re-verification: `research/stale-legacy-audit-registry.md`.
 - Exact result: **31/31 confirmed stale elements across A-01…A-09**; no false positives found in the independent item-by-item recheck.
 - B/C/D/E remain excluded from automatic cleanup; closed PR #322 is not a solution source.
-- Next side-task stage by owner continuation: **Лёва prepares the full technical cleanup plan for A-01…A-09 before implementation**, using the exact registry scope and current `AGENTS.md`.
+- Next side-task stage by owner continuation: **Mira-2 performs the bounded stale cleanup for A-01…A-09 directly from the verified registry**; no separate technical planning stage is required because this is cleanup of stale tests/preview/catalogue state, not a new product implementation.
 - No implementation PR, product changes, production/deploy actions or cleanup have been performed by Mira-2.
