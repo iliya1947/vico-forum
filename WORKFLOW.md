@@ -33,16 +33,17 @@
 
 ## Текущий этап
 
-Этап 8 — внутренний duplicate-pass `AGENTS.draft.md` завершён без изменения draft.
+Этап 8 — внутренний duplicate-pass `AGENTS.draft.md` перепроверен и исправлен; draft не изменялся.
 
 Результат: `research/agents-internal-duplicates-pass.md`.
 
 Подтверждено:
-- 10 delete-safe внутренних повторов/хвостов;
+- **9**, а не 10, delete-safe внутренних повторов/хвостов;
+- Workflow 11 снят: прежняя классификация ошибочно опиралась на локальный `RULES.md`, поэтому это не доказанный внутренний дубль AGENTS;
 - основные зоны: Roles ↔ Workflow ↔ Review, Workflow ↔ Review, Diagnosis ↔ Logic/Developer action;
-- самостоятельные numbered rules можно сохранить 64 → 64;
-- потенциально AGENTS: 16082 → 15161 chars, 2015 → 1899 words;
-- экономия только дедупликацией: 921 chars / 116 words;
-- новые требования: 0.
+- numbered rules при применении остаются 64 → 64;
+- потенциально AGENTS: 16082 → 15241 chars, 2015 → 1908 words;
+- экономия только подтверждённой дедупликацией: 841 chars / 107 words;
+- новых требований: 0.
 
-Следующий bounded-этап: применить только эти 10 подтверждённых internal-dedupe изменений к `AGENTS.draft.md` и повторно проверить semantic coverage.
+Следующий bounded-этап: отдельно показать/проверить эти 9 exact изменений перед любым применением к `AGENTS.draft.md`.
