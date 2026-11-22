@@ -2,13 +2,17 @@
 
 ## Активный этап
 
-**Moderation visibility B8-A active — A2 first real-PG race tests committed; Лира STOP before A3.**
+**Moderation visibility B8-A active — B8-A3 real-PG source/solution race packet verified; Лира STOP before A4.**
 
-- B7 Mira PASS on stacked [Draft #371](https://github.com/iliya1947/vico-forum/pull/371), stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`. Owner authorization remains **B8-A only**. B8-B/B8-C/B9/fold/review/merge/deploy blocked.
-- **B8-A1**: PostgreSQL coverage inventory in `research/b8-a-pg-coverage.md`; existing barriers in `tests/database/moderation-visibility-commands.test.ts` already cover topic/post state, writer-planning/reply/edit/Complaints and actor/FK cases. No duplicate coverage.
-- **B8-A2**: inspected adjacent source-locale, solution, duplicate, accepted translation execution, planning, and authority test suites. First confirmed real-lock matrix gap: same-locale source-locale admission versus topic Hide/Restore, both transaction orders. Added four tests with actual `pg_blocking_pids` waits and final state/revision/History/Restore assertions; **test-only**, +110 lines in `tests/database/moderation-visibility-commands.test.ts`. Commit `20df9b8d3601b75372e3395cca5dbdaf35f11f15`.
-- Stacked **[Draft #376](https://github.com/iliya1947/vico-forum/pull/376)** opened with base `feature/moderation-visibility-b7-actions-ui` (accepted B7 exact unchanged). One B8 file, ahead1/behind0 at commit. **No real PG test execution or CI yet; B8-A is incomplete and NOT PASS.**
-- **STOP after A2. Next owner `...` → B8-A3**: continue bounded real PG matrix, prioritize remaining source-locale changed-write and solution/duplicate order gaps where verified; add only confirmed missing tests and run appropriate targeted PostgreSQL checks. The B8-A acceptance/checkpoint and Worker/Chromium stages remain inactive until their own gates.
+- Owner authorization remains **B8-A only**; B8-B/B8-C/B9/fold/review/merge/deploy blocked. Mira accepted B7 stacked [#371](https://github.com/iliya1947/vico-forum/pull/371) exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`; unchanged B8 base.
+- Stacked [Draft #376](https://github.com/iliya1947/vico-forum/pull/376), base `feature/moderation-visibility-b7-actions-ui`, stable B8 exact `b4facb3e8b9d16f4dc1636637065bead69968192`. Local bounded diff: only `tests/database/moderation-visibility-commands.test.ts` (+251 test-only lines), no runtime/schema changes.
+- **A1:** real PG matrix inventory and existing coverage mapped in `research/b8-a-pg-coverage.md`; do not duplicate already present two-order title/body planning, replies, edits, Complaint, actor deactivation, and FK compatibility.
+- **A2:** four actual `pg_blocking_pids` Hide/Restore × two-lock-order cases for topic Source Locale same-value no-op; tests commit `20df9b8d3601b75372e3395cca5dbdaf35f11f15`.
+- **A3:** four actual `pg_blocking_pids` Hide/Restore × two-order cases for solved Help solution moderation versus topic visibility. Tests preserve selected answer/solved state, signal updates, History ordering and post-Restore admissibility; tests commit `b4facb3e8b9d16f4dc1636637065bead69968192`.
+- [**Exact-head CI #45047340971**](https://github.com/iliya1947/vico-forum/actions/runs/45047340971) final attempt 2 **SUCCESS**: `checks` success (2951/2951 unit, lint/typecheck/build); `database` success (1636/1636 real PostgreSQL 17, database/Worker smoke). First attempt database-only failed despite 1636 passed tests because of one unhandled `AccountInactiveError` Promise rejection in unchanged `tests/database/topic-bookmarks.test.ts` deactivation race; exact same SHA, **database job only rerun** succeeded, no changes to this unrelated test/code. See CI run history. No B8-specific failures.
+- **B8-A is not yet accepted**: remaining V8 matrix cells (changed Source Locale, two-topic Duplicate, post/source/authority and accepted execution PG boundary) need gap assessment/targeted addition only if absent; no assumption that every cell is missing. Do not start B8-B/C.
+- **STOP after A3. Next owner `...` → B8-A4:** bounded check of remaining Source Locale changed-write and/or sorted-topic Duplicate visibility race; add only needed real PG barriers, run applicable checks, update #342 and STOP again. Do not broaden scope.
+
 
 ## Baseline
 
