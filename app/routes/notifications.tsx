@@ -7,7 +7,7 @@ import { forumTopicPath } from "../forum/paths";
 import { forumMutationGuard, mutationFailure, runForumMutation } from "../forum/mutations.server";
 import { ForumRouteError } from "../forum/ui";
 import { NotificationsView } from "../forum/views";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 
 export function headers(){return {"Cache-Control":"private, no-store"};}
