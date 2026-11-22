@@ -1,7 +1,7 @@
 """P0 browser proof: actual Framework route modules, no real backend requests."""
 import argparse
 import json
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urljoin
 from playwright.sync_api import sync_playwright
 
 parser = argparse.ArgumentParser()
@@ -32,7 +32,12 @@ with sync_playwright() as playwright:
         if message.type in {"error", "info"}:
             print("P0_BROWSER_CONSOLE " + message.type + " " + message.text, flush=True)
     page.on("console", on_console)
-    response = page.goto(base + "/", wait_until="domcontentloaded")
+    virtual_initial = "/en/topics/p0-preview-topic?source=pages#post-p0-first-post"
+    initial = base + "/?" + urlencode({
+        "embed": "1", "path": virtual_initial,
+        "actor": "p0-preview-user", "scenario": "default",
+    })
+    response = page.goto(initial, wait_until="domcontentloaded")
     assert response is not None and response.status == 200
     page.locator("#root[data-status]").wait_for(timeout=30000)
     status = page.locator("#root").get_attribute("data-status")
@@ -41,6 +46,11 @@ with sync_playwright() as playwright:
     content = page.locator("#root").inner_text()
     assert "P0 shared forum topic" in content and "P0 message rendered by the real forum TopicView" in content, {"status": status, "text": content, "pageerrors": errors}
     assert status == "router-mounted", {"status": status, "text": content, "pageerrors": errors}
+    assert parse_qs(urlparse(page.url).query)["path"] == [virtual_initial], page.url
+    # A direct Pages bootstrap with virtual search/hash must survive browser refresh.
+    page.reload(wait_until="domcontentloaded")
+    page.locator("main.topic-shell").wait_for(timeout=30000)
+    assert parse_qs(urlparse(page.url).query)["path"] == [virtual_initial], page.url
     document_state = page.evaluate("""() => ({
       lang: document.documentElement.lang,
       dir: document.documentElement.dir,
@@ -56,6 +66,8 @@ with sync_playwright() as playwright:
     assert document_state["stylesheets"] > 0, document_state
     # The real MarkdownEditor prepares and replays a native Form submission.
     reply_form = page.locator("form.topic-reply-form")
+    form_action = reply_form.get_attribute("action") or ""
+    assert urlparse(form_action).path == "/en/topics/p0-preview-topic", form_action
     reply_form.get_by_role("button", name="Advanced", exact=True).click()
     reply_form.locator("textarea#reply-body").fill("P0 reply submitted through the real editor and action")
     reply_form.get_by_role("button", name="Post reply", exact=True).click()
@@ -67,6 +79,39 @@ with sync_playwright() as playwright:
     assert any("P0_FIXTURE_REPLY_COMMITTED p0-reply-1" in item for item in logs), logs
     assert any("P0_FIXTURE_READ_STATE" in item for item in logs), logs
     assert any("P0_ROUTER_REDIRECTED #post-p0-reply-1" in item for item in logs), logs
+    after_reply = parse_qs(urlparse(page.url).query)["path"][0]
+    assert after_reply == "/en/topics/p0-preview-topic#post-p0-reply-1", page.url
+    assert urlparse(page.url).path == urlparse(base).path + "/", page.url
+
+    # Real production TopicView Link must expose the Pages URL while keeping
+    # React Router click navigation on the original product path.
+    profile_link = page.locator("a.topic-message-profile-link").first
+    profile_href = profile_link.get_attribute("href")
+    assert profile_href
+    target = urlparse(urljoin(base + "/", profile_href))
+    target_query = parse_qs(target.query)
+    assert target.path == urlparse(base).path + "/", profile_href
+    assert target_query == {
+        "embed": ["1"], "path": ["/en/users/sample-author"],
+        "actor": ["p0-preview-user"], "scenario": ["default"],
+    }, profile_href
+    with page.expect_popup() as new_tab_event:
+        profile_link.click(modifiers=["Control"])
+    new_tab = new_tab_event.value
+    new_tab.wait_for_load_state("domcontentloaded")
+    assert parse_qs(urlparse(new_tab.url).query)["path"] == ["/en/users/sample-author"], new_tab.url
+    assert urlparse(new_tab.url).path == urlparse(base).path + "/", new_tab.url
+    new_tab.close()
+
+    # Browser Back/Forward follows the Pages URL while preserving virtual
+    # React Router route rendering and the simulated in-memory reply.
+    page.evaluate("window.history.back()")
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", virtual_initial)
+    page.locator("main.topic-shell").wait_for(timeout=30000)
+    page.evaluate("window.history.forward()")
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", after_reply)
+    page.locator("li#post-p0-reply-1").wait_for(timeout=30000)
+    assert any(item.startswith("P0_PAGES_POP ") for item in logs), logs
     resource_results = page.evaluate("""async () => {
       const mention = await fetch("/en/mentions?q=Preview");
       const mentionsPayload = await mention.json();
@@ -125,6 +170,9 @@ with sync_playwright() as playwright:
         "fetcher_read_state": True,
         "resource_results": resource_results,
         "resource_network": len(resource_network),
+        "pages_base": urlparse(base).path + "/",
+        "new_tab_target": target_query["path"][0],
+        "browser_history": True,
         "url": base,
     }), flush=True)
     browser.close()

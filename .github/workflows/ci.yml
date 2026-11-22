@@ -107,12 +107,12 @@ jobs:
         run: |
           python3 -m venv "$RUNNER_TEMP/ui-p0-playwright"
           "$RUNNER_TEMP/ui-p0-playwright/bin/pip" install playwright==1.62.0
-          pnpm exec vite preview --config app/ui-preview/p0/vite.config.ts --host 127.0.0.1 --port 4249 --strictPort > "$RUNNER_TEMP/ui-p0-vite.log" 2>&1 &
+          pnpm exec vite preview --config app/ui-preview/p0/vite.config.ts --base /preview-sandbox/ --host 127.0.0.1 --port 4249 --strictPort > "$RUNNER_TEMP/ui-p0-vite.log" 2>&1 &
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           ready=false
           for attempt in $(seq 1 50); do
-            if curl --silent --fail --max-time 2 http://127.0.0.1:4249/ > /dev/null; then
+            if curl --silent --fail --max-time 2 http://127.0.0.1:4249/preview-sandbox/ > /dev/null; then
               ready=true
               break
             fi
@@ -123,7 +123,7 @@ jobs:
             tail -n 120 "$RUNNER_TEMP/ui-p0-vite.log"
             exit 1
           fi
-          "$RUNNER_TEMP/ui-p0-playwright/bin/python" tests/browser/ui-preview-p0/check.py --url http://127.0.0.1:4249 || {
+          "$RUNNER_TEMP/ui-p0-playwright/bin/python" tests/browser/ui-preview-p0/check.py --url http://127.0.0.1:4249/preview-sandbox || {
             tail -n 120 "$RUNNER_TEMP/ui-p0-vite.log"
             exit 1
           }

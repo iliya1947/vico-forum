@@ -4,7 +4,9 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "./route-adapter";
 import { createPreviewDocumentAdapter } from "./document";
-import { createP0Context, P0_TOPIC_ID } from "./fixture";
+import { createP0Context, P0_ACTOR_ID, P0_TOPIC_ID } from "./fixture";
+import { createPagesAddressCodec } from "./pages-address";
+import { installPagesLocationAdapter } from "./pages-location";
 import { installPreviewResourceTransport } from "./resource-transport";
 
 /** P0-only browser proof. This never replaces the published Pages preview. */
@@ -27,10 +29,15 @@ async function boot() {
 
   const routes = createPreviewDataRoutes(routeManifest, modules);
   transport.configure(routes, modules);
+  const codec = createPagesAddressCodec(new URL(window.location.href), {
+    actor: P0_ACTOR_ID, scenario: "default", initialPath: "/en/topics/" + P0_TOPIC_ID,
+  });
+  const initialEntry = codec.fromUrl(new URL(window.location.href));
   const router = createMemoryRouter(routes, {
-    initialEntries: ["/en/topics/" + P0_TOPIC_ID],
+    initialEntries: [initialEntry],
     getContext: createP0Context,
   });
+  installPagesLocationAdapter(router, { codec });
   const documentAdapter = createPreviewDocumentAdapter(modules);
   const refreshDocument = () => {
     try {
