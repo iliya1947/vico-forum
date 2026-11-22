@@ -2801,7 +2801,7 @@ describe("B8-A real PostgreSQL changed Source Locale versus Hide/Restore and rev
         const [sourceResult, visibilityResult] = await Promise.allSettled([correction!, change!]);
         const correctionWon = endingHidden ? correctionFirst : !correctionFirst;
         const visibilityConflicted = endingHidden && correctionFirst;
-        let currentRevisionId = initialRevisionId;
+        let currentRevisionId: string = initialRevisionId;
         if (correctionWon) {
           expect(sourceResult.status).toBe("fulfilled");
           if (sourceResult.status === "fulfilled") {
