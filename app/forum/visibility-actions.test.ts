@@ -54,9 +54,12 @@ function fixture(options:{signedIn?:boolean;allowed?:boolean;permissionError?:Er
     {method?:string;origin?:string|null;pathTopicId?:string}={})=>{
     const headers=new Headers();
     if(origin!==null)headers.set("Origin",origin);
-    const request=new Request("https://forum.example/en/topics/"+encodeURIComponent(pathTopicId),{
-      method,headers,body,
-    });
+    const isVisibility = body.getAll("intent").some(value =>
+      value === "setTopicVisibility" || value === "setPostVisibility")
+      || body.has("hidden") || body.has("expectedVisibilityVersion") || body.has("reason");
+    const url = "https://forum.example/en/topics/" + encodeURIComponent(pathTopicId)
+      + (isVisibility ? "?visibilityAction=1" : "");
+    const request=new Request(url,{method,headers,body});
     const result=await topicAction({request,params:{locale:"en",topicId:pathTopicId},context});
     if(!result||!("data" in result))throw new Error("Visibility POST must return action data, not redirect");
     return result;
