@@ -17,36 +17,36 @@
    - 35 rules / 4999 chars
    - 15/15 current FULL
    - 52/52 retained semantic guards
-   - executability stress: **17/17 EXEC PASS**
-   - goal-level User executability: **PASS**
+   - executability stress: 17/17 EXEC PASS
+   - transfer readiness: PASS
 
 2. Project: `PROJECT_INSTRUCTIONS.draft.md`
    - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
    - 16 rules / 2713 chars
-   - PASS
+   - current active baseline 3341 chars
+   - transfer readiness: PASS
 
 3. AGENTS: `AGENTS.draft.md`
    - blob `170ef5ed10715e416a376c75c3dae188ae0a3d24`
    - 58 rules / 16186 chars
-   - PASS
+   - current `main:AGENTS.md` still exactly matches #368 current snapshot
+   - transfer readiness: PASS via separate repository PR
 
-## Three-layer consistency
+## Current gates
 
-Current exact check: `research/three-layer-35-final-consistency.md`.
+1. User preservation — PASS.
+2. User executability — PASS.
+3. Three-layer consistency — PASS.
+4. Transfer-readiness — PASS.
 
-Result:
-1. User exact blob — PASS;
-2. Project exact blob — PASS;
-3. AGENTS exact blob — PASS;
-4. межслойных противоречий — 0;
-5. новых DELETE-SAFE inter-layer дублей — 0;
-6. permission/authority/continuation blockers — 0;
-7. three-layer consistency blockers — 0.
+Current transfer-readiness: `research/instruction-transfer-readiness.md`.
+
+Безопасный порядок переноса: **User → AGENTS → Project**.
 
 Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: **текущие exact blobs ещё не прошли повторный transfer-readiness после User redesign.**
+Блокер: нет.
 
-Следующий переход: отдельным bounded этапом повторить transfer-readiness для current User/Project/AGENTS exact blobs; только после PASS готовить transfer package.
+Следующий переход: подготовить фактический transfer package — точные финальные тексты, точную последовательность замены и отдельную постановку для переноса `AGENTS.md` в `main`; реальные sources менять только по прямой команде разработчика.
