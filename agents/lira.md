@@ -1,23 +1,6 @@
-# agents/lira.md — B8-B1 only; STOP after Worker/Better Auth transport packet
+# agents/lira.md — B8-B1 author-check PASS; STOP before B8-B2
 
-## Accepted base
-
-- B8-A coordinator PASS on Draft #376 exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`.
-- Continue in existing B8 branch `feature/moderation-visibility-b8-acceptance`; no new implementation PR.
-
-## Current assignment — B8-B1 only
-
-Establish actual built-Worker + Better Auth HTTP acceptance for the visibility public/private transport boundary.
-
-Done criteria:
-
-1. Public transport: visible topic/post, topic Hide neutral 404, hidden-post tombstone, Restore, document/.data/single-fetch/legacy route aliases that hit this seam, with public no-store where required.
-2. Leak scans: unique hidden title/body/translation/reason/private metadata sentinel absent from public HTML/data/error/meta/Original/status responses.
-3. Private transport: queue/inspector/visibility actions are private/no-store; guest/ordinary/revoked current access fails closed without hidden source.
-4. Use actual Worker/session/auth path, not mocked route calls. Reuse existing smoke infrastructure rather than duplicate B8-A PG races.
-5. If a real current-stage defect appears, diagnose and correct only that bounded transport defect.
-6. Run applicable Worker/Better Auth connected checks on the resulting exact head and update #342/#376.
-
-Do **not** add local R2/download/private-asset acceptance yet; that is B8-B2. Do not start protected-domain/fault-injection B8-B3, Chromium B8-C, B9, fold, final reviews, merge or deploy.
-
-**Mandatory STOP after B8-B1.**
+- **Scope:** owner assigned B8-B1 **only**. Mira coordinator PASS for B8-A exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`. Existing stacked [Draft #376](https://github.com/iliya1947/vico-forum/pull/376), current head `8bb92c771fffe96aab5d5b3a39917048598922a1`, accepted B7 base unchanged. No separate B8 implementation PR.
+- **B8-B1:** extended existing `scripts/smoke-visibility-cache-transport.ts` and its caller `scripts/smoke-complaints-local.ts` only (2 test scripts, +89 net lines). Actual built Worker preview, Better Auth live session and role/override, disposable PG17. Positive public English + Hebrew revision-bound machine translation, unique title/body/translation/reason/private Complaint evidence key sentinels; hide post tombstone with stable anchor, topic hide neutral 404, document/.data/`_routes`/Original and canonical legacy Hebrew alias, cache no-store, private queue/inspector guest/ordinary/authorized, visibility permission revoke/Restore denial/version unchanged and regrant/Restore positive. No R2 or Chromium/browser acceptance.
+- [**Exact-head CI #45069729381**](https://github.com/iliya1947/vico-forum/actions/runs/45069729381): **SUCCESS attempt 1** on `8bb92c77`, checks 2951/2951 unit and lint/typecheck/build, database 1689/1689 PG17 + genuine Worker/Better Auth HTTP smoke log **B8-B1 ... PASS**. Earlier commits had solely new fixture mistakes (`prefer-const`, wrong Complaint note SQL column); final smoke reuses existing retained evidence key. No production/schema changes or product defect confirmed.
+- **Лира STOP.** Next only after owner/Mira progression: B8-B2 (real local R2/download/private asset exact membership), then B8-B3; currently unauthorized. B8-C/B9/fold/review/merge/deploy blocked. B8-B1 author PASS is not coordinator PASS.
