@@ -1,5 +1,5 @@
 import { forumReadLoader } from "../forum/read-availability.server";
-import { data, redirect, useActionData, useLoaderData, type ClientActionFunctionArgs, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, replace, useActionData, useLoaderData, type ClientActionFunctionArgs, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -335,8 +335,10 @@ export async function clientAction(args: ClientActionFunctionArgs) {
     && "hidden" in payload && payload.hidden === true
     && "topicId" in payload && typeof payload.topicId === "string"
     && payload.topicId === args.params.topicId) {
-    return redirect(hiddenInspectionPath(args.params.locale ?? "en",
-      {kind:"topic",topicId:payload.topicId}));
+    return replace(hiddenInspectionPath(args.params.locale ?? "en",
+      {kind:"topic",topicId:payload.topicId}), {
+      headers: { "Cache-Control": "private, no-store" },
+    });
   }
   return result;
 }
