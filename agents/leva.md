@@ -1,9 +1,9 @@
 # agents/leva.md — личная рабочая память Лёвы.
 
-Владелец подтвердил: preview — общий UI/routes/application interactions main, только GitHub/Actions/Pages и браузер; real save необязателен. Разрешено simulated «успешно сохранено» без изменения baseline/после reload. Не требовать SQL/transaction/backend parity из-за собственного прежнего допущения.
+Владелец подтвердил D-06–D-08: общий UI/routes/application interactions main; только GitHub/Actions/Pages и браузер; реальное сохранение не требуется, simulated «успешно сохранено» разрешён. Не возвращать SQL/write parity или запрет success без записи.
 
-Упрощённое предложение: research/leva-chat-plan.md, база main9cff976. Выбранный candidate — typed in-memory test infrastructure на raw fixtures, общие product components/handlers, generated route manifest и generic local transport. Минимальный transient overlay допустим для target ID/redirect/revalidation, но не обязан становиться полноценной DB.
+Актуальное предложение — research/leva-chat-plan.md (§1–16), main9cff976. Typed in-memory test infrastructure/raw fixtures, общие components/handlers, generated manifest/local transport; transient overlay только при необходимости для target ID/redirect/revalidation.
 
-Существенные края из исследования: Framework route IDs/clientAction/middleware, server-only imports/error identities, top-level capture fetch Better Auth client, XHR upload и native attachment URLs/Pages base. Их не закрывает один fetch mock.
+Авторская проверка полноты завершена. Исправлена навигация PLAN.md и обновлён общий контекст. Следующая Мира для scope/fit review: конкретный handoff в WORKFLOW.md. Лёва STOP; собственный self-check не считать независимым PASS или owner acceptance.
 
-Предложение обновлено по последнему owner clarification; D-06–D-08 — актуальные решения. Внешний runtime и последующий обязательный browser SQL/WASM вариант superseded. P0 теперь только browser seam/interaction proof. Код/зависимости/прототипы/deploy не менялись. Следующий шаг — проверка/обсуждение предложения; implementation не активировать автоматически.
+P0/browser build ещё не выполнялся. Существенные unknowns: route IDs/middleware/clientAction/root/server imports, fetch capture/XHR/native resource URLs и Pages base. Product/preview code, #322, dependencies и deployment не менялись; implementation не активирована.
