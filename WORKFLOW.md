@@ -18,7 +18,7 @@
    - 15/15 current FULL
    - 52/52 retained semantic guards
    - semantic/limit checks PASS
-   - **executability readiness reopened**
+   - **goal-level executability FAIL**
 
 2. Project: `PROJECT_INSTRUCTIONS.draft.md`
    - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
@@ -32,20 +32,26 @@
 
 ## Goal-level readiness
 
-Новый recheck: `research/original-goal-executability-recheck.md`.
+Recheck: `research/original-goal-executability-recheck.md`.
 
-Установлено:
-1. предыдущий transfer-readiness PASS корректен для character limits, semantic coverage и three-layer consistency;
-2. он не проверял достижение исходной behavioural/executability цели;
-3. compact rewrite User 8364 → 4999 снова создал составные «суперпункты» с несколькими независимыми мыслительными операциями;
-4. это противоречит ранее установленному executability-критерию из `research/instruction-executability-validation.md`.
+Bounded stress-test: `research/user-compact-executability-stress-test.md`.
 
-Project/AGENTS PASS на этой проверке не отменён.
+Stress result:
+1. 17/17 tested failure modes имеют semantic guard;
+2. EXEC PASS: 8/17;
+3. EXEC RISK: 9/17;
+4. missing semantic guard: 0;
+5. критическая перегрузка сосредоточена в User rules 5, 7, 9, 10, 13, 14;
+6. compact draft повторяет ранее запрещённую архитектуру «несколько независимых мыслительных операций в одном суперпункте».
+
+Это не эмпирическое доказательство частоты ошибок модели, а подтверждённый structural executability blocker относительно принятого критерия задачи.
+
+Project/AGENTS PASS этим результатом не отменён.
 
 Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: **User compact draft требует bounded executability/stress validation до transfer package.**
+Блокер: **User compact layer требует перепроектирования до ≤5000 chars без потери 52/52 guards и 15/15 current coverage.**
 
-Следующий переход: проверить финальный 20-rule User draft на реальных failure modes, из-за которых началась переделка; только после goal-level PASS возвращаться к transfer package.
+Следующий переход: отдельным bounded этапом перепроектировать только User rules 5, 7, 9, 10, 13, 14; затем повторить stress matrix и three-layer consistency.
