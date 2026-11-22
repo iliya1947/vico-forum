@@ -1,6 +1,6 @@
 # B8-A PostgreSQL acceptance — initial coverage inventory (A1)
 
-Status: **B8-A1–A9 PostgreSQL author-check PASS on exact head 8942509e; awaiting Mira coordinator checkpoint; whole B8/B9 incomplete**. Reviewed on 2026-11-22 against accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` and V8 acceptance matrix in `stages/moderation-visibility/PLAN.md`. B8 is stacked as Draft PR #376 on accepted B7; current A9 exact head `8942509ee94927c5c0dc1014381bfcf5ad18da84` contains tests only.
+Status: **B8-A-MIRA-01 full-command correction author-check PASS on exact a9ade361; awaiting Mira coordinator re-check; whole B8/B9 incomplete**. Reviewed on 2026-11-22 against accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` and V8 acceptance matrix in `stages/moderation-visibility/PLAN.md`. B8 is stacked as Draft PR #376 on accepted B7; current A9 exact head `8942509ee94927c5c0dc1014381bfcf5ad18da84` contains tests only.
 
 ## Existing real PostgreSQL evidence to reuse
 
@@ -103,3 +103,11 @@ but not the integrated visibility command interleaving required by V8
 No existing inspected suite combines accepted publication with the real visibility command.
 Add the minimal full-schema barrier regression(s), verify final task/private translation plus
 visibility version/History invariants, and STOP for a fresh Mira checkpoint. B8-B/C remain inactive.
+
+## B8-A-MIRA-01 — actual visibility command × accepted translation publication (full PG schema)
+
+- **Mira coordinator HOLD on `8942509e` confirmed this current B8-A coverage gap:** previous A7 title/body `pg_blocking_pids` races used selective historical fixtures and direct `UPDATE is_hidden`; they proved row-level contention but omitted the full visibility service transaction (actor/current capability/AP-10, revision/version CAS, actual topic→post ordering and appended neutral History). The author A9 "no missing PG matrix cell" conclusion was premature; recorded in service `AGENT_ERRORS.md`.
+- Added `tests/database/visibility-accepted-execution.test.ts`, all forward migrations in unique disposable local PG schema. Eight cases `title|body × Hide|Restore × publicationFirst true|false` run actual `ForumService.setTopicVisibility` or `setPostVisibility` against an **already accepted**, provider-gated title/body task. Third PG holder locks target topic/post row, manager and worker both join real `pg_blocking_pids` queue; release orders them deterministically. Assertions: actual version/CAS and authoritative post/topic revision, actor permission gate through command, one exact neutral visibility History event per transition, task completed with private revision-bound translation (including hidden state), no new queued task/provider work after Restore. This is not full Worker/R2 B8-B connected execution or Chromium B8-C, which remain blocked.
+- Commits: `9c939224108d26770b2fa18329ca7dbc1832fca1` initial new test, `a9ade36165c6af6767f7322d9f642bf24c68ca41` removed unused Lint-only test helper. **B8 diff 5 PG test files +1658 lines vs accepted B7, no runtime/schema.**
+- [Exact-head CI #45064673116](https://github.com/iliya1947/vico-forum/actions/runs/45064673116) **SUCCESS attempt 2**: `checks` 2951/2951 unit and lint/typecheck/build; `database` 1689/1689 real PG17 plus Worker smoke. Initial checks attempt on this same SHA had 1 failure in unchanged `app/admin/visibility-pending.test.tsx`; checks-only rerun PASS. First test SHA failed unused-helper Lint; its database suite passed all 1689 PG tests.
+- **B8-A author correction completed, coordinator HOLD still open until Mira re-check.** Next actor Мира, exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`. B8-B/C/B9/fold/review/merge/deploy not authorized.
