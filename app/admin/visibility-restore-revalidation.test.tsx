@@ -149,7 +149,7 @@ describe("B7-B3c private inspector Restore success revalidation", () => {
           // An individually restored post may still be effectively unavailable
           // under a hidden parent/topic; private inspection must remain accessible.
           expect(view.container.querySelector(".admin-forum-counts"))
-            .toHaveTextContent("Parent unavailable");
+            .toHaveTextContent("Parent/topic unavailable");
         }
       } finally {router.dispose();}
     },
