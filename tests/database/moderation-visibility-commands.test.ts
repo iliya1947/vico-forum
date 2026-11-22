@@ -776,6 +776,147 @@ describe("V4 solution moderation admission under topic and answer visibility", (
     expect(restored.post.solution_moderation_status).toBeNull();
     expect(restored.history.filter(e => e.action === "help.solutionModerationChanged")).toHaveLength(3);
   });
+
+  it.each([
+    { transition: "Hide", moderationFirst: true, initiallyHidden: false },
+    { transition: "Hide", moderationFirst: false, initiallyHidden: false },
+    { transition: "Restore", moderationFirst: true, initiallyHidden: true },
+    { transition: "Restore", moderationFirst: false, initiallyHidden: true },
+  ] as const)(
+    "B8-A solution moderation × $transition, moderationFirst=$moderationFirst: real PG order",
+    async ({ transition, moderationFirst, initiallyHidden }) => {
+      const f = await solvedQuestion();
+      const signal = await service.createHelpSignal({
+        kind: "needs-review", topicId: f.topicId, actorId: "ordinary",
+        explanation: "Review the selected answer", proposedOriginalTopicId: null,
+      });
+      if (initiallyHidden) await hideTopic(f, true, 0);
+
+      async function connected() {
+        const connection = new Client({ connectionString: url, options: "-c search_path=" + schema });
+        await connection.connect();
+        await connection.query("set statement_timeout='25000ms'");
+        const pid = (await connection.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+        return { connection, pid };
+      }
+      async function waitBlocked(waiter: number, expected: number[]) {
+        const deadline = Date.now() + 8_000;
+        let last: unknown;
+        while (Date.now() < deadline) {
+          const observation = await client.query<{
+            wait_event_type: string | null; blockers: number[];
+          }>(
+            "select wait_event_type,pg_blocking_pids(pid) as blockers from pg_stat_activity where pid=$1",
+            [waiter],
+          );
+          last = observation.rows[0];
+          if (observation.rows[0]?.wait_event_type === "Lock"
+            && observation.rows[0].blockers.some(pid => expected.includes(pid))) return;
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        throw new Error("Expected solution/visibility PG lock wait: " +
+          JSON.stringify({ waiter, expected, last }));
+      }
+
+      const [holder, writer, manager] = await Promise.all([
+        connected(), connected(), connected(),
+      ]);
+      const forum = (connection: Client) => new ForumService(new DrizzleForumRepository(
+        drizzle(connection), { cooldownMs: 0, now: () => new Date() },
+        withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+      ));
+      const endingHidden = transition === "Hide";
+      let held = false;
+      let moderation: ReturnType<ForumService["setHelpSolutionModeration"]> | undefined;
+      let change: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+      try {
+        await holder.connection.query("begin");
+        held = true;
+        await holder.connection.query(
+          "select id from forum_topics where id=$1 for update", [f.topicId],
+        );
+        const startModeration = async () => {
+          moderation = forum(writer.connection).setHelpSolutionModeration(
+            f.topicId, "needs-review", null, "moderator1", f.answerId,
+          );
+          void moderation.catch(() => undefined);
+          await waitBlocked(writer.pid, [holder.pid, manager.pid]);
+        };
+        const startVisibility = async () => {
+          change = forum(manager.connection).setTopicVisibility({
+            topicId: f.topicId, actorId: "moderator1", hidden: endingHidden,
+            expectedVisibilityVersion: initiallyHidden ? 1 : 0,
+            expectedRevisionId: f.titleRevisionId,
+            reason: "Solution race visibility review",
+          });
+          void change.catch(() => undefined);
+          await waitBlocked(manager.pid, [holder.pid, writer.pid]);
+        };
+        if (moderationFirst) {
+          await startModeration();
+          await startVisibility();
+        } else {
+          await startVisibility();
+          await startModeration();
+        }
+        await holder.connection.query("commit");
+        held = false;
+        const [moderationResult, changeResult] = await Promise.allSettled([moderation!, change!]);
+        expect(changeResult).toMatchObject({
+          status: "fulfilled",
+          value: { hidden: endingHidden, changed: true, visibilityVersion: initiallyHidden ? 2 : 1 },
+        });
+        const admitted = transition === "Hide" ? moderationFirst : !moderationFirst;
+        if (admitted) {
+          expect(moderationResult).toEqual({ status: "fulfilled", value: undefined });
+        } else {
+          expect(moderationResult.status).toBe("rejected");
+          if (moderationResult.status === "rejected") {
+            expect(moderationResult.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+        }
+        const actual = await state(f);
+        expect(actual.post).toMatchObject({
+          solution_moderation_status: admitted ? "needs-review" : null,
+          solution_outdated_reason: null, solution_outdated_reason_kind: null,
+        });
+        expect(actual.signals.find(s => s.id === signal.id)?.status)
+          .toBe(admitted ? "superseded" : "pending");
+        const actions = actual.history.map(event => event.action);
+        const visibilityActions = initiallyHidden ? ["topic.hidden", "topic.restored"] : ["topic.hidden"];
+        expect(actions).toEqual(
+          transition === "Hide" && admitted
+            ? ["help.solutionModerationChanged", ...visibilityActions]
+            : admitted
+              ? [...visibilityActions, "help.solutionModerationChanged"]
+              : visibilityActions,
+        );
+        if (endingHidden) {
+          await hideTopic(f, false, 1);
+        }
+        if (!admitted) {
+          await moderate(f, "needs-review");
+          const afterRestore = await state(f);
+          expect(afterRestore.post.solution_moderation_status).toBe("needs-review");
+          expect(afterRestore.signals.find(s => s.id === signal.id)?.status).toBe("superseded");
+          expect(afterRestore.history.filter(e => e.action === "help.solutionModerationChanged"))
+            .toHaveLength(1);
+        }
+        expect((await client.query(
+          "select is_solved,best_answer_post_id from forum_topics where id=$1",
+          [f.topicId],
+        )).rows[0]).toEqual({ is_solved: true, best_answer_post_id: f.answerId });
+      } finally {
+        if (held) await holder.connection.query("rollback");
+        await Promise.allSettled([moderation, change]);
+        await Promise.all([
+          holder.connection.end(), writer.connection.end(), manager.connection.end(),
+        ]);
+      }
+    },
+    30_000,
+  );
+
 });
 
 describe("V4 best-answer selection under hidden topic and answer", () => {
