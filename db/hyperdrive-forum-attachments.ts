@@ -1,5 +1,6 @@
 import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { ForumAttachmentStorageUnavailableError } from "./forum-attachment-errors";
 import { AccountStateUnavailableError } from "./account-state";
 import { assertNoActiveUserMeasureRestriction } from "./user-measure-policy";
 import type { Client } from "pg";
@@ -31,12 +32,7 @@ export interface ForumAttachmentStore {
   listDraftAttachments(ownerId: string, contextKey: string, draftId: string): Promise<ForumAttachmentMetadata[]>;
 }
 
-export class ForumAttachmentStorageUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("forum attachment storage unavailable", options);
-    this.name = "ForumAttachmentStorageUnavailableError";
-  }
-}
+export { ForumAttachmentStorageUnavailableError } from "./forum-attachment-errors";
 
 function isAttachmentStorageAvailabilityFailure(error: unknown): boolean {
   const seen = new Set<unknown>();
