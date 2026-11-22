@@ -249,7 +249,7 @@ describe("content topic-title execution and publication", () => {
       const observer = await secondClient();
       const started = deferred(), release = deferred();
       let task: ReturnType<TranslationTaskExecutorDispatcher["execute"]> | undefined;
-      let change: ReturnType<Client["query"]> | undefined;
+      let change: Promise<unknown> | undefined;
       let held = false;
       try {
         const enqueuer = new FakeTranslationTaskEnqueuer();
