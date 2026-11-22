@@ -1,5 +1,5 @@
 import {
-  createPath, parsePath, type To,
+  createPath, type To,
 } from "react-router";
 
 export interface PagesBootstrapIdentity {
@@ -9,7 +9,7 @@ export interface PagesBootstrapIdentity {
 }
 
 function virtualPath(value: string): string {
-  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u001f]/u.test(value)) {
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\") || [...value].some((char) => char.charCodeAt(0) < 32)) {
     throw new Error("Invalid preview virtual path");
   }
   const parsed = new URL(value, "https://preview-virtual.invalid");
