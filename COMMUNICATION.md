@@ -13,3 +13,16 @@
 Новые общие улучшения интеллектуальной работы и логики отложены на вторую задачу. Материал `research/behavior-error-classes-reset.md` сохранён для неё.
 
 Первый следующий проход — только действующие User Instructions.
+
+## Текущий результат задачи 1
+
+Whole-system check трёх current-based drafts завершён:
+- total 22363 → 20009 chars (-10.53%);
+- 97 → 97 самостоятельных нумерованных требований;
+- новых требований 0;
+- semantic regressions 0;
+- новых межслойных конфликтов 0.
+
+Evidence: `research/current-compression-whole-system-check.md`.
+
+Реальные instruction sources не изменены. Новые интеллектуально-логические улучшения всё ещё отложены.
