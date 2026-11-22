@@ -38,7 +38,7 @@ export class OwnerAccountLifecycleCommitUncertainError extends Error {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-function operationId(value: unknown): value is string {
+export function operationId(value: unknown): value is string {
   return typeof value === "string" && value.length === 36 && UUID.test(value);
 }
 // Same opaque identity bounds as the canonical Owner profile reader; no System-event key regex.
