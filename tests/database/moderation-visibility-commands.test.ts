@@ -1733,6 +1733,235 @@ describe("V4 protected duplicate appeal decisions across Hide and Restore", () =
   });
 });
 
+
+describe("B8-A6 real PostgreSQL duplicate removal and protected appeal decisions versus Hide/Restore", () => {
+  async function question() {
+    const topicId = randomUUID(), postId = randomUUID();
+    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
+    await repository.createTopicWithInitialPost({
+      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
+      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: "author",
+        bodyRevision: { id: bodyRevisionId, originalContent: "Question body", sourceLocale: "en" },
+      },
+    });
+    return { topicId, titleRevisionId };
+  }
+  async function connected() {
+    const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await c.connect();
+    await c.query("set statement_timeout='25000ms'");
+    const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { c, pid };
+  }
+  async function waitBlocked(waiter: number, possible: number[]) {
+    const deadline = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < deadline) {
+      const r = await client.query<{ blockers: number[]; wait_event_type: string | null }>(
+        "select pg_blocking_pids(pid) as blockers,wait_event_type " +
+          "from pg_stat_activity where pid=$1", [waiter],
+      );
+      last = r.rows[0];
+      if (r.rows[0]?.wait_event_type === "Lock"
+        && r.rows[0].blockers.some(pid => possible.includes(pid))) return;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    throw new Error("A6 duplicate/appeal row-lock waiter absent: " +
+      JSON.stringify({ waiter, possible, last }));
+  }
+  function scoped(c: Client) {
+    return new ForumService(new DrizzleForumRepository(
+      drizzle(c), { cooldownMs: 0, now: () => new Date() },
+      withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+    ));
+  }
+  async function current(duplicateId: string, originalId: string) {
+    const [topics, relationship, appeal, history] = await Promise.all([
+      client.query<{ id: string; is_hidden: boolean; visibility_version: number;
+        is_solved: boolean; best_answer_post_id: string | null }>(
+        "select id,is_hidden,visibility_version,is_solved,best_answer_post_id " +
+          "from forum_topics where id in ($1,$2) order by id", [duplicateId, originalId],
+      ),
+      client.query<{ id: string; removed_at: Date | null; removed_by_user_id: string | null }>(
+        "select id,removed_at,removed_by_user_id from forum_help_duplicate_relationships " +
+          "where duplicate_topic_id=$1 order by id", [duplicateId],
+      ),
+      client.query<{ id: string; status: string; resolved_by_user_id: string | null }>(
+        "select id,status,resolved_by_user_id from forum_help_duplicate_appeals " +
+          "where relationship_id in (select id from forum_help_duplicate_relationships " +
+          "where duplicate_topic_id=$1) order by id", [duplicateId],
+      ),
+      client.query<{ action: string; target_id: string; context: Record<string, unknown> }>(
+        "select action,target_id,context from admin_history " +
+          "where target_id in ($1,$2) order by position", [duplicateId, originalId],
+      ),
+    ]);
+    return {
+      topics: topics.rows, relationship: relationship.rows,
+      appeal: appeal.rows, history: history.rows,
+    };
+  }
+
+  it.each(
+    (["remove-duplicate", "remove-original", "appeal-accepted", "appeal-rejected"] as const)
+      .flatMap(kind => (["Hide", "Restore"] as const).flatMap(transition =>
+        ([true, false] as const).map(actionFirst => ({ kind, transition, actionFirst })))),
+  )(
+    "$kind × $transition, actionFirst=$actionFirst: real PG protected/remove lock order",
+    async ({ kind, transition, actionFirst }) => {
+      const [first, later] = [await question(), await question()]
+        .sort((a, b) => a.topicId.localeCompare(b.topicId)) as [
+          Awaited<ReturnType<typeof question>>, Awaited<ReturnType<typeof question>>
+        ];
+      // Removal exercises either role of the SECOND sorted topic.
+      // Protected appeal decisions lock only the duplicate topic, which is later.
+      const duplicate = kind === "remove-original" ? first : later;
+      const original = kind === "remove-original" ? later : first;
+      await service.confirmHelpDuplicate(duplicate.topicId, original.topicId, "owner");
+      const linked = await current(duplicate.topicId, original.topicId);
+      const relationshipId = linked.relationship[0]?.id;
+      if (!relationshipId) throw new Error("Missing duplicate relationship");
+      await service.appealHelpDuplicate(
+        duplicate.topicId, "author", "Appeal remains protected", relationshipId,
+      );
+      const appealId = (await current(duplicate.topicId, original.topicId)).appeal[0]?.id;
+      if (!appealId) throw new Error("Missing pending duplicate appeal");
+      const initiallyHidden = transition === "Restore";
+      if (initiallyHidden) {
+        await service.setTopicVisibility(
+          topicCommand(later, "moderator1", true, 0, "Initial A6 Hide"),
+        );
+      }
+      const [holder, actor, manager] = await Promise.all([connected(), connected(), connected()]);
+      const operation = scoped(actor.c), visibility = scoped(manager.c);
+      const removal = kind === "remove-duplicate" || kind === "remove-original";
+      const resolution = kind === "appeal-rejected" ? "rejected" : "accepted";
+      const runAction = () => removal
+        ? operation.removeHelpDuplicate(duplicate.topicId, "moderator1", relationshipId)
+        : operation.resolveHelpDuplicateAppeal(
+            duplicate.topicId, "moderator1", resolution, appealId,
+          );
+      const endingHidden = transition === "Hide";
+      let held = false;
+      let action: ReturnType<typeof runAction> | undefined;
+      let changed: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+      try {
+        await holder.c.query("begin");
+        held = true;
+        await holder.c.query(
+          "select id from forum_topics where id=$1 for update", [later.topicId],
+        );
+        const beginAction = async () => {
+          action = runAction();
+          void action.catch(() => undefined);
+          await waitBlocked(actor.pid, [holder.pid, manager.pid]);
+        };
+        const beginVisibility = async () => {
+          changed = visibility.setTopicVisibility(
+            topicCommand(later, "moderator1", endingHidden, initiallyHidden ? 1 : 0,
+              "A6 concurrent visibility review"),
+          );
+          void changed.catch(() => undefined);
+          await waitBlocked(manager.pid, [holder.pid, actor.pid]);
+        };
+        if (actionFirst) {
+          await beginAction();
+          await beginVisibility();
+        } else {
+          await beginVisibility();
+          await beginAction();
+        }
+        await holder.c.query("commit");
+        held = false;
+
+        const [actionResult, visibilityResult] = await Promise.allSettled([action!, changed!]);
+        expect(visibilityResult).toMatchObject({
+          status: "fulfilled",
+          value: { hidden: endingHidden, changed: true, visibilityVersion: initiallyHidden ? 2 : 1 },
+        });
+        const admitted = !removal || (transition === "Hide" ? actionFirst : !actionFirst);
+        if (admitted) {
+          expect(actionResult).toEqual({ status: "fulfilled", value: undefined });
+        } else {
+          expect(actionResult.status).toBe("rejected");
+          if (actionResult.status === "rejected") {
+            expect(actionResult.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+        }
+        const after = await current(duplicate.topicId, original.topicId);
+        expect(after.relationship).toHaveLength(1);
+        expect(after.appeal).toHaveLength(1);
+        expect(after.relationship[0]?.id).toBe(relationshipId);
+        expect(after.appeal[0]?.id).toBe(appealId);
+        expect(after.appeal[0]?.status).toBe(
+          admitted ? (removal ? "accepted" : resolution) : "pending",
+        );
+        expect(after.appeal[0]?.resolved_by_user_id)
+          .toBe(admitted ? "moderator1" : null);
+        const linkRemoved = admitted && (removal || resolution === "accepted");
+        expect(after.relationship[0]?.removed_at === null).toBe(!linkRemoved);
+        expect(after.relationship[0]?.removed_by_user_id)
+          .toBe(linkRemoved ? "moderator1" : null);
+        expect(after.topics).toEqual([
+          { id: first.topicId, is_hidden: false, visibility_version: 0,
+            is_solved: false, best_answer_post_id: null },
+          { id: later.topicId, is_hidden: endingHidden,
+            visibility_version: initiallyHidden ? 2 : 1,
+            is_solved: false, best_answer_post_id: null },
+        ]);
+        const actionEvent = removal ? "help.duplicateRemoved" : "help.duplicateAppealResolved";
+        const expectedEvents = [
+          "help.duplicateConfirmed",
+          ...(initiallyHidden ? ["topic.hidden"] : []),
+          ...(actionFirst && admitted ? [actionEvent] : []),
+          endingHidden ? "topic.hidden" : "topic.restored",
+          ...(!actionFirst && admitted ? [actionEvent] : []),
+        ];
+        expect(after.history.map(e => e.action)).toEqual(expectedEvents);
+        if (admitted) {
+          const event = after.history.find(e => e.action === actionEvent);
+          expect(event?.target_id).toBe(duplicate.topicId);
+          expect(event?.context).toMatchObject(removal
+            ? { relationshipId, originalTopicId: original.topicId,
+                resolvedAppeal: { id: appealId, outcome: "accepted" } }
+            : { relationshipId, originalTopicId: original.topicId,
+                appealId, resolution });
+        }
+
+        if (endingHidden) {
+          await visibility.setTopicVisibility(
+            topicCommand(later, "moderator1", false, 1, "Restore after A6 race"),
+          );
+        }
+        if (!admitted) {
+          // A previously refused removal requires a new explicit command after Restore.
+          await runAction();
+          const recovered = await current(duplicate.topicId, original.topicId);
+          expect(recovered.appeal[0]?.status).toBe("accepted");
+          expect(recovered.relationship[0]?.removed_at).toBeInstanceOf(Date);
+          expect(recovered.history.filter(e => e.action === "help.duplicateRemoved"))
+            .toHaveLength(1);
+        } else {
+          await expect(runAction()).rejects.toBeInstanceOf(ForumStateConflictError);
+        }
+        const final = await current(duplicate.topicId, original.topicId);
+        expect(final.topics.every(t => !t.is_hidden)).toBe(true);
+        expect(final.topics.find(t => t.id === later.topicId)?.visibility_version).toBe(2);
+        expect(final.history.filter(e => e.action === actionEvent)).toHaveLength(1);
+        expect(final.history.filter(e => e.action === "topic.hidden")).toHaveLength(1);
+        expect(final.history.filter(e => e.action === "topic.restored")).toHaveLength(1);
+      } finally {
+        if (held) await holder.c.query("rollback");
+        await Promise.allSettled([action, changed]);
+        await Promise.all([holder.c.end(), actor.c.end(), manager.c.end()]);
+      }
+    },
+    30_000,
+  );
+});
+
 describe("V4 published edit recovery admission after Hide", () => {
   const edit = (f: Fixture, expectedRevisionId = f.bodyRevisionId, draftId = randomUUID(), body = "Recovered edit") => ({
     topicId: f.topicId, postId: f.postId, actorId: "author",
