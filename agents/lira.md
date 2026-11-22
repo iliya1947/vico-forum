@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `9eb080b49a59530309bd6397be0c940993f8d26d`, base `main` `9cff976a...`.
+- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `97a9784eb956dadcacbfa52af3b09be3e16596f2`, base `main` `9cff976a...`.
 - Delivery: **stacked**, P0 — первая ступень от актуального main; P1+ зависят от PASS предыдущей ступени.
 - Канонический технический план: `PLAN.md`; P0 — §15.
 - Цель P0: browser proof одного реального vertical path без второго route/action и без внешнего runtime.
@@ -17,4 +17,6 @@
 
 - P0-F4 PASS exact `9eb080b49a59530309bd6397be0c940993f8d26d` ([CI #45027210562](https://github.com/iliya1947/vico-forum/actions/runs/45027210562): checks/database SUCCESS, 225 Vitest test files). `installPreviewResourceTransport` installs one fetch interception before dynamically imported product graph and matches generated route IDs; `createStaticHandler.queryRoute` executes original locale middleware and presence/mentions with typed fixture auth/writer/reader. Chromium: presence POST 204 + no-store, mentions GET 200/private/no-store/nosniff, foreign Origin 403, PUT 405/Allow POST, invalid locale 404, intentional presence GET 404; 0 Vite network fallback for both resources / 0 external calls / 0 JS page errors. One other local 404 console message, not these resources. Neutral privacy error class reexport production identity. **Whole P0 not PASS.**
 
-- STOP P0-F4. Next owner `...`: P0-F5 shared Pages URL/base codec + real relative Link/open-new-tab browser evidence; then image/download port microstep. No P1/merge/deploy.
+- P0-F5 PASS exact `97a9784eb956dadcacbfa52af3b09be3e16596f2` ([CI #45031091293](https://github.com/iliya1947/vico-forum/actions/runs/45031091293): checks/database SUCCESS, 226 test files). `createPagesAddressCodec` derives arbitrary Pages base and validates virtual path/actor/scenario; `installPagesLocationAdapter` adapts public `router.createHref` for real relative/production Links while keeping Form/fetcher matching virtual; syncs browser history. Chromium project-subpath `/preview-sandbox/`: direct bootstrap + refresh, real topic reply/302, profile Link new-tab bootstrap, Back/Forward and query/hash all pass; 0 external calls/page errors. Profile route itself not in P0. Unbundled `/api/attachments` cleanup fail-closes before network; attachment port remains. **Full P0 NOT PASS.**
+
+- STOP P0-F5. Next owner `...`: P0-F6 image/download attachment through shared mode-aware resolver and test bytes, real product surfaces + browser evidence. No P1/merge/deploy.
