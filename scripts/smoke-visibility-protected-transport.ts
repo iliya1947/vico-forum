@@ -196,7 +196,7 @@ export async function verifyModerationProtectedDomainTransport({
   // Real PostgreSQL outage injection: block the protected Case reader on its
   // own table in a separate connection. A WEB query-timeout is classified as
   // a neutral private 503; it must not return a stale protected Case or raw SQL.
-  const blocker=new PgClient({connectionString:client.connectionParameters.connectionString??process.env.DATABASE_URL!});
+  const blocker=new PgClient({connectionString:process.env.DATABASE_URL!});
   await blocker.connect();
   try {
     await blocker.query("begin");
