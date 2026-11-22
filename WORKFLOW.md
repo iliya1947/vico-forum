@@ -33,17 +33,17 @@
 
 ## Текущий этап
 
-Этап 8 — внутренний duplicate-pass `AGENTS.draft.md` перепроверен и исправлен; draft не изменялся.
+Этап 9 — exact-проверка внутренних AGENTS dedupe-кандидатов завершена; draft не изменялся.
 
-Результат: `research/agents-internal-duplicates-pass.md`.
+Результат: `research/agents-internal-dedupe-exact-check.md`.
 
 Подтверждено:
-- **9**, а не 10, delete-safe внутренних повторов/хвостов;
-- Workflow 11 снят: прежняя классификация ошибочно опиралась на локальный `RULES.md`, поэтому это не доказанный внутренний дубль AGENTS;
-- основные зоны: Roles ↔ Workflow ↔ Review, Workflow ↔ Review, Diagnosis ↔ Logic/Developer action;
-- numbered rules при применении остаются 64 → 64;
-- потенциально AGENTS: 16082 → 15241 chars, 2015 → 1908 words;
-- экономия только подтверждённой дедупликацией: 841 chars / 107 words;
-- новых требований: 0.
+- **7**, а не 9, internal delete-safe изменений;
+- сняты Review 1/Mark: `отдельное назначение` строже `явной необходимости`;
+- снят Review 6/plan-change: scope Review шире Scale fix 3;
+- ранее снятый Workflow 11 остаётся вне internal dedupe;
+- потенциально AGENTS: 16082 → 15363 chars, 2015 → 1923 words;
+- экономия: 719 chars / 92 words;
+- numbered rules: 64 → 64.
 
-Следующий bounded-этап: отдельно показать/проверить эти 9 exact изменений перед любым применением к `AGENTS.draft.md`.
+Следующий bounded-этап: применить только эти 7 exact-проверенных сокращений к `AGENTS.draft.md` и затем проверить semantic coverage exact diff.
