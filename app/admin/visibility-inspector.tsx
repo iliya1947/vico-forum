@@ -1,14 +1,30 @@
 import { Link, useLoaderData } from "react-router";
+import { useHeaderAuthUser } from "../auth/auth-controls";
+import type { AdminAccess } from "./access";
+import type { HiddenInspection } from "../../db/private-visibility-queue";
+import { VisibilityRestoreForm } from "./visibility-restore-form";
 import { useTranslation } from "react-i18next";
 import { AdminShell } from "./shell";
 import { hiddenInspectionPath, hiddenQueuePath } from "./visibility-queue-path";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import type { loader } from "../routes/admin-forum-inspect";
 
-/** Read-only. Historical source exists only behind both server-side capabilities. */
+/** Current read snapshot is private and pre-authorized by the B6 route/reader. */
+export function canRestoreHiddenInspection(
+  access: Pick<AdminAccess, "canManageVisibility" | "actorId">,
+  inspection: HiddenInspection, viewerId: string | null,
+): boolean {
+  return Boolean(access.canManageVisibility && access.actorId && access.actorId === viewerId
+    && inspection.isHidden && Number.isInteger(inspection.visibilityVersion)
+    && inspection.visibilityVersion > 0 && inspection.visibilityVersion <= 2_147_483_647
+    && inspection.currentRevisionId && inspection.currentRevisionId === inspection.currentRevisionId.trim());
+}
+
 export default function VisibilityInspector() {
   const {locale,access,canReadPostHistory,inspection,revisions}=useLoaderData<typeof loader>();
   const {t}=useTranslation("common");
+  const viewerId=useHeaderAuthUser()?.id??null;
+  const canRestore=canRestoreHiddenInspection(access,inspection,viewerId);
   const routing=useAdministrativeRouting();
   const target=inspection.kind==="topic"
     ? {kind:"topic" as const,topicId:inspection.topicId}
@@ -41,6 +57,12 @@ export default function VisibilityInspector() {
           </dd></div>
         </>:null}
       </dl>
+      {canRestore?<VisibilityRestoreForm
+        key={JSON.stringify([access.actorId,inspection.kind,inspection.topicId,inspection.id,
+          inspection.visibilityVersion,inspection.currentRevisionId])}
+        locale={locale} topicId={inspection.topicId} actorId={access.actorId!}
+        revisionId={inspection.currentRevisionId} visibilityVersion={inspection.visibilityVersion}
+        {...(inspection.kind==="post"?{postId:inspection.id}:{})}/>:null}
       <h3>{t("adminHiddenInspectorLastEvent")}</h3>
       {inspection.lastEvent?<dl>
         <div><dt>{t(eventLabels[inspection.lastEvent.action])}</dt>
