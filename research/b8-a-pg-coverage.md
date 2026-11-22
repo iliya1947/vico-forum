@@ -1,6 +1,6 @@
 # B8-A PostgreSQL acceptance — initial coverage inventory (A1)
 
-Status: **B8-A-MIRA-01 full-command correction author-check PASS on exact a9ade361; awaiting Mira coordinator re-check; whole B8/B9 incomplete**. Reviewed on 2026-11-22 against accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` and V8 acceptance matrix in `stages/moderation-visibility/PLAN.md`. B8 is stacked as Draft PR #376 on accepted B7; current A9 exact head `8942509ee94927c5c0dc1014381bfcf5ad18da84` contains tests only.
+Status: **B8-A coordinator PASS by Mira on exact a9ade361; B8-B1 Worker/Better Auth transport author-check PASS on 8bb92c77 (recorded in WORKFLOW.md); B8 overall incomplete**. Reviewed on 2026-11-22 against accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` and V8 acceptance matrix in `stages/moderation-visibility/PLAN.md`. B8 is stacked as Draft PR #376 on accepted B7; current A9 exact head `8942509ee94927c5c0dc1014381bfcf5ad18da84` contains tests only.
 
 ## Existing real PostgreSQL evidence to reuse
 
