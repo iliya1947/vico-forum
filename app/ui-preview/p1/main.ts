@@ -24,7 +24,15 @@ const transport = installPreviewResourceTransport({
 void (async () => {
   const modules = new Map<string, Record<string, unknown>>();
   for (const id of routeIds) {
-    modules.set(id, await importRoute(id));
+    try {
+      modules.set(id, await importRoute(id));
+    } catch (error) {
+      throw new Error(
+        "P1 route module import failed for " + id + ": " +
+        (error instanceof Error ? error.message : String(error)),
+        { cause: error },
+      );
+    }
     console.info("P1_MODULE_IMPORTED", id);
   }
   const routes = createPreviewDataRoutes(routeManifest, modules);
