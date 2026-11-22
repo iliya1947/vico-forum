@@ -24,3 +24,4 @@
 - 2026-11-22 — transfer-readiness выявил реальный лимитный блокер: финальный User draft 8364 chars не помещается в официальный 5000-char global Custom Instructions limit; безопасный transfer order зафиксирован как User → AGENTS → Project.
 - 2026-11-22 — User draft compacted from 8364 chars / 42 rules to 4999 chars / 20 rules; explicit map confirms coverage for all 52 retained semantic guards. Current 15-rule coverage and three-layer consistency remain to be rechecked.
 - 2026-11-22 — после compact User rewrite повторная three-layer consistency-проверка дала PASS: User 15/15 current + 52/52 expanded guards, Project PASS, AGENTS PASS, 0 межслойных противоречий и 0 lost guards.
+- 2026-11-22 — final transfer-readiness PASS: User 4999/5000 chars, Project draft 2713 chars vs current 3341, AGENTS ready for separate repo PR; safe transfer order User → AGENTS → Project.
