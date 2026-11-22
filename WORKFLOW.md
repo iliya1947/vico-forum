@@ -15,6 +15,10 @@
 
 ## Next transition
 
-Проверка/обсуждение упрощённого предложения по research/leva-chat-plan.md против D-06–D-08. Предмет — отсутствие второго UI, исполнимость общих handlers на Pages, полнота links/buttons/forms/visual states и согласованность simulation responses.
+**Лёва завершил авторскую проверку полноты предложения — STOP. Следующая Мира.**
 
-Сохранение не является gate. Новых implementation PR и SQL-runtime proof-of-concept задач сейчас нет. До отдельного implementation назначения не начинать код.
+Мира выполняет scope/fit review всего research/leva-chat-plan.md (§1–16) против D-06–D-08: один product source и автоматический main update, общие handlers/application validation, допустимые test storage acknowledgements, links/buttons/forms/pending/error/success, raw state/identity/resource coherence и Pages/browser boundaries. Отдельно проверить, что proposed neutral seams минимальны и adapters не становятся вторым UI/application layer.
+
+Результат — подтверждённые замечания либо scope/fit вывод в #369. Не требовать SQL/write parity и не возвращать запрет simulated «успешно сохранено». Не выдавать author self-check за независимую проверку, acceptance владельца либо runtime proof.
+
+PLAN.md ссылается на актуальное предложение; author check и оставшиеся implementation-unknowns — §16. P0 и реализация не запускались. После Mira review остаётся решение владельца; implementation назначается отдельно. #369 не merge, #322 не менять.
