@@ -18,13 +18,13 @@
 
 ## Текущий этап
 
-Moderation visibility stacked delivery has coordinator PASS through **B6-B**. Draft #370 stable exact `51a9ebe03f16c438faae5bec99a5856287630958` passed the bounded checkpoint: guarded inspector/current visibility event, dual-capability hidden post revision history, and exact-member private hidden attachment access remain private/AP-10/active-account gated and do not broaden ordinary Admin, public attachment or Complaint boundaries. Exact-head 22/22 checks and 18/18 workflows are SUCCESS.
+Moderation visibility is accepted through B6. Owner continuation activates B7, but the current implementation assignment is deliberately limited to **B7-A**: the canonical server Hide/Restore action contract only. Lira must open a new stacked B7 Draft on accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`, expose the accepted topic/post visibility intents with strict payload/fresh authority/status semantics, add focused action tests, then STOP.
 
-B7 canonical Hide/Restore actions/QuickActions is **inactive** until a new explicit owner continuation. No final Leva whole-feature review or merge yet.
+QuickActions, inspector/tombstone Restore controls, redirects and B7 UI state/i18n remain inactive until the next owner continuation. B8/B9 are also inactive.
 
 ## Дальнейшие планы
 
-- Moderation visibility: B1–B6 coordinator PASS; B7–B9 inactive pending owner continuation.
+- Moderation visibility: B1–B6 coordinator PASS; B7-A active; later B7 work and B8–B9 inactive.
 - Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
 
 
