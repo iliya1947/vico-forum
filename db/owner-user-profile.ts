@@ -42,9 +42,8 @@ export interface OwnerUserProfileQuery {
 export interface OwnerUserProfileReader {
   readTarget(query: OwnerUserProfileQuery): Promise<OwnerUserProfileSnapshot | null>;
 }
-export class InvalidOwnerProfileSessionCursorError extends Error {
-  constructor() { super("Invalid Owner profile session cursor"); this.name = "InvalidOwnerProfileSessionCursorError"; }
-}
+export { InvalidOwnerProfileSessionCursorError } from "./owner-profile-errors";
+import { InvalidOwnerProfileSessionCursorError } from "./owner-profile-errors";
 
 type Cursor = { v: 1; resource: "profile-sessions"; targetId: string; at: string; id: string };
 type IdentityRow = {
