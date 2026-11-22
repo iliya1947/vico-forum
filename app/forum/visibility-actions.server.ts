@@ -13,7 +13,6 @@ export type VisibilityActionResult =
       postId: string; actorId: string; hidden: boolean; visibilityVersion: number; changed: boolean }
   | { operation: "contentVisibility"; error: ForumMutationError["error"] };
 
-type VisibilityIntent = "setTopicVisibility" | "setPostVisibility";
 const TOPIC_FIELDS = ["intent", "editorActorId", "hidden", "expectedVisibilityVersion", "expectedRevisionId", "reason"];
 const POST_FIELDS = [...TOPIC_FIELDS, "postId"];
 const VERSION = /^(?:0|[1-9][0-9]*)$/u;
