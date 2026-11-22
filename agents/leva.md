@@ -1,9 +1,11 @@
-# agents/leva.md — личная рабочая память Лёвы.
+# agents/leva.md — рабочая память Лёвы
 
-Владелец подтвердил D-06–D-08: общий UI/routes/application interactions main; только GitHub/Actions/Pages и браузер; реальное сохранение не требуется, simulated «успешно сохранено» разрешён. Не возвращать SQL/write parity или запрет success без записи.
+Владелец прямо принял концепцию и назначил финальный технический PLAN (D-09). Назначение выполнено: канонический PLAN.md в #369, проверенный main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Актуальное предложение — research/leva-chat-plan.md (§1–16), main9cff976. Typed in-memory test infrastructure/raw fixtures, общие components/handlers, generated manifest/local transport; transient overlay только при необходимости для target ID/redirect/revalidation.
+Не возвращать отменённые требования: только GitHub/браузер; общий UI/routes/application handlers main; сохранение необязательно, simulated «успешно сохранено» допустим без записи. Fixture database + typed capabilities, минимальный transient overlay, без обязательных SQL/WASM/migrations/transaction parity.
 
-Авторская проверка полноты завершена. Исправлена навигация PLAN.md и обновлён общий контекст. Следующая Мира для scope/fit review: конкретный handoff в WORKFLOW.md. Лёва STOP; собственный self-check не считать независимым PASS или owner acceptance.
+PLAN определяет generated manifest/route IDs, Framework→Data Router wrappers, browser import barriers, fresh contexts, раннюю установку fetch/XHR, Pages codec/history, mode-aware attachment Blob URLs, P0→P6 и final gates. Resource suffix `&view=...` нельзя добавлять после Blob resolution.
 
-P0/browser build ещё не выполнялся. Существенные unknowns: route IDs/middleware/clientAction/root/server imports, fetch capture/XHR/native resource URLs и Pages base. Product/preview code, #322, dependencies и deployment не менялись; implementation не активирована.
+P0/browser runtime не запускался. Авторский self-check документа не является независимым review или implementation PASS. Product/preview code, dependencies, #322 и deployment не менялись.
+
+Следующая — Мира: scope/fit финального PLAN, delivery mode и отдельное bounded назначение P0. Handoff в WORKFLOW.md. Повторное принятие концепции не требуется. Лёва не начинает реализацию сам.
