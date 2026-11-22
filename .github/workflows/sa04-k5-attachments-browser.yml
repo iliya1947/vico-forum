@@ -130,6 +130,12 @@ jobs:
               tail -n 160 "$RUNNER_TEMP/sa04-k5-preview.log"
               exit 1
             }
+          # B8-B2 tests real HTTP + the exact local-only R2 binding already
+          # active in this built Worker. No browser or remote storage test.
+          pnpm exec tsx scripts/smoke-visibility-r2-local.ts || {
+            tail -n 160 "$RUNNER_TEMP/sa04-k5-preview.log"
+            exit 1
+          }
       - name: Preserve connected synthetic attachment evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
