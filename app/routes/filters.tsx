@@ -1,7 +1,7 @@
 import { data, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import type { ForumPersonalFilterCursor } from "../../db/forum-repository";
 import { ForumRouteError } from "../forum/ui";
 import { FiltersView } from "../forum/filters-view";
