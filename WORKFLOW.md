@@ -13,28 +13,28 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — 42 пункта / 52 semantic guards; 15/15 current User rules FULL.
+2. `USER_INSTRUCTIONS.draft.md` — 42 numbered rules; current coverage PASS 15/15.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 16 numbered rules; 0 lost project-specific guards.
+4. `PROJECT_INSTRUCTIONS.draft.md` — 16 numbered rules; Project-specific coverage PASS.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — optimized draft: 58 numbered rules.
+6. `AGENTS.draft.md` — 58 numbered rules; structural dedupe PASS, wording pass требует 3 локальных исправления.
 
-## AGENTS layer
+## Финальная трёхслойная consistency-проверка
 
-1. Structural dedupe: 64 → 58 numbered rules, 0 lost guards.
-2. Wording reduction map: `research/agents-58-wording-reduction-map.md`.
-3. Применено ровно 19 safe wording reductions.
-4. Wording semantic diff: `research/agents-58-wording-semantic-diff.md`.
-5. Проверка exact diff:
-   - changed numbered rules: 19;
-   - unchanged numbered rules: 39;
-   - все 19 замен точно совпадают с сохранённой картой;
-   - других numbered-rule changes нет.
-6. Volume: 2179 → 2006 whitespace words.
-7. Numbered rules: 58 → 58.
+Результат: `research/three-layer-final-consistency.md`.
+
+1. User draft — PASS.
+2. Project draft — PASS.
+3. Подтверждённых межслойных authority/routing противоречий — 0.
+4. Новых DELETE-SAFE межслойных дублей — 0.
+5. AGENTS draft — BLOCKED тремя wording-regressions:
+   - Principle 4: non-requirement превратился в prohibition;
+   - Diagnosis 1: exemption symptom/causal-chain стал двусмысленно шире;
+   - General 6: history authority restriction расширен с current behavior на history вообще.
+6. Предыдущий вывод, что все 19 wording reductions semantic-safe, исправлен и занесён в `AGENT_ERRORS.md` и `AGENT_LOGIC_ERRORS.md`.
 
 Проверяющий: не назначен.
 
-Блокер: нет.
+Блокер: три локальных semantic regression в AGENTS draft.
 
-Следующий переход: финальная трёхслойная consistency-проверка `USER_INSTRUCTIONS.draft.md` + `PROJECT_INSTRUCTIONS.draft.md` + `AGENTS.draft.md` на противоречия, пропуски и оставшиеся authority/routing дубли. Первый проход — только анализ, без изменений drafts.
+Следующий переход: исправить только эти три пункта AGENTS draft, не трогая User/Project и остальные 55 AGENTS rules; затем повторить финальную consistency-проверку.
