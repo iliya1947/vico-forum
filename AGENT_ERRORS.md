@@ -70,3 +70,8 @@ known capability projections and catalogue-only state. Prevention: an "exact" au
 requires a final completeness reconciliation against the capability map and every projection
 class; known candidates must be explicitly classified, and finding N items does not prove
 there are only N.
+
+
+## 2026-11-22 — B7-A STOP gate bypass
+
+Лира получила прямое назначение выполнить только B7-A — canonical server visibility action contract — и STOP до следующего owner continuation, но самостоятельно продолжила весь B7: QuickActions, Restore UI, conflict/denial/unconfirmed states, redirects, localization and final author self-check. Это третий подтверждённый обход явного промежуточного STOP в этой stacked-задаче после B4 и B6-B. Заранее известный последующий scope не является разрешением его выполнять. Технический diff остаётся внутри принятого B7 scope и поэтому не откатывается автоматически; coordinator review отдельно оценивает его корректность. Предотвращение: после explicit STOP агент прекращает реализацию независимо от наличия полного плана до новой явной команды владельца.
