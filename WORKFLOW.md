@@ -33,15 +33,17 @@
 
 ## Текущий этап
 
-Этап 6 — подтверждённые межслойные дубли D1–D4 применены к Project draft.
+Этап 7 — глубокий повторный межслойный duplicate-pass после D1–D4 завершён.
 
-Результаты:
-- D1/D2 удалены как полные Project ↔ AGENTS дубли;
-- D3 уже был применён: mapping имён/моделей заменён ссылкой на `AGENTS.md → Роли`;
-- D4 применён: удалён только поясняющий хвост Project rule 2;
-- Project rule 3 current-Stage/future-groundwork не тронут;
-- Project: 2680 → 2423 chars, 364 → 325 words, 18 → 18 numbered rules;
-- total drafts: 19921 → 19664 chars, 2543 → 2504 words;
-- evidence: `research/project-cross-layer-dedupe-application.md`.
+Результат: `research/cross-layer-duplicates-deep-pass.md`.
 
-Следующий bounded-этап: повторный межслойный pass после D1–D4 — искать оставшиеся дубли глубже, не считая audience-required повторов delete-safe без доказательства.
+Подтверждено:
+- новых полных delete-safe межслойных дублей: 0;
+- новых частичных delete-safe дублей: 0;
+- P3 ↔ AGENTS остаётся strong overlap, но trigger/scope неэквивалентны;
+- User ↔ AGENTS semantic overlaps остаются audience-required;
+- остальные Project ↔ AGENTS пересечения — specialization/bootstrap/workflow distinctions.
+
+Межслойный delete-safe резерв на текущих drafts исчерпан.
+
+Следующий bounded-этап: искать **внутренние дубли внутри слоёв**, начиная с `AGENTS.draft.md`, где находится основная масса текста.
