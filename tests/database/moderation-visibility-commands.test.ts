@@ -1679,6 +1679,116 @@ describe("V4 real PostgreSQL title planning versus topic Hide/Restore", () => {
     },
     30_000,
   );
+
+  it.each([
+    { transition: "Hide", correctionFirst: true, initiallyHidden: false },
+    { transition: "Hide", correctionFirst: false, initiallyHidden: false },
+    { transition: "Restore", correctionFirst: true, initiallyHidden: true },
+    { transition: "Restore", correctionFirst: false, initiallyHidden: true },
+  ] as const)(
+    "B8-A source-locale same-value admission × $transition, correctionFirst=$correctionFirst: real PG order",
+    async ({ transition, correctionFirst, initiallyHidden }) => {
+      const f = await fixture();
+      if (initiallyHidden) await service.setTopicVisibility(topicCommand(f));
+      const [holder, corrector, manager] = await Promise.all([
+        connected(), connected(), connected(),
+      ]);
+      const makeForum = (connection: Client) => new ForumService(new DrizzleForumRepository(
+        drizzle(connection), { cooldownMs: 0, now: () => new Date() },
+        withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+      ));
+      const correctionService = makeForum(corrector.connection);
+      const managerService = makeForum(manager.connection);
+      const endingHidden = transition === "Hide";
+      const command = topicCommand(
+        f, "moderator1", endingHidden, initiallyHidden ? 1 : 0, transition + " during source admission",
+      );
+      const correctionInput = {
+        topicId: f.topicId, expectedRevisionId: f.titleRevisionId,
+        sourceLocale: "en", actorId: "author", scope: "own" as const,
+      };
+      let held = false;
+      let correction: ReturnType<ForumService["correctTopicTitleSourceLocale"]> | undefined;
+      let visibility: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+      try {
+        await holder.connection.query("begin");
+        held = true;
+        await holder.connection.query(
+          "select id from forum_topics where id=$1 for update", [f.topicId],
+        );
+        const beginCorrection = async () => {
+          correction = correctionService.correctTopicTitleSourceLocale(correctionInput);
+          void correction.catch(() => undefined);
+          await waitForPgLock(corrector.pid, [holder.pid, manager.pid]);
+        };
+        const beginVisibility = async () => {
+          visibility = managerService.setTopicVisibility(command);
+          void visibility.catch(() => undefined);
+          await waitForPgLock(manager.pid, [holder.pid, corrector.pid]);
+        };
+        if (correctionFirst) {
+          await beginCorrection();
+          await beginVisibility();
+        } else {
+          await beginVisibility();
+          await beginCorrection();
+        }
+        await holder.connection.query("commit");
+        held = false;
+
+        const [correctionResult, visibilityResult] =
+          await Promise.allSettled([correction!, visibility!]);
+        expect(visibilityResult).toMatchObject({
+          status: "fulfilled",
+          value: { hidden: endingHidden, changed: true, visibilityVersion: initiallyHidden ? 2 : 1 },
+        });
+        const admitted = transition === "Hide" ? correctionFirst : !correctionFirst;
+        if (admitted) {
+          expect(correctionResult).toEqual({ status: "fulfilled", value: undefined });
+        } else {
+          expect(correctionResult.status).toBe("rejected");
+          if (correctionResult.status === "rejected") {
+            expect(correctionResult.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+        }
+        const state = (await client.query<{
+          is_hidden: boolean; visibility_version: number;
+          current_title_revision_id: string; revisions: number;
+        }>(
+          "select t.is_hidden,t.visibility_version,t.current_title_revision_id," +
+            "(select count(*)::int from forum_topic_title_revisions r where r.topic_id=t.id) as revisions " +
+            "from forum_topics t where t.id=$1",
+          [f.topicId],
+        )).rows[0];
+        expect(state).toEqual({
+          is_hidden: endingHidden,
+          visibility_version: initiallyHidden ? 2 : 1,
+          current_title_revision_id: f.titleRevisionId, revisions: 1,
+        });
+        expect((await events(f.topicId)).map(e => e.action)).toEqual(
+          initiallyHidden ? ["topic.hidden", "topic.restored"] : ["topic.hidden"],
+        );
+        if (endingHidden) {
+          await managerService.setTopicVisibility(
+            topicCommand(f, "moderator1", false, 1, "Restore after source race"),
+          );
+        }
+        await expect(correctionService.correctTopicTitleSourceLocale(correctionInput))
+          .resolves.toBeUndefined();
+        expect((await client.query(
+          "select count(*)::int as n from forum_topic_title_revisions where topic_id=$1",
+          [f.topicId],
+        )).rows[0]?.n).toBe(1);
+      } finally {
+        if (held) await holder.connection.query("rollback");
+        await Promise.allSettled([correction, visibility]);
+        await Promise.all([
+          holder.connection.end(), corrector.connection.end(), manager.connection.end(),
+        ]);
+      }
+    },
+    30_000,
+  );
 });
 
 describe("V4 real PostgreSQL topic Hide/Restore versus body planning, reply, edit and protected Complaint", () => {
