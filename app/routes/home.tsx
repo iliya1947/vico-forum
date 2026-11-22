@@ -3,7 +3,7 @@ import { data } from "react-router";
 import { useLoaderData, type RouterContextProvider } from "react-router";
 import type { HomepageCategoryOverview } from "../forum/homepage";
 import { forumReaderForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { ForumRouteError } from "../forum/ui";
 import { HomeView } from "../forum/views";
 
