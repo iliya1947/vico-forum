@@ -1,5 +1,7 @@
 import { data, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
+import { AccountStateUnavailableError } from "../../db/account-state";
+import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { forumMutationGuard, requireForumPermission, runForumMutation,
   type ForumMutationError } from "./mutations.server";
 
@@ -82,7 +84,9 @@ export async function visibilityTopicAction(
   const requested = hidden === "true";
   const baseline = Number(rawVersion);
   const reason = rawReason.trim(); // Empty is valid only for an admitted no-op.
-  const result = await runForumMutation(request, context, async (writer, sessionActor) => {
+  let result: Awaited<ReturnType<typeof runForumMutation<ReturnType<typeof data<VisibilityActionResult>>>>>;
+  try {
+    result = await runForumMutation(request, context, async (writer, sessionActor) => {
     const confirmed = isPost
       ? await writer.setPostVisibility({ topicId, postId: postId!, actorId: sessionActor,
           hidden: requested, expectedVisibilityVersion: baseline, expectedRevisionId, reason })
@@ -94,7 +98,12 @@ export async function visibilityTopicAction(
       : { operation: "contentVisibility", ok: true, target: "topic", topicId,
           actorId: sessionActor, ...confirmed },
       { headers: { "Cache-Control": "private, no-store" } });
-  });
+    });
+  } catch (error) {
+    if (error instanceof AccountStateUnavailableError || error instanceof AuthorizationUnavailableError)
+      return invalid("unavailable", 503);
+    throw error;
+  }
   if ("error" in result.data) return invalid(result.data.error, result.init?.status ?? 503);
   return result;
 }

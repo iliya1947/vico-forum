@@ -5,7 +5,7 @@ import { authorizationContext } from "../authorization/request-context";
 import { forumReaderContext, forumWriterContext } from "./request-context";
 import { topicAction } from "./actions.server";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import {
   ForumAuthorizationError, ForumEntityNotFoundError,
   ForumStateConflictError, ForumVisibilityReasonError,
@@ -220,6 +220,8 @@ describe("B7-A canonical topic POST visibility action",()=>{
     [new ForumStateConflictError("PRIVATE_CURRENT_TITLE"),"conflict",409],
     [new ForumVisibilityReasonError("reason is required on change"),"invalid",400],
     [new ForumStorageUnavailableError(),"unavailable",503],
+    [new AccountStateUnavailableError(),"unavailable",503],
+    [new AuthorizationUnavailableError(),"unavailable",503],
   ] as const)("maps writer %s to neutral %s/%s without hidden current metadata",async(error,code,status)=>{
     const f=fixture();
     f.setTopicVisibility.mockRejectedValueOnce(error);
