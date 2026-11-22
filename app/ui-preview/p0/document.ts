@@ -96,7 +96,7 @@ export function createPreviewDocumentAdapter(
     // Validate complete next head state before altering the current document.
     doc.head.querySelectorAll("[" + HEAD_OWNER + "]").forEach((node) => node.remove());
     doc.title = title;
-    doc.head.append(...created);
+    for (const node of created) doc.head.appendChild(node);
   }
 
   function dispose() {
