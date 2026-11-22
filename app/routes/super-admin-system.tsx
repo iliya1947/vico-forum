@@ -3,7 +3,7 @@ import { data, useLoaderData, Link, type RouterContextProvider } from "react-rou
 import { useTranslation } from "react-i18next";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerMonitoringForRequest } from "../super-admin/request-context";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
+import { OwnerSystemUnavailableError } from "../../db/owner-system-error";
 import { SuperAdminShell, SystemMonitorCards } from "../super-admin/view";
 import { superAdminMonitoringPath } from "../super-admin/paths";
 import { ForumRouteError } from "../forum/ui";
