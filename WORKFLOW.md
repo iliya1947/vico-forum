@@ -33,17 +33,16 @@
 
 ## Текущий этап
 
-Этап 7 — глубокий повторный межслойный duplicate-pass после D1–D4 завершён.
+Этап 8 — внутренний duplicate-pass `AGENTS.draft.md` завершён без изменения draft.
 
-Результат: `research/cross-layer-duplicates-deep-pass.md`.
+Результат: `research/agents-internal-duplicates-pass.md`.
 
 Подтверждено:
-- новых полных delete-safe межслойных дублей: 0;
-- новых частичных delete-safe дублей: 0;
-- P3 ↔ AGENTS остаётся strong overlap, но trigger/scope неэквивалентны;
-- User ↔ AGENTS semantic overlaps остаются audience-required;
-- остальные Project ↔ AGENTS пересечения — specialization/bootstrap/workflow distinctions.
+- 10 delete-safe внутренних повторов/хвостов;
+- основные зоны: Roles ↔ Workflow ↔ Review, Workflow ↔ Review, Diagnosis ↔ Logic/Developer action;
+- самостоятельные numbered rules можно сохранить 64 → 64;
+- потенциально AGENTS: 16082 → 15161 chars, 2015 → 1899 words;
+- экономия только дедупликацией: 921 chars / 116 words;
+- новые требования: 0.
 
-Межслойный delete-safe резерв на текущих drafts исчерпан.
-
-Следующий bounded-этап: искать **внутренние дубли внутри слоёв**, начиная с `AGENTS.draft.md`, где находится основная масса текста.
+Следующий bounded-этап: применить только эти 10 подтверждённых internal-dedupe изменений к `AGENTS.draft.md` и повторно проверить semantic coverage.
