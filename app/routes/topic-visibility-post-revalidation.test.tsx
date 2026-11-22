@@ -16,7 +16,7 @@ import TopicRoute, { clientAction } from "./topic";
 const topicId="topic/visible";
 const targetId="post/hidden-after-hide";
 const actorId="moderator";
-const hiddenBody="B7_PRIVATE_POST_SOURCE_9213";
+const hiddenBody="Private current message body 9213";
 const hiddenRevisionId="B7_PRIVATE_REVISION_9213";
 const parent:ForumVisibleThreadPost={
   id:"post/root",topicId,authorId:"author",authorName:"Author",parentPostId:null,
