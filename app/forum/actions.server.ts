@@ -1,4 +1,4 @@
-import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-errors";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -20,13 +20,13 @@ import {
   type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
-import { isForumAttachmentUuid } from "../../db/forum-attachments";
+import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
 import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
 import { ContentGenerationPlanningUnavailableError } from "../localization/content-generation-error";
 import type { ContentGenerationActionResult } from "../localization/content-generation-action.server";
 import {

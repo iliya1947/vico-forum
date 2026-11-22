@@ -1,3 +1,4 @@
+import { ConcurrentRevisionError, ForumEntityNotFoundError, ForumAuthorizationError, ForumStateConflictError, ForumTopicClosedError, ForumPublicationReplayConflictError } from "./forum-errors";
 import {withOperationalFacts,type OwnerOperationalFactSink,type FileReferenceTransition} from "../app/observability/operational-facts";
 import { projectPublicAccountIdentity, PublicIdentityInvariantError } from "./public-identity";
 import { activeAccountPredicate, AccountInactiveError, assertActiveAccountForDrizzleMutation, type AccountState } from "./account-state";
@@ -607,12 +608,7 @@ export interface CreateTopicWithInitialPostInput extends CreateTopicInput {
   initialPost: CreatePostInput;
 }
 
-export class ConcurrentRevisionError extends Error {}
-export class ForumEntityNotFoundError extends Error {}
-export class ForumAuthorizationError extends Error {}
-export class ForumStateConflictError extends Error {}
-export class ForumTopicClosedError extends ForumStateConflictError {}
-export class ForumPublicationReplayConflictError extends ForumStateConflictError {}
+export { ConcurrentRevisionError, ForumEntityNotFoundError, ForumAuthorizationError, ForumStateConflictError, ForumTopicClosedError, ForumPublicationReplayConflictError } from "./forum-errors";
 export type SolutionManagementScope = "own" | "any";
 
 async function publicationFingerprint(input: unknown): Promise<string> {

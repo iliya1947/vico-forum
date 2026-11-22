@@ -1,3 +1,4 @@
+import { UserMeasureRestrictedError } from "./user-measures-error";
 import { sql, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { PoolClient } from "pg";
@@ -15,12 +16,7 @@ const administrativeRestrictions = new Set<string>(USER_MEASURE_ADMIN_RESTRICTIO
 const rawAdministrativePermissions = [...new Set(Object.values(USER_MEASURE_ADMIN_PERMISSION_FAMILIES).flat())];
 const pgDialect = new PgDialect();
 
-export class UserMeasureRestrictedError extends Error {
-  constructor(readonly restriction: UserMeasureRestrictionId) {
-    super("user measure prohibits this action");
-    this.name = "UserMeasureRestrictedError";
-  }
-}
+export { UserMeasureRestrictedError } from "./user-measures-error";
 
 /**
  * Shared authoritative EXISTS for Drizzle and native pg transactions. Administrative

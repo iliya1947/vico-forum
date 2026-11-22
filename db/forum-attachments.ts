@@ -1,3 +1,4 @@
+import { isForumAttachmentUuid } from "./forum-attachment-id";
 import {withOperationalFacts,type OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { isFencedAttachmentKey } from "../app/forum/attachment-storage-protocol";
 import { assertActiveAccountForDrizzleMutation } from "./account-state";
@@ -79,10 +80,7 @@ export class InvalidForumAttachmentError extends Error {
   }
 }
 
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-export function isForumAttachmentUuid(value: string): boolean {
-  return uuid.test(value);
-}
+export { isForumAttachmentUuid } from "./forum-attachment-id";
 const privateObjectKey = /^private\/(?:fenced-v1\/)?[0-9a-f-]{36}$/iu;
 
 function validInput(input: CreateDraftAttachmentInput): boolean {

@@ -7,11 +7,11 @@ import {
   ForumEntityNotFoundError,
   ForumStateConflictError,
   ForumTopicClosedError,
-} from "../../db/forum-repository";
-import { InvalidForumContentError } from "../../db/forum-service";
+} from "../../db/forum-errors";
+import { InvalidForumContentError } from "../../db/forum-errors";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
 import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";

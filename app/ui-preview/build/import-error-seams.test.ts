@@ -22,3 +22,34 @@ describe("shared browser-safe error identity", () => {
     }
   });
 });
+
+import * as neutralForumErrors from "../../../db/forum-errors";
+import * as productionForumErrors from "../../../db/forum-repository";
+import { InvalidForumContentError as productionContentError } from "../../../db/forum-service";
+import * as neutralAccountErrors from "../../../db/account-state-errors";
+import * as productionAccountErrors from "../../../db/account-state";
+import { UserMeasureRestrictedError as productionRestricted } from "../../../db/user-measure-policy";
+import { UserMeasureRestrictedError as neutralRestricted } from "../../../db/user-measures-error";
+import { isForumAttachmentUuid as neutralAttachmentId } from "../../../db/forum-attachment-id";
+import { isForumAttachmentUuid as productionAttachmentId } from "../../../db/forum-attachments";
+
+describe("topic action import barriers", () => {
+  it("preserves identical production and neutral exception constructors", () => {
+    const forumNames = [
+      "ConcurrentRevisionError", "ForumEntityNotFoundError",
+      "ForumAuthorizationError", "ForumStateConflictError",
+      "ForumTopicClosedError", "ForumPublicationReplayConflictError",
+    ] as const;
+    for (const key of forumNames) expect(neutralForumErrors[key]).toBe(productionForumErrors[key]);
+    expect(neutralForumErrors.InvalidForumContentError).toBe(productionContentError);
+    const accountNames = [
+      "AccountStateUnavailableError", "AccountStateUnexpectedError",
+      "AccountInactiveError", "AccountMissingError",
+    ] as const;
+    for (const key of accountNames) expect(neutralAccountErrors[key]).toBe(productionAccountErrors[key]);
+    expect(neutralRestricted).toBe(productionRestricted);
+    expect(neutralAttachmentId).toBe(productionAttachmentId);
+    expect(neutralAttachmentId("00000000-0000-4000-8000-000000000000")).toBe(true);
+    expect(neutralAttachmentId("invalid-id")).toBe(false);
+  });
+});
