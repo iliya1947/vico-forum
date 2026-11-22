@@ -1,23 +1,6 @@
-# agents/lira.md — B8-C1 only; STOP after connected Chromium core UI packet
+# agents/lira.md — B8-C1 connected Chromium author-check PASS; STOP
 
-## Accepted base
-
-- B8-B coordinator PASS on Draft #376 exact `cd9ffd1adc30853ecf297fea15ea6188f851ca98`.
-- Continue in existing B8 branch `feature/moderation-visibility-b8-acceptance`; no new implementation PR.
-
-## Current assignment — B8-C1 only
-
-Build the connected Chromium acceptance for the core moderation-visibility UI on the actual Worker/Better Auth/PostgreSQL stack.
-
-Done criteria:
-
-1. Topic and post visible → Hide → guarded private inspection/Restore → visible through rendered UI controls; no direct HTTP mutation shortcut for the action under test.
-2. Representative EN/RU/HE UI; HE must prove RTL at a narrow viewport as part of the same connected acceptance.
-3. Keyboard reachability and activation for the relevant visibility controls/navigation.
-4. Hidden public source must disappear from the rendered public DOM after Hide; guarded private inspector may show only the already-authorized private content/reason.
-5. Queue/inspector navigation and Restore must run under a real current Better Auth session.
-6. Reuse the established connected Playwright/Worker fixture where practical. Do not duplicate B8-B transport/R2 checks.
-7. If Chromium exposes a real current-stage defect, correct only that bounded defect and prove it.
-8. Run the applicable connected Chromium checks and update #342/#376.
-
-**Mandatory STOP after B8-C1.** B8-C2 lifecycle states, B8-C3 browser cache/fault completeness, B9, fold, final reviews, merge and deploy are not authorized.
+- Existing [Draft #376](https://github.com/iliya1947/vico-forum/pull/376) stable exact `0970ceff647068a72dd8ec56192036db58e68465`, stacked on accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`. B8-B coordinator PASS at `cd9ffd1a`; only B8-C1 was authorized.
+- B8-C1 adds just `tests/browser/sa04-complaints/visibility-check.py` and invocation in existing SA04-N browser workflow. Real Worker/Better Auth/PG17/Chromium, four UI cycles: EN topic/post, RU post, HE topic (360px RTL). Keyboard QuickActions/Hide, guarded queue→inspector→Restore, observed SQL transitions, fresh public DOM suppression and renewed visibility, localized labels; browser errors/external requests zero. No production/schema/R2 changes.
+- Exact-head three workflows SUCCESS first attempt: [CI #45079095928](https://github.com/iliya1947/vico-forum/actions/runs/45079095928) (2951 unit, 1689 PG), [SA04-N #45079095897](https://github.com/iliya1947/vico-forum/actions/runs/45079095897) (five B8_C1_CHROMIUM PASS logs), [K5 #45079095827](https://github.com/iliya1947/vico-forum/actions/runs/45079095827). Source/test boundaries in `WORKFLOW.md`; no confirmed current-C1 blocker.
+- **Лира STOP.** Fresh owner continuation required before **B8-C2 only** (pending/stale/unknown, account-switch/revoke/late-response, buffers). C3/browser cache-fault completeness, B9/fold/whole-feature review/merge/deploy remain blocked.
