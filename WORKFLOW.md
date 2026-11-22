@@ -33,17 +33,15 @@
 
 ## Текущий этап
 
-Этап 9 — exact-проверка внутренних AGENTS dedupe-кандидатов завершена; draft не изменялся.
+Этап 10 — 7 exact-проверенных внутренних AGENTS dedupe-изменений применены.
 
-Результат: `research/agents-internal-dedupe-exact-check.md`.
-
-Подтверждено:
-- **7**, а не 9, internal delete-safe изменений;
-- сняты Review 1/Mark: `отдельное назначение` строже `явной необходимости`;
-- снят Review 6/plan-change: scope Review шире Scale fix 3;
-- ранее снятый Workflow 11 остаётся вне internal dedupe;
-- потенциально AGENTS: 16082 → 15363 chars, 2015 → 1923 words;
+Результаты:
+- `AGENTS.draft.md`: 16082 → 15363 chars;
+- words: 2015 → 1923;
+- numbered rules: 64 → 64;
 - экономия: 719 chars / 92 words;
-- numbered rules: 64 → 64.
+- снятые кандидаты Workflow 11, Review 1/Mark и Review 6/plan-change не изменялись;
+- semantic/authority coverage exact-check: PASS;
+- evidence: `research/agents-internal-dedupe-application.md`.
 
-Следующий bounded-этап: применить только эти 7 exact-проверенных сокращений к `AGENTS.draft.md` и затем проверить semantic coverage exact diff.
+Следующий bounded-этап: искать внутренние дубли в `PROJECT_INSTRUCTIONS.draft.md` после межслойной чистки.
