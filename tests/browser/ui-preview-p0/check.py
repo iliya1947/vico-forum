@@ -95,8 +95,8 @@ with sync_playwright() as playwright:
         "embed": ["1"], "path": ["/en/users/sample-author"],
         "actor": ["p0-preview-user"], "scenario": ["default"],
     }, profile_href
-    with page.expect_popup() as new_tab_event:
-        profile_link.click(modifiers=["Control"])
+    with context.expect_page() as new_tab_event:
+        profile_link.click(button="middle")
     new_tab = new_tab_event.value
     new_tab.wait_for_load_state("domcontentloaded")
     assert parse_qs(urlparse(new_tab.url).query)["path"] == ["/en/users/sample-author"], new_tab.url
