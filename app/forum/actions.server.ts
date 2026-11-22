@@ -199,7 +199,16 @@ export async function topicAction({ request, params, context }: {
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
   const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
+  if (denied) {
+    // Preserve the visibility action discriminant even for preflight 401/403.
+    // Other topic intents retain their existing generic early denial.
+    if (request.method === "POST") {
+      let deniedForm: FormData;
+      try { deniedForm = await request.formData(); } catch { return denied; }
+      return await visibilityTopicAction(request, context, topicId, deniedForm) ?? denied;
+    }
+    return denied;
+  }
   let formData: FormData;
   try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
   const intent = requiredFormText(formData, "intent") ?? "reply";
