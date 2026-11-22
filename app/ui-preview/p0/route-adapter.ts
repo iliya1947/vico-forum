@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import type { RouteObject } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
+import { previewAction } from "./action-bridge";
 
 /**
  * Convert the generated Framework descriptor tree into Data Router routes.
@@ -44,7 +45,9 @@ export function createPreviewDataRoutes(
       ...(descriptor.caseSensitive === undefined ? {} : { caseSensitive: descriptor.caseSensitive }),
       Component: module.default as ComponentType,
       ...(typeof module.loader === "function" ? { loader: module.loader } : {}),
-      ...(typeof module.action === "function" ? { action: module.action } : {}),
+      ...(typeof module.clientAction === "function"
+        ? { action: previewAction(descriptor.id, module) }
+        : typeof module.action === "function" ? { action: module.action } : {}),
       ...(module.middleware ? { middleware: module.middleware } : {}),
       ...(typeof module.ErrorBoundary === "function"
         ? { ErrorBoundary: module.ErrorBoundary as ComponentType } : {}),

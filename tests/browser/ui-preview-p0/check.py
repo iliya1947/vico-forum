@@ -12,6 +12,7 @@ assert urlparse(base).hostname in {"127.0.0.1", "localhost"}
 
 errors = []
 external = []
+logs = []
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="chrome", headless=True, args=["--no-sandbox"])
     context = browser.new_context(service_workers="block")
@@ -22,7 +23,12 @@ with sync_playwright() as playwright:
                   else (external.append(route.request.url), route.abort())[-1])
     page = context.new_page()
     page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("console", lambda message: print("P0_BROWSER_CONSOLE " + message.type + " " + message.text, flush=True) if message.type in {"error", "info"} else None)
+    def on_console(message):
+        if message.text.startswith("P0_"):
+            logs.append(message.text)
+        if message.type in {"error", "info"}:
+            print("P0_BROWSER_CONSOLE " + message.type + " " + message.text, flush=True)
+    page.on("console", on_console)
     response = page.goto(base + "/", wait_until="domcontentloaded")
     assert response is not None and response.status == 200
     page.locator("#root[data-status]").wait_for(timeout=30000)
@@ -45,6 +51,19 @@ with sync_playwright() as playwright:
     assert document_state["themeBootstraps"] == 1, document_state
     assert document_state["moduleScripts"] == 1, document_state
     assert document_state["stylesheets"] > 0, document_state
+    # The real MarkdownEditor prepares and replays a native Form submission.
+    reply_form = page.locator("form.topic-reply-form")
+    reply_form.get_by_role("button", name="Advanced", exact=True).click()
+    reply_form.locator("textarea#reply-body").fill("P0 reply submitted through the real editor and action")
+    reply_form.get_by_role("button", name="Post reply", exact=True).click()
+    page.locator("li#post-p0-reply-1").wait_for(timeout=30000)
+    assert "P0 reply submitted through the real editor and action" in page.locator("li#post-p0-reply-1").inner_text()
+    page.wait_for_function("() => document.querySelector('#root')?.dataset.status === 'router-mounted'")
+    assert any("P0_ACTION_CHAIN_CLIENT routes/topic" in item for item in logs), logs
+    assert any("P0_ACTION_CHAIN_SERVER routes/topic" in item for item in logs), logs
+    assert any("P0_FIXTURE_REPLY_COMMITTED p0-reply-1" in item for item in logs), logs
+    assert any("P0_FIXTURE_READ_STATE" in item for item in logs), logs
+    assert any("P0_ROUTER_REDIRECTED #post-p0-reply-1" in item for item in logs), logs
     assert not errors, errors
     assert not external, external
     print("P0_REAL_TOPIC_SCREEN " + json.dumps({
@@ -53,6 +72,10 @@ with sync_playwright() as playwright:
         "external_requests": len(external),
         "page_errors": len(errors),
         "document": document_state,
+        "editor_reply": "p0-reply-1",
+        "client_action": True,
+        "server_action": True,
+        "fetcher_read_state": True,
         "url": base,
     }), flush=True)
     browser.close()

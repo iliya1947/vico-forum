@@ -38,6 +38,9 @@ async function boot() {
       mount!.dataset.status = "route-error";
       console.error("P0_ROUTE_ERRORS", state.errors);
     }
+    if (state.navigation.state === "idle" && state.location.hash) {
+      console.info("P0_ROUTER_REDIRECTED", state.location.hash);
+    }
     refreshDocument();
   });
   refreshDocument();
