@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-router";
+import { createMemoryRouter, data, RouterContextProvider, RouterProvider, useLoaderData } from "react-router";
 import { HeaderAuthProvider } from "../auth/auth-controls";
+import { authSessionContext, type AuthSession } from "../auth/request-context";
+import { topicAction } from "../forum/actions.server";
 import type { ForumTopicPage } from "../../db/forum-repository";
 import type { HiddenInspection } from "../../db/private-visibility-queue";
 import { canonicalEnglishCatalog } from "../localization/catalog";
@@ -79,8 +81,8 @@ function PublicVisibility({kind}:{kind:Kind}) {
     canReadPostHistory={false}/>;
 }
 
-function mount({mode,kind,status,revokeOnPost=true}:{
-  mode:Mode;kind:Kind;status:401|403;revokeOnPost?:boolean;
+function mount({mode,kind,status,revokeOnPost=true,realCanonical=false}:{
+  mode:Mode;kind:Kind;status:401|403;revokeOnPost?:boolean;realCanonical?:boolean;
 }){
   let allowed=true;
   const privateRoute=mode==="restore";
@@ -99,8 +101,18 @@ function mount({mode,kind,status,revokeOnPost=true}:{
   });
   const requests:Record<string,string>[]=[];
   const action=vi.fn(async({request}:{request:Request})=>{
-    requests.push(Object.fromEntries((await request.formData()).entries()) as Record<string,string>);
+    requests.push(Object.fromEntries((await request.clone().formData()).entries()) as Record<string,string>);
     if(revokeOnPost)allowed=false;
+    if(realCanonical){
+      const context=new RouterContextProvider();
+      context.set(authSessionContext,status===401?null:{
+        user:{id:actorId},session:{id:"server-session"},
+      } as unknown as AuthSession);
+      const headers=new Headers(request.headers);
+      if(status===403)headers.set("Origin","https://foreign.example");
+      const actualRequest=status===403?new Request(request,{headers}):request;
+      return topicAction({request:actualRequest,params:{locale:"en",topicId},context});
+    }
     return data({operation:"contentVisibility",error:status===401?"unauthenticated":"forbidden"},{
       status,headers:{"Cache-Control":"private, no-store"},
     });
@@ -192,6 +204,43 @@ describe("B7-B4b revoked visibility 401/403",()=>{
         expect(instance.loader).toHaveBeenCalledTimes(2);
       }finally{instance.router.dispose();}
     });
+  }
+
+  for(const mode of ["hide","restore"] as const){
+    for(const status of [401,403] as const){
+      it(`real canonical topicAction ${mode} preflight ${status} renders denied state, not unknown`,async()=>{
+        // UI loader retains its previous permission snapshot. The action itself
+        // is the real canonical handler, exercising guest or foreign Origin.
+        const instance=mount({mode,kind:"topic",status,revokeOnPost:false,realCanonical:true});
+        try{
+          const selector=mode==="hide"?"form.visibility-hide-form":"form.visibility-restore-form";
+          const form=await waitFor(()=>{
+            const element=instance.container.querySelector<HTMLFormElement>(selector);
+            expect(element).not.toBeNull();
+            return element!;
+          });
+          fireEvent.change(form.querySelector('textarea[name="reason"]')!,{
+            target:{value:"Preflight denial must not be an unknown commit"},
+          });
+          fireEvent.submit(form);
+          await waitFor(()=>expect(instance.action).toHaveBeenCalledTimes(1));
+          const response=await instance.action.mock.results[0]!.value;
+          expect(response.init?.status).toBe(status);
+          expect(response.data).toEqual({
+            operation:"contentVisibility",error:status===401?"unauthenticated":"origin",
+          });
+          expect(await screen.findByRole("alert"))
+            .toHaveTextContent("This visibility action is no longer available");
+          expect(instance.container.querySelector(".visibility-unconfirmed")).toBeNull();
+          await waitFor(()=>expect(instance.loader).toHaveBeenCalledTimes(2));
+          expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')).toBeDisabled();
+          expect(form.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')?.value)
+            .toBe("Preflight denial must not be an unknown commit");
+          fireEvent.submit(form);
+          expect(instance.action).toHaveBeenCalledTimes(1);
+        }finally{instance.router.dispose();}
+      });
+    }
   }
 
   it("keeps the EN/RU/HE denial key's semantic fingerprint aligned",async()=>{
