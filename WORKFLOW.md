@@ -33,18 +33,15 @@
 
 ## Текущий этап
 
-Этап 5 — анализ межслойных дублей завершён.
+Этап 6 — подтверждённые межслойные дубли D1–D4 применены к Project draft.
 
-Результат: `research/cross-layer-duplicates-pass.md`.
+Результаты:
+- D1/D2 удалены как полные Project ↔ AGENTS дубли;
+- D3 уже был применён: mapping имён/моделей заменён ссылкой на `AGENTS.md → Роли`;
+- D4 применён: удалён только поясняющий хвост Project rule 2;
+- Project rule 3 current-Stage/future-groundwork не тронут;
+- Project: 2680 → 2423 chars, 364 → 325 words, 18 → 18 numbered rules;
+- total drafts: 19921 → 19664 chars, 2543 → 2504 words;
+- evidence: `research/project-cross-layer-dedupe-application.md`.
 
-Подтверждено:
-- 2 полных delete-safe Project ↔ AGENTS дубля;
-- 1 повтор mapping-данных Project ↔ AGENTS;
-- 1 частичный delete-safe Project ↔ AGENTS дубль;
-- 1 strong overlap, пока не delete-safe;
-- минимум 7 User ↔ AGENTS semantic-overlap clusters, которые нужно сохранять из-за разной аудитории;
-- подтверждённых delete-safe User ↔ Project дублей: 0.
-
-Drafts на этом этапе не менялись.
-
-Следующий bounded-этап: применить только подтверждённые D1–D4 к Project draft, затем повторно проверить смысл и общий объём.
+Следующий bounded-этап: повторный межслойный pass после D1–D4 — искать оставшиеся дубли глубже, не считая audience-required повторов delete-safe без доказательства.
