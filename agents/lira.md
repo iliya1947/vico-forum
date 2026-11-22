@@ -1,6 +1,20 @@
-# agents/lira.md — B7 MIRA PASS; STOP before B8
+# agents/lira.md — B8-A only; STOP after PostgreSQL acceptance packet
 
-- Draft B7 #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` on accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`, behind0 and unmerged.
-- Mira fresh coordinator checkpoint: **PASS**. `B7-MIRA-01` is closed; the corrected preflight visibility denial envelope preserves no-body-read and unrelated topic-action behavior, and no new current-B7 blocker was confirmed.
-- Exact-head evidence: **19/19 checks SUCCESS, 15/15 workflows SUCCESS**; CI #45036679050 SUCCESS after database-only retry on the same exact SHA. No code change for the retry.
-- **Лира STOP.** Do not create/start B8, B9, stack fold, Leva final review, merge or deployment until fresh owner continuation is recorded in service #342.
+## Accepted base
+
+- B7 Draft #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, Mira coordinator PASS.
+- Open a **new stacked B8 Draft** based directly on branch `feature/moderation-visibility-b7-actions-ui` at that exact head. Do not continue B8 work inside #371.
+
+## Current assignment — B8-A only
+
+Complete the real PostgreSQL acceptance packet for the accepted visibility contract:
+
+1. State/History: topic/post Hide+Restore, no-op/stale/overflow, exact transition History/reason, forced History failure rollback and unrelated-state preservation.
+2. Authority: fresh current permission, active actor, AP-10 restriction, Owner/effective policy where applicable, and negative generic Admin/History/Complaint authority; include two-moderator and actor-deactivation cases.
+3. Real PG race/lock-order acceptance required by V8 across visibility and the existing reply/parent/edit/title/source/solution/duplicate/new-plan/accepted-execution/Complaint seams, including both relevant orders where specified. Do not substitute JS promise sequencing for database barriers.
+
+Prefer extending existing PG suites rather than cloning them. If a test exposes a real current-B8 visibility defect, diagnose and correct only that bounded defect; record it explicitly.
+
+Run the targeted PostgreSQL checks needed to establish B8-A. Update service #342 with B8 PR number, stable exact head, changed scope, test evidence and any defect/correction.
+
+**Mandatory STOP after B8-A.** B8-B Worker/Better Auth/R2, B8-C Chromium/UI/cache, B9, fold, final review, merge and deploy are not authorized.
