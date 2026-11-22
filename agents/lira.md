@@ -1,14 +1,8 @@
-# agents/lira.md — B7-A authored, STOP before B7 UI
+# agents/lira.md — B7-B1a authored; STOP before B7-B1b
 
-## Accepted foundation
-
-- B6 #370 coordinator PASS exact `51a9ebe03f16c438faae5bec99a5856287630958` (Mira), unchanged.
-- New stacked Draft #371 base = B6 branch, head `dedaff7a7783df1a8666926a911c0f1790540ac9`, 7 commits / 4 files / behind 0; unmerged.
-
-## B7-A result
-
-- Canonical topic POST `setTopicVisibility` / `setPostVisibility` through dedicated `app/forum/visibility-actions.server.ts`; strict per-target scalar FormData and request/actor/fresh visibility capability. B2 transactional writers unchanged, retain AP-10/active actor/History/NO KEY UPDATE/CAS and allow hidden Restore without public lookup.
-- Neutral no-store status/result contract and explicit safe success projection; 400 invalid (including transition reason), 401 inactive, 403 authority/measure, 404 missing, 409 stale, 503 typed storage/account/auth outages. Unexpected faults still propagate to existing route error boundary. No retry/source leaks.
-- Scoped `app/forum/visibility-actions.test.ts` authored with case matrices for malformed and mixed intent/duplicate/File, topic/post Hide/Restore/no-op, early guard, permission/revoke, expired actor, AP-10, statuses. **21/21 static source checks PASS; Vitest/PG/CI not run.** Do not present authored tests as runtime-pass.
-- **STOP** per direct owner B7-A-only assignment. Next B7 UI work requires separate owner continuation. No QuickActions, redirects, EN/RU/HE action presentation, pending/conflict/actor switch, full B7 CI, B8/merge/deploy.
+- Accepted B6 #370 coordinator PASS `51a9ebe03f16c438faae5bec99a5856287630958`.
+- Stacked B7 Draft #371 branch `feature/moderation-visibility-b7-actions-ui`, current exact `0500c337d566306ceb6d9ec6202d146dde6e4a38`; no merge. B7-A HTTP/actions remain as authored on `dedaff7a7783df1a8666926a911c0f1790540ac9`.
+- B7-B1a only: `readTopicPage` visible-topic/visible-post `visibilityVersion` inside existing consistent snapshot, never hidden topic/tombstone; public topic loader provides permission-derived `canManageVisibility`. Three files changed, 12/12 static checks PASS; targeted PostgreSQL test authored but **not executed**. No QuickActions UI currently exists.
+- Next after owner `...`: B7-B1b public topic/post Hide forms with current version+revision, mandatory reason, grant; avoid hidden tombstone restoration and later UI/status work. Stop after that microstep.
+- Full runtime tests and B7 CI remain unexecuted; do not claim implementation acceptance. No B8/B9, merge, deploy.
 
