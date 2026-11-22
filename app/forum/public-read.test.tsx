@@ -1621,6 +1621,7 @@ describe("Help & solutions modes and authoring", () => {
       forumTopicPath("en", duplicateTopic.id),
       "en",
       "ltr",
+      {id:"manager",name:"Manager"},
     );
     expect(await screen.findByText("Private appeal reason.")).toBeVisible();
     expect(screen.getByText("Disputed")).toBeVisible();
@@ -1871,7 +1872,8 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(topicData.canModerateHelpSolution).toBe(true);
     expect(topicData.canUseAdminPanel).toBe(true);
-    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr",
+      {id:"manager",name:"Manager"});
     expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
     const bestAnswer = screen.getByText("Best answer").closest("li");
     expect(bestAnswer).not.toBeNull();
