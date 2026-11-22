@@ -1746,7 +1746,7 @@ describe("B8-A6 real PostgreSQL duplicate removal and protected appeal decisions
         bodyRevision: { id: bodyRevisionId, originalContent: "Question body", sourceLocale: "en" },
       },
     });
-    return { topicId, titleRevisionId };
+    return { topicId, postId, titleRevisionId, bodyRevisionId };
   }
   async function connected() {
     const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
