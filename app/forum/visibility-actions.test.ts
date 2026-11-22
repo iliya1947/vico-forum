@@ -67,7 +67,7 @@ function fixture(options:{signedIn?:boolean;allowed?:boolean;permissionError?:Er
 function expectFailure(result:Awaited<ReturnType<ReturnType<typeof fixture>["submit"]>>,
   status:number,error:string){
   expect(result.init?.status).toBe(status);
-  expect(result.data).toMatchObject({error});
+  expect(result.data).toEqual({operation:"contentVisibility",error});
   expect(result.init?.headers).toMatchObject({"Cache-Control":"private, no-store"});
   expect(JSON.stringify(result.data)).not.toContain("PRIVATE_CURRENT_TITLE");
   expect(JSON.stringify(result.data)).not.toContain("PRIVATE_CURRENT_BODY");
@@ -201,6 +201,21 @@ describe("B7-A canonical topic POST visibility action",()=>{
     const switched=fixture();
     expectFailure(await switched.submit(form({...topicForm,editorActorId:"other-user"})),409,"conflict");
     noWrites(switched);
+  });
+  it("leaves unrelated topic intents with their existing generic preflight denials",async()=>{
+    const guest=fixture({signedIn:false});
+    const ordinary=form({intent:"reply",body:"Ordinary reply"});
+    const deniedGuest=await guest.submit(ordinary);
+    expect(deniedGuest.init?.status).toBe(401);
+    expect(deniedGuest.data).toEqual({error:"unauthenticated"});
+    noWrites(guest);
+
+    const crossOrigin=fixture();
+    const deniedOrigin=await crossOrigin.submit(
+      form({intent:"reply",body:"Ordinary reply"}),{origin:"https://other.example"});
+    expect(deniedOrigin.init?.status).toBe(403);
+    expect(deniedOrigin.data).toEqual({error:"origin"});
+    noWrites(crossOrigin);
   });
   it("requires current visibility permission independently of generic Admin/History rights",async()=>{
     const denied=fixture({allowed:false});
