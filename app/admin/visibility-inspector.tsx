@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link, useLoaderData } from "react-router";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import type { AdminAccess } from "./access";
@@ -21,7 +22,8 @@ export function canRestoreHiddenInspection(
 }
 
 export default function VisibilityInspector() {
-  const {locale,access,canReadPostHistory,inspection,revisions}=useLoaderData<typeof loader>();
+  const loaderSnapshot=useLoaderData<typeof loader>();
+  const {locale,access,canReadPostHistory,inspection,revisions}=loaderSnapshot;
   const {t}=useTranslation("common");
   const viewerId=useHeaderAuthUser()?.id??null;
   const canRestore=canRestoreHiddenInspection(access,inspection,viewerId);
@@ -34,10 +36,15 @@ export default function VisibilityInspector() {
     "topic.hidden":"historyTopicHidden","topic.restored":"historyTopicRestored",
     "post.hidden":"historyPostHidden","post.restored":"historyPostRestored",
   } as const;
-  // A retained private loader snapshot belongs to its original account. Hide its
-  // source synchronously when HeaderAuth changes, even before a fresh loader GET
-  // or an older in-flight visibility action finishes.
-  if (!viewerId || viewerId !== access.actorId) return null;
+  // A private snapshot cannot become trusted again merely because an old actor
+  // signs in after another viewer/sign-out. Only a new guarded loader GET resets
+  // its lifetime, even when the new snapshot has the same version/revision.
+  const privateLifetime=useRef({snapshot:loaderSnapshot,invalidated:false});
+  if (privateLifetime.current.snapshot !== loaderSnapshot) {
+    privateLifetime.current={snapshot:loaderSnapshot,invalidated:false};
+  }
+  if (!viewerId || viewerId !== access.actorId) privateLifetime.current.invalidated=true;
+  if (privateLifetime.current.invalidated) return null;
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-hidden-inspector-heading">
       <h2 id="admin-hidden-inspector-heading">{t("adminHiddenInspectorTitle")}</h2>
