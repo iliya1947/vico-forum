@@ -1,6 +1,23 @@
-# agents/lira.md — B8-A MIRA PASS; STOP before B8-B
+# agents/lira.md — B8-B1 only; STOP after Worker/Better Auth transport packet
 
-- Draft B8 #376 stable exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`, stacked on accepted B7 #371 `f92778606f1c8ea4e64f53c1660910f34c48b84c`; test-only B8-A diff, no runtime/schema changes.
-- Mira fresh coordinator re-check: **PASS**. `B8-A-MIRA-01` is closed by the full-schema 8-case actual visibility-command × accepted execution PostgreSQL barrier suite. No remaining confirmed current-B8-A blocker.
-- Exact-head CI #45064673116 SUCCESS attempt 2; current exact head has 2/2 successful check-runs, database 1689/1689 PG17. Same-SHA checks retry changed no code.
-- **Лира STOP.** Do not start B8-B Worker/Better Auth/R2, B8-C Chromium/UI/cache, B9, fold, final reviews, merge or deploy until fresh owner continuation is recorded in #342.
+## Accepted base
+
+- B8-A coordinator PASS on Draft #376 exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`.
+- Continue in existing B8 branch `feature/moderation-visibility-b8-acceptance`; no new implementation PR.
+
+## Current assignment — B8-B1 only
+
+Establish actual built-Worker + Better Auth HTTP acceptance for the visibility public/private transport boundary.
+
+Done criteria:
+
+1. Public transport: visible topic/post, topic Hide neutral 404, hidden-post tombstone, Restore, document/.data/single-fetch/legacy route aliases that hit this seam, with public no-store where required.
+2. Leak scans: unique hidden title/body/translation/reason/private metadata sentinel absent from public HTML/data/error/meta/Original/status responses.
+3. Private transport: queue/inspector/visibility actions are private/no-store; guest/ordinary/revoked current access fails closed without hidden source.
+4. Use actual Worker/session/auth path, not mocked route calls. Reuse existing smoke infrastructure rather than duplicate B8-A PG races.
+5. If a real current-stage defect appears, diagnose and correct only that bounded transport defect.
+6. Run applicable Worker/Better Auth connected checks on the resulting exact head and update #342/#376.
+
+Do **not** add local R2/download/private-asset acceptance yet; that is B8-B2. Do not start protected-domain/fault-injection B8-B3, Chromium B8-C, B9, fold, final reviews, merge or deploy.
+
+**Mandatory STOP after B8-B1.**
