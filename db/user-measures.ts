@@ -8,7 +8,8 @@ import { assertUserMeasureAuthority, assertUserMeasureAdminRestrictionsAuthority
   requireUserMeasureOwnerId, rawUserMeasurePermissions, UserMeasureForbiddenError } from "./user-measure-authority";
 
 export class InvalidUserMeasureInputError extends Error {}
-export class UserMeasureNotFoundError extends Error {}
+export { UserMeasureNotFoundError } from "./user-measures-error";
+import { UserMeasureNotFoundError } from "./user-measures-error";
 export class UserMeasureConflictError extends Error {}
 
 export interface CreateUserMeasureInput {
