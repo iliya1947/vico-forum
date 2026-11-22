@@ -13,6 +13,7 @@ import {drizzle} from "drizzle-orm/node-postgres";
 import {Client} from "pg";
 import {DrizzleForumRepository} from "../db/forum-repository";
 import {verifyModerationVisibilityCacheTransport} from "./smoke-visibility-cache-transport";
+import {verifyModerationProtectedDomainTransport} from "./smoke-visibility-protected-transport";
 
 const connectionString=process.env.DATABASE_URL;
 const base="http://127.0.0.1:4181";
@@ -131,8 +132,9 @@ async function run(){
     "values ($1,$2,now())",[postId,attachmentId]);
 
   const casePost="/en/topics/"+topicId+"/complaints";
+  const complaintOperationId=randomUUID();
   let response=await form(casePost,reporter.cookie,{
-    kind:"post",postId,revisionId,reason:"spam",operationId:randomUUID()
+    kind:"post",postId,revisionId,reason:"spam",operationId:complaintOperationId
   });
   expectStatus(response,200,casePost);expectPrivate(response,casePost);
   const report=(await client.query<{id:string;version:number}>(
@@ -227,6 +229,14 @@ async function run(){
   assert.ok([302,303].includes(response.status),"Inbox open must redirect to participant result");
   assert.equal(response.headers.get("Location"),
     "/en/complaints/"+caseId+"/result#appeal-"+appeal[0]!.id);
+  // B8-B3: the same live Case/Appeal/History must remain independently
+  // protected while a real post/topic Hide runs; force a real PG read outage.
+  // Return visibility to its baseline before the existing B8-B1 cache probe.
+  await verifyModerationProtectedDomainTransport({
+    client,http,submit:form,topicId,postId,titleRevisionId:titleId,
+    caseId,appealId:appeal[0]!.id,complaintOperationId,
+    reviewer,reporter,author,currentPostSource,titleSource,
+  });
   // B7-only cache transport probe reuses this disposable Worker/PG17 and
   // live Better Auth moderator; it does not expand the Complaint smoke matrix.
   await verifyModerationVisibilityCacheTransport({
