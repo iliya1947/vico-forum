@@ -5214,6 +5214,7 @@ describe("personal Block presentation in ordinary TopicView", () => {
         expect(tombstone).not.toBeNull();
         const link=tombstone?.querySelector<HTMLAnchorElement>(".topic-message-private-inspection a");
         expect(link?.textContent).toBe("Inspect");
+        expect(link?.getAttribute("aria-label")).toBe("Inspect: Message #1");
         const href=link?.getAttribute("href");
         expect(href).toBe(`/${locale}/admin/forum/topics/typed%2Fapi/inspect?postId=hidden%2Fpost-1`);
         const destination=new URL(href!,"https://forum.test");

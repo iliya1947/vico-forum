@@ -2801,7 +2801,8 @@ export function TopicView({
                     {canOpenHiddenInspection ? (
                       <p className="topic-message-private-inspection">
                         <Link to={hiddenInspectionPath(locale,
-                          {kind:"post",topicId:topic.id,postId:post.id},routing)}>
+                          {kind:"post",topicId:topic.id,postId:post.id},routing)}
+                          aria-label={t("adminHiddenInspectorOpen") + ": " + t("postNumber", {number:messageNumber})}>
                           {t("adminHiddenInspectorOpen")}
                         </Link>
                       </p>
