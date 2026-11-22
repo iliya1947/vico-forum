@@ -12,6 +12,8 @@ import { createTranslationRuntime } from "../localization/runtime";
 import { TopicQuickActions } from "./quick-actions";
 import { MessageQuickActions } from "./message-quick-actions";
 import VisibilityInspector from "./visibility-inspector";
+import { headers as inspectorHeaders } from "../routes/admin-forum-inspect";
+import { headers as topicHeaders } from "../routes/topic";
 
 vi.mock("./shell",()=>({
   AdminShell:({children}:{children:ReactNode})=><>{children}</>,
@@ -252,4 +254,19 @@ describe("B7-B5b old visibility responses cannot reopen a new viewer's controls"
     },
   );
 
+  it("keeps private inspector and public topic document/data header policies uncached",()=>{
+    const parentHeaders=new Headers({"Cache-Control":"public, max-age=3600"});
+    const inspected=inspectorHeaders({parentHeaders} as Parameters<typeof inspectorHeaders>[0]);
+    expect(inspected.get("Cache-Control")).toBe("private, no-store");
+    const privateTopic=topicHeaders({
+      parentHeaders,loaderHeaders:new Headers({"Cache-Control":"private, no-store"}),
+      actionHeaders:new Headers(),errorHeaders:new Headers(),
+    } as Parameters<typeof topicHeaders>[0]);
+    expect(privateTopic.get("Cache-Control")).toBe("private, no-store");
+    const neutral404=topicHeaders({
+      parentHeaders,loaderHeaders:new Headers(),actionHeaders:new Headers(),
+      errorHeaders:new Headers({"Cache-Control":"public, max-age=3600"}),
+    } as Parameters<typeof topicHeaders>[0]);
+    expect(neutral404.get("Cache-Control")).toBe("no-store");
+  });
 });
