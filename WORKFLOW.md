@@ -2,14 +2,19 @@
 
 ## Активный этап
 
-**Moderation visibility B7 — B7-MIRA-01 correction author-verified on stable exact head `f92778606f1c8ea4e64f53c1660910f34c48b84c`; Лира STOP, fresh Mira bounded coordinator checkpoint next.**
+**Moderation visibility B7 — MIRA COORDINATOR PASS; STOP BEFORE B8.**
 
-- Accepted B6 #370 base `51a9ebe03f16c438faae5bec99a5856287630958` unchanged; Draft [B7 PR #371](https://github.com/iliya1947/vico-forum/pull/371) head `f92778606f1c8ea4e64f53c1660910f34c48b84c`, behind0, unmerged. Mira prior B7 coordinator **HOLD** on old exact `901661dbc38b9a19626fd2c7fe2a951637692d3d` for single confirmed `B7-MIRA-01`; her **fresh PASS is still required**.
-- **B7-MIRA-01 corrected within B7 scope.** Canonical `topicAction` keeps guest/Origin generic preflight ahead of parsing rejected POST bodies (existing Watch/Bookmark/other operations remain intact). Visibility forms explicitly mark action URL `?visibilityAction=1`; an authority-neutral hint only selects a typed `{operation:"contentVisibility",error}` preflight guest401/Origin403 response, never authorizes a mutation. Accepted visibility requests still enforce strict FormData allowlist, actor/CAS baseline, fresh permission and writer grant. Hide/Restore form treats Origin403 as denied, triggers safe GET refresh and does not replay POST. Canonical and mounted real-route denial regressions cover this.
-- **[Exact-head CI #45036679050](https://github.com/iliya1947/vico-forum/actions/runs/45036679050): 15/15 workflows SUCCESS**; main CI both `checks` and `database` SUCCESS, other 14 connected acceptance workflows SUCCESS. `checks`: Vitest **2951/2951** across **232** files (including canonical `visibility-actions.test.ts` 67/67 and mounted `visibility-denial.test.tsx` 15/15), Lint/Typecheck/Build/UI Preview PASS. `database` (successful retry on same CI run and same exact head): PostgreSQL17 **1628/1628 tests in 113 files PASS**, real built-Worker `B7 real Worker HTTP document/.data/404/private cache transport: PASS`, `P7 local Worker/session/authorization/PostgreSQL HTTP smoke: PASS`.
-- Initial database run on same head had **1628/1628 PG tests pass but CI job FAIL from one unrelated SA04 Complaint unhandled rejected Promise** (`reported revision changed`, `tests/database/sa04-complaints-n1.test.ts`, `db/complaints-repository.ts:193`). No B7 code touched Complaint paths. Reran only failing job through GitHub Actions; retry `137263562553` **SUCCESS**; initial `137251873735` FAIL did not recur. No implementation changes since `f92778606f1c8ea4e64f53c1660910f34c48b84c`.
-- B7 bounded author self-check on corrected stable head: no confirmed B7-MIRA-01 blocker remains based on current canonical and mounted tests plus exact-head connected/DB acceptance. **This is author PASS, not Mira coordinator PASS**. No B8 work, stack fold, merge, production/deploy until Mira checkpoint.
-- **STOP / next actor: Мира (GPT-5.6 Sol)** performs fresh *bounded stacked coordinator checkpoint* on Draft [B7 #371](https://github.com/iliya1947/vico-forum/pull/371) exact `f92778606f1c8ea4e64f53c1660910f34c48b84c` against accepted B6; independently verify B7-MIRA-01 result/contract, scope and test status. Record independent PASS or confirmed current-B7 blocker in #342. **B8 remains blocked until Mira PASS and fresh owner continuation.**
+- Accepted B6 base remains #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`.
+- Draft B7 #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, behind0, unmerged.
+- Prior blocker `B7-MIRA-01` is **CLOSED**:
+  - canonical `topicAction` keeps generic auth/origin preflight before FormData parsing;
+  - visibility forms mark their canonical action URL with authority-neutral `?visibilityAction=1`, allowing preflight 401/origin-403 to retain the B7 `operation:"contentVisibility"` envelope without reading a denied body;
+  - admitted mutations still require the original strict visibility intent/payload, same-origin/session, current permission, actor expectation, CAS revision/version, reason and transaction-owned DB/AP-10 checks;
+  - unrelated unmarked topic actions retain their prior generic preflight responses.
+- Mira re-reviewed the corrective diff `901661dbc38b9a19626fd2c7fe2a951637692d3d..f92778606f1c8ea4e64f53c1660910f34c48b84c` (8 files; no B8/B9 implementation) and found no new current-B7 blocker.
+- Exact-head GitHub evidence independently verified: **19/19 check-runs SUCCESS, 15/15 workflow runs SUCCESS**. Main CI #45036679050 is SUCCESS on run attempt 2; current jobs `checks` and the database-only retry are both SUCCESS on the same exact SHA. No code change occurred for the retry.
+- B7 remains an intermediate stacked Draft. This PASS is not B8 acceptance, whole-feature final review, merge or deployment.
+- Lira is **STOPPED**. **B8 requires fresh owner continuation.** No B8/B9/fold/Leva/merge/deploy before that continuation.
 
 ## Baseline
 
