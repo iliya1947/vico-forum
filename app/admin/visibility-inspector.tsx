@@ -34,6 +34,10 @@ export default function VisibilityInspector() {
     "topic.hidden":"historyTopicHidden","topic.restored":"historyTopicRestored",
     "post.hidden":"historyPostHidden","post.restored":"historyPostRestored",
   } as const;
+  // A retained private loader snapshot belongs to its original account. Hide its
+  // source synchronously when HeaderAuth changes, even before a fresh loader GET
+  // or an older in-flight visibility action finishes.
+  if (!viewerId || viewerId !== access.actorId) return null;
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-hidden-inspector-heading">
       <h2 id="admin-hidden-inspector-heading">{t("adminHiddenInspectorTitle")}</h2>
