@@ -1,130 +1,35 @@
-# TASK.md — задача и критерий завершения новой архитектуры UI progress preview.
+# TASK.md — UI progress preview на общем коде форума
 
-## Цель
+## Текущее назначение и результат
 
-Определить **концептуальный план** дальнейшего устройства UI progress preview Vico Forum до технического проектирования и реализации.
+Владелец принял концепцию и поручил Лёве: «Концепцию принимаю. Оформляй финальный технический PLAN.md на её основе».
 
-Повод: текущий implementation PR #322 вырос в крупную отдельную preview-реализацию форума. Возникла альтернативная концепция: использовать непосредственно production routes/components/loaders/actions из актуального `main`, а для preview подменять только данные и внешнюю инфраструктуру через тестовые/fake capabilities и детерминированные fixtures.
+Финальный технический [PLAN.md](PLAN.md) подготовлен в #369. Это текущий канонический план всей задачи. Концептуальный этап завершён; прежний запрет формировать технический план до принятия концепции больше не блокирует работу, поскольку условие выполнено.
 
-Задача этого служебного PR — сначала установить, **какой должна быть целевая модель preview и почему**, а не сразу проектировать конкретные классы, файлы и этапы реализации.
+Текущее назначение — оформление плана, не реализация. P0, product code, #322, зависимости и deployment не начинались/не менялись. Дальнейший маршрут — WORKFLOW.md.
 
-## Исходное состояние
+## Цель архитектуры
 
-- Current main при создании workspace: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- #322 head, на котором непосредственно перед созданием workspace выполнялся review: `e23c0e0ade79e786e29b4057af1dfd292814e34e`.
-- #322 сейчас содержит большую собственную логику preview и representative state.
-- В `main` уже существуют dependency-injection seams через React Router contexts для ряда production capabilities, включая forum reader/writer, auth, authorization, complaint submission и Owner profile/lifecycle.
-- Это делает вариант production UI/routes + substituted infrastructure технически правдоподобным, но **его жизнеспособность и границы ещё не установлены полностью**.
+Preview должен быть самим форумом из актуального main с внутренней тестовой инфраструктурой:
 
-## Первый этап — концептуальный план
+- настоящий общий UI/routes/loaders/actions/application interactions;
+- repo + GitHub Actions/Pages + браузер, без необходимой внешней БД, backend host или provider credentials;
+- raw test users/roles/categories/sections/topics/posts/revisions и остальные необходимые состояния/байты в репозитории;
+- typed capabilities подменяют инфраструктуру, а не экраны/кнопки/правила продукта;
+- обычное изменение кнопки, ссылки или функции main видно после успешной пересборки без второй preview-правки;
+- проверяются UI, navigation, editor, links/buttons/forms и штатные pending/error/success;
+- реальное сохранение необязательно: разрешено показывать «успешно сохранено» без записи. Минимальный transient state допустим только для связного UI flow.
 
-Нужно определить:
+Обязательная SQL/WASM база, migrations/transaction emulator и persistence parity не требуются. External Stage 6 rollout не входит в задачу.
 
-1. Какую задачу должен решать UI progress preview и что **не** входит в его назначение.
-2. Что в целевой модели должно быть настоящим production-кодом из `main`:
-   - router/routes;
-   - loaders/actions;
-   - views/components;
-   - permission/auth presentation logic;
-   - другие product contracts.
-3. Что допустимо и необходимо подменять:
-   - persistence/data;
-   - auth session;
-   - authorization;
-   - external services;
-   - R2/attachments;
-   - email/OAuth/provider calls;
-   - время/идентификаторы и иные nondeterministic dependencies.
-4. Как должна выглядеть тестовая предметная база preview:
-   - пользователи и роли;
-   - категории/разделы/темы/сообщения;
-   - settings;
-   - moderation/complaints;
-   - notifications;
-   - watch/bookmark/mute/block;
-   - admin/Owner/Super-admin representative states;
-   - empty/error/permission states.
-5. Как должны работать выбор роли, locale, viewport и representative state без подмены фактической ownership/permission модели.
-6. Какие ограничения static GitHub Pages существенно влияют на концепцию.
-7. Следует ли preview использовать:
-   - in-memory repository/capability adapters;
-   - browser-side database/WASM;
-   - иной подход;
-   и почему.
-8. Как должна выглядеть миграция с нынешнего #322 на целевую модель на концептуальном уровне:
-   - что переиспользуется;
-   - что удаляется;
-   - что временно сосуществует;
-   - как избежать второй реализации продукта.
-9. Какие критерии означают, что новая концепция действительно лучше текущей:
-   - parity с `main`;
-   - стоимость сопровождения;
-   - отсутствие дублирования product logic;
-   - deterministic preview;
-   - возможность browser acceptance;
-   - простота добавления новых capabilities.
-10. Какие существенные альтернативы были рассмотрены и почему выбранный вариант предпочтителен.
+## Исходная основа
 
-## Границы первого этапа
+Проверенный main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. Текущий preview и рассмотренный ранее #322 имеют самостоятельную product logic; она должна быть заменена общими modules при atomic cutover, а не перенесена как второй продукт.
 
-- Не писать технический implementation plan.
-- Не определять bounded implementation PRs.
-- Не менять #322.
-- Не писать production/preview код.
-- Не делать cleanup старой preview-реализации.
-- Не принимать гипотезу `production routes + fake infrastructure` как готовое решение без проверки её концептуальных ограничений.
+Production context seams уже существуют. Browser-safe graph, Framework→Data Router adaptation и local transport должны быть доказаны bounded P0. Техническая правдоподобность не выдается за выполненный browser proof.
 
-## Критерий завершения первого этапа
+## Критерий завершения текущего назначения
 
-Первый этап завершён, когда существует один цельный концептуальный документ, который:
+Один самодостаточный PLAN содержит архитектуру, границы общего/подменяемого кода, contracts/данные, конкретные точки изменения, Pages/runtime ограничения, этапы/зависимости, проверки/STOP gates и финальную acceptance matrix. Это выполнено; независимая проверка плана остаётся следующей работой Миры.
 
-- определяет назначение и границы UI progress preview;
-- описывает выбранную целевую архитектурную модель на уровне компонентов системы;
-- объясняет разделение production logic и preview-only infrastructure;
-- описывает модель test data/state;
-- учитывает static Pages и browser constraints;
-- сравнивает существенные альтернативы;
-- задаёт концептуальную миграцию с #322;
-- содержит критерии готовности;
-- явно перечисляет оставшиеся вопросы, которые уже должен решить технический план.
-
-После этого — **STOP и решение разработчика**. Только после принятия концепции Лёва или другой назначенный архитектор готовит полный технический `PLAN.md`.
-
-
-## Обсуждённая целевая гипотеза
-
-Эта гипотеза должна быть проверена концептуально, но она является исходным вариантом, ради которого создана задача:
-
-1. **Production product logic должна по возможности оставаться настоящей.**
-   Preview должен переиспользовать актуальные router/routes/components/loaders/actions и permission/auth presentation logic из `main`, а не иметь вторые версии этих механизмов.
-
-2. **Подменяется инфраструктура, а не продукт.**
-   Вместо Neon/PostgreSQL, Better Auth, R2 и других внешних runtime-зависимостей preview получает тестовые реализации тех же capability/interfaces через существующие context seams или другие минимально необходимые boundaries.
-
-3. **Representative test state хранится в репозитории.**
-   Пользователи, роли, темы, сообщения, жалобы, notifications, personal state и другие необходимые состояния задаются детерминированными fixtures/test state.
-
-4. **Предпочтительный базовый кандидат — in-memory store/adapters, а не SQL-БД в браузере.**
-   PGlite/SQLite/WASM или иная browser-side database рассматривается только если concept research установит, что in-memory capability implementations недостаточно для требуемой parity. UI progress preview не должен дублировать database-integration testing, которое проверяется отдельными PostgreSQL/acceptance наборами.
-
-5. **Одна composition boundary.**
-   Концептуально preview должен иметь небольшой composition root (условно `ui-preview/runtime.ts`), который:
-   - создаёт test state;
-   - создаёт fake/in-memory capabilities;
-   - подключает их к production contexts/runtime;
-   - запускает настоящий product router/UI.
-   Конкретное имя файла и технический способ реализации относятся уже к будущему техническому плану.
-
-6. **Выбор роли не должен переписывать предметные данные.**
-   User / Manager / Owner должны означать смену текущей auth/authorization identity, а не изменение владельца темы или автора сообщения в fixture.
-
-7. **Новая capability в `main` не должна требовать второй реализации product behavior в preview.**
-   В нормальном случае preview должен получить новый production route/UI/action автоматически; отдельная работа требуется только для representative data или новой infrastructure dependency.
-
-## Актуальное уточнение владельца — 2026-11-22
-
-Главный platform constraint: только GitHub и браузер. Главный product constraint: тот же UI/routes/application interaction code main, без второго preview продукта; общие изменения видны после rebuild.
-
-Реальная запись и сохранение данных необязательны. Владелец разрешил simulated success, включая «успешно сохранено», без изменения тестовой базы. Нужно проверять visual states, links/buttons/forms/navigation и другие interactions. Полноценная SQL/write инфраструктура и её parity не являются обязательным prerequisite.
-
-Упрощённое предложение Лёвы с учётом этих условий: research/leva-chat-plan.md; owner decisions D-06–D-08 в DECISIONS.md. Это не запуск implementation и не разрешение менять #322.
+Критерии реализации всей feature и этапов — PLAN §14–18. Служебный PR #369 не merge. Implementation назначается отдельно.
