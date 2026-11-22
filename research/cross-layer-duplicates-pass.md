@@ -154,3 +154,10 @@ Project rules регулируют bias/independence prompt, а не тольк�
 6. User ↔ Project delete-safe дублей не подтверждено.
 
 Следующий отдельный этап может применить только D1–D4 к Project draft и пересчитать общий объём. O1 и audience-required clusters не трогать без нового доказательства.
+
+## Статус применения
+
+D1–D4 применены к `PROJECT_INSTRUCTIONS.draft.md`.
+Evidence: `research/project-cross-layer-dedupe-application.md`.
+
+O1 и audience-required overlaps не изменялись.
