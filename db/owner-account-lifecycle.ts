@@ -1,4 +1,4 @@
-import { OwnerAccountLifecycleForbiddenError, OwnerAccountLifecycleTargetMissingError, OwnerAccountLifecycleConflictError, OwnerAccountLifecycleInvariantError, OwnerAccountLifecycleCommitUncertainError, validateOwnerAccountDeactivationInput } from "./owner-account-lifecycle-contract";
+import { OwnerAccountLifecycleForbiddenError, OwnerAccountLifecycleTargetMissingError, OwnerAccountLifecycleConflictError, OwnerAccountLifecycleInvariantError, OwnerAccountLifecycleCommitUncertainError, validateOwnerAccountDeactivationInput, operationId } from "./owner-account-lifecycle-contract";
 import type { DeactivateOwnerAccountInput, OwnerAccountDeactivationResult, OwnerAccountLifecycleCommand } from "./owner-account-lifecycle-contract";
 export * from "./owner-account-lifecycle-contract";
 import type { Client, Pool } from "pg";
