@@ -12,6 +12,7 @@ import {resolve} from "node:path";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {Client} from "pg";
 import {DrizzleForumRepository} from "../db/forum-repository";
+import {verifyModerationVisibilityCacheTransport} from "./smoke-visibility-cache-transport";
 
 const connectionString=process.env.DATABASE_URL;
 const base="http://127.0.0.1:4181";
@@ -222,6 +223,13 @@ async function run(){
   assert.ok([302,303].includes(response.status),"Inbox open must redirect to participant result");
   assert.equal(response.headers.get("Location"),
     "/en/complaints/"+caseId+"/result#appeal-"+appeal[0]!.id);
+  // B7-only cache transport probe reuses this disposable Worker/PG17 and
+  // live Better Auth moderator; it does not expand the Complaint smoke matrix.
+  await verifyModerationVisibilityCacheTransport({
+    client, http, submit: form, topicId, postId, titleRevisionId: titleId,
+    moderator: reviewer, ordinary: reporter,
+    titleSource: "P7 Worker title", currentPostSource: "P7 Worker current edited text",
+  });
   console.log("P7 local Worker/session/authorization/PostgreSQL HTTP smoke: PASS");
 }
 try{
