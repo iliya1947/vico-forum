@@ -27,6 +27,32 @@ describe("browser route module generation", () => {
     expect(source).not.toContain("@react-router/dev");
   });
 
+  it("automatically registers every current Framework route without a handwritten list", () => {
+    const source = createPreviewRouteModuleSource(manifest, appDirectory);
+    const entries = [manifest];
+    for (let index = 0; index < entries.length; index += 1) {
+      entries.push(...(entries[index]!.children ?? []));
+    }
+    for (const descriptor of entries) {
+      const absoluteFile = resolve(appDirectory, descriptor.file).replaceAll("\\\\", "/");
+      expect(source).toContain(
+        JSON.stringify(descriptor.id) + ": () => import(" + JSON.stringify(absoluteFile) + ")",
+      );
+    }
+    expect(source.match(/: \\(\\) => import\\(/gu)).toHaveLength(entries.length);
+    expect(source).not.toContain("not bundled in P0");
+  });
+
+  it("includes an additional generated descriptor without a manual route registration", () => {
+    const source = createPreviewRouteModuleSource({
+      ...manifest,
+      children: [...(manifest.children ?? []), {
+        id: "routes/extra-preview-test", file: "routes/home.tsx", path: "extra",
+      }],
+    }, appDirectory);
+    expect(source).toContain('"routes/extra-preview-test": () => import(');
+  });
+
   it("fails explicitly for unrecognized or duplicated modules", () => {
     expect(() => createPreviewRouteModuleSource(manifest, appDirectory, ["not-a-route"]))
       .toThrow(/unknown route module ID/);
