@@ -56,3 +56,28 @@ describe("topic action import barriers", () => {
     expect(neutralAttachmentId("invalid-id")).toBe(false);
   });
 });
+
+import {
+  InvalidForumAttachmentError as neutralInvalidAttachment,
+  ForumAttachmentDraftConflictError as neutralDraftConflict,
+  ForumAttachmentStorageUnavailableError as neutralAttachmentUnavailable,
+} from "../../../db/forum-attachment-errors";
+import {
+  InvalidForumAttachmentError as productionInvalidAttachment,
+  ForumAttachmentDraftConflictError as productionDraftConflict,
+} from "../../../db/forum-attachments";
+import { ForumAttachmentDraftConflictError as generationDraftConflict } from "../../../db/attachment-draft-generation";
+import { ForumAttachmentStorageUnavailableError as productionAttachmentUnavailable } from "../../../db/hyperdrive-forum-attachments";
+
+describe("shared P1 attachment error identity", () => {
+  it("keeps original production exception constructors through neutral module exports", () => {
+    expect(neutralInvalidAttachment).toBe(productionInvalidAttachment);
+    expect(neutralDraftConflict).toBe(productionDraftConflict);
+    expect(neutralDraftConflict).toBe(generationDraftConflict);
+    expect(neutralAttachmentUnavailable).toBe(productionAttachmentUnavailable);
+    expect(new neutralInvalidAttachment()).toBeInstanceOf(productionInvalidAttachment);
+    expect(new productionDraftConflict("gone")).toBeInstanceOf(neutralDraftConflict);
+    expect(new neutralDraftConflict("gone").reason).toBe("gone");
+    expect(new productionAttachmentUnavailable()).toBeInstanceOf(neutralAttachmentUnavailable);
+  });
+});
