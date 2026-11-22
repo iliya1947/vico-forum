@@ -269,4 +269,48 @@ describe("B7-B5b old visibility responses cannot reopen a new viewer's controls"
     } as Parameters<typeof topicHeaders>[0]);
     expect(neutral404.get("Cache-Control")).toBe("no-store");
   });
+
+  for(const kind of ["topic","post"] as const){
+    it(`hide ${kind}: A→B→A keeps stale public controls closed until a fresh loader GET`,async()=>{
+      const instance=mount("hide",kind);
+      try{
+        const selector="form.visibility-hide-form";
+        const form=await waitFor(()=>{
+          const element=instance.container.querySelector<HTMLFormElement>(selector);
+          expect(element).not.toBeNull();
+          return element!;
+        });
+        fireEvent.change(form.querySelector('textarea[name="reason"]')!,{
+          target:{value:"Unsent reason for same-actor GET"},
+        });
+        const sameActorReads=instance.loader.mock.calls.length;
+        await act(async()=>{instance.router.revalidate();});
+        await waitFor(()=>expect(instance.loader.mock.calls.length).toBeGreaterThan(sameActorReads));
+        await waitFor(()=>expect(
+          instance.container.querySelector<HTMLTextAreaElement>(
+            'form.visibility-hide-form textarea[name="reason"]')?.value,
+        ).toBe("Unsent reason for same-actor GET"));
+
+        await act(async()=>{instance.rerender(instance.tree(nextActor));});
+        await waitFor(()=>expect(instance.container.querySelector(selector)).toBeNull());
+        await act(async()=>{instance.rerender(instance.tree(actorId));});
+        expect(instance.container.querySelector(selector)).toBeNull();
+        expect(instance.action).not.toHaveBeenCalled();
+
+        const beforeNewGet=instance.loader.mock.calls.length;
+        await act(async()=>{instance.router.revalidate();});
+        await waitFor(()=>expect(instance.loader.mock.calls.length).toBeGreaterThan(beforeNewGet));
+        const fresh=await waitFor(()=>{
+          const element=instance.container.querySelector<HTMLFormElement>(selector);
+          expect(element).not.toBeNull();
+          return element!;
+        });
+        expect(fresh.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')?.value).toBe("");
+        expect(fresh.querySelector<HTMLInputElement>('input[name="editorActorId"]')?.value).toBe(actorId);
+        expect(fresh.querySelector<HTMLInputElement>('input[name="expectedRevisionId"]')?.value)
+          .toBe(kind==="topic"?"title-r3":"post-r2");
+        expect(instance.action).not.toHaveBeenCalled();
+      }finally{instance.router.dispose();}
+    });
+  }
 });
