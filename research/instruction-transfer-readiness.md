@@ -1,18 +1,21 @@
-# Transfer readiness — final instruction drafts
+# Transfer readiness — final exact drafts
 
-## Exact frozen candidates
+Проверены актуальные exact drafts:
 
 1. `USER_INSTRUCTIONS.draft.md`
-   - blob: `df24c04fea7da5ceb0dc6fd7869e25485fae15c6`
-   - 42 numbered rules
-   - 1066 whitespace words
-   - 8364 characters
+   - blob: `f042613fa65d2484895c5bf3f9e427d5fb3b27cc`
+   - 20 numbered rules
+   - 523 whitespace words
+   - 4999 characters
+   - current coverage: 15/15 FULL
+   - expanded retained guards: 52/52
 
 2. `PROJECT_INSTRUCTIONS.draft.md`
    - blob: `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
    - 16 numbered rules
    - 347 whitespace words
    - 2713 characters
+   - current Project baseline: 3341 characters
 
 3. `AGENTS.draft.md`
    - blob: `170ef5ed10715e416a376c75c3dae188ae0a3d24`
@@ -20,72 +23,84 @@
    - 2017 whitespace words
    - 16186 characters
 
-Финальная consistency-проверка этих трёх drafts: PASS.
+Three-layer consistency after compact User rewrite: PASS.
 
-## User Custom Instructions — BLOCKED
+## 1. Global Custom Instructions
 
-Официальный OpenAI Help Center указывает лимит global Custom Instructions:
-- Free/Go: 1500 characters;
-- Plus/Pro/Enterprise/Business/Education: 5000 characters.
+Актуальный OpenAI Help Center:
+- Web/Desktop route: `Settings → Personalization → Custom Instructions`;
+- изменения применяются сразу ко всем чатам;
+- Plus/Pro/Enterprise/Business/Education limit: **5000 characters**.
 
-Текущий User draft: **8364 characters**.
+User draft: **4999 characters**.
 
-Следовательно, этот draft **не помещается** в global Custom Instructions и не готов к прямому переносу.
+**Вердикт: READY.**
 
-Нельзя просто обрезать текст: User draft содержит 52 semantic guards, и сокращение должно пройти новый coverage/consistency pass.
+## 2. Project Instructions
 
-## Project Instructions
+Актуальный OpenAI Help Center:
+- route: `Project → ••• → Project settings → instructions`;
+- Project Instructions действуют только в проекте;
+- OpenAI формулирует их как overriding global Custom Instructions внутри проекта.
 
-Официальный OpenAI Help Center подтверждает маршрут:
-`Project → ••• → Project settings → instructions`.
+Для Plus/Pro Help Center одновременно говорит, что global Custom Instructions применяются ко всем чатам; явное `only project instructions` отдельно указано для Enterprise/Edu. Поэтому для текущей Plus-конфигурации безопасная трактовка — Project Instructions имеют приоритет при конфликте.
 
-Project instructions действуют только внутри проекта и override global custom instructions.
+Наша three-layer consistency-проверка подтверждает **0 конфликтов** между compact User и Project draft.
 
-Найденная официальная документация не указывает точный character limit Project Instructions.
+Точный официальный character limit поля Project Instructions в найденной документации не указан.
 
-**Информация не проверена:** максимальный размер поля Project Instructions.
+Практическая вместимость установлена без предположения о лимите:
+- текущий Project current: **3341 characters**;
+- draft: **2713 characters**.
 
-Текущий Project draft: 2713 characters.
+То есть draft короче уже действующего Project instruction set.
 
-## AGENTS.md
+**Вердикт: READY.**
 
-`AGENTS.draft.md` переносится не через ChatGPT settings, а в repository `main:AGENTS.md`.
+## 3. AGENTS.md
 
-Рабочий PR #368 — аналитическое workspace и **не предназначен для merge**.
+`AGENTS.draft.md` должен переноситься в repository `main:AGENTS.md`.
 
-Поэтому финальный AGENTS должен переноситься отдельным repository change из актуального `main`, сохраняя обычный review/merge process проекта. Создавать такой PR до прямой команды разработчика не нужно.
+Рабочий PR #368:
+- аналитический draft workspace;
+- не предназначен для merge.
 
-## Безопасный порядок переноса
+Следовательно, финальный AGENTS переносится отдельным обычным repository change/PR от актуального `main`, с действующим review/merge process.
 
-### 1. User layer — первым
-Сначала довести User draft до фактического лимита Custom Instructions и установить его как global User instructions.
+**Вердикт: READY FOR SEPARATE REPO PR.**
 
-Причина: Project draft уже удалил несколько общих guards, рассчитывая на User layer. Установка Project draft поверх старого User layer создаст временный semantic gap.
+## 4. Безопасный порядок переноса
 
-### 2. AGENTS layer — вторым
-После User layer перенести финальный `AGENTS.draft.md` в repository `AGENTS.md` отдельным mergeable PR от актуального `main`.
+### 1. User layer
+Сначала заменить global Custom Instructions на compact User draft.
 
-Current AGENTS уже содержит Stage classification и Roles mapping, поэтому это не блокирует первый шаг, но финальная версия должна быть в `main` до окончательной фиксации Project layer.
+Почему первым:
+- Project draft уже не повторяет часть generic guards;
+- обновление global Custom Instructions применяется сразу;
+- это создаёт финальный global baseline до изменения project-specific слоя.
 
-### 3. Project layer — последним
-После установки User layer и merge финального AGENTS заменить Project Instructions на `PROJECT_INSTRUCTIONS.draft.md`.
+### 2. AGENTS layer
+Затем отдельным mergeable PR перенести `AGENTS.draft.md` в `main:AGENTS.md`.
 
-Это гарантирует, что все вынесенные из Project дубли уже реально существуют в слоях, на которые Project draft ссылается.
+Почему вторым:
+- Project draft ссылается на актуальный AGENTS для Stage classification и agent-name mapping;
+- до переключения Project layer финальный shared repository contract должен уже быть в `main`.
 
-## Технический маршрут UI
+### 3. Project layer
+Последним заменить Project Instructions на `PROJECT_INSTRUCTIONS.draft.md`.
 
-### Global Custom Instructions
-OpenAI: `Settings → Personalization → Custom Instructions`.
+Почему последним:
+- все generic/shared guards, на которые он опирается, уже будут фактически установлены;
+- Project Instructions имеют приоритет над global Custom Instructions при конфликте, а consistency-check подтвердил 0 конфликтов.
 
-### Project Instructions
-OpenAI: открыть проект → `••• → Project settings` → instructions.
+## 5. Итог
 
-Эти два account/project settings я из этого рабочего окружения изменить не могу.
+1. User transfer readiness — **PASS**.
+2. Project transfer readiness — **PASS**.
+3. AGENTS transfer readiness — **PASS**, через отдельный repo PR.
+4. Three-layer consistency — **PASS**.
+5. Character-limit blockers — **0**.
+6. Semantic blockers — **0**.
+7. Реальные instruction sources пока не изменены.
 
-## Итог
-
-1. User transfer readiness — **BLOCKED**: 8364 > 5000 characters.
-2. Project semantic readiness — **PASS**, точный UI limit не подтверждён официальным источником.
-3. AGENTS semantic readiness — **PASS**, перенос требует отдельного repo PR.
-4. Реальные sources не изменены.
-5. Следующая обязательная подзадача: сократить User draft до ≤5000 characters без потери 52 semantic guards, затем повторить User coverage + three-layer consistency.
+Следующий отдельный этап — подготовить фактический transfer package/порядок действий для трёх источников; изменение реальных sources выполнять только по прямой команде разработчика.
