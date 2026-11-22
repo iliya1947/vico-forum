@@ -1,23 +1,7 @@
-# agents/lira.md — B7-MIRA-01 correction only
+# agents/lira.md — B7-MIRA-01 narrow correction committed; STOP pending exact-head checks
 
-## Stable reviewed head
-
-- B7 Draft #371 exact `901661dbc38b9a19626fd2c7fe2a951637692d3d`, accepted B6 #370 base `51a9ebe03f16c438faae5bec99a5856287630958`, behind0.
-- Mira coordinator checkpoint: **HOLD with one confirmed current-B7 blocker**. No second current-B7 blocker was confirmed.
-- Existing exact-head evidence remains green (19/19 checks, 15/15 workflows), but it did not detect this contract mismatch.
-
-## Current task — B7-MIRA-01 only
-
-Correct the canonical visibility action boundary so real pre-dispatch authentication/origin denials keep the B7 visibility response contract consumed by the Hide/Restore UI.
-
-Observed defect on the reviewed head:
-- `topicAction` performs generic `forumMutationGuard` before `visibilityTopicAction`;
-- guest/session and origin denials therefore return generic `ForumMutationError` without `operation:"contentVisibility"`;
-- Hide/Restore forms consequently classify a real preflight 401 as unconfirmed/unknown instead of the intended denied/revalidation state.
-
-Done criteria:
-1. Visibility requests through the actual canonical `topicAction` preserve the intended visibility-specific neutral result semantics for preflight 401/403 without weakening authentication/origin/fresh permission checks or changing unrelated topic intents.
-2. Add focused regression coverage through the real canonical route/action seam, including the consumer-visible denial behavior; do not rely only on fabricated operation-specific responses.
-3. Run applicable checks on the new stable exact head and update the #342 handoff.
-
-**STOP after this correction.** Do not start B8/B9, stack fold, merge, deployment, or unrelated cleanup.
+- Accepted B6 #370 base `51a9ebe03f16c438faae5bec99a5856287630958`; Draft B7 [#371](https://github.com/iliya1947/vico-forum/pull/371) new head `57a6a538c4f900214478cc609ef492dfe650284c`, behind0, unmerged.
+- Mira prior checkpoint **HOLD** on `901661dbc38b9a19626fd2c7fe2a951637692d3d` for single current-B7 blocker **B7-MIRA-01**: generic preflight guest/Origin 401/403 lacked `operation:"contentVisibility"` before visibility branch; UI erroneously treated rejection as unknown. No other confirmed Mira blocker.
+- Narrow correction 5 files: route `app/forum/actions.server.ts` routes preflight-denied visibility POST through typed branch while preserving ordinary topic generic denials; `visibility-hide-form.tsx`/`visibility-restore-form.tsx` recognize typed `origin` 403 as denied; `visibility-actions.test.ts` now requires exact typed canonical-error envelope and protects ordinary reply preflight; `visibility-denial.test.tsx` mounts true canonical action with guest401/foreign-Origin403 for both forms and asserts denial UI/revalidation/no replay.
+- Changes committed on head above; source checks and GitHub diff scope PASS. [New CI #45033945789](https://github.com/iliya1947/vico-forum/actions/runs/45033945789) + connected runs triggered; **not yet runtime verified**. Previous stable-head 15/15 success does not apply to new head.
+- **STOP**, next `...`: inspect CI and new mounted/canonical regressions, address only actual B7-MIRA-01 fail, then STOP. Mira re-checkpoint required on final tested exact head before B8. `WORKFLOW.md` authoritative.
