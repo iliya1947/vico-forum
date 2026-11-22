@@ -31,6 +31,7 @@ describe("generic P0 resource request dispatch", () => {
           if (params.locale !== "en") throw new Response("Not Found", { status: 404 });
           context.set(checkContext, "middleware-ran");
           const result = await next();
+          if (!(result instanceof Response)) throw new Error("Expected a resource Response");
           result.headers.set("X-Middleware", "ran");
           return result;
         }],
