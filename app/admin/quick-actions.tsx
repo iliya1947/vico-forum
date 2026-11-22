@@ -152,7 +152,7 @@ export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActio
  if(!actions.length&&!canHide)return null;
  return <QuickActions>{canHide?<VisibilityHideForm
    key={JSON.stringify([locale,topic.id,actorId,topic.visibilityVersion,topic.title.id])}
-   locale={locale} topicId={topic.id} actorId={actorId} revisionId={topic.title.id}
+   locale={locale} topicId={topic.id} actorId={actorId!} revisionId={topic.title.id}
    visibilityVersion={topic.visibilityVersion!}/>:null}{actions.map(action=>
   action.intent==="closeTopic"||action.intent==="reopenTopic"
    ? <TopicClosureQuickActionForm
