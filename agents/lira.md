@@ -1,20 +1,5 @@
-# agents/lira.md — B8-A only; STOP after PostgreSQL acceptance packet
+# agents/lira.md — B8-A1 scoped PG inventory complete; STOP before B8-A2
 
-## Accepted base
-
-- B7 Draft #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, Mira coordinator PASS.
-- Open a **new stacked B8 Draft** based directly on branch `feature/moderation-visibility-b7-actions-ui` at that exact head. Do not continue B8 work inside #371.
-
-## Current assignment — B8-A only
-
-Complete the real PostgreSQL acceptance packet for the accepted visibility contract:
-
-1. State/History: topic/post Hide+Restore, no-op/stale/overflow, exact transition History/reason, forced History failure rollback and unrelated-state preservation.
-2. Authority: fresh current permission, active actor, AP-10 restriction, Owner/effective policy where applicable, and negative generic Admin/History/Complaint authority; include two-moderator and actor-deactivation cases.
-3. Real PG race/lock-order acceptance required by V8 across visibility and the existing reply/parent/edit/title/source/solution/duplicate/new-plan/accepted-execution/Complaint seams, including both relevant orders where specified. Do not substitute JS promise sequencing for database barriers.
-
-Prefer extending existing PG suites rather than cloning them. If a test exposes a real current-B8 visibility defect, diagnose and correct only that bounded defect; record it explicitly.
-
-Run the targeted PostgreSQL checks needed to establish B8-A. Update service #342 with B8 PR number, stable exact head, changed scope, test evidence and any defect/correction.
-
-**Mandatory STOP after B8-A.** B8-B Worker/Better Auth/R2, B8-C Chromium/UI/cache, B9, fold, final review, merge and deploy are not authorized.
+- B7 Mira PASS #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`. B8 branch `feature/moderation-visibility-b8-acceptance` created from this exact SHA, currently ahead0/behind0; B8 Draft PR not yet open because no test commit. B1–B7 remain Draft/unmerged.
+- Current owner task **B8-A only** (real PostgreSQL State/History/Authority/order acceptance). A1 inspected V8 matrix and major existing PG suites; details/matrix in `research/b8-a-pg-coverage.md` on service branch. Existing `tests/database/moderation-visibility-commands.test.ts` (172341 chars) already tests much state/History/authority and real PG `pg_blocking_pids` topic/post Hide/Restore × planning/reply/edit/Complaints and actor deactivation. Do not duplicate. No B8 code/test change and no run yet.
+- **Next `...`**: B8-A2 inspect neighboring PG suites for source/solution/duplicate/accepted execution and authority races, add first *confirmed missing* real PG barrier test(s) on new branch, create B8 Draft with B7 base, STOP. Do not classify gaps as real until review of adjacent tests. No B8-B/C or B9.
