@@ -1,7 +1,7 @@
 import { useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 import type { ForumTopicBookmarkCursor } from "../../db/forum-repository";
 import { ForumRouteError } from "../forum/ui";
