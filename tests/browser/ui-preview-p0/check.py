@@ -26,10 +26,13 @@ with sync_playwright() as playwright:
     page.locator("#root[data-status]").wait_for(timeout=30000)
     status = page.locator("#root").get_attribute("data-status")
     content = page.locator("#root").inner_text()
-    assert status == "modules-imported", {"status": status, "text": content, "pageerrors": errors}
+    page.locator("main.topic-shell").wait_for(timeout=30000)
+    content = page.locator("#root").inner_text()
+    assert "P0 shared forum topic" in content and "P0 message rendered by the real forum TopicView" in content, {"status": status, "text": content, "pageerrors": errors}
+    assert status == "router-mounted", {"status": status, "text": content, "pageerrors": errors}
     assert not errors, errors
     assert not external, external
-    print("P0_REAL_BROWSER_IMPORT " + json.dumps({
+    print("P0_REAL_TOPIC_SCREEN " + json.dumps({
         "status": status,
         "route_modules": ["root", "routes/locale-boundary", "routes/topic"],
         "external_requests": len(external),
