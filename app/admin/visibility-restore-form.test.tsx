@@ -9,7 +9,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { russianCommonValues, hebrewCommonValues } from "../localization/manual-values";
 import { reviewedCommonFingerprints } from "../localization/manual-fingerprints";
 import { sourceFingerprint } from "../localization/fingerprint";
-import type { HiddenInspection } from "../../db/private-visibility-queue";
+import type { HiddenInspection, HiddenVisibilityAction } from "../../db/private-visibility-queue";
 import { canRestoreHiddenInspection } from "./visibility-inspector";
 import VisibilityInspector from "./visibility-inspector";
 
@@ -37,18 +37,19 @@ const TOPIC_ID="topic/hidden",POST_ID="post/hidden";
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();});
 function snapshot(options:Options={}):HiddenInspection{
+  const isHidden=options.isHidden??true;
+  const eventAction:HiddenVisibilityAction=options.kind==="post"
+    ? (isHidden?"post.hidden":"post.restored") : (isHidden?"topic.hidden":"topic.restored");
   const core={
-    isHidden:options.isHidden??true,visibilityVersion:options.visibilityVersion??3,
+    isHidden,visibilityVersion:options.visibilityVersion??3,
     currentRevisionId:options.currentRevisionId??"current-private-revision",
     visibilityChangedAt:"2026-11-22T00:00:00.000Z",
-    lastEvent:{action:options.isHidden===false?"topic.restored":"topic.hidden",
-      at:"2026-11-22T00:00:00.000Z",reason:"PRIVATE HISTORY REASON"},
+    lastEvent:{action:eventAction,at:"2026-11-22T00:00:00.000Z",reason:"PRIVATE HISTORY REASON"},
   };
   if(options.kind==="post")return {
     ...core,kind:"post",id:POST_ID,topicId:TOPIC_ID,
     parentPostId:"original-post",parentUnavailable:options.parentUnavailable??true,
     topicHidden:options.topicHidden??true,
-    lastEvent:{...core.lastEvent,action:core.isHidden?"post.hidden":"post.restored"},
   };
   return {...core,kind:"topic",id:TOPIC_ID,topicId:TOPIC_ID};
 }
