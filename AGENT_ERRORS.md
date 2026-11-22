@@ -87,3 +87,10 @@ there are only N.
 - **What happened:** B8-B3's first connected fixture passed a *result* visibility version to `expectedVisibilityVersion`, causing legitimate HTTP 409. After fixing the off-by-one, B8-B3 passed in isolation but was invoked *before* the already accepted B8-B1 smoke on the same published topic, bumping its CAS versions and causing B8-B1 to fail.
 - **Why it was wrong:** the two smoke blocks shared a mutable PG/Worker fixture. Checking each new B8-B3 case without accounting for existing B8-B1 state/version prerequisites was insufficient to conclude their composed run would pass. The initial duplicate diagnostic declarations were a separate technical error, not a product finding.
 - **Prevention:** distinguish baseline from resulting CAS version; protect established acceptance fixtures from later mutable scenarios by running new destructive tests after them and reading their actual baseline. An isolated PASS is not a composed PASS; require both markers on the same exact head. Final `cd9ffd1adc30853ecf297fea15ea6188f851ca98` proves both through real Worker.
+
+
+## 2026-11-23 — B8-C2 connected-test selector/timing errors
+
+- **Что произошло:** новый Playwright test сначала обращался к неуточнённому `form.visibility-hide-form`, хотя на странице одновременно были формы темы и сообщения. После исправления тест дважды делал вывод об unknown outcome по transient `fetcher.state=idle` сразу после click, до фактического завершения network request; из-за этого три промежуточных SA04-N запуска завершились ошибкой тестовой диагностики, не продукта.
+- **Почему ошибка:** DOM locator не был привязан к уже выбранной целевой форме; визуальный признак не был синхронизирован с authoritative Worker/Chromium request lifecycle. Промежуточный UI render не доказывает окончательного сетевого результата.
+- **Предотвращение:** повторные действия выполнять через scoped locator; для connected отказов ждать `requestfailed`/конкретный ответ и только затем проверять UI, PG state, History и количество POST. Итоговый `c0e5e693ccaf22e129d7e2a5cb518dbfb42035fd` подтвердил полный B8-C2 сценарий.
