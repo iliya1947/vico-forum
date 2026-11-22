@@ -236,6 +236,118 @@ describe("content topic-title execution and publication", () => {
     }
   });
 
+  it.each([
+    { transition: "Hide", publicationFirst: true },
+    { transition: "Hide", publicationFirst: false },
+    { transition: "Restore", publicationFirst: true },
+    { transition: "Restore", publicationFirst: false },
+  ] as const)(
+    "B8-A7 accepted title publication × $transition, publicationFirst=$publicationFirst: PG lock order",
+    async ({ transition, publicationFirst }) => {
+      const manager = await secondClient();
+      const holder = await secondClient();
+      const observer = await secondClient();
+      const started = deferred(), release = deferred();
+      let task: ReturnType<TranslationTaskExecutorDispatcher["execute"]> | undefined;
+      let change: ReturnType<Client["query"]> | undefined;
+      let held = false;
+      try {
+        const enqueuer = new FakeTranslationTaskEnqueuer();
+        const planned = await createPlanner(client, enqueuer).planAndDispatch(
+          requestRevision(), "he", budgetAdmission(), "author-a",
+        );
+        if (planned.kind !== "queued") throw new Error("expected previously accepted title task");
+        const pid = (await client.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+        const holderPid = (await holder.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+        const managerPid = (await manager.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+        const translate = vi.fn(async (): Promise<MachineTranslationResult> => {
+          started.resolve();
+          await release.promise;
+          return {
+            value: "כותרת מתורגמת",
+            provenance: { provider: "fake", model: "fake-v1", origin: "machine" },
+          };
+        });
+        task = createDispatcher(client, { supports: () => true, translate })
+          .execute(enqueuer.messages[0]!);
+        void task.catch(() => undefined);
+        await started.promise;
+        if (transition === "Restore") {
+          await manager.query("update forum_topics set is_hidden=true where id='topic-a'");
+        }
+        await holder.query("begin");
+        held = true;
+        await holder.query("select id from forum_topics where id='topic-a' for update");
+        const waitForBlock = async (waiter: number, possible: number[]) => {
+          const deadline = Date.now() + 8_000;
+          let last: unknown;
+          while (Date.now() < deadline) {
+            const rows = await observer.query<{ blockers: number[]; wait_event_type: string | null }>(
+              "select pg_blocking_pids(pid) as blockers,wait_event_type " +
+                "from pg_stat_activity where pid=$1", [waiter],
+            );
+            last = rows.rows[0];
+            if (rows.rows[0]?.wait_event_type === "Lock"
+              && rows.rows[0].blockers.some(id => possible.includes(id))) return;
+            await new Promise(resolve => setTimeout(resolve, 25));
+          }
+          throw new Error("Title accepted publication PG wait absent: " +
+            JSON.stringify({ waiter, possible, last }));
+        };
+        const beginVisibility = async () => {
+          change = manager.query(
+            "update forum_topics set is_hidden=$1 where id='topic-a'",
+            [transition === "Hide"],
+          );
+          void change.catch(() => undefined);
+          await waitForBlock(managerPid, [holderPid, pid]);
+        };
+        if (publicationFirst) {
+          release.resolve();
+          await waitForBlock(pid, [holderPid, managerPid]);
+          await beginVisibility();
+        } else {
+          await beginVisibility();
+          release.resolve();
+          await waitForBlock(pid, [holderPid, managerPid]);
+        }
+        await holder.query("commit");
+        held = false;
+        await expect(task).resolves.toEqual({ outcome: "published", delivery: "ack" });
+        await expect(change).resolves.toMatchObject({ rowCount: 1 });
+        expect(translate).toHaveBeenCalledTimes(1);
+        expect((await observer.query(
+          "select is_hidden,current_title_revision_id from forum_topics where id='topic-a'",
+        )).rows[0]).toEqual({
+          is_hidden: transition === "Hide", current_title_revision_id: "title-a-r1",
+        });
+        expect((await observer.query(
+          "select status from translation_tasks where id=$1", [planned.task.id],
+        )).rows).toEqual([{ status: "completed" }]);
+        expect(await new DrizzleContentTranslationStore(drizzle(observer)).read({
+          contentType: "topic-title", contentId: "topic-a", revisionId: "title-a-r1", targetLocale: "he",
+        })).toMatchObject({
+          translatedContent: "כותרת מתורגמת", provenance: { origin: "machine" },
+        });
+        if (transition === "Hide") {
+          await manager.query("update forum_topics set is_hidden=false where id='topic-a'");
+        }
+        const restoredEnqueue = new FakeTranslationTaskEnqueuer();
+        await expect(createPlanner(observer, restoredEnqueue).planAndDispatch(
+          requestRevision(), "he", budgetAdmission(), "author-a",
+        )).resolves.toMatchObject({ kind: "original", reason: "translation-current" });
+        expect(restoredEnqueue.messages).toHaveLength(0);
+        expect(translate).toHaveBeenCalledTimes(1);
+      } finally {
+        release.resolve();
+        if (held) await holder.query("rollback");
+        await Promise.allSettled([task, change]);
+        await Promise.all([manager.end(), holder.end(), observer.end()]);
+      }
+    },
+    30_000,
+  );
+
   it("dispatches by persisted kind, publishes atomically, and makes duplicate delivery provider-free", async () => {
     const enqueuer = new FakeTranslationTaskEnqueuer();
     const planned = await createPlanner(client, enqueuer).planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
