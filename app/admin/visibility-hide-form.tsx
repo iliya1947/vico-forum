@@ -60,7 +60,7 @@ export function VisibilityHideForm({ locale, topicId, actorId, revisionId, visib
       setVerifying(false);
     }
   }
-  return <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
+  return <fetcher.Form method="post" action={`${forumTopicPath(locale, topicId)}?visibilityAction=1`}
     className="topic-admin-form visibility-hide-form"
     aria-busy={fetcher.state !== "idle"}
     onSubmit={(event) => {
