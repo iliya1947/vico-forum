@@ -178,3 +178,17 @@ describe("shared P1 measure route error identity", () => {
     expect(() => measureUuid("invalid")).toThrow(neutralMeasureInvalid);
   });
 });
+
+import { RegistrationSettingsUnavailableError as neutralRegistrationUnavailable } from "../../../db/registration-settings-error";
+import { RegistrationSettingsUnavailableError as productionRegistrationUnavailable } from "../../../db/hyperdrive-registration-settings";
+
+describe("shared P1 registration settings error identity", () => {
+  it("preserves production instanceof and fail-closed registration behavior", () => {
+    expect(neutralRegistrationUnavailable).toBe(productionRegistrationUnavailable);
+    const cause = new Error("storage unavailable");
+    const error = new productionRegistrationUnavailable("Registration settings unavailable", { cause });
+    expect(error).toBeInstanceOf(neutralRegistrationUnavailable);
+    expect(error.message).toBe("Registration settings unavailable");
+    expect(error.cause).toBe(cause);
+  });
+});
