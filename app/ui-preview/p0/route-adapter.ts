@@ -26,8 +26,11 @@ export function createPreviewDataRoutes(
       return null;
     }
     used.add(descriptor.id);
-    if (typeof module.default !== "function") {
-      throw new Error("UI preview route lacks real default component: " + descriptor.id);
+    const hasComponent = typeof module.default === "function";
+    const isResource = !hasComponent && !children.length
+      && (typeof module.loader === "function" || typeof module.action === "function");
+    if (!hasComponent && !isResource) {
+      throw new Error("UI preview route lacks real component or resource handler: " + descriptor.id);
     }
     for (const field of ["loader", "action", "clientAction"] as const) {
       if (module[field] !== undefined && typeof module[field] !== "function") {
@@ -43,7 +46,7 @@ export function createPreviewDataRoutes(
       ...(descriptor.path === undefined ? {} : { path: descriptor.path }),
       ...(descriptor.index === undefined ? {} : { index: descriptor.index }),
       ...(descriptor.caseSensitive === undefined ? {} : { caseSensitive: descriptor.caseSensitive }),
-      Component: module.default as ComponentType,
+      ...(hasComponent ? { Component: module.default as ComponentType } : {}),
       ...(typeof module.loader === "function" ? { loader: module.loader } : {}),
       ...(typeof module.clientAction === "function"
         ? { action: previewAction(descriptor.id, module) }

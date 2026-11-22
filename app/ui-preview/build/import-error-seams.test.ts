@@ -32,6 +32,8 @@ import { UserMeasureRestrictedError as productionRestricted } from "../../../db/
 import { UserMeasureRestrictedError as neutralRestricted } from "../../../db/user-measures-error";
 import { isForumAttachmentUuid as neutralAttachmentId } from "../../../db/forum-attachment-id";
 import { isForumAttachmentUuid as productionAttachmentId } from "../../../db/forum-attachments";
+import { UserPrivacyAccountMissingError as neutralPrivacyMissing } from "../../../db/user-privacy-error";
+import { UserPrivacyAccountMissingError as productionPrivacyMissing } from "../../../db/user-privacy";
 
 describe("topic action import barriers", () => {
   it("preserves identical production and neutral exception constructors", () => {
@@ -48,6 +50,7 @@ describe("topic action import barriers", () => {
     ] as const;
     for (const key of accountNames) expect(neutralAccountErrors[key]).toBe(productionAccountErrors[key]);
     expect(neutralRestricted).toBe(productionRestricted);
+    expect(neutralPrivacyMissing).toBe(productionPrivacyMissing);
     expect(neutralAttachmentId).toBe(productionAttachmentId);
     expect(neutralAttachmentId("00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(neutralAttachmentId("invalid-id")).toBe(false);

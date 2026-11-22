@@ -5,20 +5,28 @@ import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "./route-adapter";
 import { createPreviewDocumentAdapter } from "./document";
 import { createP0Context, P0_TOPIC_ID } from "./fixture";
+import { installPreviewResourceTransport } from "./resource-transport";
 
 /** P0-only browser proof. This never replaces the published Pages preview. */
 const mount = document.getElementById("root");
 if (!mount) throw new Error("P0 candidate mount is missing");
 
+// A single transport is installed before dynamically importing product modules.
+const resourceRouteIds = ["routes/presence", "routes/mentions"] as const;
+const transport = installPreviewResourceTransport({
+  manifest: routeManifest, resourceIds: resourceRouteIds, createContext: createP0Context,
+});
+
 async function boot() {
   const modules = new Map<string, Record<string, unknown>>();
-  for (const id of ["root", "routes/locale-boundary", "routes/topic"]) {
+  for (const id of ["root", "routes/locale-boundary", "routes/topic", ...resourceRouteIds]) {
     const module = await importRoute(id);
     modules.set(id, module);
     console.info("P0_DIAGNOSTIC_IMPORTED", id);
   }
 
   const routes = createPreviewDataRoutes(routeManifest, modules);
+  transport.configure(routes, modules);
   const router = createMemoryRouter(routes, {
     initialEntries: ["/en/topics/" + P0_TOPIC_ID],
     getContext: createP0Context,
@@ -49,6 +57,7 @@ async function boot() {
 }
 
 void boot().catch((error: unknown) => {
+  transport.dispose();
   mount!.dataset.status = "boot-failed";
   mount!.textContent = error instanceof Error ? error.stack ?? error.message : String(error);
   console.error("P0_BOOT_FAILURE", error);

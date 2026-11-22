@@ -77,6 +77,7 @@ const completedPublications = new Map<string, string>();
 const reader: Pick<ForumReader,
   "readTopicPage" | "readTopicBlockedAuthors" | "readTopicMute"
   | "readTopicBookmark" | "readTopicWatch" | "readTopicReadState" | "countUnreadNotifications"
+  | "searchMentionableUsers"
 > = {
   async readTopicPage(id) {
     return id === P0_TOPIC_ID ? { ...sampleTopic, posts: [...posts] } : undefined;
@@ -100,6 +101,10 @@ const reader: Pick<ForumReader,
     };
   },
   async countUnreadNotifications() { return 0; },
+  async searchMentionableUsers(query) {
+    return "Preview member".toLocaleLowerCase("en").includes(query.toLocaleLowerCase("en"))
+      ? [{ id: P0_ACTOR_ID, name: "Preview member" }] : [];
+  },
 };
 function strictCapability<T extends object>(configured: object, scope: string): T {
   return new Proxy(configured, {
@@ -111,7 +116,11 @@ function strictCapability<T extends object>(configured: object, scope: string): 
 }
 const strictReader = strictCapability<ForumReader>(reader, "forum reader");
 
-const writer: Pick<ForumWriter, "createReply" | "advanceTopicReadState"> = {
+const writer: Pick<ForumWriter, "createReply" | "advanceTopicReadState" | "recordOnlinePresence"> = {
+  async recordOnlinePresence(actorId) {
+    if (actorId !== P0_ACTOR_ID) throw new Error("P0 presence actor mismatch");
+    console.info("P0_FIXTURE_PRESENCE_RECORDED", actorId);
+  },
   async createReply(input) {
     if (input.topicId !== P0_TOPIC_ID || input.authorId !== P0_ACTOR_ID) throw new Error("Unexpected P0 reply request");
     if (!input.body.trim()) throw new Error("Cannot publish an empty reply");

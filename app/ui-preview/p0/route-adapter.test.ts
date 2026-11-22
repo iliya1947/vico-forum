@@ -16,6 +16,7 @@ function fixtures() {
     ["root", { default: dummy }],
     ["routes/locale-boundary", { default: dummy, loader: fakeLoader, middleware: [nextMiddleware] }],
     ["routes/topic", { default: dummy, loader: fakeLoader, action: fakeLoader }],
+    ["routes/presence", { action: fakeLoader, loader: fakeLoader }],
   ]);
 }
 
@@ -33,7 +34,13 @@ describe("P0 generated Data Router adaptation", () => {
     expect(topic.path).toBe("topics/:topicId");
     expect(topic.loader).toBe(fakeLoader);
     expect(topic.action).toBe(fakeLoader);
-    expect((locale as RouteObject & { children: RouteObject[] }).children).toHaveLength(1);
+    const presence = (locale as RouteObject & { children: RouteObject[] }).children[1]!;
+    expect(presence.id).toBe("routes/presence");
+    expect(presence.path).toBe("presence");
+    expect(presence.action).toBe(fakeLoader);
+    expect(presence.loader).toBe(fakeLoader);
+    expect(presence.Component).toBeUndefined();
+    expect((locale as RouteObject & { children: RouteObject[] }).children).toHaveLength(2);
   });
 
   it("does not silently replace missing ancestor routes or foreign modules", () => {

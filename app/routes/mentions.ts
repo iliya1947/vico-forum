@@ -2,7 +2,7 @@ import type { RouterContextProvider } from "react-router";
 
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 
 function response(payload: unknown, status = 200): Response {
   return Response.json(payload, {

@@ -66,7 +66,7 @@ export default defineConfig({
       },
     },
     // P0 import-graph proof only. Full module coverage belongs to P1.
-    previewRoutesPlugin(routes, appDirectory, ["root", "routes/locale-boundary", "routes/topic"]),
+    previewRoutesPlugin(routes, appDirectory, ["root", "routes/locale-boundary", "routes/topic", "routes/presence", "routes/mentions"]),
     importGraphDiagnostics(),
   ],
   build: {

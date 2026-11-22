@@ -13,6 +13,7 @@ assert urlparse(base).hostname in {"127.0.0.1", "localhost"}
 errors = []
 external = []
 logs = []
+resource_network = []
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="chrome", headless=True, args=["--no-sandbox"])
     context = browser.new_context(service_workers="block")
@@ -23,6 +24,8 @@ with sync_playwright() as playwright:
                   else (external.append(route.request.url), route.abort())[-1])
     page = context.new_page()
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("request", lambda req: resource_network.append(req.url)
+            if urlparse(req.url).path in {"/en/presence", "/en/mentions", "/xx/presence"} else None)
     def on_console(message):
         if message.text.startswith("P0_"):
             logs.append(message.text)
@@ -64,6 +67,50 @@ with sync_playwright() as playwright:
     assert any("P0_FIXTURE_REPLY_COMMITTED p0-reply-1" in item for item in logs), logs
     assert any("P0_FIXTURE_READ_STATE" in item for item in logs), logs
     assert any("P0_ROUTER_REDIRECTED #post-p0-reply-1" in item for item in logs), logs
+    resource_results = page.evaluate("""async () => {
+      const mention = await fetch("/en/mentions?q=Preview");
+      const mentionsPayload = await mention.json();
+      const invisible = await fetch("/en/presence");
+      const denied = await fetch("/en/presence", {
+        method: "POST", headers: { Origin: "https://foreign.invalid" },
+        body: new URLSearchParams({ intent: "heartbeat", expectedUserId: "p0-preview-user" }),
+      });
+      const wrongMethod = await fetch("/en/presence", { method: "PUT" });
+      const wrongLocale = await fetch("/xx/presence", {
+        method: "POST",
+        body: new URLSearchParams({ intent: "heartbeat", expectedUserId: "p0-preview-user" }),
+      });
+      const heartbeat = await fetch("/en/presence", {
+        method: "POST",
+        body: new URLSearchParams({ intent: "heartbeat", expectedUserId: "p0-preview-user" }),
+      });
+      return {
+        mentionsStatus: mention.status, mentionsPayload,
+        mentionsCache: mention.headers.get("Cache-Control"),
+        mentionsNosniff: mention.headers.get("X-Content-Type-Options"),
+        presenceGet: invisible.status, presenceGetCache: invisible.headers.get("Cache-Control"),
+        foreignOrigin: denied.status, foreignOriginCache: denied.headers.get("Cache-Control"),
+        wrongMethod: wrongMethod.status, allowedMethod: wrongMethod.headers.get("Allow"),
+        wrongLocale: wrongLocale.status,
+        presencePost: heartbeat.status, presenceCache: heartbeat.headers.get("Cache-Control"),
+        presencePostBody: await heartbeat.text(),
+      };
+    }""")
+    assert resource_results == {
+        "mentionsStatus": 200,
+        "mentionsPayload": {"users": [{"id": "p0-preview-user", "name": "Preview member"}]},
+        "mentionsCache": "private, no-store",
+        "mentionsNosniff": "nosniff",
+        "presenceGet": 404, "presenceGetCache": "no-store",
+        "foreignOrigin": 403, "foreignOriginCache": "no-store",
+        "wrongMethod": 405, "allowedMethod": "POST",
+        "wrongLocale": 404,
+        "presencePost": 204, "presenceCache": "no-store", "presencePostBody": "",
+    }, resource_results
+    assert any("P0_FIXTURE_PRESENCE_RECORDED" in message for message in logs), logs
+    assert any("P0_RESOURCE_RESULT routes/presence POST 204" in message for message in logs), logs
+    assert any("P0_RESOURCE_RESULT routes/mentions GET 200" in message for message in logs), logs
+    assert not resource_network, resource_network
     assert not errors, errors
     assert not external, external
     print("P0_REAL_TOPIC_SCREEN " + json.dumps({
@@ -76,6 +123,8 @@ with sync_playwright() as playwright:
         "client_action": True,
         "server_action": True,
         "fetcher_read_state": True,
+        "resource_results": resource_results,
+        "resource_network": len(resource_network),
         "url": base,
     }), flush=True)
     browser.close()
