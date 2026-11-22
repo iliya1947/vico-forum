@@ -69,6 +69,7 @@
     "app/localization/content-translation-presentation.ts",
     "app/localization/content-markdown-translation.ts",
     "app/localization/content-request-budget.server.ts",
+    "app/localization/content-generation-error.ts",
     "app/localization/content-generation-action.server.ts",
     "app/localization/content-generation-policy.ts",
     "app/localization/content-generation-response.ts",
