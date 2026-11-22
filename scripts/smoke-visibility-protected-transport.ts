@@ -144,7 +144,28 @@ export async function verifyModerationProtectedDomainTransport({
   async function change(kind: "post" | "topic",hidden:boolean,version:number) {
     const data=visibility(kind,hidden,version,reviewer,postId,
       kind==="post"?currentRevision:titleRevisionId);
+    const table=kind==="topic"?"forum_topics":"forum_posts";
+    const id=kind==="topic"?topicId:postId;
+    const baseline=(await client.query<{
+      is_hidden:boolean;visibility_version:number;revision_id:string;
+    }>("select is_hidden,visibility_version,"+
+      (kind==="topic"?"current_title_revision_id":"current_revision_id")+
+      " as revision_id from "+table+" where id=$1",[id])).rows[0];
+    assert.ok(baseline,"B8-B3 expected visibility target");
+    const expected=data.expectedRevisionId;
+    assert.equal(baseline.visibility_version,version-1,
+      "B8-B3 fixture version differs before command");
+    assert.equal(baseline.revision_id,expected,
+      "B8-B3 fixture revision differs before command");
     const response=await submit(topic,reviewer.cookie,data);
+    if(response.status===409) {
+      const responseBody=await response.clone().text();
+      throw new Error("B8-B3 visibility conflict diagnostic: "+
+        JSON.stringify({kind,version,actorIdMatches:reviewer.id===data.editorActorId,
+          baselineHidden:baseline.is_hidden,baselineVersion:baseline.visibility_version,
+          revisionMatches:baseline.revision_id===expected,
+          responseError:responseBody.match(/"error":\s*"[^"]+"/u)?.[0]??"masked"}));
+    }
     if(kind==="topic"&&hidden) {
       assert.equal(response.status,404,"Committed topic Hide document is neutral 404");
       noLeak(await response.text(),"topic Hide document",secrets);
