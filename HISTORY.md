@@ -23,3 +23,4 @@
 - 2026-11-22 — исправлены 3 semantic regressions AGENTS wording-pass; повторная трёхслойная проверка дала PASS для User, Project и AGENTS drafts, 0 межслойных противоречий и 0 consistency blockers.
 - 2026-11-22 — transfer-readiness выявил реальный лимитный блокер: финальный User draft 8364 chars не помещается в официальный 5000-char global Custom Instructions limit; безопасный transfer order зафиксирован как User → AGENTS → Project.
 - 2026-11-22 — User draft compacted from 8364 chars / 42 rules to 4999 chars / 20 rules; explicit map confirms coverage for all 52 retained semantic guards. Current 15-rule coverage and three-layer consistency remain to be rechecked.
+- 2026-11-22 — после compact User rewrite повторная three-layer consistency-проверка дала PASS: User 15/15 current + 52/52 expanded guards, Project PASS, AGENTS PASS, 0 межслойных противоречий и 0 lost guards.
