@@ -89,3 +89,17 @@ This is an initial inventory, not evidence of B8 acceptance. Updated working ass
 - Test-only commit `8942509ee94927c5c0dc1014381bfcf5ad18da84`, +154 lines in `tests/database/complaints-foundation.test.ts`. Cumulative B8 diff vs accepted B7: 4 test files, +1316 lines. [**CI #45058154131**](https://github.com/iliya1947/vico-forum/actions/runs/45058154131) **SUCCESS first attempt** exact SHA: checks 2951/2951 unit/lint/typecheck/build/preview; database **1681/1681** PostgreSQL17 and Worker smoke.
 - **B8-A PG reconciliation:** A1 inventory + A2–A7 **48 actual PG lock-order cases**, A8 **2 negative direct authority cases**, A9 **3 protected Complaint lifecycle cases**; existing approved B2–B7 suites provide baseline sequential State/History/CAS, AP-10/Owner/actor lifecycle, public SQL projection, retained inbox/Help/asset/history and private inspector. No further **confirmed** B8-A PG gaps identified in this bounded cross-suite review. The tests' coverage is not a proof of connected Worker/Better Auth/local R2 B8-B or Chromium/UI/cache B8-C. Exact-head green CI is author evidence, **not Mira approval**.
 - **STOP for Mira coordinator checkpoint:** scope/PG matrix check on exact `8942509ee94927c5c0dc1014381bfcf5ad18da84`, accepted B7 #371 `f92778606f1c8ea4e64f53c1660910f34c48b84c`, Draft #376. B8-B/C/B9/fold/review/merge/deploy remain unauthorized.
+
+
+## Mira coordinator review — B8-A HOLD
+
+Independent review of exact `8942509ee94927c5c0dc1014381bfcf5ad18da84` confirmed one remaining
+current B8-A matrix gap: A7's accepted title/body execution races use raw autocommit
+`UPDATE ... is_hidden` in selective historical fixtures rather than the actual
+`setTopicVisibility/setPostVisibility` transaction. This validates the shared row-lock seam,
+but not the integrated visibility command interleaving required by V8
+(`Hide/Restore × accepted execution` in both real PostgreSQL orders).
+
+No existing inspected suite combines accepted publication with the real visibility command.
+Add the minimal full-schema barrier regression(s), verify final task/private translation plus
+visibility version/History invariants, and STOP for a fresh Mira checkpoint. B8-B/C remain inactive.
