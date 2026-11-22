@@ -1,14 +1,10 @@
+import { AuthorizationUnavailableError } from "./authorization-error";
 import { isPermissionKey, PERMISSION_CATALOG, type PermissionKey } from "../app/authorization/catalog";
 import { PostgresAuthorizationRepository, type OverrideEffect, type UserAuthorization } from "./authorization-repository";
 
 export class InvalidAuthorizationInputError extends Error {}
 
-export class AuthorizationUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("authorization infrastructure unavailable", options);
-    this.name = "AuthorizationUnavailableError";
-  }
-}
+export { AuthorizationUnavailableError } from "./authorization-error";
 
 export interface PermissionResolver {
   has(permission: PermissionKey): Promise<boolean>;

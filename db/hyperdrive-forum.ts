@@ -1,3 +1,4 @@
+import { ForumStorageUnavailableError } from "./forum-storage-error";
 import type {OwnerOperationalFactSink} from "../app/observability/operational-facts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
@@ -62,12 +63,7 @@ export interface ForumWriter {
   unpinTopic(input: { topicId: string; actorId: string }): Promise<void>;
 }
 
-export class ForumStorageUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("forum storage unavailable", options);
-    this.name = "ForumStorageUnavailableError";
-  }
-}
+export { ForumStorageUnavailableError } from "./forum-storage-error";
 
 type ClientFactory = () => Client;
 

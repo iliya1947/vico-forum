@@ -4,7 +4,8 @@ import type { LoadedLocaleRegistry } from "./persistent-registry";
 import type { UiTranslationStore } from "./persistent-sources";
 import type { TranslationBundleReader } from "./bundles";
 import type { ContentTranslationPresentationService } from "./content-translation-presentation";
-import { ContentGenerationPlanningUnavailableError, type ContentGenerationActionCapability } from "./content-generation-action.server";
+import { ContentGenerationPlanningUnavailableError } from "./content-generation-error";
+import type { ContentGenerationActionCapability } from "./content-generation-action.server";
 import type { ContentGenerationStatusReader } from "./content-generation-status";
 
 export const localeContext = createContext<ResolvedLocaleContext>();
