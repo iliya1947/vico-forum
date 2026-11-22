@@ -77,8 +77,19 @@ export async function verifyModerationVisibilityCacheTransport({
 
   response = await submit(topic, moderator.cookie,
     visibility("topic", true, 0, "B7 private hide reason"));
-  cache(response, topic + " topic hide", 200, "private");
-  sourceAbsent(await response.text(), "topic hide action", [titleSource, currentPostSource]);
+  // A document POST runs the route loader again after the successful action.
+  // Once the topic is hidden, that public loader correctly yields a neutral
+  // 404. The JS clientAction separately redirects fetcher Hide to inspector.
+  cache(response, topic + " topic hide document POST", 404, "public");
+  sourceAbsent(await response.text(), "topic hide document POST", [
+    titleSource, currentPostSource, "B7 private hide reason",
+  ]);
+  const hiddenRow = await client.query<{is_hidden: boolean; visibility_version: number}>(
+    "select is_hidden, visibility_version from forum_topics where id=$1",
+    [topicId],
+  );
+  assert.deepEqual(hiddenRow.rows, [{is_hidden:true, visibility_version:1}],
+    "Document 404 must follow a committed Hide, not conceal a rejected action");
   for (const path of [topic, topicData, topicData + "?_routes=routes%2Ftopic"]) {
     for (const cookie of [undefined, moderator.cookie]) {
       response = await http(path, {}, cookie);
