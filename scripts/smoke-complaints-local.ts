@@ -229,20 +229,19 @@ async function run(){
   assert.ok([302,303].includes(response.status),"Inbox open must redirect to participant result");
   assert.equal(response.headers.get("Location"),
     "/en/complaints/"+caseId+"/result#appeal-"+appeal[0]!.id);
-  // B8-B3: the same live Case/Appeal/History must remain independently
-  // protected while a real post/topic Hide runs; force a real PG read outage.
-  // Return visibility to its baseline before the existing B8-B1 cache probe.
-  await verifyModerationProtectedDomainTransport({
-    client,http,submit:form,topicId,postId,titleRevisionId:titleId,
-    caseId,appealId:appeal[0]!.id,complaintOperationId,
-    reviewer,reporter,author,currentPostSource,titleSource,
-  });
   // B7-only cache transport probe reuses this disposable Worker/PG17 and
   // live Better Auth moderator; it does not expand the Complaint smoke matrix.
   await verifyModerationVisibilityCacheTransport({
     client, http, submit: form, topicId, postId, titleRevisionId: titleId, attachmentId,
     moderator: reviewer, ordinary: reporter,
     titleSource,currentPostSource,
+  });
+  // B8-B3 uses the same resolved protected Case, but starts only after the
+  // accepted B8-B1 probe to avoid changing its original version-0 fixture.
+  await verifyModerationProtectedDomainTransport({
+    client,http,submit:form,topicId,postId,titleRevisionId:titleId,
+    caseId,appealId:appeal[0]!.id,complaintOperationId,
+    reviewer,reporter,author,currentPostSource,titleSource,
   });
   console.log("P7 local Worker/session/authorization/PostgreSQL HTTP smoke: PASS");
 }
