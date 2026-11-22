@@ -9,6 +9,8 @@ import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
 import { TopicBookmarkControl, type TopicBookmarkState } from "./topic-bookmark-control";
 import { PersonalFilterControl, type PersonalFilterState } from "./personal-filter-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
+import { hiddenInspectionPath } from "../admin/visibility-queue-path";
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ComplaintQueueList } from "../complaints/queue-view";
@@ -2317,10 +2319,15 @@ export function TopicView({
     directRepliesByParent.set(post.parentPostId, replies);
   }
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const location = useLocation();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const headerActorId = useHeaderAuthUser()?.id ?? null;
+  // A stale public loader must not advertise private inspection for another account.
+  // The private inspection loader independently repeats fresh authorization and active-actor checks.
+  const canOpenHiddenInspection = canManageVisibility && watchActorId !== null
+    && headerActorId === watchActorId;
   // Canonical loaders supply an explicit private snapshot even for guests.
   // Legacy view-only test stubs without filter metadata do not represent a stale actor.
   // Guest->authenticated, A->B, and A->guest must not use a prior actor's graph.
@@ -2791,6 +2798,14 @@ export function TopicView({
                     <div className="topic-message-body topic-message-filtered" role="note">
                       <p>{t("moderationHiddenPostNotice")}</p>
                     </div>
+                    {canOpenHiddenInspection ? (
+                      <p className="topic-message-private-inspection">
+                        <Link to={hiddenInspectionPath(locale,
+                          {kind:"post",topicId:topic.id,postId:post.id},routing)}>
+                          {t("adminHiddenInspectorOpen")}
+                        </Link>
+                      </p>
+                    ) : null}
                     <div className="topic-message-relations">
                       {parentNumber !== undefined && (
                         <a href={`#post-${encodeURIComponent(post.parentPostId!)}`}>
