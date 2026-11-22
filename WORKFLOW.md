@@ -33,26 +33,18 @@
 
 ## Текущий этап
 
-Этап 5 — deep dedup pass трёх current-based drafts завершён.
+Этап 5 — анализ межслойных дублей завершён.
 
-Дополнительно безопасно сокращено:
-- User: удалён только служебный title;
-- Project: удалён служебный title;
-- Project: повтор mapping имён/моделей заменён ссылкой на обязательный актуальный `AGENTS.md`.
+Результат: `research/cross-layer-duplicates-pass.md`.
 
-Итог:
-- User: 1159 chars / 164 words / 15 rules;
-- Project: 2680 chars / 364 words / 18 rules;
-- AGENTS: 16082 chars / 2015 words / 64 rules;
-- total current 22363 → draft 19921 chars (**-10.92%**);
-- 2837 → 2543 words (**-10.36%**);
-- 97 → 97 самостоятельных нумерованных требований;
-- новых требований: 0.
+Подтверждено:
+- 2 полных delete-safe Project ↔ AGENTS дубля;
+- 1 повтор mapping-данных Project ↔ AGENTS;
+- 1 частичный delete-safe Project ↔ AGENTS дубль;
+- 1 strong overlap, пока не delete-safe;
+- минимум 7 User ↔ AGENTS semantic-overlap clusters, которые нужно сохранять из-за разной аудитории;
+- подтверждённых delete-safe User ↔ Project дублей: 0.
 
-Остальные межслойные совпадения проверены и не признаны delete-safe из-за различий аудитории, scope или частоты применения.
+Drafts на этом этапе не менялись.
 
-Evidence: `research/current-deep-dedup-pass.md`.
-
-Задача 1 — ужать и починить уже действующие инструкции без добавления новых требований — завершена.
-
-Следующий bounded-этап: перейти к отложенной Задаче 2 — заново определить только необходимые новые улучшения интеллектуальной работы и логики, опираясь на `research/behavior-error-classes-reset.md`, не меняя пока drafts.
+Следующий bounded-этап: применить только подтверждённые D1–D4 к Project draft, затем повторно проверить смысл и общий объём.
