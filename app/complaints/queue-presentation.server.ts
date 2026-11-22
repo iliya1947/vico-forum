@@ -2,7 +2,7 @@ import type { RouterContextProvider } from "react-router";
 import { registryForRequest } from "../localization/request-context";
 import type { ComplaintQueueCase } from "./queue-contract";
 import { RegistryConnectionUnavailableError } from "../localization/persistent-registry";
-import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
+import { ComplaintStorageUnavailableError } from "../../db/complaint-storage-error";
 
 export async function presentComplaintCases(context: RouterContextProvider, cases: ComplaintQueueCase[]): Promise<ComplaintQueueCase[]> {
   if(!cases.length)return [];
