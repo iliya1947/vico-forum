@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: **исполнитель P1** по service PR #369. Active Draft #375, stacked on P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`. P1-A generated default full route registry PASS on `4cb98f8ab20b808f140d200a03c6c4dafd90649d`: exact-head CI #45036593299 checks/database SUCCESS, 227 test files / 2777 tests, P0 Chromium regression. STOP. Next `...` → P1-B browser import barriers and generic module export contract, then STOP.
+- Назначение: **исполнитель P1** по service PR #369. Active Draft #375, stacked on P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`. P1-A generated default full route registry PASS on `4cb98f8ab20b808f140d200a03c6c4dafd90649d`: exact-head CI #45036593299 checks/database SUCCESS, 227 test files / 2777 tests, P0 Chromium regression. P1-B1 import diagnostic + first attachment barrier fix completed on Draft #375 exact `9451a34da2d646f2ace42f9376127d931cf8d44b`. Full Vite build and P0 browser regression pass, P1 Chromium imports first 7 actual modules then fails at `routes/home.tsx` heavy DB import; #45041079732 checks FAILURE as intended gate, database result pending at last observation. **STOP**. Next `...` → P1-B2 remaining browser import barriers (no polyfill, no duplicate routes); P1-B3 generic export/props adapter later.
 - Delivery: stacked.
 - P0 PASS: Draft #373 `feature/ui-progress-preview-p0`, exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`.
 - P1 создаётся отдельным implementation PR **с base на P0 branch/head**, не от main.
