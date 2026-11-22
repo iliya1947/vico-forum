@@ -66,7 +66,7 @@ def seed(author_id, locale, kind):
             insert into forum_posts(id,topic_id,author_id,current_revision_id,parent_post_id)
             values($1,$2,$3,$1||'-body',$4) returning id)
             insert into forum_post_revisions(id,post_id,author_id,original_content,source_locale)
-            select id||'-body',id,$2,$5,'en' from post""",
+            select id||'-body',id,$3,$5,'en' from post""",
             [post_id, topic_id, author_id, parent, body])
     return {"topic": topic_id, "post": reply_id, "title": title, "reply": reply}
 
