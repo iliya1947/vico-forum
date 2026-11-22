@@ -1,5 +1,5 @@
 import {useEffect,useRef,type ReactNode} from "react";
-import {Form,useFetcher,useRevalidator} from "react-router";
+import {Form,useFetcher,useMatches,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
 import type {ForumTopicPage,ForumVisibleThreadPost,ForumHiddenThreadPost} from "../../db/forum-repository";
 import {useHeaderAuthUser} from "../auth/auth-controls";
@@ -141,7 +141,13 @@ function TopicClosureQuickActionForm({locale,topic,action}:{
 /** All forms retain the existing canonical topic action; closure uses an isolated inline fetcher. */
 export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActionInput&{locale:string;inline?:boolean}){
  const headerActorId=useHeaderAuthUser()?.id??null;
- if(input.actorId&&input.actorId!==headerActorId)return null;
+ const loaderSnapshot=useMatches().at(-1)?.data;
+ // Returning to an earlier account cannot re-trust the same loader snapshot.
+ const actorLifetime=useRef({snapshot:loaderSnapshot,invalidated:false});
+ if(actorLifetime.current.snapshot!==loaderSnapshot)
+  actorLifetime.current={snapshot:loaderSnapshot,invalidated:false};
+ if(input.actorId&&input.actorId!==headerActorId)actorLifetime.current.invalidated=true;
+ if(actorLifetime.current.invalidated)return null;
  const actorId=input.actorId??headerActorId;
  const {topic}=input;
  const actions=topicQuickActionDescriptors({...input,actorId});
