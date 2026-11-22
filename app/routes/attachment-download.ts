@@ -1,13 +1,13 @@
 import type { RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
-import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state-errors";
 import {
   AttachmentBucketUnavailableError,
   attachmentBucketForRequest,
   attachmentStoreForRequest,
 } from "../forum/attachment-request-context";
-import { ForumAttachmentDraftConflictError, InvalidForumAttachmentError, isForumAttachmentUuid } from "../../db/forum-attachments";
-import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { ForumAttachmentDraftConflictError, InvalidForumAttachmentError, ForumAttachmentStorageUnavailableError } from "../../db/forum-attachment-errors";
+import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
 
 function failure(status: number): Response {
   return new Response(null, {
