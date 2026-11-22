@@ -33,15 +33,16 @@
 
 ## Текущий этап
 
-Этап 1 — compression/fix-pass действующих User Instructions завершён.
+Этап 2 — compression/fix-pass действующих Project Instructions завершён.
 
 Результаты:
-- `USER_INSTRUCTIONS.draft.md` заново построен только из current baseline;
-- 15 → 15 самостоятельных пунктов;
-- 1302 → 1190 chars;
-- 185 → 167 whitespace-words;
+- `PROJECT_INSTRUCTIONS.draft.md` заново построен только из current baseline;
+- 18 → 18 нумерованных правил;
+- 3341 → 2737 chars;
+- 443 → 375 whitespace-words;
 - новых требований: 0;
-- semantic check: смысл/модальность/субъект/область/исключения/полномочия сохранены;
-- evidence: `research/user-current-compression-pass.md`.
+- самостоятельные ненумерованные требования и mapping имён сохранены;
+- semantic check: смысл/модальность/субъект/область/условия/исключения/полномочия сохранены;
+- evidence: `research/project-current-compression-pass.md`.
 
-Следующий bounded-этап: compression/fix-pass действующих Project Instructions без добавления новых требований.
+Следующий bounded-этап: compression/fix-pass действующего `AGENTS.md` без добавления новых требований.
