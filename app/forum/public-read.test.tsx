@@ -5192,6 +5192,60 @@ describe("personal Block presentation in ordinary TopicView", () => {
     expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
     expect(screen.getByText("Visible answer remains.")).toBeInTheDocument();
   });
+  it("B7-B2b links hidden tombstones only for the same authorized viewer without exposing hidden CAS", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "hidden/post-1", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden] };
+    // The public serializable DTO has no private revision/version, for moderators or guests.
+    expect(page.posts[0]).toEqual(hidden);
+    expect(JSON.stringify(page.posts[0])).not.toMatch(/revision|visibilityVersion|originalContent|sourceLocale|attachment/i);
+    for (const { locale, direction } of [
+      { locale: "en", direction: "ltr" as const },
+      { locale: "he", direction: "rtl" as const },
+    ]) {
+      const view=renderRoute(TopicRoute,topicRenderData(page,{
+        locale,canManageVisibility:true,watchActorId:"moderator1",
+      }),forumTopicPath(locale,topic.id),locale,direction,{id:"moderator1",name:"Moderator"});
+      try {
+        await screen.findByText("This message is unavailable.");
+        const tombstone=view.container.querySelector("[data-moderation-hidden-post]");
+        expect(tombstone).not.toBeNull();
+        const link=tombstone?.querySelector<HTMLAnchorElement>(".topic-message-private-inspection a");
+        expect(link?.textContent).toBe("Inspect");
+        const href=link?.getAttribute("href");
+        expect(href).toBe(`/${locale}/admin/forum/topics/typed%2Fapi/inspect?postId=hidden%2Fpost-1`);
+        const destination=new URL(href!,"https://forum.test");
+        expect([...destination.searchParams.keys()]).toEqual(["postId"]);
+        expect(destination.searchParams.get("postId")).toBe(hidden.id);
+        expect(destination.pathname).not.toContain("revision");
+        expect(tombstone?.querySelector("[data-message-body]")).toBeNull();
+        expect(tombstone?.querySelector(".message-admin-tools, .visibility-hide-form, .visibility-restore-form")).toBeNull();
+        expect(tombstone?.querySelector("button")).toBeNull();
+        expect(JSON.stringify(page.posts[0])).not.toContain("visibilityVersion");
+      } finally {view.unmount();}
+    }
+
+    for(const { permission, snapshotActorId, headerUser } of [
+      { permission:false, snapshotActorId:"moderator1", headerUser:{id:"moderator1",name:"Moderator"} },
+      { permission:true, snapshotActorId:"moderator1", headerUser:{id:"another-user",name:"Other"} },
+      { permission:true, snapshotActorId:"moderator1", headerUser:null },
+      { permission:true, snapshotActorId:null, headerUser:{id:"moderator1",name:"Moderator"} },
+    ]) {
+      const view=renderRoute(TopicRoute,topicRenderData(page,{
+        canManageVisibility:permission,watchActorId:snapshotActorId,
+      }),forumTopicPath("en",topic.id),"en","ltr",headerUser);
+      try {
+        await screen.findByText("This message is unavailable.");
+        const tombstone=view.container.querySelector("[data-moderation-hidden-post]");
+        expect(tombstone?.querySelector(".topic-message-private-inspection")).toBeNull();
+        expect(tombstone?.querySelector("button")).toBeNull();
+        expect(tombstone?.querySelector("[data-message-body]")).toBeNull();
+      } finally {view.unmount();}
+    }
+  });
+
   it("renders a hidden middle parent with stable message numbers and bidirectional descendant anchors", async () => {
     const root = {
       ...topic.posts[0]!, id: "tree-root", authorId: "ada", authorName: "Ada", parentPostId: null,
