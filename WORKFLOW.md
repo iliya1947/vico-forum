@@ -13,28 +13,30 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — 42 numbered rules; current coverage PASS 15/15.
+2. `USER_INSTRUCTIONS.draft.md` — финальный User draft: 42 numbered rules; current coverage 15/15 FULL.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 16 numbered rules; Project-specific coverage PASS.
+4. `PROJECT_INSTRUCTIONS.draft.md` — финальный Project draft: 16 numbered rules; 0 lost project-specific guards.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — 58 numbered rules; structural dedupe PASS, wording pass требует 3 локальных исправления.
+6. `AGENTS.draft.md` — финальный AGENTS draft: 58 numbered rules.
 
-## Финальная трёхслойная consistency-проверка
+## Финальный статус
 
-Результат: `research/three-layer-final-consistency.md`.
+Финальная consistency-проверка: `research/three-layer-final-consistency.md`.
 
 1. User draft — PASS.
 2. Project draft — PASS.
-3. Подтверждённых межслойных authority/routing противоречий — 0.
-4. Новых DELETE-SAFE межслойных дублей — 0.
-5. AGENTS draft — BLOCKED тремя wording-regressions:
-   - Principle 4: non-requirement превратился в prohibition;
-   - Diagnosis 1: exemption symptom/causal-chain стал двусмысленно шире;
-   - General 6: history authority restriction расширен с current behavior на history вообще.
-6. Предыдущий вывод, что все 19 wording reductions semantic-safe, исправлен и занесён в `AGENT_ERRORS.md` и `AGENT_LOGIC_ERRORS.md`.
+3. AGENTS draft — PASS.
+4. Межслойных authority/routing противоречий — 0.
+5. Remaining DELETE-SAFE authority/routing duplicates — 0.
+6. Потерянных current guards в проверенных преобразованиях — 0.
+7. Три wording-regressions AGENTS исправлены commit `475a1ecabf31d07a4d93dc1fb3b96575d799a1fd`.
+8. Финальные объёмы:
+   - User draft: 1066 whitespace words / 42 rules;
+   - Project draft: 347 whitespace words / 16 rules;
+   - AGENTS draft: 2017 whitespace words / 58 rules.
 
 Проверяющий: не назначен.
 
-Блокер: три локальных semantic regression в AGENTS draft.
+Блокер: нет.
 
-Следующий переход: исправить только эти три пункта AGENTS draft, не трогая User/Project и остальные 55 AGENTS rules; затем повторить финальную consistency-проверку.
+Следующий переход: отдельным этапом подготовить итоговую фиксацию трёх draft-файлов и маршрут их переноса в реальные instruction sources; без прямой команды разработчика реальные current sources не менять.
