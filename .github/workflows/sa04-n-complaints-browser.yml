@@ -109,6 +109,12 @@ jobs:
               tail -n 120 "$RUNNER_TEMP/sa04-n-preview.log"
               exit 1
             }
+          # B8-C1: reuse this same built Worker/auth/PG/Chromium fixture.
+          "$RUNNER_TEMP/sa04-n-playwright/bin/python" tests/browser/sa04-complaints/visibility-check.py \
+            --url http://127.0.0.1:4224 --output "$RUNNER_TEMP/sa04-n-evidence" || {
+              tail -n 120 "$RUNNER_TEMP/sa04-n-preview.log"
+              exit 1
+            }
       - name: Preserve synthetic connected evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
