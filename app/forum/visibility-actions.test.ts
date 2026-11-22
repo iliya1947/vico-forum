@@ -50,13 +50,15 @@ function fixture(options:{signedIn?:boolean;allowed?:boolean;permissionError?:Er
     editOwnTopicTitle} as never);
   const readTopicPage=vi.fn(async()=>{throw new Error("PUBLIC SOURCE READ MUST NOT RUN");});
   context.set(forumReaderContext,{readTopicPage} as never);
-  const submit=(body:FormData=form(),{method="POST",origin="https://forum.example",pathTopicId=topicId}:
+  const submit=async(body:FormData=form(),{method="POST",origin="https://forum.example",pathTopicId=topicId}:
     {method?:string;origin?:string|null;pathTopicId?:string}={})=>{
     const headers=origin===null?{}:{Origin:origin};
     const request=new Request("https://forum.example/en/topics/"+encodeURIComponent(pathTopicId),{
       method,headers,body,
     });
-    return topicAction({request,params:{locale:"en",topicId:pathTopicId},context});
+    const result=await topicAction({request,params:{locale:"en",topicId:pathTopicId},context});
+    if(!("data" in result))throw new Error("Visibility POST must return action data, not redirect");
+    return result;
   };
   return {context,granted,has,setTopicVisibility,setPostVisibility,createReply,
     editOwnTopicTitle,readTopicPage,submit};
