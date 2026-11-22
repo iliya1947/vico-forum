@@ -1,11 +1,9 @@
 # agents/leva.md — личная рабочая память Лёвы.
 
-## Текущее назначение
+Владелец подтвердил: preview — общий UI/routes/application interactions main, только GitHub/Actions/Pages и браузер; real save необязателен. Разрешено simulated «успешно сохранено» без изменения baseline/после reload. Не требовать SQL/transaction/backend parity из-за собственного прежнего допущения.
 
-Владелец разрешил пересмотреть прежний план после уточнения требований: GitHub + браузер, без внешнего runtime/БД/хоста; один product source, автоматическое отражение изменений main без второго preview behavior. Работа сейчас только planning, не implementation.
+Упрощённое предложение: research/leva-chat-plan.md, база main9cff976. Выбранный candidate — typed in-memory test infrastructure на raw fixtures, общие product components/handlers, generated route manifest и generic local transport. Минимальный transient overlay допустим для target ID/redirect/revalidation, но не обязан становиться полноценной DB.
 
-Актуальное предложение — research/leva-chat-plan.md, база main9cff976. Старый вариант этого файла с Node/socket/внешним размещением отозван. Пересмотр рассматривает browser SQL как внутреннюю библиотеку для сохранения общих repositories/SQL; это не внешний сервер и не подтверждённая совместимость. P0 должен доказать browser graph/driver/migrations/transactions/route transport; внешнего fallback нет.
+Существенные края из исследования: Framework route IDs/clientAction/middleware, server-only imports/error identities, top-level capture fetch Better Auth client, XHR upload и native attachment URLs/Pages base. Их не закрывает один fetch mock.
 
-Не утверждать, что fake ForumWriter сохраняет изменения функций автоматически: product semantics находятся также в db/forum-repository.ts, db/personal-notification-policy.ts и других SQL repositories. Research/concept.md §20 это признаёт, но допускает representative расхождение; новая формулировка владельца строже.
-
-Proposal не принят, код/зависимости/прототипы/deploy не менялись. Следующий шаг — обсуждение предложения; canonical PLAN.md и implementation PR не активировать автоматически.
+Предложение обновлено по последнему owner clarification; D-06–D-08 — актуальные решения. Внешний runtime и последующий обязательный browser SQL/WASM вариант superseded. P0 теперь только browser seam/interaction proof. Код/зависимости/прототипы/deploy не менялись. Следующий шаг — проверка/обсуждение предложения; implementation не активировать автоматически.
