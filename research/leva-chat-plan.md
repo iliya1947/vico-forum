@@ -1,271 +1,237 @@
-# Пересмотренный план Лёвы: один форум, GitHub Pages и внутренняя тестовая инфраструктура
+# Упрощённый план Лёвы: настоящий UI форума и тестовая инфраструктура на GitHub Pages
 
-## Статус и исходные требования
+## Статус
 
-Дата: 2026-11-22. Проверенная база main: 9cff976a9621d9fe5dfef28ea5367e390ff435b1; новых изменений main на входе не обнаружено.
+База исследования: main 9cff976a9621d9fe5dfef28ea5367e390ff435b1; актуальность SHA повторно проверена. Дата: 2026-11-22.
 
-Прежний вариант этого файла с Node-контейнером, socket-сервером, отдельным хостом и fallback на PostgreSQL-сервер **отозван как не соответствующий задаче**. Его история остаётся в Git.
+Предыдущие варианты этого файла с внешним runtime, затем с обязательным browser SQL/WASM и database-compatibility gate, **сняты**. После уточнения владельца сохранение данных не является требованием preview. Нельзя продолжать проектировать полноценную систему записи как обязательную часть этой задачи.
 
-Текущий результат — техническое предложение для обсуждения. Реализация, установка зависимостей, прототипирование и deployment в этой работе не выполнялись. Концепция research/concept.md не заменена и не объявлена принятой: её допущения о representative repository behavior требуют пересмотра под уточнённый критерий владельца.
+Этот документ — обновлённое предложение для обсуждения/проверки, не разрешение реализации. Код приложения, зависимости, #322 и deployment не менялись. Research/concept.md остаётся предшествующим материалом, а не автоматически принятой владельцем спецификацией.
 
-Обязательные требования владельца:
+## 1. Обязательный контракт владельца
 
-1. Для использования preview достаточно GitHub и браузера. Репозиторий, Actions и Pages — единственная платформа; никаких новых серверов, контейнеров, внешних БД, OAuth/provider credentials и дополнительных хостов.
-2. Preview — тот же форум: общие route source, route modules, интерфейс и продуктовые правила. Не отдельная похожая реализация.
-3. Изменение общей кнопки, ссылки, существующей функции либо правила в main попадает в preview обычной пересборкой, без второго изменения preview-кода.
-4. Подменяется внутренняя тестовая инфраструктура; исходные тестовые данные находятся в репозитории.
-5. Количество файлов — ориентир простоты, а не разрешение скрыть в двух больших файлах второй backend.
-6. Реализация пока не начинается.
+1. Всё необходимое находится в GitHub: исходники и тестовые данные в репозитории, сборка в Actions, публикация в Pages. Preview исполняется в браузере. Других аккаунтов, внешних серверов/БД/providers не требуется.
+2. Это UI и application-код самого форума из main, а не отдельная preview-реализация.
+3. Изменение кнопки, ссылки, route или функции общего UI/application-кода попадает в preview после обычной пересборки без второй правки preview-экрана.
+4. Проверяются все доступные UI-функции и взаимодействия: формы, validation, меню, редактор, навигация, ссылки/кнопки, pending/error/success состояния.
+5. **Реальная запись и сохранение данных необязательны.** Тестовый storage может подтвердить операцию, даже если raw test database не изменилась. Сообщение «успешно сохранено» разрешено.
+6. Не требуется persistence после reload, настоящий backend write transaction или доказательство database integrity/locks/fanout. Временное состояние в памяти допустимо, но не становится самостоятельной целью.
+7. Исключение про сохранение не разрешает заменить весь UI/actions на готовые HTML/props или повесить на кнопку отдельный preview click handler.
 
-## 1. Проверенный разрыв в прежней концепции
+## 2. Выбранная модель
 
-Одного переиспользования views/loaders/actions недостаточно.
+GitHub Actions -> static Pages artifact:
+- generated route manifest из настоящего app/routes.ts;
+- настоящие production route modules/components и применимая application logic;
+- raw test data;
+- небольшой browser composition/transport/storage layer.
 
-В main бизнес-семантика находится также внутри db/forum-repository.ts, db/personal-notification-policy.ts, db/authorization-repository.ts, repositories Complaints и других DB-модулей. Например, SQL определяет recipients/suppression уведомлений, фильтры и ранжирование списков, переходы состояния и проверки при транзакционной записи.
+Браузер:
+- создаёт test environment;
+- подставляет инфраструктурные capabilities в production request contexts;
+- запускает тот же UI/route/action code;
+- отвечает локально на storage/auth/provider requests;
+- может возвращать simulation success без записи.
 
-research/concept.md §20 уже признаёт, что ForumService связан с concrete DrizzleForumRepository, а отдельные in-memory capabilities не переиспользуют эту семантику автоматически. Допущение «покажем representative behavior, SQL correctness проверим отдельно» недостаточно для нового требования владельца: изменение функции в main может снова потребовать отдельной правки preview.
+**Обязательной SQL-БД, PGlite, WASM, миграций, контейнера, TCP/socket server и отдельного исполняющего хоста в выбранной модели нет.** Интеграционная проверка PostgreSQL/Worker остаётся существующей отдельной задачей проекта, а не prerequisite этого preview.
 
-Поэтому отвергается подмена высокого уровня вида отдельного PreviewForumWriter.setTopicWatch/createPost или отдельных реализаций Search/Unread/notification fanout. Также не подходят SQL handlers с ветвлениями по имени метода, таблице либо тексту конкретного product query.
+Test database означает исходные пользователи/роли/сущности/состояния в файлах и обычные структуры данных в браузере.
 
-## 2. Выбранное направление и обязательный feasibility gate
+## 3. Что обязательно общее с main
 
-Целевая граница подмены — ниже product repositories: **внутреннее SQL-исполнение в браузере**, общее для всех настоящих Drizzle/raw SQL запросов.
+- app/routes.ts — один источник URL topology;
+- route components, общий shell, editor, controls, styles;
+- loaders/actions/middleware/clientAction, которые получают данные через подменённые infrastructure boundaries;
+- validation, response mapping, redirects, view permissions и другие переиспользуемые application helpers;
+- locale registry, canonical UI catalog/manual packs и presentation;
+- typed capability/input/result contracts.
 
-Кандидат — браузерный PGlite/WASM, загружаемый как часть статического Pages artifact. Это библиотека в памяти браузера, а не PostgreSQL-сервис, TCP/socket server, Node runtime или удалённая БД. Основное состояние экземпляра локально в браузере. Внешний fallback запрещён.
+Не создаются PreviewTopicRoute, PreviewProfileRoute, PreviewSearchView, второй список paths, копии кнопок/форм, отдельный словарь UI или preview-only actionData в props.
 
-Причина выбора — сохранение текущей продуктовой семантики SQL без второй реализации. Это не требование превратить Pages в acceptance настоящего PostgreSQL/Hyperdrive.
+Если действующий application service содержит проверку ввода вне persistence, его следует переиспользовать. При concrete repository coupling допустимо выделить минимальный structural port/neutral contract, чтобы один и тот же service получал PostgreSQL repository в приложении и тестовый storage в preview. Это локальная extraction, не перенос всей SQL-семантики в новую domain framework.
 
-Официальные источники:
-- Browser/runtime support: https://pglite.dev/docs/
-- Query API, rowMode/parsers/serializers: https://pglite.dev/docs/api
-- Memory/IndexedDB storage: https://pglite.dev/docs/filesystems
-- Текущий upstream имеет node-postgres connection adapter; его наличие само по себе не доказывает browser compatibility: https://github.com/electric-sql/pglite/blob/main/packages/pglite/src/node-postgres/index.ts
+Product-specific SQL ranking, lock/receipt/notification fanout и неизменяемость настоящих DB rows не эмулируются вторым backend ради visual preview. Различие явно относится к подменённой инфраструктуре; preview не выдаётся за repository acceptance.
 
-**Пригодность кандидата для Vico не доказана исполнением.** Первый bounded этап P0 обязан проверить её до реализации всего preview. Версию и конкретный bridge закреплять только по результату этой проверки, не брать mutable upstream main как зависимость.
+## 4. Router и browser build
 
-Если браузерный кандидат не выполняет неизменённые migrations/queries и не позволяет сохранить product rules, этап получает HOLD. Нельзя подменить результат сервером, урезанными writers, готовыми ответами или переписыванием accepted migrations. В таком случае потребуется отдельный пересмотр общей архитектурной границы; этот план не объявляется подтверждённым.
+Build-time Vite integration читает актуальный app/routes.ts и генерирует descriptors. Route modules подключаются по file registry автоматически, без ручного списка routes.
 
-Простая in-memory graph с отдельными domain writers рассмотрена и отклонена именно по требованию отсутствия второго product behavior. Массовый перенос всей SQL-семантики в новую универсальную domain/query DSL также не выбран: это существенно более широкий рефакторинг production ради preview.
+Generic mapping сохраняет:
+- parent/child hierarchy, path/index/caseSensitive;
+- Framework route IDs, включая routes/locale-boundary;
+- component, loader/action, ErrorBoundary, middleware, handle, shouldRevalidate;
+- приоритет настоящего clientAction и его serverAction bridge;
+- применимые fallback/meta/link contracts.
 
-## 3. Исполняемый код должен быть общим
+Новый route из main не требует добавлять вторую preview route. Unsupported module export должен приводить к явному build/contract failure, а не тихо теряться.
 
-Preview напрямую использует:
-- app/routes.ts и соответствующие production route modules;
-- components/views, middleware, loader/action, editor clientAction;
-- application validation, permission/admission и response/error mapping;
-- ForumService и настоящие repositories;
-- существующие authorization/measure policies;
-- настоящие queries, transitions, History producers, notification logic;
-- locale registry/resource loading и revision-bound translation presentation.
+Plain Vite preview build не обязан копировать Framework SSR runtime. Но техническая адаптация root/document не имеет своей версии форумного shell: production presentation остаётся общей. Необходимая минимальная neutral extraction/theme/meta boundary проверяется прежде, чем объявлять browser graph рабочим.
 
-Подмена:
-- PostgreSQL connection/driver transport на внутренний browser SQL bridge;
-- authentication/session provider на локальный test AuthRuntime;
-- R2 transport на Blob/byte store;
-- недоступные внешние provider/Queue capabilities на явно configured/unconfigured test infrastructure;
-- runtime facts, требующие внешней платформы, на обозначенные fixture/unavailable facts.
+Server-only transport imports разрываются узким preview resolution allowlist. Не копировать product route/action implementations. Availability error classes в route и test adapter должны иметь одинаковую identity для instanceof.
 
-Запрещено alias'ить db/forum-repository.ts, db/personal-notification-policy.ts и аналогичные product modules на самописные representative equivalents. Alias/resolution allowlist ограничен действительно инфраструктурными модулями.
+## 5. Test data и единая state model
 
-Если небольшая необходимая contract/error extraction нужна для browser graph, она сохраняет один production source ошибки/правила. Ошибки должны иметь одну class identity внутри preview bundle, чтобы instanceof в настоящих handlers оставался корректным.
+Один immutable baseline в репозитории плюс маленькие raw overlays:
+- users, lifecycle, sessions и selected actor;
+- roles, grants, overrides, synthetic Owner binding;
+- categories, sections, topics, posts, revisions, tags;
+- Help/solved/best-answer/duplicate/signal states;
+- Watch/Bookmarks/Mute/Block/read-state и notifications;
+- Settings, measures/appeals;
+- Complaints/decisions/evidence/appeals/History;
+- locales и revision-bound content translations;
+- attachment references и небольшие реальные файлы.
 
-## 4. Единый route source и Framework contract
+Сценарий задаёт actor, overlay, начальный URL и optional fault profile. Не хранит экран, route component или готовый loader/action result вместо общей функции.
 
-Preview build читает настоящий app/routes.ts на build-time и создаёт виртуальный модуль с resolved route descriptors. Browser bundle не получает @react-router/dev.
+Reader adapters отдают типизированные данные из этого набора. Простые selection/pagination/lookups допустимы как test storage; не воспроизводить сложные product algorithms второй раз. Нужно отделять проверку UI на representative данных от проверки реальных DB query semantics.
 
-Production modules находятся через generated import registry, без ручного перечня URLs/screens. Generic adapter сохраняет:
-- вложенность, path/index/caseSensitive;
-- Framework route IDs, включая root и routes/locale-boundary;
-- default component, loader/action, ErrorBoundary;
-- middleware, handle, shouldRevalidate и применимые fallback exports;
-- настоящий editor clientAction с локальным serverAction, который вызывает production action.
+Идентификаторы и исходные relationships устойчивы. Выбор пользователя не меняет автора темы, ownership, grants других пользователей или сам контент.
 
-Основа browser execution — React Router Data Router плюс Static Handler для resource requests, проверенные на pinned версии проекта 8.3.1. Это техническое исполнение одного manifest, не второй router по смыслу URL topology.
+## 6. Simulation записи — узкая и явная
 
-getContext выдаёт свежий RouterContextProvider на операцию; состояние БД/файлов общее для экземпляра preview. Middleware для resource requests выполняется через поддерживаемый queryRoute/generateMiddlewareResponse contract.
+Настоящий UI отправляет форму -> вызывается настоящий clientAction/action/application helper -> infrastructure write boundary возвращает подходящий test result -> настоящий product code показывает результат/ошибку/redirect.
 
-Root document требует явной технической границы: production app/root.tsx остаётся source для presentation, locale/theme/meta/links. Нельзя завести другую preview-версию шапки/меню/Layout. Необходимая browser document/runtime adaptation должна быть общей и generic; Framework script/hydration wiring не копируется в виде второго продукта. P0 проверяет этот край, а не предполагает, что одного RouterProvider достаточно.
+Нельзя:
+- глобально перехватывать submit и просто рисовать toast;
+- заменять action готовым success result до выполнения общего кода;
+- дублировать validation и response branch в preview;
+- превращать каждую кнопку в отдельный scripted scenario.
 
-Появление нового неподдержанного Framework export должно ломать contract/build check, а не тихо игнорироваться.
+Можно:
+- вернуть успешное acknowledgement без изменения baseline;
+- выдать ID подготовленной связанной сущности;
+- сохранить небольшой transient overlay, чтобы redirect/revalidation имел согласованный объект и можно было увидеть нужный UI;
+- вернуть предусмотренную contract ошибку для visual error/conflict состояния;
+- добавить контролируемую задержку/AbortSignal для настоящего pending UI.
 
-## 5. Browser SQL bridge
+Важно проверять фактический путь результата. Create, который возвращает несуществующий ID и ведёт в 404, не позволяет проверить дальнейший UI. Для такого случая adapter использует подготовленный target или минимальный ephemeral record. Полноценная долговечная запись для этого не требуется.
 
-Bridge реализует используемый настоящим кодом контракт Client/Pool/query/transaction lifecycle, а не forum methods.
+После reload исходные данные могут вернуться, переключатель может перестать быть сохранённым, созданный объект может исчезнуть. Это разрешённая модель, а не скрытый дефект.
 
-Проверить:
-- query config, параметры, rowMode array/object, типы PostgreSQL и null;
-- Date/timestamp, arrays, json/jsonb, bytea, bigint/string precision;
-- multi-statements, RETURNING, CTE, constraints, triggers и functions;
-- BEGIN/COMMIT/ROLLBACK/savepoints;
-- корректные SQLSTATE/error objects для текущих product branches;
-- логические Client/Pool leases и освобождение;
-- что end одного client не уничтожает общую test DB;
-- что parallel loader/telemetry calls не смешивают транзакции разных clients.
+## 7. Общий local transport
 
-Один PostgreSQL backend у WASM-кандидата — существенный риск. Транзакционный lease должен удерживаться до commit/rollback, остальные подключения ожидают; нельзя просто отправлять все queries в общую очередь между чужими BEGIN/COMMIT. Не обещать реальные многопользовательские locks/performance и не добавлять per-feature обходы.
+Один dispatcher строится из того же generated route manifest и вызывает настоящие resource loaders/actions. Не заводить второй switch по /mentions, /presence, /topics и другим endpoints.
 
-Репозиторий продолжает использовать текущий Drizzle node-postgres path, если совместимость bridge подтверждена. Если для сохранения того же SQL нужен другой generic driver integration, это отдельно фиксируется в P0; изменение driver не даёт разрешения менять domain queries или их результаты.
+Учесть:
+- fetch/Request/Response, headers/body/FormData, redirects;
+- middleware и request-scoped contexts;
+- XHR upload, который не покрывается простым fetch wrapper;
+- API error/success shapes, AbortSignal и controlled latency;
+- Better Auth browser client: transport устанавливается до создания client, который захватывает fetch;
+- native image/text/download и прямую навигацию, которые не проходят через window.fetch.
 
-Не загружать polyfill «всего Node» без разбора. Browser graph получает только нужные JS primitives; net/TCP/fs/remote connections должны оставаться недоступны. Официальный node-postgres connector не считается готовым browser adapter без browser build/runtime проверки.
+Pages project base и virtual app path преобразуются одним URL codec. Проверяются query, fragment, locale, safe returnTo и redirects. Не добавлять список URL-исключений для каждого нового экрана.
 
-## 6. Request context и общая композиция
+Static assets читаются с Pages; application API requests обслуживаются локально. Не требуется Service-Worker-Allowed header, внешний proxy или другой origin.
 
-Сейчас workers/app.ts собирает контексты приложения. Необходимо переиспользовать этот composition contract, не поддерживать два независимых списка разрешений/возможностей.
+## 8. Auth, permissions, locale и controller
 
-Возможная небольшая production extraction: общая request-context composition, которая принимает infrastructure factories; Worker передаёт существующие defaults, browser preview — локальные transports. Это не перенос permissions или policies в preview.
+Тестовый AuthRuntime выбирает concrete synthetic session/user, поддерживает нужные sign-in/out/account/session result shapes. Это не real Google OAuth и не доказательство HttpOnly/server security.
 
-Все настоящие DB-backed capabilities, которые можно запустить через общий browser SQL bridge, используют настоящие factories/repositories. AuthRuntime и byte transport подменяются отдельно как инфраструктура.
+UI permissions выводятся через общие application contracts из fixture grants/overrides/Owner binding. Не рисовать доступность кнопок условием selectedRole === manager.
 
-Новая обязательная context dependency в main проверяется типами/contract test; отсутствие binding не превращается в fake success. Product changes существующих capabilities должны проходить без новой preview реализации.
+Controller вне форума оставляет:
+- actor;
+- сценарий/start URL;
+- viewport;
+- reset;
+- текущий source SHA.
 
-## 7. Локальный application transport
+Locale и theme переключаются штатным интерфейсом форума и общими providers. Три review-языка EN/RU/HE — fixture matrix, не отдельный hard-coded locale universe.
 
-Все запросы к application routes обслуживаются одним dispatcher поверх generated manifest и production resource handlers. Никакого ручного switch по /mentions, /presence, /topics и т. п.
+Reset возвращает baseline, сбрасывает transient results/session/overlays и освобождает ресурсы. Старые async responses не применяются после actor/scenario/reset change.
 
-Предусмотреть:
-- Request/Response, method, headers, body/FormData, AbortSignal;
-- redirect, thrown Response, validation errors и error boundaries;
-- правильный порядок middleware;
-- native fetch и существующий XHR upload;
-- auth-client initialization после установки transport: Better Auth client захватывает fetch при создании;
-- отсутствие background API calls за пределы Pages/static assets.
+## 9. Файлы и внешние capabilities
 
-Патч fetch сам по себе не перехватывает img/src, native download/navigation и HTML form submit. Эти поверхности учитываются отдельно. Не считать работу mentions доказательством работы всех запросов.
+R2 заменяется локальным Blob/byte store с metadata из test data. Настоящие upload/resource handlers используют тестовые capabilities.
 
-GitHub project Pages subpath — явная часть контракта. Сохраняется один URL codec между Pages base и virtual application URL; source routes при matching видят обычные /:locale/* и /api/*. Ссылки, параметры, fragments, redirects и returnTo проходят round-trip без ручных endpoint исключений.
+Для img/native text/download нужен один общий resource-address resolver. В production он сохраняет текущие HTTP addresses, в preview получает локальный Response/Blob и object URL. Где возможно, используется настоящий resource handler; не поддерживается второй attachment UI/backend.
 
-Для прямого открытия используется Pages bootstrap/entry, затем нужный virtual application path. Не требуется Service-Worker-Allowed header, новый origin или внешний reverse proxy. Обычные app links обрабатываются общим router/navigation boundary. Использование нового unsupported native navigation primitive выявляется browser gate до cutover, а не маскируется.
+Проверить mode, filename, display/error branches, lifetime/revoke object URLs и смену identity/reset. Реальная R2 durability/races/security не является критерием preview.
 
-## 8. Вложения: настоящие handlers перед показом байтов
+Providers/email/Queues/OAuth локально дают test response либо предусмотренное unavailable состояние. Никаких credentials и реальных внешних вызовов. Отсутствующая в main функция не получает отдельную fake product implementation: показывается существующий интерфейс/состояние main.
 
-Metadata и references находятся в общей test DB; байты — в локальном Blob store, реализующем transport contract PrivateAttachmentBucket.
+## 10. Подготовка данных при сборке — возможное средство, не обязательная архитектура
 
-Upload использует настоящий attachment-upload action и его validation/state transitions. Local bucket реализует только byte/etag/precondition primitives, не attachment domain policy.
+Часть derived fixture data при необходимости можно генерировать настоящими project helpers в Actions. Это помогает не вести ручные копии сложных derived полей.
 
-Узкая общая resource-address boundary нужна для browser-managed image/text/download. Production implementation сохраняет текущие controlled HTTP URLs. Preview resolver:
-1. строит ту же resource request по authoritative reference;
-2. выполняет настоящий download loader через local dispatcher;
-3. при успешном ответе создаёт object URL;
-4. сохраняет error/result semantics;
-5. освобождает URL при изменении ресурса, identity, reset и teardown.
+Но нельзя объявлять сохранённые ответы универсальной заменой всех loaders/actions: arbitrary query/input, фильтры и новые parameters не покрываются одним snapshot. Выбранный базовый вариант — runtime общего UI/application-кода с test capabilities.
 
-Не читать bucket напрямую в обход product admission. Это сознательно строже допущения research/concept.md §14.4: владелец требует настоящую механику, а не только representative image.
+Не вводить обязательный build-time SQL runtime либо систему записи только потому, что существующие integration tests используют PostgreSQL. Нужда в генераторе обосновывается конкретными повторяемыми данными; ручной второй UI запрещён и здесь.
 
-Generation/identity защищают от выдачи старого async result после переключения пользователя или reset. Native filename, text/image mode и download behavior проверяются в браузере.
+## 11. Файлы и границы изменений
 
-## 9. Auth, authorization и Owner
-
-Test AuthRuntime хранит текущие synthetic sessions в локальном состоянии. Переключатель identity выбирает существующий user ID; не меняет authorship/ownership/roles/grants темы.
-
-PermissionResolver, stored role grants/overrides, AccountState/measure checks и Owner authority используют общие production rules и test facts. Нельзя задавать UI-флаги canReply/isAdmin по выбранной подписи роли.
-
-Auth client/экраны и /api/auth route остаются production. Fake auth provider предоставляет необходимый local contract для test sign-in/out/account/session operations. В нём не появляется вторая версия forum authorization.
-
-Google/email/provider внешние обмены не выполняются. Неподдержанный внешним провайдером сценарий обозначается как test infrastructure capability/unavailable, а не как успешно выполненный Google OAuth. Preview не заявляет real authentication/security acceptance, HttpOnly guarantees или server secrecy.
-
-## 10. Данные и состояние
-
-В Git хранятся исходные raw fixtures и файлы. Не View props, HTML snapshots или готовые actionData.
-
-Данные: synthetic users, роли/grants/overrides, Owner binding, категории/разделы/темы/posts/revisions, Help states, personal Watch/Bookmarks/Mute/Block/read-state, notifications/suppression receipts, Settings, measures/appeals, Complaints/evidence/History, locales/translations и attachment references/bytes.
-
-Схема строится из настоящих immutable migrations main. Accepted SQL не редактировать и не пропускать «неудобные» migrations. Browser bootstrap или подготовленный Actions snapshot должны использовать ту же схему. Snapshot — generated artifact с ключом source SHA + migration/seed/engine versions, не отдельная ручная schema.
-
-Один baseline плюс небольшие raw overlays. Сценарий выбирает исходные facts/actor/start URL и fault profile; затем состояние меняется настоящими actions. Переключение viewport/locale не пересоздаёт авторов и контент.
-
-По умолчанию состояние отдельное на preview-tab/instance, в памяти. IndexedDB persistence — только при доказанной необходимости, с version/reset contract; не обещать глобальное сохранение между браузерами/пользователями через GitHub.
-
-Время: seed timestamps формируются от зафиксированного instance reference time; IDs стабильны/seeded. Для exact visual snapshots нужен согласованный clock boundary JS и SQL. Нельзя заморозить только Date в UI и объявить истекающие DB меры детерминированными; этот контракт проверяется в P0 либо используется честный documented relative-time mode.
-
-Reset отменяет/дожидается выполняющихся операций, создаёт новую generation DB/files/session state, освобождает object URLs и исключает применение старых responses к новому состоянию.
-
-## 11. Локализация, providers и runtime facts
-
-Production locale registry, URL negotiation, manual packs, canonical English/fallback и revision-bound presentation настоящие. Удаляется отдельный preview-i18n со своим фиксированным universe языков.
-
-Примеры EN/RU/HE — fixtures, а не hard-coded поддерживаемые locales. Переводы привязаны к текущим revisions.
-
-В main generation runtime сейчас disabled; preview не изображает отсутствующую работающую функцию. Сохранённые pending/success/failure данные могут показывать реальные screens без provider calls. Если в main появится новая внешняя transport dependency, ей потребуется infrastructure implementation/explicit unavailable contract, а не копия product command.
-
-Owner domain counts/History вычисляются настоящими queries на test data. Внешние platform facts не подделываются как измеренные production показатели.
-
-## 12. Физическая структура — ориентир
-
+Ориентир:
 app/ui-preview/
-  main.tsx                     минимальная entry
-  runtime.ts                   общая композиция/router/controller
-  infrastructure/
-    database.ts                generic browser DB/connection bridge
-    transport.ts               generic request/XHR/resource transport
-    auth-and-bytes.ts           локальные auth provider и byte primitives
+  main.tsx
+  runtime.ts                 router/context/transport/controller composition
+  test-infrastructure.ts     grouped storage/auth/provider/byte adapters
   data/
-    baseline.*                 raw fixture facts
+    baseline.*
     overlays/
     assets/
-  vite.config.ts               route manifest и узкий resolution allowlist
+  vite.config.ts             generated manifest/resolution boundary
 
-Это ориентир, не обязательный шаблон. Можно объединять мелкие transports, но нельзя делать две гигантские тысячи-строчные product реализации ради цифры «два файла».
+Это цель по простоте, а не искусственное требование уместить весь backend в два файла. Допускается вынести generic transport helper отдельно, если это действительно делает код яснее.
 
-Production changes ограничены необходимыми нейтральными seams: context composition, resource address/runtime presentation и clock при необходимости. Не менять внешний runtime/forum behavior ради preview.
+В product-коде — только необходимые neutral seams/structural service contracts, без изменения поведения форума. Удаляемые старые preview fragments: manual route table, Preview*Route, per-screen generated props, hard-coded identity/locale copies и submit blockers.
 
-Старые Preview*Route, manual route table, generated per-screen props, fake action handlers, отдельные permissions/locale copies и blanket submit blockers удаляются при cutover.
+## 12. Автоматическое следование main
 
-## 13. Автоматическое следование main
+Main build использует напрямую общие product modules, styles и route source. После merge main Pages пересобирается и публикует согласованный artifact с raw test data, source SHA и asset version.
 
-Actions на новом main SHA собирает **тот же product source** с preview infrastructure build configuration. Всё необходимое — JS, WASM, schema/seed assets и файлы — включено в Pages artifact. При просмотре нет CDN/database/server dependencies.
+Обычная правка общей кнопки, ссылки, validation, формы, меню или route не требует соответствующей правки preview-компонента: такого компонента нет.
 
-Одна опубликованная версия содержит согласованные source SHA, manifest, schema, seed и engine version. Controller показывает SHA; старая сборка не подписывается новой.
+Новая потребность в данных отражается fixture/typed infrastructure contract, не второй реализацией функции. Неизвестный contract не должен давать fake success по умолчанию. При этом разрешённый success acknowledgement для существующей операции не требует real save.
 
-До merge product PR применимый CI gate собирает preview и проверяет архитектурный контракт. Обычные UI/route/domain изменения не требуют второго preview PR. Новая unsupported infrastructure/runtime primitive должна быть обнаружена до merge, а не оставлять скрыто устаревший preview.
+Основной preview обновляется из main. Service/feature branches не перезаписывают его; source SHA виден в controller. При неуспешной сборке старая версия не подписывается новым SHA.
 
-Push main автоматически обновляет Pages. Feature/service branches не перезаписывают main preview; при необходимости у них отдельные artifacts/addresses в GitHub. При неуспешной сборке сохраняется последний рабочий artifact с его реальным SHA и видимым статусом обновления.
+## 13. Этапы и критерии готовности
 
-## 14. Этапы, зависимости и STOP gates
+P0 — проверка browser seams.
+На настоящих current-main modules проверить generated routes/IDs, imports, context/middleware/clientAction и root adaptation. Минимальный vertical path: открыть тему, изменить поле, выполнить настоящий action, получить simulated success и увидеть штатный result/redirect. Никаких SQL/WASM/migration compatibility tests как prerequisite.
 
-P0 — минимальная проверка browser viability.
-Вне published entry проверить browser bundle реальных route handlers + repositories, all migrations, generic driver, root/middleware/clientAction и Pages subpath. Execute: guest read, actual sign-in test session, create/edit/reply, Watch/notification suppression, real permission denial, attachment upload/download, Owner Data/Localization queries. Проверить transaction isolation между logical clients и JS/SQL type fidelity. Результат: PASS с измеренными bundle/startup/memory либо HOLD с точной причиной. Никакой внешней среды как fallback.
+P1 — единый runtime и local transport.
+Generated manifest, production components/handlers, fetch/XHR, Pages URL codec и resource resolver. Gate: нет ручного списка экранов/API; links/forms работают через общий код.
 
-P1 — общий composition/router/transport.
-Зависит от P0 PASS. Generated route manifest, production exports, contexts, fetch/XHR, root document и URL codec. Без ручных route/API handlers. Gate: same exports/IDs, middleware/clientAction, redirect/error, deep link/refresh и native resource paths.
+P2 — raw fixture database и capability adapters.
+Synthetic identities/roles/locales/domain entities/bytes; typed read results и write acknowledgements. Gate: данные согласованы для навигации, Owner/role switching не переписывает ownership, reset устойчив.
 
-P2 — browser state/infrastructure и raw baseline.
-Настоящие repositories работают над внутренней DB; auth/bytes — infrastructure adapters. Gate: FK/revisions/history consistency, role/Owner switching без ownership rewrite, reset/in-flight/teardown.
+P3 — полная UI/function matrix.
+Public discovery, Editor, personal controls/inbox, Help, Settings, Admin/measures, Complaints/appeals и Owner screens. Проверяются actual click/form/navigation и visual pending/error/success branches. Не проверяется факт durable save.
 
-P3 — полная current-main feature matrix.
-Расширить fixtures, не product logic: public discovery, editor, personal state/inbox, Help, Settings, Admin/measures, Complaints/appeals, Owner surfaces. Gate: реальные связные read→action→revalidation sequences, а не отдельные красивые screens.
+P4 — browser acceptance и anti-drift.
+EN/RU/HE/RTL, desktop/mobile, deep links/refresh/fragment, native resources, actor/scenario changes. В integration fixture изменить общий button/link/action и показать, что изменение видно без preview screen patch. Проверить generated-route contract и выполнение product action, а не отдельного success click handler.
 
-P4 — anti-drift/browser acceptance.
-Проверить shared component/route changes, product rule changes в SQL, отсутствие manual route/endpoint registry, no external backend/CDN requests, EN/RU/HE/RTL, mobile/desktop, identity/cache/resource lifecycle и upgrade/reset. Проверки должны показывать, что изменение общей функции выполняется в preview без изменения adapter.
+P5 — atomic cutover.
+Новый runtime готовится отдельно, без смешанного published preview old/new. После готовности переключить одну entry и удалить старую parallel implementation. Применимые author checks -> Mira whole-feature review -> independent reviewer на том же stable head -> owner merge по актуальному AGENTS.
 
-P5 — atomic cutover и удаление второго продукта.
-До готовности весь новый результат живёт в implementation workspace; старый published preview не смешивается с новым route-by-route. При cutover одна entry, одни data и одна версия. Удалить старый manual product layer; повторить final author self-check → Mira whole-feature review → independent Leva review → owner merge по актуальному AGENTS. Implementation PR/режим поставки назначаются отдельно, сейчас PR не создаётся.
+P6 — Pages verification.
+Проверить deployed SHA, загрузку, links/forms/resources и основные визуальные состояния. Это UI progress acceptance, не real backend/provider/PostgreSQL acceptance.
 
-P6 — GitHub Pages publication verification.
-Проверить deployed SHA, cold start, reload/direct links, cache upgrade и полную ключевую browser цепочку. Это Pages/UI verification, не Worker/PostgreSQL/real-provider acceptance.
+Режим implementation PR и назначения определяются отдельно. Сейчас implementation PR не создаётся. Внутренние шаги используют targeted checks; полный набор — на завершённой bounded границе, не после каждого изменения.
 
-Между этапами — отдельные bounded результаты и применимые targeted проверки. Не повторять весь CI после каждого внутреннего микрошагa; полный набор — на соответствующем завершённом scope.
+## 14. Финальная acceptance matrix
 
-## 15. Обязательный acceptance contract
+- Один UI/component source: нет второй кнопки/страницы для preview.
+- Один route source: нет вручную добавляемого preview path для обычного нового route.
+- Общие loaders/actions/application validation выполняются; test results подаются на infrastructure boundary.
+- Видны штатные success/error/pending состояния, включая разрешённое «успешно сохранено».
+- Допускается отсутствие real save и возврат baseline после reload.
+- Если redirect/revalidation требует record, предоставляется подготовленный target/minimal transient overlay.
+- Все links/buttons/forms/editor interaction доступны для review; blanket blockers отсутствуют.
+- Identity/grants/Owner, locale и viewport независимы; ownership не переписывается.
+- Attachments/native browser requests не превращаются в необработанные Pages 404.
+- API-запросам не нужен внешний backend; runtime assets не требуют CDN.
+- Нет обязательной SQL-БД, WASM, migrations, transaction emulator, реального OAuth/R2/Queue.
+- Source SHA и artifact version согласованы, old/new не смешаны.
+- Backend persistence/security/integration гарантии этим preview не заявляются.
 
-- App UI не существует в виде копии preview; изменение общего component видно после rebuild.
-- Новая route entry из app/routes.ts попадает в preview без второго path definition.
-- Изменение общего loader/action/validation выполняется напрямую.
-- Изменение repository SQL/domain transition не требует PreviewWriter rewrite.
-- Create/edit/reply действительно меняют состояние; lists, unread, notifications и History читают результаты тех же переходов.
-- Guest/member/moderator/admin/Owner видят результат настоящих permission rules на test identities.
-- Мутации не отключены blanket submit handlers; права не выдаются role-based UI booleans.
-- Attachment byte display проходит тот же product resource admission; нет тихих 404 на Pages origin.
-- Отдельно проверены native navigation/download, параметры, fragments, locale и Pages base.
-- Reset/actor change не применяет старое состояние/ответы.
-- Нет application API dependencies вне GitHub Pages и браузера.
-- В published artifact нет серверных credentials, Net/TCP driver, Node server, внешнего DB URL или socket process.
-- Bootstrap/driver incompatibility не маскируется fake success или prepared View props.
-- Несовпадение SHA/fixtures/schema явно обнаруживается; новая версия не смешивается со старой.
+## 15. Что установлено, а что ещё не выполнено
 
-## 16. Границы установленного
+Подтверждены current-main context seams, manual router старого preview, direct fetch/XHR/native-resource края и конкретная зависимость части services от DB repositories. React Router route/context/Static Handler contracts были проверены в предыдущем исследовании.
 
-Исследование подтвердило current-main coupling product logic с SQL, существующие request-context seams, отдельный manual preview router и ограничения Pages/native resources. Проверены официальные API React Router и browser PGlite, а также source текущего node-postgres connection adapter.
+Новый browser build, прототип adapters, P0 и browser acceptance в этой работе не запускались. Установка пакетов, миграции, изменение product code и deployment не выполнялись.
 
-Browser build/runtime, migration compatibility, bundle size, memory, startup и перечисленная end-to-end matrix **не выполнялись**. Поэтому этот документ не является доказательством готовой реализации и не разрешает начинать P1, пока P0 не даст фактический PASS.
-
-Главное изменение относительно прежних материалов: нельзя назвать preview «тем же форумом», оставив отдельную representative реализацию существующих domain commands/queries. Подмена должна находиться ниже их общих правил; вся исполняющая среда при этом остаётся внутри браузера и GitHub.
+Уточнение владельца устраняет прежнее искусственное требование исполнять всю SQL/write семантику в preview. Сохранение имитируется; реальный общий интерфейс, application interactions и автоматическое использование main остаются обязательными.
