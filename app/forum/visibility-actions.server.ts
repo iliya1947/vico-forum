@@ -92,9 +92,9 @@ export async function visibilityTopicAction(
           hidden: requested, expectedVisibilityVersion: baseline, expectedRevisionId, reason });
     return data<VisibilityActionResult>(isPost
       ? { operation: "contentVisibility", ok: true, target: "post", topicId, postId: postId!,
-          actorId: sessionActor, ...confirmed }
+          actorId: sessionActor, hidden: confirmed.hidden, visibilityVersion: confirmed.visibilityVersion, changed: confirmed.changed }
       : { operation: "contentVisibility", ok: true, target: "topic", topicId,
-          actorId: sessionActor, ...confirmed },
+          actorId: sessionActor, hidden: confirmed.hidden, visibilityVersion: confirmed.visibilityVersion, changed: confirmed.changed },
       { headers: { "Cache-Control": "private, no-store" } });
   }).catch(error => {
     if (error instanceof AccountStateUnavailableError || error instanceof AuthorizationUnavailableError)
