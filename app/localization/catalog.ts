@@ -808,6 +808,7 @@ export const canonicalEnglishCatalog = {
     visibilityReload: message("visibilityReload", "Reload visibility state", "Explicit refresh after visibility action conflict without reposting the command."),
     visibilityDenied: message("visibilityDenied", "This visibility action is no longer available to your account. Check the current page.", "Visibility Hide/Restore 401/403 denial: recheck current access without replaying a stale mutation."),
     visibilityUnconfirmed: message("visibilityUnconfirmed", "The result of this visibility action could not be confirmed. Check the current state before submitting another action.", "Visibility Hide/Restore unexpected or unavailable result: no automatic replay; require an explicit fresh GET before further mutation."),
+    visibilityPending: message("visibilityPending", "Visibility action in progress. Wait for the result before submitting another change.", "Pending Hide/Restore status while the scoped fetcher action or its revalidation is in flight; prevent duplicate POST."),
     topicClosedStatus: message("topicClosedStatus", "Closed", "Persisted topic closure status, distinct from solved and duplicate."),
     topicClosedNotice: message("topicClosedNotice", "New replies are disabled until this topic is reopened.", "Public reading notice for a closed topic."),
     topicClose: message("topicClose", "Close topic", "Administrative command to stop new replies to a topic."),
