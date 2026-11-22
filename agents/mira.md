@@ -1,19 +1,14 @@
 # agents/Миры.md — личная рабочая память Миры.
 
-- Исполнитель conceptual stage: **Мира-3 (GPT-5.6 Sol)**.
 - Service PR: **#369**.
-- Первый conceptual stage по UI progress preview — **завершён**.
-- Итог: `research/concept.md`, разделы 1–27.
-- Реализация не начата; старые implementation PR не трогать.
-- Target: production route source/modules/product logic + one resettable deterministic raw state + thin infrastructure adapters.
-- Нет второго route table/loaders/actions/views; scenario — review bookmark/raw overlay/fault/setup, а не экран.
-- Route parity: Framework route IDs обязаны сохраняться.
-- Transport: Static Handler local dispatcher + fetch wrapper; narrow XHR upload adapter; native attachment bytes через presentation URL seam.
-- State: base fixture + small raw overlays; concrete identity/session; Owner = trusted exact binding; locale через production registry; viewport вне domain state.
-- Empty/authz/error/conflict/pending/success возникают из real causes и production logic.
-- Complex SQL ranking/filter/fanout semantics не дублировать; Pages не DB/runtime/security acceptance.
-- Determinism: fixed seeded facts, resettable mutable clone, minimal visible-time clock seam.
-- Migration: target можно временно строить рядом только внутри implementation branch; published preview не смешивать old/new. Cutover единый, manual product layer удаляется при переключении.
-- Сохраняются static Pages/Vite delivery, controller tooling и полезный representative content как raw fixtures.
-- После принятия концепции следующий агент — **Лёва (Codex-6.1 Sol)**, который готовит полный technical `PLAN.md`; до owner acceptance Лёву не назначать.
-- Подтверждённая route-ID ошибка уже журналирована; новых ошибок в final closeout нет.
+- Concept UI progress preview принят владельцем; D-06–D-09 действуют.
+- Канонический финальный technical `PLAN.md` подготовлен Лёвой.
+- Mira scope/fit review на exact head `d97f6ac5b7f4e7cfe3403dd8bd23f47e2a378b4d`: **PASS**.
+- Подтверждённых plan blockers не найдено.
+- Target: production route source/modules/UI/application handlers + fixtures + typed in-memory infrastructure, GitHub Pages/browser only, без внешних сервисов и обязательной SQL/WASM DB.
+- Simulated success разрешён; durable save не является критерием preview. Минимальный transient overlay допустим только для связного UI flow.
+- Route IDs, clientAction/serverAction bridge, browser-safe import graph, local fetch/XHR/native resources, Pages URL codec и root/document adaptation проверяются P0/P1; не считать их runtime-proven заранее.
+- Complex SQL/backend semantics не дублировать.
+- Cutover atomic: старый и новый product layer не публиковать смешанно.
+- Реализация/P0 пока не назначены и не запускались.
+- Следующий отдельный шаг: delivery mode + bounded назначение P0.
