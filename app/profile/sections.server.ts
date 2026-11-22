@@ -1,20 +1,20 @@
 import type { RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { userMeasuresForRequest } from "../measures/request-context";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
 import { UserMeasureForbiddenError, UserMeasureConfigurationUnavailableError } from "../../db/user-measure-authority";
-import { UserMeasureNotFoundError } from "../../db/user-measures";
-import { UserMeasuresUnavailableError } from "../../db/hyperdrive-user-measures";
-import { AuthorizationNotFoundError } from "../../db/authorization-repository";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { UserMeasureNotFoundError } from "../../db/user-measures-error";
+import { UserMeasuresUnavailableError } from "../../db/user-measures-error";
+import { AuthorizationNotFoundError } from "../../db/authorization-error";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { authorizationForRequest, authorizationOwnerContext } from "../authorization/request-context";
 import { canMutateAuthorization, isBoundOwner } from "../authorization/owner";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { canReadProfileAdminSection } from "./admission.server";
 import { ownerProfileForRequest } from "./request-context";
-import { OwnerProfileUnavailableError } from "../../db/hyperdrive-owner-profile";
-import { InvalidOwnerProfileSessionCursorError } from "../../db/owner-user-profile";
-import { InvalidOwnerUserHistoryCursorError } from "../../db/owner-user-history";
+import { OwnerProfileUnavailableError } from "../../db/owner-profile-errors";
+import { InvalidOwnerProfileSessionCursorError } from "../../db/owner-profile-errors";
+import { InvalidOwnerUserHistoryCursorError } from "../../db/owner-profile-errors";
 import type { ProfilePrivilegedSections, ProfileSection } from "./sections";
 
 const privateHeaders = { "Cache-Control": "private, no-store" } as const;
