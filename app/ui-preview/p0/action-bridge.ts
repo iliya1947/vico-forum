@@ -31,6 +31,10 @@ export function previewAction(
       // Request body can be a stream for FormData submissions in Data Router.
       duplex: "half",
     } as RequestInit);
+    // Native browser Request strips forbidden Origin when reconstructed in JS.
+    // The local in-process server still requires a trustworthy Origin header;
+    // preserve the verified request headers on the local Request object itself.
+    Object.defineProperty(localRequest, "headers", { value: headers });
 
     console.info("P0_ACTION_CHAIN_CLIENT", id);
     const args = {
@@ -41,7 +45,9 @@ export function previewAction(
       url: new URL(localRequest.url),
       serverAction: async () => {
         console.info("P0_ACTION_CHAIN_SERVER", id);
-        const result: unknown = await server({ request: localRequest.clone(), params, context });
+        const serverRequest = localRequest.clone();
+        Object.defineProperty(serverRequest, "headers", { value: new Headers(headers) });
+        const result: unknown = await server({ request: serverRequest, params, context });
         const status = result instanceof Response ? result.status
           : result && typeof result === "object" && "init" in result
             && result.init && typeof result.init === "object" && "status" in result.init
