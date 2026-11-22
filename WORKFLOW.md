@@ -2,18 +2,15 @@
 
 ## Активный этап
 
-**Moderation visibility B8-A — MIRA COORDINATOR HOLD on exact `8942509ee94927c5c0dc1014381bfcf5ad18da84`.**
+**Moderation visibility B8-A — B8-A-MIRA-01 author correction verified on exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`; Лира STOP, pending Mira coordinator re-check.**
 
-- Draft B8 #376 is correctly stacked on accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, behind0, unmerged. Diff remains test-only: 4 PostgreSQL test files, no runtime/schema edits.
-- Exact-head GitHub evidence independently verified: CI #45058154131 SUCCESS first attempt; both `checks` and `database` jobs SUCCESS. Green CI does not close the semantic acceptance gap below.
-- **B8-A-MIRA-01 [current B8-A blocker] — accepted translation execution is not raced against the real visibility command.**
-  - V8 acceptance matrix requires both real PostgreSQL orders for `Hide/Restore × accepted execution`.
-  - B8-A7 title/body tests use selective historical fixtures and model visibility with direct autocommit SQL `UPDATE ... SET is_hidden=...`.
-  - Those tests do prove the shared row-lock conflict with publication, but they bypass the actual visibility transaction: visibility version/CAS, topic→post ordering for post visibility, actor active-state/AP-10/current permission admission and append-last History are not part of the concurrent transaction.
-  - Existing full visibility suite uses real `setTopicVisibility/setPostVisibility` for planning/reply/edit/Complaint/source/solution/duplicate races, but it does not execute accepted title/body publication. Existing execution suites use the raw visibility flag seam only. Therefore no existing test closes this exact integrated matrix cell.
-- Required correction is acceptance-only unless a real defect is exposed: add a minimal full-schema real-PG barrier regression using the actual visibility service command against accepted title/body execution, sufficient to prove the real transaction interleaving and final state/History/task invariants. Reuse existing fixtures/helpers where practical; do not duplicate the whole matrix.
-- If the real command race exposes a product defect, classify/fix only that current B8 visibility defect.
-- **STOP after B8-A-MIRA-01 correction and applicable PG checks.** B8-B/C, B9, fold, independent final review, merge and deploy remain blocked.
+- **Mira checkpoint status: HOLD pending independent re-check**, not coordinator PASS. The original finding was current B8-A matrix gap: A7 accepted title/body execution had only direct SQL `UPDATE is_hidden` in selective historical fixtures, not actual `setTopicVisibility/setPostVisibility` transactions. Those A7 tests remain useful low-level evidence; they are not represented as full-command acceptance.
+- **B8-A-MIRA-01 corrected:** new full-schema `tests/database/visibility-accepted-execution.test.ts` (342 lines) uses all current migrations and full Forum/Translation services. **8 real PG barriers**: title/body translation × topic/post Hide/Restore × publication-first/visibility-first. Accepted translation task is planned, provider completion gated, two actual SQL contenders queue behind third holder `FOR UPDATE`, and `pg_blocking_pids` confirms both waiters. Manager invokes true `setTopicVisibility/setPostVisibility` with full actor/admin.forum/fresh visibility RBAC, topic→post ordering, revision/version CAS and append-last History; tests assert exactly one neutral event per transition, correct versions/revisions, completed private translation task and retained translation, no new enqueue/provider after Restore.
+- Tests only: initial `9c939224108d26770b2fa18329ca7dbc1832fca1` (unused helper Lint error), corrected exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`; no runtime/schema changes. [**Exact-head CI #45064673116**](https://github.com/iliya1947/vico-forum/actions/runs/45064673116) **SUCCESS attempt 2**: `database` 1689/1689 real PostgreSQL17 and all Worker smoke; `checks` 2951/2951 unit, lint/typecheck/build. First `checks` attempt at this SHA had one non-reproducible failure in unchanged `app/admin/visibility-pending.test.tsx`; same-SHA checks-only retry PASS, no unrelated changes.
+- Draft [B8 #376](https://github.com/iliya1947/vico-forum/pull/376) correctly stacked on accepted B7 [#371](https://github.com/iliya1947/vico-forum/pull/371) `f92778606f1c8ea4e64f53c1660910f34c48b84c`; new B8 exact head `a9ade36165c6af6767f7322d9f642bf24c68ca41`, base unchanged, behind0. Cumulative B8 diff now 5 test files, +1658 lines, no production/schema.
+- Prior B8-A1–A9 author PG matrix: 48 previous actual PG lock-order tests, 2 authority, 3 protected Complaint + new 8 integrated accepted-execution tests. No coordinator re-check yet of corrected head. Scope and prior evidence: `research/b8-a-pg-coverage.md`.
+- **STOP after MIRA-01 author correction. Next performer: Мира**, independently re-check B8-A-MIRA-01 on exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`, decide PASS/HOLD and update #342. **Do not begin B8-B/C, B9, fold, whole-feature review, merge or deployment without owner permission.** Owner authorization remains B8-A only.
+
 
 ## Baseline
 
