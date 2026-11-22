@@ -2,24 +2,14 @@
 
 ## Активный этап
 
-**Moderation visibility B8-B activated — only B8-B1 is assigned; STOP after B8-B1.**
+**Moderation visibility B8-B1 — built Worker/Better Auth transport author-check PASS; Лира STOP before B8-B2.**
 
-- B8-A coordinator PASS: Draft #376 stable accepted exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`, stacked on B7 #371, unmerged.
-- Continue in the **same B8 implementation PR #376 / branch `feature/moderation-visibility-b8-acceptance`**. Do not open another B8 implementation PR.
-- B8-B is split for owner control:
-  1. **B8-B1 — actual Worker + Better Auth public/private transport acceptance** — **ACTIVE NOW**.
-  2. B8-B2 — local R2 asset/download/private exact-membership acceptance — inactive.
-  3. B8-B3 — protected-domain/old-alias/fault-injection transport acceptance — inactive.
-- **B8-B1 required result:**
-  - exercise the built Worker through actual HTTP with Better Auth/session context for the visibility public/private transport boundary;
-  - close public HTML/.data/single-fetch/old route aliases that belong to this transport seam, including neutral hidden-topic 404 and hidden-post tombstone behavior;
-  - sentinel-scan responses so hidden title/body/translation/reason/private metadata do not appear in public document/data/error/meta/Original/status surfaces;
-  - prove guarded queue/inspector/action responses remain private/no-store and guest/ordinary/revoked access fails closed without hidden source;
-  - verify document/data/404 cache headers and actual post-Hide/post-Restore public transition behavior;
-  - use existing Worker/Better Auth smoke infrastructure where practical; do not duplicate PostgreSQL race coverage already accepted in B8-A and do not start R2/asset-specific cases reserved for B8-B2.
-- If B8-B1 exposes a real current visibility defect, diagnose it through the actual HTTP path and fix only the bounded defect required for this packet.
-- Run the applicable Worker/Better Auth connected checks needed to establish B8-B1 on the exact head.
-- **Mandatory STOP after B8-B1.** Report exact head, changed/test scope, actual HTTP evidence and any defect/correction. Do not start B8-B2/B8-B3, B8-C, B9, fold, final reviews, merge or deploy.
+- Owner authorized **B8-B1 only** in existing [Draft B8 #376](https://github.com/iliya1947/vico-forum/pull/376), branch `feature/moderation-visibility-b8-acceptance`. Mira accepted B8-A exact `a9ade36165c6af6767f7322d9f642bf24c68ca41` on B7 #371 stable `f92778606f1c8ea4e64f53c1660910f34c48b84c`. B8 exact head now **`8bb92c771fffe96aab5d5b3a39917048598922a1`**; B7 base unchanged.
+- **B8-B1 implemented/tested, only two existing smoke scripts changed:** `scripts/smoke-visibility-cache-transport.ts` and `scripts/smoke-complaints-local.ts`. Reuses existing full-schema local Worker preview `vite preview`, genuine Better Auth signup/sessions, current role/permission overrides, disposable PostgreSQL 17 and actual HTTP; does not replace route calls with mocked route tests or launch new infrastructure. No production, schema, dependency, workflow or R2 changes.
+- Connected B8-B1 checks **unique title/body source and Hebrew title/body translations**, private Hide reason and actual retained Complaint evidence object key. Public EN/HE documents, `.data`/selective `_routes` aliases, Original query path, hidden-topic neutral 404/headers, old Hebrew `/iw/` canonical redirect; hidden-post tombstone anchor/status without its content or translation; no secret in public HTML/data/error/meta/Original HTTP payload. Positive visible translations before Hide establish that the sentinels were actually readable before being hidden. Public no-store and private `private, no-store` checked. Actual queue/inspector document/data: guest 401, ordinary 403, moderator 200 with private reason; current permission `deny` revokes private access and rejects Restore without version mutation; `allow` reopens guarded inspection, successful Restore and public source recover.
+- **Exact-head [CI #45069729381](https://github.com/iliya1947/vico-forum/actions/runs/45069729381) SUCCESS first attempt on `8bb92c77`**: `checks` 2951/2951 unit + lint/typecheck/build/metadata; `database` 1689/1689 real PG17, all Worker smoke, explicit log **`B8-B1 real Worker/Better Auth public/private aliases, leakage and revoke transport: PASS`**. No product defect found. Earlier intermediary heads failed for new test-only `let` Lint and incorrect Complaint note fixture column; final fixture instead reuses existing retained evidence key (no new Complaint mutations).
+- **Mandatory STOP after B8-B1.** B8-B2 local R2/asset/old-download/private exact-membership acceptance is **inactive** until fresh owner continuation; B8-B3 protected domains/fault-injection, B8-C Chromium, B9, fold/review/merge/deploy remain blocked. No coordinator PASS for B8-B1 has yet been issued. Next permitted workflow decision belongs to owner/Mira, not an unprompted B8-B2 implementation.
+
 
 ## Baseline
 
