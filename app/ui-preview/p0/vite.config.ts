@@ -2,6 +2,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
 import routes from "../../routes";
+import { THEME_BOOTSTRAP_SCRIPT } from "../../theme";
 import { previewRoutesPlugin } from "../build/route-modules";
 
 const candidateRoot = dirname(fileURLToPath(import.meta.url));
@@ -52,6 +53,18 @@ export default defineConfig({
   root: candidateRoot,
   base: "./",
   plugins: [
+    {
+      name: "vico-ui-preview-shared-document-bootstrap",
+      transformIndexHtml() {
+        // The same inline pre-paint theme bootstrap as production root.Layout.
+        return [{
+          tag: "script" as const,
+          attrs: { "data-vico-preview-theme-bootstrap": "" },
+          children: THEME_BOOTSTRAP_SCRIPT,
+          injectTo: "head-prepend" as const,
+        }];
+      },
+    },
     // P0 import-graph proof only. Full module coverage belongs to P1.
     previewRoutesPlugin(routes, appDirectory, ["root", "routes/locale-boundary", "routes/topic"]),
     importGraphDiagnostics(),

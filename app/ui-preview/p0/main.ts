@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "./route-adapter";
+import { createPreviewDocumentAdapter } from "./document";
 import { createP0Context, P0_TOPIC_ID } from "./fixture";
 
 /** P0-only browser proof. This never replaces the published Pages preview. */
@@ -22,12 +23,24 @@ async function boot() {
     initialEntries: ["/en/topics/" + P0_TOPIC_ID],
     getContext: createP0Context,
   });
+  const documentAdapter = createPreviewDocumentAdapter(modules);
+  const refreshDocument = () => {
+    try {
+      documentAdapter.sync(router.state);
+    } catch (error) {
+      mount!.dataset.status = "document-error";
+      console.error("P0_DOCUMENT_FAILURE", error);
+      throw error;
+    }
+  };
   router.subscribe((state) => {
     if (state.errors && Object.keys(state.errors).length) {
       mount!.dataset.status = "route-error";
       console.error("P0_ROUTE_ERRORS", state.errors);
     }
+    refreshDocument();
   });
+  refreshDocument();
   createRoot(mount!).render(createElement(RouterProvider, { router }));
   mount!.dataset.status = "router-mounted";
 }
