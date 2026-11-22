@@ -94,7 +94,7 @@ describe("B7-B3b post Hide: revalidated public topic removes hidden source",()=>
       return data(state,{headers:{"Cache-Control":"private, no-store"}});
     });
     const submitted:string[][]=[];
-    const serverAction=vi.fn(async({request}:{request:Request})=>{
+    const serverAction=vi.fn(async(request:Request)=>{
       const form=await request.formData();
       submitted.push([...form.entries()].map(([key,value])=>`${key}=${String(value)}`));
       hidden=true;
@@ -109,7 +109,8 @@ describe("B7-B3b post Hide: revalidated public topic removes hidden source",()=>
       loader,
       action:({request,params}:ActionFunctionArgs)=>clientAction({
         request,params,context:new RouterContextProvider(),pattern:"",
-        url:new URL(request.url),serverAction:serverAction as ClientActionFunctionArgs["serverAction"],
+        url:new URL(request.url),
+        serverAction:(()=>serverAction(request)) as ClientActionFunctionArgs["serverAction"],
       }),
       element:<TopicRoute/>,
     }],{initialEntries:["/en/topics/topic%2Fvisible"]});
