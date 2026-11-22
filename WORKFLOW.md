@@ -10,7 +10,7 @@
 
 База: `main` @ `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-## Drafts
+## Final exact drafts
 
 1. User: `USER_INSTRUCTIONS.draft.md`
    - blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`
@@ -23,30 +23,33 @@
 2. Project: `PROJECT_INSTRUCTIONS.draft.md`
    - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
    - 16 rules / 2713 chars
-   - current active baseline 3341 chars
    - transfer readiness: PASS
 
 3. AGENTS: `AGENTS.draft.md`
    - blob `170ef5ed10715e416a376c75c3dae188ae0a3d24`
    - 58 rules / 16186 chars
-   - current `main:AGENTS.md` still exactly matches #368 current snapshot
    - transfer readiness: PASS via separate repository PR
 
-## Current gates
+## Completed gates
 
 1. User preservation — PASS.
 2. User executability — PASS.
 3. Three-layer consistency — PASS.
 4. Transfer-readiness — PASS.
+5. Transfer package — PREPARED and exact-text verified.
 
-Current transfer-readiness: `research/instruction-transfer-readiness.md`.
-
-Безопасный порядок переноса: **User → AGENTS → Project**.
+Transfer package:
+- `research/instruction-transfer-package.md`
+- blob `e14aebdf362e6949caaf47131abe0f2de389bc44`
+- embeds exact User / AGENTS / Project final texts
+- verified exact against all three draft files
+- includes safe order **User → AGENTS → Project**
+- includes separate AGENTS transfer task and invalidation rules
 
 Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: нет.
+Блокер: нет для подготовки; фактический transfer требует отдельного перехода к real sources.
 
-Следующий переход: подготовить фактический transfer package — точные финальные тексты, точную последовательность замены и отдельную постановку для переноса `AGENTS.md` в `main`; реальные sources менять только по прямой команде разработчика.
+Следующий переход: по прямой команде разработчика начать Step 1 package — перенос exact User Instructions; после этого AGENTS separate repo PR, затем Project Instructions.
