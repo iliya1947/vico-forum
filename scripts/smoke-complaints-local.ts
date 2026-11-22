@@ -230,7 +230,7 @@ async function run(){
   // B7-only cache transport probe reuses this disposable Worker/PG17 and
   // live Better Auth moderator; it does not expand the Complaint smoke matrix.
   await verifyModerationVisibilityCacheTransport({
-    client, http, submit: form, topicId, postId, titleRevisionId: titleId,
+    client, http, submit: form, topicId, postId, titleRevisionId: titleId, attachmentId,
     moderator: reviewer, ordinary: reporter,
     titleSource,currentPostSource,
   });
