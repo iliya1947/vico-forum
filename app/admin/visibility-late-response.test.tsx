@@ -196,4 +196,60 @@ describe("B7-B5b old visibility responses cannot reopen a new viewer's controls"
       });
     }
   }
+
+  it.each(["topic","post"] as const)(
+    "restore %s: same-actor GET retains reason, account return requires a new private GET",
+    async(kind)=>{
+      const instance=mount("restore",kind);
+      try {
+        const selector="form.visibility-restore-form";
+        const originalForm=await waitFor(()=>{
+          const element=instance.container.querySelector<HTMLFormElement>(selector);
+          expect(element).not.toBeNull();
+          return element!;
+        });
+        const reason=originalForm.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!;
+        fireEvent.change(reason,{target:{value:"Unsubmitted original actor buffer"}});
+        expect(instance.container).toHaveTextContent(secret);
+        // The same current actor may refresh a snapshot without losing an unsubmitted reason.
+        const firstReads=instance.loader.mock.calls.length;
+        await act(async()=>{instance.router.revalidate();});
+        await waitFor(()=>expect(instance.loader.mock.calls.length).toBeGreaterThan(firstReads));
+        await waitFor(()=>expect(
+          instance.container.querySelector<HTMLTextAreaElement>(
+            'form.visibility-restore-form textarea[name="reason"]')?.value,
+        ).toBe("Unsubmitted original actor buffer"));
+        expect(instance.action).not.toHaveBeenCalled();
+
+        // The prior private loader must remain invalid even if the original actor
+        // returns before a new GET. A -> B -> A and A -> sign-out -> A.
+        await act(async()=>{instance.rerender(instance.tree(kind==="topic"?nextActor:null));});
+        await waitFor(()=>expect(instance.container.querySelector(selector)).toBeNull());
+        expect(instance.container.textContent).not.toContain(secret);
+        await act(async()=>{instance.rerender(instance.tree(actorId));});
+        expect(instance.container.querySelector(selector)).toBeNull();
+        expect(instance.container.textContent).not.toContain(secret);
+        expect(instance.container.textContent).not.toContain("CURRENT_PRIVATE_REVISION");
+
+        const beforeRefresh=instance.loader.mock.calls.length;
+        await act(async()=>{instance.router.revalidate();});
+        await waitFor(()=>expect(instance.loader.mock.calls.length).toBeGreaterThan(beforeRefresh));
+        const currentForm=await waitFor(()=>{
+          const element=instance.container.querySelector<HTMLFormElement>(selector);
+          expect(element).not.toBeNull();
+          return element!;
+        });
+        expect(instance.container).toHaveTextContent(secret);
+        expect(currentForm.querySelector<HTMLInputElement>('input[name="expectedVisibilityVersion"]')?.value)
+          .toBe("3");
+        // An account switch discards the prior viewer's unsent form rather than
+        // resurrecting an old buffer with the new guarded snapshot.
+        expect(currentForm.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')?.value)
+          .toBe("");
+        expect(instance.action).not.toHaveBeenCalled();
+        expect(instance.router.state.location.pathname).toBe("/en/visibility-late");
+      } finally {instance.router.dispose();}
+    },
+  );
+
 });
