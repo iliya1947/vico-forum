@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: исполнитель P0 #369. Active Draft #373 branch `feature/ui-progress-preview-p0`, exact `ad5661574482ba5b9cf59ca260584ebecf6f7d46`, base `main` `9cff976a...`.
+- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `a0b81160c0144b2957f9b7c71d3981c8f0ce116f`, base `main` `9cff976a...`.
 - Delivery: **stacked**, P0 — первая ступень от актуального main; P1+ зависят от PASS предыдущей ступени.
 - Канонический технический план: `PLAN.md`; P0 — §15.
 - Цель P0: browser proof одного реального vertical path без второго route/action и без внешнего runtime.
@@ -13,4 +13,6 @@
 - Ошибочная первая ветка `chatgpt/ui-progress-preview-p0` активировала Pages deploy run `45002989024` (SUCCESS). #372 закрыт, работа перенесена в #373 вне Pages trigger; старая ветка ограничена job-level deploy guard.
 - После полного P0: author self-check + применимые tests/browser/CI, затем передать stable exact head Мире на coordinator checkpoint.
 
-- STOP P0-F2. Next owner `...` → P0-F3 real topic editor `clientAction → action` with minimal typed test capabilities and allowed simulated success; browser Form/fetcher, no duplicated product handler, no P1/merge/deploy.
+- P0-F3 PASS exact `a0b81160c0144b2957f9b7c71d3981c8f0ce116f` ([CI #45024496140](https://github.com/iliya1947/vico-forum/actions/runs/45024496140): checks/database SUCCESS, 224 Vitest test files). Generic Data Router clientAction bridge executes real `editorClientAction→serverAction→topicAction` with virtual same-origin header preserving product guard. Typed test fixture auth/permissions/writer accepts real MarkdownEditor Form and read-state fetcher: Chromium 200 read state, 302 reply, post `p0-reply-1` visible, redirect hash; 0 external requests / JS page errors. Two Vite-local 404 presence resource requests remain unhandled (not a P0-F3 defect; needs P0-F4 generic dispatch).
+
+- STOP P0-F3. Next owner `...`: P0-F4 generic local resource dispatcher and actual presence/mentions handler with locale middleware and strict HTTP semantics, no fake resource route or Vite fallback; then URL/new-tab and attachments microsteps. Full P0 NOT PASS; no P1/merge/deploy.
