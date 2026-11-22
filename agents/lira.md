@@ -1,7 +1,6 @@
-# agents/lira.md — B7-B1b authored; STOP before private Restore
+# agents/lira.md — B7-B2a authored; STOP before B7-B2b
 
-- Accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`, coordinator PASS, unchanged.
-- Stacked B7 Draft #371 head `e9cfcd0ddeadc3a6661293c4db968dde2195a269`, base B6 unchanged; B7-A and B7-B1a previously authored, no runtime check.
-- B7-B1b public visible-only Hide: new reusable `VisibilityHideForm` canonical topic POST with exact CAS/current revision/session expectation and required reason; topic/message QuickActions only with grant + valid observed baseline + matching header actor. Hidden tombstone lacks forms. EN/RU/HE manual keys/fingerprints reviewed; DOM submit + negative test source authored. 21/21 scoped static source checks PASS; no Vitest/PG/browser/CI run.
-- Changes vs B7-B1a: 4 commits / 8 files; no B7-A/B6 backend changes, migration or extra route.
-- **STOP**. Next after owner continuation is narrow B7-B2a private inspector Restore UI using B6 guarded current revision/version; no public hidden-source DTO or Admin/Complaint bypass. Remaining B7 UI failure/pending/redirect/cross-actor behavior and whole-B7 checks later, no merge/deploy.
+- Accepted B6 #370 coordinator PASS exact `51a9ebe03f16c438faae5bec99a5856287630958`.
+- Stacked Draft B7 #371 exact `a7088b52a4ba57d7138848127944292846947894`, base B6 unchanged. Previous B7-A/B1a/B1b source and test matrices authored but no runtime tests run.
+- B7-B2a: guarded B6 inspector retains its unchanged private loader/permission and current CAS; new `VisibilityRestoreForm` visible to exact active header/session actor when hidden and private reader returned valid version/revision. Sends canonical topic/post POST `hidden=false`, version/revision/actor/required reason; no public tombstone CAS, no new endpoint, no general Admin/History bypass. Remount by actor/object/version/revision; EN/RU/HE labels and manual fingerprints included. Targeted inspector DOM/submit/negative tests authored. 3 commits / 6 files vs preceding B7-B1b head, **30/30 static checks PASS, source fingerprints independently verified 3/3; Vitest/PG/browser/CI not run**.
+- **STOP**. Next on owner continuation: B7-B2b private inspector navigation for hidden public tombstone (no source/revision/version leakage), scoped permission; keep redirect-after-Hide, pending/conflict/actor-switch/revoke/unknown separate later B7 packages. No B8/merge/deploy.
