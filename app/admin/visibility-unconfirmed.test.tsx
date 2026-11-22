@@ -61,7 +61,7 @@ function mount(mode:Mode,kind:Kind,fault:Fault){
     });
     // The real topic clientAction delegates to editorClientAction, which catches
     // unexpected server faults and returns {error:"unexpected"} without operation.
-    return editorClientAction({request,serverAction:async()=>{throw new Error("fault");}} as ClientActionFunctionArgs);
+    return editorClientAction({request,serverAction:async()=>{throw new Error("fault");}} as unknown as ClientActionFunctionArgs);
   });
   const router=createMemoryRouter([
     {path:"/en/visibility-test",loader,element:<ScopedForm mode={mode} kind={kind}/>,
