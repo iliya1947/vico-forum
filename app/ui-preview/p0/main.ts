@@ -11,7 +11,19 @@ if (!root) throw new Error("P0 candidate mount is missing");
 const mustLoad = ["root", "routes/locale-boundary", "routes/topic"] as const;
 
 try {
-  const [app, boundary, topic] = await Promise.all(mustLoad.map(importRoute));
+  const imported: Record<string, Record<string, unknown>> = {};
+  for (const id of mustLoad) {
+    try {
+      imported[id] = await importRoute(id);
+      console.info("P0_DIAGNOSTIC_IMPORTED", id);
+    } catch (error) {
+      console.error("P0_DIAGNOSTIC_IMPORT_FAILURE", id, error instanceof Error ? error.stack : error);
+      throw error;
+    }
+  }
+  const app = imported.root;
+  const boundary = imported["routes/locale-boundary"];
+  const topic = imported["routes/topic"];
   if (
     typeof app.default !== "function"
     || typeof boundary.default !== "function"
@@ -30,6 +42,6 @@ try {
   root.textContent = "Real forum route modules imported; data/router execution not yet verified.";
 } catch (error) {
   root.dataset.status = "import-failed";
-  root.textContent = "Real forum module import failed; see the browser console.";
+  root.textContent = "Real forum module import failed: " + (error instanceof Error ? error.stack : String(error));
   throw error;
 }
