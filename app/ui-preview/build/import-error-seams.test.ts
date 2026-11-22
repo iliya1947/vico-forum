@@ -239,3 +239,17 @@ describe("shared P1 settings-forum import errors", () => {
     }
   });
 });
+
+import { UserLocaleUnavailableError as neutralUserLocale } from "../../../db/user-locale-error";
+import { UserLocaleUnavailableError as productionUserLocale } from "../../../db/hyperdrive-user-locale";
+
+describe("shared P1 Settings user locale import", () => {
+  it("retains the production availability constructor and cause", () => {
+    expect(neutralUserLocale).toBe(productionUserLocale);
+    const cause = new Error("database temporarily unavailable");
+    const error = new productionUserLocale("Account locale storage unavailable", { cause });
+    expect(error).toBeInstanceOf(neutralUserLocale);
+    expect(error.message).toBe("Account locale storage unavailable");
+    expect(error.cause).toBe(cause);
+  });
+});

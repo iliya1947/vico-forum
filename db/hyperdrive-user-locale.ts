@@ -8,7 +8,8 @@ import {
   bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout,
 } from "./postgres-deadlines";
 
-export class UserLocaleUnavailableError extends Error {}
+import { UserLocaleUnavailableError } from "./user-locale-error";
+export { UserLocaleUnavailableError } from "./user-locale-error";
 
 const dialect = new PgDialect();
 function unavailable(error: unknown): boolean {
