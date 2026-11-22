@@ -26,11 +26,11 @@ function sourceAbsent(body: string, path: string, sentinels: readonly string[]) 
 }
 
 export async function verifyModerationVisibilityCacheTransport({
-  client, http, submit, topicId, postId, titleRevisionId,
+  client, http, submit, topicId, postId, titleRevisionId, attachmentId,
   moderator, ordinary, titleSource, currentPostSource,
 }: {
   client: Client; http: Http; submit: Submit; topicId: string; postId: string;
-  titleRevisionId: string; moderator: Actor; ordinary: Actor;
+  titleRevisionId: string; attachmentId: string; moderator: Actor; ordinary: Actor;
   titleSource: string; currentPostSource: string;
 }) {
   const topic = "/en/topics/" + topicId;
@@ -61,7 +61,6 @@ export async function verifyModerationVisibilityCacheTransport({
   const titleTranslation = "B8-HIDDEN-TITLE-TRANSLATION-" + randomUUID();
   const bodyTranslation = "B8-HIDDEN-BODY-TRANSLATION-" + randomUUID();
   const privateReason = "B8-HIDDEN-VISIBILITY-REASON-" + randomUUID();
-  const privateMetadata = "B8-PRIVATE-METADATA-" + randomUUID();
   await client.query(
     "insert into forum_topic_title_translations " +
       "(topic_id,revision_id,target_locale,source_locale,translated_content,origin,provider,provider_model) " +
@@ -74,14 +73,18 @@ export async function verifyModerationVisibilityCacheTransport({
       "values ($1,$2,'he',$3,$4,'machine','b8-smoke','b8-v1')",
     [postId,postRevisionId,revisions.rows[0]!.source_locale,bodyTranslation],
   );
-  // Real private-only metadata is stored server-side and must never appear
-  // in the anonymous public document, JSON, meta or error responses.
-  await client.query("insert into forum_complaint_notes(id,case_id,author_user_id,body) " +
-    "select $1,c.id,$2,$3 from forum_complaint_cases c " +
-    "join forum_complaint_targets t on t.id=c.target_id where t.post_id=$4 " +
-    "order by c.created_at desc limit 1",
-    [randomUUID(),moderator.id,privateMetadata,postId],
-  );
+  // Existing Complaint evidence already retains this private object key
+  // independently of the edited public attachment membership. Check its
+  // real persisted value instead of introducing unrelated Complaint writes.
+  const privateKey = (await client.query<{object_key:string}>(
+    "select a.object_key from forum_complaint_evidence_attachments e " +
+      "join forum_complaint_targets t on t.id=e.target_id " +
+      "join forum_attachments a on a.id=e.attachment_id " +
+      "where t.post_id=$1 and a.id=$2 limit 1",
+    [postId,attachmentId],
+  )).rows[0]?.object_key;
+  assert.ok(privateKey,"B8 smoke requires a retained private Complaint evidence key");
+  const privateMetadata=privateKey;
   const secrets = [titleSource,currentPostSource,titleTranslation,bodyTranslation,privateReason,privateMetadata];
   const hebrewPath = "/he/topics/" + topicId;
   const hebrew = await http(hebrewPath);
