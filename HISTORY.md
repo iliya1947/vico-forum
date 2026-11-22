@@ -19,3 +19,4 @@
 - 2026-11-21 — Project draft очищен от подтверждённых межслойных дублей: removed current Project 10, removed generic goal duplicate, shortened interpretation duplicate; semantic diff confirms 0 lost project-specific guards.
 - 2026-11-22 — после AGENTS cross-layer анализа Project draft сокращён до 16 numbered rules: removed current Project 3 as duplicate of AGENTS Review 5/7; repeated agent name/model table replaced by reference to AGENTS Roles. Semantic diff confirms 0 lost project-specific guards.
 - 2026-11-22 — AGENTS draft structurally deduplicated: 5 safe merge groups + 2 internal reference-dedupes applied; numbered rules 64 → 58, semantic diff confirms 0 lost guards.
+- 2026-11-22 — применены 19 safe wording reductions к AGENTS draft; exact diff подтвердил, что изменены только эти 19 из 58 numbered rules, объём 2179 → 2006 whitespace words.
