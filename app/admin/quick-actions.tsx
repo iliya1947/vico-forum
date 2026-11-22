@@ -141,7 +141,7 @@ function TopicClosureQuickActionForm({locale,topic,action}:{
 /** All forms retain the existing canonical topic action; closure uses an isolated inline fetcher. */
 export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActionInput&{locale:string;inline?:boolean}){
  const headerActorId=useHeaderAuthUser()?.id??null;
- const loaderSnapshot=useMatches().at(-1)?.data;
+ const loaderSnapshot=useMatches().at(-1)?.loaderData;
  // Returning to an earlier account cannot re-trust the same loader snapshot.
  const actorLifetime=useRef({snapshot:loaderSnapshot,invalidated:false});
  if(actorLifetime.current.snapshot!==loaderSnapshot)
