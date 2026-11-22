@@ -108,7 +108,7 @@ def history_count(item_id, action):
 def cache(response, status, private=False, forbidden=()):
     assert response.status == status, (response.url, response.status, status)
     directives = {part.strip().lower() for part in
-        (response.header_value("cache-control") or "").split(",")}
+        response.headers.get("cache-control", "").split(",")}
     assert "no-store" in directives, (response.url, directives)
     if private:
         assert "private" in directives, (response.url, directives)
