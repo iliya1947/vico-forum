@@ -17,8 +17,8 @@
    - 35 rules / 4999 chars
    - 15/15 current FULL
    - 52/52 retained semantic guards
-   - overloaded former rules 5, 7, 9, 10, 13, 14 atomized
-   - **stress revalidation pending**
+   - executability stress: **17/17 EXEC PASS**
+   - goal-level User executability: **PASS**
 
 2. Project: `PROJECT_INSTRUCTIONS.draft.md`
    - blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`
@@ -34,14 +34,18 @@
 
 Previous failing stress-test: `research/user-compact-executability-stress-test.md` — относится к superseded User blob `f042613...`.
 
-Current redesign preservation check: `research/user-35-redesign-preservation-check.md`.
+Current preservation check: `research/user-35-redesign-preservation-check.md`.
+
+Current stress recheck: `research/user-35-executability-stress-recheck.md`.
 
 Установлено для current User blob:
 1. character limit PASS: 4999/5000;
 2. retained semantic guards PASS: 52/52;
 3. current User coverage PASS: 15/15 FULL;
-4. подтверждённые overloaded groups разбиты на более локальные rules;
-5. goal-level executability пока не присвоен: новый exact blob ещё не прошёл тот же stress matrix.
+4. повторный тот же 17-сценарный stress matrix: semantic PASS 17/17, EXEC PASS 17/17, EXEC RISK 0;
+5. structural executability blocker закрыт.
+
+Это structural executability PASS, не эмпирический A/B-test частоты ошибок модели.
 
 Project/AGENTS PASS не отменён.
 
@@ -49,6 +53,6 @@ Project/AGENTS PASS не отменён.
 
 Проверяющий: не назначен.
 
-Блокер: **новый User exact blob должен пройти повторный bounded executability stress-test.**
+Блокер: **новый User exact blob ещё не прошёл повторную three-layer consistency-проверку с Project/AGENTS drafts.**
 
-Следующий переход: повторить тот же 17-сценарный stress matrix на `ef1c0efd...`; только после PASS переходить к three-layer consistency.
+Следующий переход: отдельным bounded этапом повторить three-layer consistency для exact User blob `ef1c0efd...`; только после PASS возвращаться к transfer-readiness/package.
