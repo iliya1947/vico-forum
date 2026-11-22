@@ -76,7 +76,7 @@ export async function verifyModerationVisibilityCacheTransport({
   );
   // Real private-only metadata is stored server-side and must never appear
   // in the anonymous public document, JSON, meta or error responses.
-  await client.query("insert into forum_complaint_notes(id,case_id,author_id,body) " +
+  await client.query("insert into forum_complaint_notes(id,case_id,author_user_id,body) " +
     "select $1,c.id,$2,$3 from forum_complaint_cases c " +
     "join forum_complaint_targets t on t.id=c.target_id where t.post_id=$4 " +
     "order by c.created_at desc limit 1",
