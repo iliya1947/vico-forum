@@ -7,12 +7,8 @@ import {
 import { DrizzleUserPrivacyRepository } from "./user-privacy";
 import { AccountStateUnavailableError } from "./account-state";
 
-export class UserPrivacyUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("Personal privacy storage unavailable", options);
-    this.name = "UserPrivacyUnavailableError";
-  }
-}
+import { UserPrivacyUnavailableError } from "./user-privacy-error";
+export { UserPrivacyUnavailableError } from "./user-privacy-error";
 
 export interface UserPrivacyCapability {
   read(actorId: string): Promise<boolean>;

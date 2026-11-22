@@ -253,3 +253,18 @@ describe("shared P1 Settings user locale import", () => {
     expect(error.cause).toBe(cause);
   });
 });
+
+import { UserPrivacyUnavailableError as neutralPrivacyUnavailable } from "../../../db/user-privacy-error";
+import { UserPrivacyUnavailableError as productionPrivacyUnavailable } from "../../../db/hyperdrive-user-privacy";
+
+describe("shared P1 Settings privacy import", () => {
+  it("preserves the production unavailable error constructor, name, message and cause", () => {
+    expect(neutralPrivacyUnavailable).toBe(productionPrivacyUnavailable);
+    const cause = new Error("database unavailable");
+    const error = new productionPrivacyUnavailable({ cause });
+    expect(error).toBeInstanceOf(neutralPrivacyUnavailable);
+    expect(error.name).toBe("UserPrivacyUnavailableError");
+    expect(error.message).toBe("Personal privacy storage unavailable");
+    expect(error.cause).toBe(cause);
+  });
+});

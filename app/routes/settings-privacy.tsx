@@ -9,9 +9,8 @@ import { requireSameOrigin } from "../forum/mutations.server";
 import { ForumRouteError } from "../forum/ui";
 import { userPrivacyContext } from "../settings/user-privacy-context";
 import { SettingsShell } from "../settings/shell";
-import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
-import { UserPrivacyUnavailableError } from "../../db/hyperdrive-user-privacy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import { UserPrivacyAccountMissingError, UserPrivacyUnavailableError } from "../../db/user-privacy-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
 import { settingsPrivateHeaders } from "./settings";
 
 type Args = { request: Request; params: { locale?: string }; context: RouterContextProvider };

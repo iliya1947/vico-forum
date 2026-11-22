@@ -5,3 +5,10 @@ export class UserPrivacyAccountMissingError extends Error {
   }
 }
 
+/** Shared privacy storage failure independent of PostgreSQL. */
+export class UserPrivacyUnavailableError extends Error {
+  constructor(options?: ErrorOptions) {
+    super("Personal privacy storage unavailable", options);
+    this.name = "UserPrivacyUnavailableError";
+  }
+}
