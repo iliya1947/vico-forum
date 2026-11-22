@@ -177,6 +177,115 @@ describe("V4 topic/post authoritative visibility commands", () => {
     expect(await service.setTopicVisibility(topicCommand(f, "owner"))).toMatchObject({ changed: true });
   });
 
+  it.each(["topic", "post"] as const)(
+    "B8-A8 $kind custom Admin/History/Complaint grants cannot proxy visibility, including no-op and revoke",
+    async kind => {
+      const f = await fixture("A8 PRIVATE COMPLAINT POST", "A8 PRIVATE ADMIN TITLE");
+      const actorId = "a8-" + randomUUID(), roleId = "a8-" + randomUUID();
+      await client.query(
+        'insert into "user"(id,name,email) values($1,$2,$3)',
+        [actorId, "A8 independent reviewer", actorId + "@visibility.test"],
+      );
+      await client.query(
+        "insert into authz_roles(id,slug,display_name) values($1,$1,$2)",
+        [roleId, "A8 independent reviewer"],
+      );
+      await client.query(
+        "insert into authz_user_roles(user_id,role_id) values($1,$2)",
+        [actorId, roleId],
+      );
+      // All these are real independent capabilities, but none authorizes Hide.
+      for (const permission of [
+        "admin.history.read", "forum.post.history.read",
+        "forum.complaint.review", "forum.complaint.appeal.review",
+        "forum.complaint.reporterIdentity.read", "access.authorization.manage",
+      ]) {
+        await client.query(
+          "insert into authz_role_permissions(role_id,permission_key) values($1,$2)",
+          [roleId, permission],
+        );
+      }
+      const targetId = kind === "topic" ? f.topicId : f.postId;
+      const action = (hidden: boolean, version: number) => kind === "topic"
+        ? service.setTopicVisibility(topicCommand(
+            f, actorId, hidden, version, "A8 visibility isolation",
+          ))
+        : service.setPostVisibility(postCommand(
+            f, actorId, hidden, version, "A8 visibility isolation",
+          ));
+      const state = async () => (await client.query<{
+        hidden: boolean; version: number; revision: string;
+      }>(kind === "topic"
+        ? "select is_hidden as hidden,visibility_version as version,current_title_revision_id as revision " +
+          "from forum_topics where id=$1"
+        : "select is_hidden as hidden,visibility_version as version,current_revision_id as revision " +
+          "from forum_posts where id=$1", [targetId])).rows[0]!;
+      const revisionId = kind === "topic" ? f.titleRevisionId : f.bodyRevisionId;
+      const starting = { hidden: false, version: 0, revision: revisionId };
+      expect(await state()).toEqual(starting);
+      // Fresh current-role permission is required before unchanged and changed writes.
+      await expect(action(false, 0)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      await expect(action(true, 0)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      expect(await state()).toEqual(starting);
+      expect(await events(targetId)).toHaveLength(0);
+
+      await client.query(
+        "insert into authz_role_permissions(role_id,permission_key) values($1,'forum.content.visibility.manage')",
+        [roleId],
+      );
+      await expect(action(true, 0)).resolves.toEqual({
+        hidden: true, visibilityVersion: 1, changed: true,
+      });
+      const hidden = { hidden: true, version: 1, revision: revisionId };
+      expect(await state()).toEqual(hidden);
+      expect((await events(targetId)).map(e => e.action))
+        .toEqual([kind === "topic" ? "topic.hidden" : "post.hidden"]);
+
+      await client.query(
+        "delete from authz_role_permissions where role_id=$1 and permission_key='forum.content.visibility.manage'",
+        [roleId],
+      );
+      // After role revoke neither an actual Restore nor an unchanged Hide is allowed.
+      await expect(action(false, 1)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      await expect(action(true, 1)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      expect(await state()).toEqual(hidden);
+      expect(await events(targetId)).toHaveLength(1);
+
+      await client.query(
+        "insert into authz_user_permission_overrides(user_id,permission_key,effect) " +
+          "values($1,'forum.content.visibility.manage','allow')",
+        [actorId],
+      );
+      await expect(action(false, 1)).resolves.toEqual({
+        hidden: false, visibilityVersion: 2, changed: true,
+      });
+      await client.query(
+        "insert into authz_role_permissions(role_id,permission_key) values($1,'forum.content.visibility.manage')",
+        [roleId],
+      );
+      await client.query(
+        "update authz_user_permission_overrides set effect='deny' " +
+          "where user_id=$1 and permission_key='forum.content.visibility.manage'",
+        [actorId],
+      );
+      await expect(action(false, 2)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      await expect(action(true, 2)).rejects.toBeInstanceOf(ForumAuthorizationError);
+      expect(await state()).toEqual({ hidden: false, version: 2, revision: revisionId });
+      const history = await events(targetId);
+      expect(history.map(e => e.action)).toEqual([
+        kind === "topic" ? "topic.hidden" : "post.hidden",
+        kind === "topic" ? "topic.restored" : "post.restored",
+      ]);
+      expect(JSON.stringify(history)).not.toContain("A8 PRIVATE");
+      expect(history.every(e => e.target_label === kind + ":" + targetId)).toBe(true);
+      if (kind === "post") {
+        expect((await client.query(
+          "select is_hidden,visibility_version from forum_topics where id=$1", [f.topicId],
+        )).rows[0]).toEqual({ is_hidden: false, visibility_version: 0 });
+      }
+    },
+  );
+
   it("AP-10 admin.forum measure rejects no-op, but bound Owner is immune", async () => {
     const f = await fixture(), id = randomUUID();
     await client.query("insert into user_measures(id,target_user_id,issuer_user_id,issuer_authority_floor,create_fingerprint,initial_reason) values ($1,'moderator1','owner',3,$2,'Test violation')", [id, "e".repeat(64)]);
