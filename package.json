@@ -19,7 +19,8 @@
     "typecheck": "wrangler types && react-router typegen && tsc -b",
     "test": "vitest run",
     "ui-preview:build": "vite build --config app/ui-preview/vite.config.ts",
-    "ui-preview:p0-build": "vite build --config app/ui-preview/p0/vite.config.ts"
+    "ui-preview:p0-build": "vite build --config app/ui-preview/p0/vite.config.ts",
+    "ui-preview:p1-import-build": "vite build --config app/ui-preview/p1/vite.config.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.7",
