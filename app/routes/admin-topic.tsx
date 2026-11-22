@@ -1,8 +1,8 @@
 import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumRouteError } from "../forum/ui";
