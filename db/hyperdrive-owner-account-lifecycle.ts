@@ -1,3 +1,5 @@
+import { OwnerAccountLifecycleUnavailableError } from "./owner-account-lifecycle-contract";
+export { OwnerAccountLifecycleUnavailableError } from "./owner-account-lifecycle-contract";
 import type { Pool } from "pg";
 import { AccountStateUnavailableError } from "./account-state";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
@@ -5,12 +7,6 @@ import { bestEffortDiscardClient, createWebPool, isPostgresConnectionTimeout, is
 import { PostgresOwnerAccountLifecycleCommand, OwnerAccountLifecycleCommitUncertainError,
   type OwnerAccountLifecycleCommand } from "./owner-account-lifecycle";
 
-export class OwnerAccountLifecycleUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("Account lifecycle storage unavailable", options);
-    this.name = "OwnerAccountLifecycleUnavailableError";
-  }
-}
 function unavailable(error: unknown): boolean {
   let current = error;
   const seen = new Set<unknown>();
