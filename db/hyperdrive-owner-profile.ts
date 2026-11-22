@@ -4,7 +4,8 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import { PostgresOwnerUserProfile, type OwnerUserProfileReader } from "./owner-user-profile";
 import { PostgresOwnerUserHistory, type OwnerUserHistoryReader } from "./owner-user-history";
 
-export class OwnerProfileUnavailableError extends Error {}
+export { OwnerProfileUnavailableError } from "./owner-profile-errors";
+import { OwnerProfileUnavailableError } from "./owner-profile-errors";
 
 function isUnavailable(error: unknown): boolean {
   const seen = new Set<unknown>();
