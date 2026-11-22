@@ -2,17 +2,25 @@
 
 ## Активный этап
 
-**Moderation visibility B8-B — MIRA COORDINATOR PASS; STOP BEFORE B8-C.**
+**Moderation visibility B8-C activated — only B8-C1 is assigned; STOP after B8-C1.**
 
-- Accepted B8-A base remains Draft #376 exact `a9ade36165c6af6767f7322d9f642bf24c68ca41`.
-- Draft B8 #376 current stable exact `cd9ffd1adc30853ecf297fea15ea6188f851ca98`, stacked on accepted B7 #371, unmerged. B8-B cumulative diff from B8-A is connected test/CI infrastructure only; no runtime/schema/permission/product implementation changes.
-- **B8-B1 Worker/Better Auth transport:** actual built Worker + live Better Auth sessions + disposable PostgreSQL cover visible EN/HE document/.data, hidden-post tombstone, topic neutral404, single-fetch aliases, Original/legacy locale paths, sentinel source/translation/reason/private-metadata absence, private queue/inspector/action cache and guest/ordinary/revoked fail-closed behavior.
-- **B8-B2 local R2:** actual CI-only local `ATTACHMENT_R2` binding proves positive download/text/inline bytes and headers, hidden post/topic public 404 before bucket access (including absent object), exact private membership/revoke/regrant, shared visible membership, owner draft and protected Complaint evidence retention. This satisfies the V8 requirement not to substitute an allowed asset download with a synthetic 503.
-- **B8-B3 protected/fault transport:** real Worker Complaint Case/context/Appeal/History/result/replay remain under their independent authority across post/topic Hide/Restore; legacy edit/locale aliases leak no hidden source; visibility adds only neutral History. A separate PostgreSQL `ACCESS EXCLUSIVE` fault makes the protected read fail closed as private/no-store 503 without stale source/raw DB details and recovers after release.
-- Route-entrypoint reconciliation found no additional confirmed current-B8-B connected path missing from the accepted matrix. B8-B2 separately proves authorized R2-positive evidence while B8-B3's no-R2 503 is only the intended unavailable-binding fault path.
-- Exact-head evidence independently verified on `cd9ffd1adc30853ecf297fea15ea6188f851ca98`: **3/3 check-runs SUCCESS** — CI `checks`, CI `database`, and `attachments_browser`. CI #45074537471 SUCCESS first attempt; SA04-K5 local-R2 #45074537498 SUCCESS first attempt. Current source invokes B8-B1 then B8-B3 unconditionally inside the successful Worker HTTP smoke; K5 invokes B8-B2 against the built Worker/local R2.
-- No remaining confirmed current-B8-B blocker.
-- **B8-B coordinator PASS. Лира STOP. B8-C requires fresh owner continuation.** B9, fold, whole-feature review, Leva review, merge and deploy remain blocked.
+- B8-B coordinator PASS: Draft #376 stable accepted exact `cd9ffd1adc30853ecf297fea15ea6188f851ca98`, stacked on accepted B7 #371, unmerged.
+- Continue in the **same B8 Draft #376 / branch `feature/moderation-visibility-b8-acceptance`**. No new B8 implementation PR.
+- B8-C is split for owner control:
+  1. **B8-C1 — connected Chromium core visibility UI/locales/RTL/keyboard** — **ACTIVE NOW**.
+  2. B8-C2 — connected pending/stale/unknown, account-switch/revoke/late-response and retained-buffer lifecycle — inactive.
+  3. B8-C3 — browser-level cache/outage/unexpected/completeness reconciliation — inactive.
+- Existing browser suites do not currently provide a dedicated moderation-visibility Chromium matrix; reuse established Playwright/connected Worker infrastructure where practical instead of inventing a parallel harness.
+- **B8-C1 required result:**
+  - exercise the actual built Worker in Chromium with real Better Auth sessions and disposable PostgreSQL;
+  - cover representative visible → Hide → private inspector/Restore → visible flows for topic and post using the actual rendered controls, not direct HTTP mutation helpers;
+  - verify EN/RU/HE rendering for visibility controls and outcomes, including HE RTL and a narrow viewport;
+  - verify keyboard reachability/activation of the relevant Hide/Restore/inspection controls and that hidden public source is not present in rendered DOM after transition;
+  - verify queue/inspector navigation and Restore from the guarded private UI with current actor/session;
+  - retain B8-B transport/R2 assertions rather than duplicating them at browser level.
+- If C1 exposes a real current visibility UI defect, diagnose through the actual Chromium path and fix only that bounded defect.
+- Run the applicable connected Chromium workflow/checks on the resulting exact head.
+- **Mandatory STOP after B8-C1.** Report exact head, changed/test scope, browser evidence and any current-stage correction. Do not start B8-C2/C3, B9, fold, final reviews, merge or deploy.
 
 ## Baseline
 
