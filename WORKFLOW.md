@@ -13,30 +13,24 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — финальный User draft: 42 numbered rules; current coverage 15/15 FULL.
+2. `USER_INSTRUCTIONS.draft.md` — 42 rules / 52 semantic guards; consistency PASS, но transfer BLOCKED по размеру.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — финальный Project draft: 16 numbered rules; 0 lost project-specific guards.
+4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules; semantic PASS.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — финальный AGENTS draft: 58 numbered rules.
+6. `AGENTS.draft.md` — 58 rules; semantic PASS.
 
-## Финальный статус
+## Transfer readiness
 
-Финальная consistency-проверка: `research/three-layer-final-consistency.md`.
+Полный статус: `research/instruction-transfer-readiness.md`.
 
-1. User draft — PASS.
-2. Project draft — PASS.
-3. AGENTS draft — PASS.
-4. Межслойных authority/routing противоречий — 0.
-5. Remaining DELETE-SAFE authority/routing duplicates — 0.
-6. Потерянных current guards в проверенных преобразованиях — 0.
-7. Три wording-regressions AGENTS исправлены commit `475a1ecabf31d07a4d93dc1fb3b96575d799a1fd`.
-8. Финальные объёмы:
-   - User draft: 1066 whitespace words / 42 rules;
-   - Project draft: 347 whitespace words / 16 rules;
-   - AGENTS draft: 2017 whitespace words / 58 rules.
+1. User draft: 8364 characters; официальный global Custom Instructions limit для Plus/Pro/Enterprise/Business/Education — 5000. **BLOCKED**.
+2. Project draft: 2713 characters; semantic PASS. Точный Project Instructions character limit в найденной официальной документации не указан — информация не проверена.
+3. AGENTS draft: 16186 characters; semantic PASS; должен переноситься отдельным repository PR, не merge #368.
+4. Безопасный order: User → AGENTS → Project.
+5. Реальные instruction sources не изменены.
 
 Проверяющий: не назначен.
 
-Блокер: нет.
+Блокер: User draft превышает допустимый global Custom Instructions limit на 3364 characters.
 
-Следующий переход: отдельным этапом подготовить итоговую фиксацию трёх draft-файлов и маршрут их переноса в реальные instruction sources; без прямой команды разработчика реальные current sources не менять.
+Следующий переход: отдельным этапом сократить User draft до ≤5000 characters с сохранением 52 semantic guards, затем повторить User current coverage и three-layer consistency.
