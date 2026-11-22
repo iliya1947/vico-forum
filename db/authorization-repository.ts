@@ -28,7 +28,8 @@ export interface AuthorizationUserManagementState {
 }
 
 export class AuthorizationForbiddenError extends Error {}
-export class AuthorizationNotFoundError extends Error {}
+export { AuthorizationNotFoundError } from "./authorization-error";
+import { AuthorizationNotFoundError } from "./authorization-error";
 export class AuthorizationRoleAssignedError extends Error {}
 export class AuthorizationRoleSlugConflictError extends Error {}
 
