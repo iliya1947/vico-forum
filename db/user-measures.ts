@@ -7,10 +7,8 @@ import { assertNoActiveUserMeasureRestrictionPg } from "./user-measure-policy";
 import { assertUserMeasureAuthority, assertUserMeasureAdminRestrictionsAuthority,
   requireUserMeasureOwnerId, rawUserMeasurePermissions, UserMeasureForbiddenError } from "./user-measure-authority";
 
-export class InvalidUserMeasureInputError extends Error {}
-export { UserMeasureNotFoundError } from "./user-measures-error";
-import { UserMeasureNotFoundError } from "./user-measures-error";
-export class UserMeasureConflictError extends Error {}
+export { InvalidUserMeasureInputError, UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures-error";
+import { InvalidUserMeasureInputError, UserMeasureNotFoundError, UserMeasureConflictError } from "./user-measures-error";
 
 export interface CreateUserMeasureInput {
   id: unknown; actorId: unknown; targetUserId: unknown;
