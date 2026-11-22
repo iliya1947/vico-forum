@@ -99,12 +99,6 @@ jobs:
         run: pnpm lint
       - name: Typecheck
         run: pnpm typecheck
-      - name: Test
-        run: pnpm test
-      - name: Build
-        run: pnpm build
-      - name: Build UI preview
-        run: pnpm ui-preview:build
       - name: Build isolated P0 browser import candidate
         run: pnpm ui-preview:p0-build
       - name: Chromium P0 real-route import smoke
@@ -131,6 +125,12 @@ jobs:
             tail -n 120 "$RUNNER_TEMP/ui-p0-vite.log"
             exit 1
           }
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Build UI preview
+        run: pnpm ui-preview:build
       - name: Validate migration metadata
         run: pnpm db:check
       - name: Verify Drizzle schema parity
