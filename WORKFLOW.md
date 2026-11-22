@@ -2,20 +2,24 @@
 
 ## Активный этап
 
-**Moderation visibility B9 activated — final exact-head author self-check only; STOP before stack fold.**
+**Moderation visibility B9 final exact-head author self-check PASS; Лира STOP before stack fold.**
 
-- B8-A/B/C coordinator checkpoints are PASS. Current Draft B8 #376 stable accepted pre-B9 exact `108e0ba31ed34f891e8b46e411991b893b9da56b`, stacked on accepted B7 #371 exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, unmerged.
-- **B9 is one indivisible closeout packet:** reconcile the complete #376 diff and V1–V9 acceptance evidence, then perform the final author self-check on a single stable exact head.
-- Required final evidence on that exact head:
-  - lint, typecheck, unit tests, full PostgreSQL suite, build and preview;
-  - migration-history/metadata/schema-manifest checks;
-  - runtime privilege/provisioning checks required by current CI;
-  - dedicated connected Worker/Better Auth/Chromium/local-R2 visibility acceptance covering the B8 matrix retained from A/B/C;
-  - current check-runs/workflow results must all be tied to the same final SHA; no claim based on mixed heads.
-- Reconcile cumulative #376 scope against accepted B7: distinguish implementation files from B8-only acceptance/CI additions; verify no unauthorized Stage6/deploy/docs/product-scope work entered the PR.
-- If B9 finds a real current visibility defect, classify and correct only that current-stage defect, then rerun the affected final evidence on the new exact head.
-- Update #376 and service handoff with the stable final SHA, complete evidence and any correction.
-- **Mandatory STOP after B9 author self-check.** Do not fold the stack into B1, close intermediate PRs, start Mira whole-feature review, invoke Leva, merge, docs closeout or deploy without fresh owner continuation.
+- Owner authorized **B9 only**. Existing stacked [Draft B8 #376](https://github.com/iliya1947/vico-forum/pull/376), immutable implementation exact **`108e0ba31ed34f891e8b46e411991b893b9da56b`**; Draft B7 #371 head/base **`f92778606f1c8ea4e64f53c1660910f34c48b84c`** still matches #376 base, behind 0. `main` unchanged `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. B8-A/B/C each received independent Mira coordinator PASS; B9 author self-check is not a whole-feature review or coordinator checkpoint.
+- **Complete B8 diff classification vs B7:** **43 commits, 14 files, +3376/−23 lines**, all under `tests/database/`, `tests/browser/sa04-complaints/`, `scripts/smoke-visibility-*.ts`, `scripts/smoke-complaints-local.ts`, or two existing `.github/workflows/sa04-{k5,n}-*.yml`. Only test fixtures, test-only smoke/connected probes and workflow calls. **No production implementation, schema/migrations, runtime dependencies, permissions/config, Stage6, deployed resources, feature docs, or unrelated UI work.** No new code commit in B9.
+- **V1–V9 / V8 ten-cell author reconciliation (accepted prior stage evidence retained):**
+  1. State/History CAS/reason/no-op/atomicity, authority and AP-10/Owner/current-actor under real PG: B1/B2 author + Mira PASS; B8-A tests `moderation-visibility-commands.test.ts`, `visibility-accepted-execution.test.ts`, `complaints-foundation.test.ts` and full PG suite.
+  2. Public DTO/discovery/queries/root/best/duplicate/relations/visibility filtering: accepted B3 current DTO/SQL tests, latest unit/PG regression; B8-B1 Worker legacy HTML/data/HE and B8-C1/C3 fresh Chromium source suppression.
+  3. Related retained state and own/inbox preferences, read/unread, notification and suppressed receipts: accepted B2/B3/B5 and same-head regression suites; no new B8 production changes.
+  4. Asset/translation/generation plans: accepted B4 boundaries, B8-A real two-order accepted execution and no Restore re-enqueue; B8-B2 real local-R2 positive published/private/draft/evidence bytes, denied old download modes.
+  5. PG races: B2 real lock graph and B8-A 48 lock-order combinations plus 8 full-schema accepted-publication vs real visibility-command orders with observed `pg_blocking_pids`; custom/revoke AP-10 cases.
+  6. UI and cache: B7 forms/route tests plus B8-C1 EN/RU/HE RTL/keyboard Hide/Restore; C2 pending/409/unknown/actor-switch/revoke/retained buffers; C3 public/private no-store HTML/.data/legacy, real PG read503 recovery and History500 rollback.
+  7. Protected Complaint/Case/Decision/Appeal/History/evidence and replay: B6 guarded access, B8-A9 PG cases, B8-B3 real Worker/Better Auth HTTP including outage/recovery.
+  8. Full V8 row `Authority` additionally covered by B8-B1 revocation/guest/ordinary/moderator transport and C2/C3 private updated-actor denial; no optional admin/history-only proxy used.
+  9. Full V8 `Races` and `Protected domains` mapped to tested real Worker+PG fixtures rather than fake JS-only concurrency.
+  10. **Evidence boundary:** all V8 acceptance areas have accepted earlier test evidence; not every area reran as a distinct Chromium test. No production-external Stage6/deploy verification claimed; no new current B8 blocker established.
+- **All final evidence on one unchanged SHA (not a new B9 execution):** [CI #45083893513](https://github.com/iliya1947/vico-forum/actions/runs/45083893513) **SUCCESS attempt 1**: `checks` 2951/2951 unit plus lint/typecheck/build/UI preview, accepted migration history, migration metadata, Drizzle schema parity; `database` 1689/1689 PostgreSQL17 and actual Worker smoke plus production schema manifest, runtime privilege probes, split-authority relation provisioning and credential diagnostic/recovery/bootstrap/rollback probes SUCCESS. [SA04-N #45083893569](https://github.com/iliya1947/vico-forum/actions/runs/45083893569) **SUCCESS attempt 1**, explicit C1+C2+C3 browser markers. [SA04-K5 #45083893627](https://github.com/iliya1947/vico-forum/actions/runs/45083893627) **SUCCESS attempt 1**, existing 33 real R2/browser checks plus explicit B8-B2 positive asset marker. GitHub SHA check-run API confirms **4/4 completed SUCCESS**. B9 independently rechecked these exact-head logs/steps; HEAD unchanged since B8-C3, so per `AGENTS.md` no unnecessary re-run/new dummy commit. A renewed `run:acceptance` label did not produce new runs, and was removed; do **not** claim freshly rerun CI.
+- **Mandatory STOP after B9 author PASS.** Stack fold into B1, closure of intermediate Draft PRs, final collected author self-check, Mira whole-feature review, Leva independent review, owner merge, docs closeout and deployment all remain blocked until **fresh owner continuation**. Service #342 remains permanent unmerged channel; next gate is owner authorization of fold and its exact actor/workflow, not unilateral B9 promotion.
+
 
 ## Baseline
 
