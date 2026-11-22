@@ -84,7 +84,7 @@ export async function verifyModerationVisibilityCacheTransport({
   );
   const secrets = [titleSource,currentPostSource,titleTranslation,bodyTranslation,privateReason,privateMetadata];
   const hebrewPath = "/he/topics/" + topicId;
-  let hebrew = await http(hebrewPath);
+  const hebrew = await http(hebrewPath);
   cache(hebrew,hebrewPath,200,"public");
   const hebrewVisible = await hebrew.text();
   assert.ok(hebrewVisible.includes(titleTranslation), "B8 title translation must be public before Hide");
