@@ -34,12 +34,12 @@ describe("browser route module generation", () => {
       entries.push(...(entries[index]!.children ?? []));
     }
     for (const descriptor of entries) {
-      const absoluteFile = resolve(appDirectory, descriptor.file).replaceAll("\\\\", "/");
+      const absoluteFile = resolve(appDirectory, descriptor.file).replaceAll("\\", "/");
       expect(source).toContain(
         JSON.stringify(descriptor.id) + ": () => import(" + JSON.stringify(absoluteFile) + ")",
       );
     }
-    expect(source.match(/: \\(\\) => import\\(/gu)).toHaveLength(entries.length);
+    expect(source.match(/: \(\) => import\(/gu)).toHaveLength(entries.length);
     expect(source).not.toContain("not bundled in P0");
   });
 
