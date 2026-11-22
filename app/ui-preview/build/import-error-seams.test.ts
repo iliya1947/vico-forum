@@ -94,3 +94,33 @@ describe("shared P1 complaints storage error identity", () => {
     expect(error.cause).toBe(cause);
   });
 });
+
+import { UserMeasureNotFoundError as neutralMeasureNotFound } from "../../../db/user-measures-error";
+import { UserMeasureNotFoundError as productionMeasureNotFound } from "../../../db/user-measures";
+import { AuthorizationNotFoundError as neutralAuthorizationNotFound } from "../../../db/authorization-error";
+import { AuthorizationNotFoundError as productionAuthorizationNotFound } from "../../../db/authorization-repository";
+import {
+  OwnerProfileUnavailableError as neutralOwnerUnavailable,
+  InvalidOwnerProfileSessionCursorError as neutralOwnerSessions,
+  InvalidOwnerUserHistoryCursorError as neutralOwnerHistory,
+} from "../../../db/owner-profile-errors";
+import { OwnerProfileUnavailableError as productionOwnerUnavailable } from "../../../db/hyperdrive-owner-profile";
+import { InvalidOwnerProfileSessionCursorError as productionOwnerSessions } from "../../../db/owner-user-profile";
+import { InvalidOwnerUserHistoryCursorError as productionOwnerHistory } from "../../../db/owner-user-history";
+
+describe("shared P1 profile section error identity", () => {
+  it("keeps one production constructor per profile error across neutral imports", () => {
+    expect(neutralMeasureNotFound).toBe(productionMeasureNotFound);
+    expect(neutralAuthorizationNotFound).toBe(productionAuthorizationNotFound);
+    expect(neutralOwnerUnavailable).toBe(productionOwnerUnavailable);
+    expect(neutralOwnerSessions).toBe(productionOwnerSessions);
+    expect(neutralOwnerHistory).toBe(productionOwnerHistory);
+    expect(new productionMeasureNotFound()).toBeInstanceOf(neutralMeasureNotFound);
+    expect(new productionAuthorizationNotFound()).toBeInstanceOf(neutralAuthorizationNotFound);
+    expect(new productionOwnerUnavailable()).toBeInstanceOf(neutralOwnerUnavailable);
+    expect(new productionOwnerSessions()).toBeInstanceOf(neutralOwnerSessions);
+    expect(new productionOwnerHistory()).toBeInstanceOf(neutralOwnerHistory);
+    expect(new neutralOwnerSessions().message).toBe("Invalid Owner profile session cursor");
+    expect(new neutralOwnerHistory().message).toBe("Invalid Owner user history cursor");
+  });
+});
