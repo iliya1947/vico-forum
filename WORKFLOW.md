@@ -9,7 +9,9 @@
 - Мира завершила scope/fit review PLAN: **PASS**. Подтверждённых plan blockers нет.
 - **Delivery mode выбран: stacked для implementation P0→P5.** Причина: этапы образуют одну зависимую feature, промежуточные состояния не должны merge в main или становиться опубликованным preview до atomic cutover P5. P6 выполняется уже после merge как deployed Pages verification + отдельный documentation closeout.
 - **Следующий bounded этап: P0. Исполнитель — Лира.**
-- P0 и implementation PR ещё не запускались/не создавались.
+- **P0 начат Лирой:** [Draft implementation #373](https://github.com/iliya1947/vico-forum/pull/373), branch `feature/ui-progress-preview-p0`, exact `b6f81fa5d1731aaebcf757ea4d646020e0465f03`, base `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1` (behind 0).
+- **P0-A (малый пакет) записан:** build-only route descriptors из настоящего `app/routes.ts` и адресные тесты для IDs/nesting/resources/validation. Browser runtime, CI, Vitest и P0-gate ещё не выполнены.
+- Риск публикации: ошибочная первая ветка `chatgpt/ui-progress-preview-p0` активировала Pages push workflow и run `45002989024` завершился SUCCESS. Draft #372 закрыт без merge; работа перенесена в #373 на ветку вне Pages trigger. В старой ветке установлен deploy guard. Незапрошенная публикация не считается P0 verification.
 
 ## P0 — назначение Лире
 
