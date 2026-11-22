@@ -1,28 +1,27 @@
 # Общий контекст
 
-Цель задачи — не механически сжать инструкции, а снизить когнитивную нагрузку и число тупых решений агентов, сохранив необходимые защиты и разнеся их по правильным слоям.
+Цель задачи — снизить когнитивную нагрузку и число тупых решений агентов, сохранив необходимые защиты и распределив их по правильным слоям.
 
-Текущий User draft: 35 rules / 4999 chars, blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`.
-Подтверждено:
-- 52/52 retained guards;
-- 15/15 current User rules;
-- 17/17 executability stress PASS;
-- critical EXEC RISK = 0.
+Финальные exact drafts:
+- User `ef1c0efd...`: 35 rules / 4999 chars / 52/52 guards / 15/15 current / 17/17 EXEC PASS;
+- Project `fd815393...`: 16 rules / 2713 chars;
+- AGENTS `170ef5ed...`: 58 rules / 16186 chars.
 
-Текущие Project и AGENTS drafts:
-- Project blob `fd8153931a306eb7e7c65a0e14db28dc20b437fe`, 2713 chars;
-- AGENTS blob `170ef5ed10715e416a376c75c3dae188ae0a3d24`.
+Three-layer consistency — PASS.
+Transfer-readiness — PASS.
 
-Three-layer consistency — PASS, conflicts 0.
+Подготовлен `research/instruction-transfer-package.md`, blob `e14aebdf362e6949caaf47131abe0f2de389bc44`.
+Он содержит:
+- exact User text;
+- exact AGENTS text;
+- exact Project text;
+- порядок User → AGENTS → Project;
+- отдельную постановку для mergeable AGENTS PR;
+- invalidation rules;
+- post-transfer completion condition.
 
-Повторный transfer-readiness текущих exact blobs — PASS:
-- официальный Plus limit Custom Instructions: 5000, User = 4999;
-- Project draft короче текущего активного Project instruction set: 2713 < 3341;
-- актуальный `main:AGENTS.md` не drift’нул относительно #368 current snapshot;
-- безопасный порядок: User → AGENTS → Project.
+Exact тексты внутри package сверены с тремя draft-файлами: совпадение полное.
 
-Подробности: `research/instruction-transfer-readiness.md`.
+Реальные User/Project instructions и `main:AGENTS.md` пока не менялись.
 
-Следующий отдельный этап — transfer package. Реальные instruction sources без прямой команды разработчика не меняются.
-
-Рабочий PR является временным аналитическим пространством и не предназначен для merge.
+#368 остаётся аналитическим workspace и не предназначен для merge.
