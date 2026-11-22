@@ -42,3 +42,17 @@ Evidence: `research/current-compression-whole-system-check.md`.
 - Stage/future-groundwork rule сохранён.
 
 Evidence: `research/project-cross-layer-dedupe-application.md`.
+
+## Task 1 — финальный current-based результат
+
+Final whole-system recheck: **PASS**.
+
+Exact drafts:
+- User `a6f16c64a68ebf372a4a6bb3ff146112463e7d68`;
+- Project `8cdf099aa3ecd0c1bbd295cbbba1353cca327995`;
+- AGENTS `3505f50d275e7e938575fa366bd6f00d1e4c9972`.
+
+Итого: 22363 → 18945 chars (-15.28%), 97 → 97 rules, new requirements 0, semantic regressions 0, new cross-layer conflicts 0.
+
+Evidence: `research/task1-final-whole-system-recheck.md`.
+Реальные sources не изменены.
