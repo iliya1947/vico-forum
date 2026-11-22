@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: **исполнитель P1** по service PR #369.
+- Назначение: **исполнитель P1** по service PR #369. Active Draft #375, stacked on P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`. P1-A generator/test head `4cb98f8ab20b808f140d200a03c6c4dafd90649d`; exact-head CI #45036593299 in progress. Do not claim P1-A PASS until CI is checked.
 - Delivery: stacked.
 - P0 PASS: Draft #373 `feature/ui-progress-preview-p0`, exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`.
 - P1 создаётся отдельным implementation PR **с base на P0 branch/head**, не от main.
