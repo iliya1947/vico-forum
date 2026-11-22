@@ -120,3 +120,11 @@
 
 7. **Новая capability в `main` не должна требовать второй реализации product behavior в preview.**
    В нормальном случае preview должен получить новый production route/UI/action автоматически; отдельная работа требуется только для representative data или новой infrastructure dependency.
+
+## Актуальное уточнение владельца — 2026-11-22
+
+Главный platform constraint: только GitHub и браузер. Главный product constraint: тот же UI/routes/application interaction code main, без второго preview продукта; общие изменения видны после rebuild.
+
+Реальная запись и сохранение данных необязательны. Владелец разрешил simulated success, включая «успешно сохранено», без изменения тестовой базы. Нужно проверять visual states, links/buttons/forms/navigation и другие interactions. Полноценная SQL/write инфраструктура и её parity не являются обязательным prerequisite.
+
+Упрощённое предложение Лёвы с учётом этих условий: research/leva-chat-plan.md; owner decisions D-06–D-08 в DECISIONS.md. Это не запуск implementation и не разрешение менять #322.
