@@ -35,7 +35,7 @@ export function VisibilityRestoreForm({ locale, topicId, actorId, revisionId, vi
     && (!isPost || ("postId" in outcome && outcome.postId === postId));
   const conflicted = visibilityOutcome && "error" in outcome && outcome.error === "conflict";
   const denied = visibilityOutcome && "error" in outcome
-    && (outcome.error === "forbidden" || outcome.error === "unauthenticated");
+    && (outcome.error === "forbidden" || outcome.error === "unauthenticated" || outcome.error === "origin");
   // A 503, an unexpected clientAction failure or any unrecognized response does
   // not prove that the attempted mutation did not commit. Never replay it.
   const unconfirmed = fetcher.state === "idle" && submitted
