@@ -97,3 +97,9 @@ Evidence: `research/agents-internal-dedupe-exact-check.md`.
 ## Вывод
 
 После exact-проверки подтверждено **7** внутренних delete-safe повторов/хвостов. Workflow 11, Review 1/Mark и Review 6/plan-change исключены. Draft не изменялся.
+
+## Статус применения
+
+7 exact-проверенных изменений применены к `AGENTS.draft.md`.
+Saved blob: `3505f50d275e7e938575fa366bd6f00d1e4c9972`.
+Evidence: `research/agents-internal-dedupe-application.md`.
