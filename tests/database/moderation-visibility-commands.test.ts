@@ -1227,6 +1227,163 @@ describe("V4 duplicate confirmation under hidden topic or canonical original", (
     await expect(service.confirmHelpDuplicate(candidate.topicId, original.topicId, "owner"))
       .rejects.toBeInstanceOf(ForumStateConflictError);
   });
+  it.each([
+    ...(["duplicate", "original"] as const).flatMap(target =>
+      ([
+        { target, transition: "Hide", confirmationFirst: true, initiallyHidden: false },
+        { target, transition: "Hide", confirmationFirst: false, initiallyHidden: false },
+        { target, transition: "Restore", confirmationFirst: true, initiallyHidden: true },
+        { target, transition: "Restore", confirmationFirst: false, initiallyHidden: true },
+      ] as const)),
+  ])(
+    "B8-A sorted-two-topic Duplicate ($target) × $transition, confirmationFirst=$confirmationFirst: PG row order",
+    async ({ target, transition, confirmationFirst, initiallyHidden }) => {
+      const [first, later] = [await question(), await question()]
+        .sort((a, b) => a.topicId.localeCompare(b.topicId)) as [Question, Question];
+      // The target is always the SECOND sorted topic: confirmation holds the
+      // first topic mutex while waiting for the same later row as visibility.
+      const duplicate = target === "duplicate" ? later : first;
+      const original = target === "original" ? later : first;
+      const pending = await service.createHelpSignal(duplicateSignal(duplicate, original));
+      if (initiallyHidden) await visibility(later, true, 0);
+
+      async function connected() {
+        const connection = new Client({ connectionString: url, options: "-c search_path=" + schema });
+        await connection.connect();
+        await connection.query("set statement_timeout='25000ms'");
+        const pid = (await connection.query<{ pid: number }>(
+          "select pg_backend_pid() as pid",
+        )).rows[0]!.pid;
+        return { connection, pid };
+      }
+      async function waitBlocked(waiter: number, possible: number[]) {
+        const deadline = Date.now() + 8_000;
+        let last: unknown;
+        while (Date.now() < deadline) {
+          const result = await client.query<{
+            wait_event_type: string | null; blockers: number[];
+          }>(
+            "select wait_event_type,pg_blocking_pids(pid) as blockers from pg_stat_activity where pid=$1",
+            [waiter],
+          );
+          last = result.rows[0];
+          if (result.rows[0]?.wait_event_type === "Lock"
+            && result.rows[0].blockers.some(pid => possible.includes(pid))) return;
+          await new Promise(resolve => setTimeout(resolve, 25));
+        }
+        throw new Error("Duplicate/visibility second-topic PG lock not observed: " +
+          JSON.stringify({ waiter, possible, last }));
+      }
+
+      const [holder, confirmer, manager] = await Promise.all([
+        connected(), connected(), connected(),
+      ]);
+      const scoped = (connection: Client) => new ForumService(new DrizzleForumRepository(
+        drizzle(connection), { cooldownMs: 0, now: () => new Date() },
+        withOwnerUserMeasureAdmission("owner"), undefined, "owner",
+      ));
+      const endingHidden = transition === "Hide";
+      let held = false;
+      let confirmation: ReturnType<ForumService["confirmHelpDuplicate"]> | undefined;
+      let change: ReturnType<ForumService["setTopicVisibility"]> | undefined;
+      try {
+        await holder.connection.query("begin");
+        held = true;
+        await holder.connection.query(
+          "select id from forum_topics where id=$1 for update", [later.topicId],
+        );
+        const startConfirmation = async () => {
+          confirmation = scoped(confirmer.connection).confirmHelpDuplicate(
+            duplicate.topicId, original.topicId, "moderator1",
+          );
+          void confirmation.catch(() => undefined);
+          await waitBlocked(confirmer.pid, [holder.pid, manager.pid]);
+        };
+        const startVisibility = async () => {
+          change = scoped(manager.connection).setTopicVisibility(
+            topicCommand(later, "moderator1", endingHidden, initiallyHidden ? 1 : 0,
+              "Second-topic visibility race"),
+          );
+          void change.catch(() => undefined);
+          await waitBlocked(manager.pid, [holder.pid, confirmer.pid]);
+        };
+        if (confirmationFirst) {
+          await startConfirmation();
+          await startVisibility();
+        } else {
+          await startVisibility();
+          await startConfirmation();
+        }
+        await holder.connection.query("commit");
+        held = false;
+
+        const [result, changed] = await Promise.allSettled([confirmation!, change!]);
+        expect(changed).toMatchObject({
+          status: "fulfilled",
+          value: { hidden: endingHidden, changed: true, visibilityVersion: initiallyHidden ? 2 : 1 },
+        });
+        const admitted = transition === "Hide" ? confirmationFirst : !confirmationFirst;
+        if (admitted) {
+          expect(result).toEqual({ status: "fulfilled", value: undefined });
+        } else {
+          expect(result.status).toBe("rejected");
+          if (result.status === "rejected") {
+            expect(result.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+        }
+        const current = await facts(duplicate, original);
+        expect(current.relationships).toHaveLength(admitted ? 1 : 0);
+        if (admitted) {
+          expect(current.relationships[0]).toMatchObject({
+            duplicate_topic_id: duplicate.topicId, original_topic_id: original.topicId,
+            removed_at: null,
+          });
+        }
+        expect(current.signals.find(s => s.id === pending.id)?.status)
+          .toBe(admitted ? "superseded" : "pending");
+        expect(current.topics).toHaveLength(2);
+        expect(current.topics.every(t => t.is_solved === false && t.best_answer_post_id === null))
+          .toBe(true);
+        const flags = (await client.query<{
+          id: string; is_hidden: boolean; visibility_version: number;
+        }>(
+          "select id,is_hidden,visibility_version from forum_topics where id in ($1,$2) order by id",
+          [first.topicId, later.topicId],
+        )).rows;
+        expect(flags).toEqual([
+          { id: first.topicId, is_hidden: false, visibility_version: 0 },
+          { id: later.topicId, is_hidden: endingHidden, visibility_version: initiallyHidden ? 2 : 1 },
+        ]);
+        const history = current.history.map(e => e.action);
+        const visibilityEvents = initiallyHidden ? ["topic.hidden", "topic.restored"] : ["topic.hidden"];
+        expect(history).toEqual(admitted
+          ? (transition === "Hide"
+            ? ["help.duplicateConfirmed", ...visibilityEvents]
+            : [...visibilityEvents, "help.duplicateConfirmed"])
+          : visibilityEvents);
+
+        if (endingHidden) await visibility(later, false, 1);
+        if (!admitted) {
+          await scoped(confirmer.connection).confirmHelpDuplicate(
+            duplicate.topicId, original.topicId, "moderator1",
+          );
+          const recovered = await facts(duplicate, original);
+          expect(recovered.relationships).toHaveLength(1);
+          expect(recovered.signals.find(s => s.id === pending.id)?.status).toBe("superseded");
+          expect(recovered.history.filter(e => e.action === "help.duplicateConfirmed"))
+            .toHaveLength(1);
+        }
+      } finally {
+        if (held) await holder.connection.query("rollback");
+        await Promise.allSettled([confirmation, change]);
+        await Promise.all([
+          holder.connection.end(), confirmer.connection.end(), manager.connection.end(),
+        ]);
+      }
+    },
+    30_000,
+  );
+
 });
 
 describe("V4 duplicate removal under hidden topic or canonical original", () => {
