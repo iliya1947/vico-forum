@@ -33,6 +33,15 @@
 
 ## Текущий этап
 
-Этап 0 новой первой задачи — порядок работ и критерии зафиксированы.
+Этап 1 — compression/fix-pass действующих User Instructions завершён.
 
-Следующий bounded-этап: exact compression-pass действующих User Instructions без добавления новых правил.
+Результаты:
+- `USER_INSTRUCTIONS.draft.md` заново построен только из current baseline;
+- 15 → 15 самостоятельных пунктов;
+- 1302 → 1190 chars;
+- 185 → 167 whitespace-words;
+- новых требований: 0;
+- semantic check: смысл/модальность/субъект/область/исключения/полномочия сохранены;
+- evidence: `research/user-current-compression-pass.md`.
+
+Следующий bounded-этап: compression/fix-pass действующих Project Instructions без добавления новых требований.
