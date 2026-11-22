@@ -8,7 +8,9 @@
 - **P0 завершён и прошёл coordinator checkpoint Миры: PASS.**
 - P0 implementation: Draft #373, branch `feature/ui-progress-preview-p0`, stable exact head `e1f077c0c8c7f15d4600df0a64dd661982755bb8`, base main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 - P0 exact-head CI `45032800400`: checks/database SUCCESS; browser proof подтверждён.
-- **Следующий bounded этап: P1 — generic runtime и local transport. Исполнитель — Лира.**
+- **Активный bounded этап: P1 — generic runtime и local transport. Исполнитель — Лира.**
+- **P1 implementation:** [Draft #375](https://github.com/iliya1947/vico-forum/pull/375), branch `feature/ui-progress-preview-p1`, stacked base P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8`.
+- **P1-A — code complete, CI pending:** exact implementation head `4cb98f8ab20b808f140d200a03c6c4dafd90649d`. Default generated route-module registry now includes every current descriptor without manual product IDs; explicit bounded selection remains for P0. Tests cover full current manifest, injected new route and invalid selections. [Exact-head CI #45036593299](https://github.com/iliya1947/vico-forum/actions/runs/45036593299) triggered by `run:ci`, currently **QUEUED**, no PASS asserted. Do not continue P1-B until P1-A tests/CI are established.
 - P1 должен быть отдельным stacked implementation PR с base на branch/head P0, чтобы его bounded diff содержал только P1.
 
 ## P1 — назначение Лире
@@ -43,6 +45,6 @@ STOP:
 
 ## Следующий переход
 
-Лира читает актуальные AGENTS.md → RULES.md → TASK.md → WORKFLOW.md → PLAN.md, создаёт **новый stacked implementation PR P1** с base на `feature/ui-progress-preview-p0` exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8` и реализует только P1.
+**Лира — STOP после P1-A code slice с незавершённым CI.** Следующее `...` → проверить exact-head CI #45036593299 и только после завершения всех применимых checks установить P1-A PASS либо исправить подтверждённый дефект. Затем STOP перед P1-B (generic module export/import compatibility). P1 остаётся Draft #375 на P0 base; никакого merge/deploy.
 
 После author self-check и применимых targeted/CI/browser checks Лира передаёт stable exact P1 head Мире на coordinator checkpoint. До PASS P1 не начинать P2; P0/P1 не merge и новый preview не deploy.
