@@ -1,6 +1,6 @@
 # agents/Лиры.md — личная рабочая память Лиры.
 
-- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `a0b81160c0144b2957f9b7c71d3981c8f0ce116f`, base `main` `9cff976a...`.
+- Назначение: исполнитель P0 #369. Active Draft #373 `feature/ui-progress-preview-p0`, exact `9eb080b49a59530309bd6397be0c940993f8d26d`, base `main` `9cff976a...`.
 - Delivery: **stacked**, P0 — первая ступень от актуального main; P1+ зависят от PASS предыдущей ступени.
 - Канонический технический план: `PLAN.md`; P0 — §15.
 - Цель P0: browser proof одного реального vertical path без второго route/action и без внешнего runtime.
@@ -15,4 +15,6 @@
 
 - P0-F3 PASS exact `a0b81160c0144b2957f9b7c71d3981c8f0ce116f` ([CI #45024496140](https://github.com/iliya1947/vico-forum/actions/runs/45024496140): checks/database SUCCESS, 224 Vitest test files). Generic Data Router clientAction bridge executes real `editorClientAction→serverAction→topicAction` with virtual same-origin header preserving product guard. Typed test fixture auth/permissions/writer accepts real MarkdownEditor Form and read-state fetcher: Chromium 200 read state, 302 reply, post `p0-reply-1` visible, redirect hash; 0 external requests / JS page errors. Two Vite-local 404 presence resource requests remain unhandled (not a P0-F3 defect; needs P0-F4 generic dispatch).
 
-- STOP P0-F3. Next owner `...`: P0-F4 generic local resource dispatcher and actual presence/mentions handler with locale middleware and strict HTTP semantics, no fake resource route or Vite fallback; then URL/new-tab and attachments microsteps. Full P0 NOT PASS; no P1/merge/deploy.
+- P0-F4 PASS exact `9eb080b49a59530309bd6397be0c940993f8d26d` ([CI #45027210562](https://github.com/iliya1947/vico-forum/actions/runs/45027210562): checks/database SUCCESS, 225 Vitest test files). `installPreviewResourceTransport` installs one fetch interception before dynamically imported product graph and matches generated route IDs; `createStaticHandler.queryRoute` executes original locale middleware and presence/mentions with typed fixture auth/writer/reader. Chromium: presence POST 204 + no-store, mentions GET 200/private/no-store/nosniff, foreign Origin 403, PUT 405/Allow POST, invalid locale 404, intentional presence GET 404; 0 Vite network fallback for both resources / 0 external calls / 0 JS page errors. One other local 404 console message, not these resources. Neutral privacy error class reexport production identity. **Whole P0 not PASS.**
+
+- STOP P0-F4. Next owner `...`: P0-F5 shared Pages URL/base codec + real relative Link/open-new-tab browser evidence; then image/download port microstep. No P1/merge/deploy.
