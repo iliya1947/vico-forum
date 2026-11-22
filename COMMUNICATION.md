@@ -1,27 +1,21 @@
 # Общий контекст
 
-Цель задачи — снизить когнитивную нагрузку и число тупых решений агентов, сохранив необходимые защиты и распределив их по правильным слоям.
+Предыдущая архитектура инструкций отклонена разработчиком полностью как неверно спроектированная.
 
-Финальные exact drafts:
-- User `ef1c0efd...`: 35 rules / 4999 chars / 52/52 guards / 15/15 current / 17/17 EXEC PASS;
-- Project `fd815393...`: 16 rules / 2713 chars;
-- AGENTS `170ef5ed...`: 58 rules / 16186 chars.
+Новая работа начинается от цели:
 
-Three-layer consistency — PASS.
-Transfer-readiness — PASS.
+1. Улучшить качество мышления и самостоятельной работы агентов.
+2. Сформировать минимальную по лишней нагрузке систему User / Project / AGENTS.
+3. Сначала определить требуемое поведение и реальные классы ошибок.
+4. Только потом сверять существующие правила, старые drafts и research.
 
-Подготовлен `research/instruction-transfer-package.md`, blob `e14aebdf362e6949caaf47131abe0f2de389bc44`.
-Он содержит:
-- exact User text;
-- exact AGENTS text;
-- exact Project text;
-- порядок User → AGENTS → Project;
-- отдельную постановку для mergeable AGENTS PR;
-- invalidation rules;
-- post-transfer completion condition.
+User layer имеет отдельную жёсткую границу:
+- действующие User Instructions — baseline;
+- новые пункты допускаются только как общие улучшения интеллектуальной работы или логики для всех чатов/проектов;
+- уже существующие User rules про интеллект/логику можно только улучшать;
+- project/team/repository/workflow-specific правила туда не добавляются;
+- самостоятельные пункты не сокращаются ради компактности; сокращаются вода, повторы и вводящие в заблуждение пояснения.
 
-Exact тексты внутри package сверены с тремя draft-файлами: совпадение полное.
+Старые exact drafts, `52/52`, PASS-метрики и transfer package не считаются основанием или готовым результатом.
 
-Реальные User/Project instructions и `main:AGENTS.md` пока не менялись.
-
-#368 остаётся аналитическим workspace и не предназначен для merge.
+Реальные User/Project Instructions и `main:AGENTS.md` не менялись.
