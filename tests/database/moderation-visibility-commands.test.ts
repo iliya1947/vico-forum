@@ -2699,6 +2699,202 @@ describe("V4 real PostgreSQL post Hide/Restore versus body planning, direct repl
   }
 });
 
+describe("B8-A real PostgreSQL changed Source Locale versus Hide/Restore and revision CAS", () => {
+  async function connection() {
+    const c = new Client({ connectionString: url, options: "-c search_path=" + schema });
+    await c.connect();
+    await c.query("set statement_timeout='25000ms'");
+    const pid = (await c.query<{ pid: number }>("select pg_backend_pid() as pid")).rows[0]!.pid;
+    return { c, pid };
+  }
+  async function blocked(waiter: number, possible: number[]) {
+    const deadline = Date.now() + 8_000;
+    let last: unknown;
+    while (Date.now() < deadline) {
+      const r = await client.query<{ wait_event_type: string | null; blockers: number[] }>(
+        "select wait_event_type,pg_blocking_pids(pid) as blockers " +
+          "from pg_stat_activity where pid=$1", [waiter],
+      );
+      last = r.rows[0];
+      if (r.rows[0]?.wait_event_type === "Lock"
+        && r.rows[0].blockers.some(pid => possible.includes(pid))) return;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    throw new Error("Source Locale / visibility PG lock not observed: " +
+      JSON.stringify({ waiter, possible, last }));
+  }
+  function scoped(c: Client) {
+    return new ForumService(new DrizzleForumRepository(drizzle(c),
+      { cooldownMs: 0, now: () => new Date() },
+      withOwnerUserMeasureAdmission("owner"), undefined, "owner"));
+  }
+  it.each(
+    (["topic", "post"] as const).flatMap(kind =>
+      (["Hide", "Restore"] as const).flatMap(transition =>
+        ([true, false] as const).map(correctionFirst => ({ kind, transition, correctionFirst })))),
+  )(
+    "$kind changed Source Locale × $transition, correctionFirst=$correctionFirst: actual PG row ordering",
+    async ({ kind, transition, correctionFirst }) => {
+      const f = await fixture();
+      const initiallyHidden = transition === "Restore";
+      const initialRevisionId = kind === "topic" ? f.titleRevisionId : f.bodyRevisionId;
+      const targetId = kind === "topic" ? f.topicId : f.postId;
+      const sourceAction = kind === "topic" ? "topic.sourceLocaleCorrected" : "post.sourceLocaleCorrected";
+      const hideAction = kind === "topic" ? "topic.hidden" : "post.hidden";
+      const restoreAction = kind === "topic" ? "topic.restored" : "post.restored";
+      if (initiallyHidden) {
+        if (kind === "topic") await service.setTopicVisibility(topicCommand(f));
+        else await service.setPostVisibility(postCommand(f));
+      }
+      const [holder, writer, manager] = await Promise.all([connection(), connection(), connection()]);
+      const sourceService = scoped(writer.c), visibilityService = scoped(manager.c);
+      const correct = () => kind === "topic"
+        ? sourceService.correctTopicTitleSourceLocale({
+            topicId: f.topicId, expectedRevisionId: initialRevisionId,
+            actorId: "moderator1", scope: "any", sourceLocale: "he",
+          })
+        : sourceService.correctPostBodySourceLocale({
+            topicId: f.topicId, postId: f.postId, expectedRevisionId: initialRevisionId,
+            actorId: "moderator1", scope: "any", sourceLocale: "he",
+          });
+      const visibility = (hidden: boolean, version: number, revisionId: string) =>
+        kind === "topic"
+          ? visibilityService.setTopicVisibility({
+              ...topicCommand(f, "moderator1", hidden, version, "Source Locale race"),
+              expectedRevisionId: revisionId,
+            })
+          : visibilityService.setPostVisibility({
+              ...postCommand(f, "moderator1", hidden, version, "Source Locale race"),
+              expectedRevisionId: revisionId,
+            });
+      const endingHidden = transition === "Hide";
+      let held = false;
+      let correction: ReturnType<typeof correct> | undefined;
+      let change: ReturnType<typeof visibility> | undefined;
+      try {
+        await holder.c.query("begin");
+        held = true;
+        // Topic corrections contend on the topic; post corrections contend on
+        // topic then post, while visibility takes the same ordered mutexes.
+        await holder.c.query(kind === "topic"
+          ? "select id from forum_topics where id=$1 for update"
+          : "select id from forum_posts where id=$1 for update", [targetId]);
+        const startCorrection = async () => {
+          correction = correct();
+          void correction.catch(() => undefined);
+          await blocked(writer.pid, [holder.pid, manager.pid]);
+        };
+        const startVisibility = async () => {
+          change = visibility(endingHidden, initiallyHidden ? 1 : 0, initialRevisionId);
+          void change.catch(() => undefined);
+          await blocked(manager.pid, [holder.pid, writer.pid]);
+        };
+        if (correctionFirst) {
+          await startCorrection();
+          await startVisibility();
+        } else {
+          await startVisibility();
+          await startCorrection();
+        }
+        await holder.c.query("commit");
+        held = false;
+        const [sourceResult, visibilityResult] = await Promise.allSettled([correction!, change!]);
+        const correctionWon = endingHidden ? correctionFirst : !correctionFirst;
+        const visibilityConflicted = endingHidden && correctionFirst;
+        let currentRevisionId = initialRevisionId;
+        if (correctionWon) {
+          expect(sourceResult.status).toBe("fulfilled");
+          if (sourceResult.status === "fulfilled") {
+            expect(sourceResult.value).toMatchObject({
+              sourceLocale: "he", originalContent: kind === "topic" ? "PRIVATE TOPIC" : "PRIVATE POST",
+            });
+            if (!sourceResult.value) throw new Error("Changed Source Locale did not return a revision");
+            currentRevisionId = sourceResult.value.id;
+            expect(currentRevisionId).not.toBe(initialRevisionId);
+          }
+        } else {
+          expect(sourceResult.status).toBe("rejected");
+          if (sourceResult.status === "rejected") {
+            expect(sourceResult.reason).toBeInstanceOf(ForumEntityNotFoundError);
+          }
+        }
+        if (visibilityConflicted) {
+          expect(visibilityResult.status).toBe("rejected");
+          if (visibilityResult.status === "rejected") {
+            expect(visibilityResult.reason).toBeInstanceOf(ForumStateConflictError);
+          }
+        } else {
+          expect(visibilityResult).toMatchObject({
+            status: "fulfilled",
+            value: { hidden: endingHidden, changed: true, visibilityVersion: initiallyHidden ? 2 : 1 },
+          });
+        }
+        const state = (await client.query<{
+          head: string; hidden: boolean; version: number; revisions: number;
+        }>(kind === "topic"
+          ? "select current_title_revision_id as head,is_hidden as hidden,visibility_version as version," +
+            "(select count(*)::int from forum_topic_title_revisions where topic_id=$1) as revisions " +
+            "from forum_topics where id=$1"
+          : "select current_revision_id as head,is_hidden as hidden,visibility_version as version," +
+            "(select count(*)::int from forum_post_revisions where post_id=$1) as revisions " +
+            "from forum_posts where id=$1", [targetId])).rows[0];
+        expect(state).toEqual({
+          head: currentRevisionId,
+          hidden: endingHidden && !visibilityConflicted,
+          version: visibilityConflicted ? 0 : initiallyHidden ? 2 : 1,
+          revisions: correctionWon ? 2 : 1,
+        });
+        const expectedActions = [
+          ...(initiallyHidden ? [hideAction] : []),
+          ...(endingHidden && correctionWon ? [sourceAction] : []),
+          ...(visibilityConflicted ? [] : [endingHidden ? hideAction : restoreAction]),
+          ...(!endingHidden && correctionWon ? [sourceAction] : []),
+        ];
+        expect((await events(targetId)).map(e => e.action)).toEqual(expectedActions);
+
+        // Explicit retry only: a stale Hide must not silently rebase itself.
+        if (visibilityConflicted) {
+          await visibility(true, 0, currentRevisionId);
+          await visibility(false, 1, currentRevisionId);
+        } else if (endingHidden) {
+          await visibility(false, 1, currentRevisionId);
+        }
+        if (!correctionWon) {
+          const retried = await correct();
+          expect(retried).toMatchObject({ sourceLocale: "he" });
+          if (!retried) throw new Error("Source Locale retry did not create revision");
+          currentRevisionId = retried.id;
+        }
+        const final = (await client.query<{
+          head: string; hidden: boolean; version: number;
+        }>(kind === "topic"
+          ? "select current_title_revision_id as head,is_hidden as hidden,visibility_version as version " +
+            "from forum_topics where id=$1"
+          : "select current_revision_id as head,is_hidden as hidden,visibility_version as version " +
+            "from forum_posts where id=$1", [targetId])).rows[0];
+        expect(final).toEqual({ head: currentRevisionId, hidden: false, version: 2 });
+        const actions = (await events(targetId)).map(e => e.action);
+        expect(actions.filter(a => a === sourceAction)).toHaveLength(1);
+        expect(actions.filter(a => a === hideAction)).toHaveLength(1);
+        expect(actions.filter(a => a === restoreAction)).toHaveLength(1);
+        const revision = (await client.query<{
+          source_locale: string; original_content: string;
+        }>(kind === "topic"
+          ? "select source_locale,original_content from forum_topic_title_revisions where id=$1"
+          : "select source_locale,original_content from forum_post_revisions where id=$1",
+          [currentRevisionId])).rows[0];
+        expect(revision).toEqual({
+          source_locale: "he", original_content: kind === "topic" ? "PRIVATE TOPIC" : "PRIVATE POST",
+        });
+      } finally {
+        if (held) await holder.c.query("rollback");
+        await Promise.allSettled([correction, change]);
+        await Promise.all([holder.c.end(), writer.c.end(), manager.c.end()]);
+      }
+    }, 30_000,
+  );
+});
+
 describe("B3 Help attention public-safe projection", () => {
   it("excludes hidden signal topics from queues/counts and masks hidden proposed originals", async () => {
     const question=await fixture(
