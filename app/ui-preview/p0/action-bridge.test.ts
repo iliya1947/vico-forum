@@ -32,7 +32,8 @@ describe("embedded Framework clientAction serverAction bridge", () => {
     }, () => "https://preview.test");
     const result = await action({
       request: postRequest(), params: { topicId: "test-topic", locale: "en" },
-      context: new RouterContextProvider(),
+      context: new RouterContextProvider(), url: new URL("http://localhost/en/topics/test-topic"),
+      pattern: "/:locale/topics/:topicId",
     });
     expect(seen).toEqual(["client", "server"]);
     expect(result).toEqual({ accepted: true });
@@ -47,7 +48,9 @@ describe("embedded Framework clientAction serverAction bridge", () => {
       clientAction: editorClientAction,
     }, () => "https://preview.test");
     expect(await action({ request: postRequest("https://evil.test"), params: {},
-      context: new RouterContextProvider() })).toEqual({
+      context: new RouterContextProvider(), url: new URL("http://localhost/en/topics/test-topic"),
+      pattern: "/:locale/topics/:topicId",
+    })).toEqual({
       origin: "https://evil.test",
       target: "https://preview.test",
     });
