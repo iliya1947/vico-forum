@@ -60,7 +60,7 @@ export function VisibilityRestoreForm({ locale, topicId, actorId, revisionId, vi
       setVerifying(false);
     }
   }
-  return <fetcher.Form method="post" action={forumTopicPath(locale, topicId)}
+  return <fetcher.Form method="post" action={`${forumTopicPath(locale, topicId)}?visibilityAction=1`}
     className="topic-admin-form visibility-restore-form"
     aria-busy={fetcher.state !== "idle"}
     onSubmit={(event) => {
