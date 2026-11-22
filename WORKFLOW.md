@@ -33,19 +33,25 @@
 
 ## Текущий этап
 
-Этап 12 — внутренний duplicate-pass `USER_INSTRUCTIONS.draft.md` завершён без изменения draft.
+Этап 13 — финальный whole-system recheck current-based Task 1 drafts завершён.
 
-Результат: `research/user-internal-duplicates-pass.md`.
+Evidence: `research/task1-final-whole-system-recheck.md`.
 
-Подтверждено:
-- полных internal delete-safe дублей: 0;
-- частичных internal delete-safe дублей: 0;
-- U3/U7/U8/U13 — разные epistemic guards;
-- U4/U5/U6 — verification/fallback/action-provenance с разными triggers;
-- U9/U10 и U11/U15 — разные behavior/continuation contracts;
-- старое упоминание U08/U13 относится к rejected архитектуре и не применяется к current draft;
-- User draft остаётся 1159 chars / 164 words / 15 rules.
+Exact drafts:
+- User `a6f16c64a68ebf372a4a6bb3ff146112463e7d68`;
+- Project `8cdf099aa3ecd0c1bbd295cbbba1353cca327995`;
+- AGENTS `3505f50d275e7e938575fa366bd6f00d1e4c9972`.
 
-Внутренний delete-safe резерв User слоя исчерпан.
+Итог от current baseline:
+- chars: 22363 → 18945 (**-15.28%**);
+- words: 2837 → 2412 (**-14.98%**);
+- numbered rules: 97 → 97;
+- новых требований: 0;
+- confirmed semantic regressions: 0;
+- новых cross-layer conflicts: 0;
+- confirmed remaining delete-safe duplicates: 0 under current layer architecture.
 
-Следующий bounded-этап: финальный whole-system recheck текущих exact drafts после всех применённых межслойных и внутренних dedupe-изменений.
+Task 1 compression/fix-pass завершён на уровне exact drafts.
+Реальные User/Project Instructions и `main:AGENTS.md` не изменены.
+
+Следующий bounded-этап: показать разработчику exact финальные drafts для решения; Task 2 с новыми интеллектуально-логическими улучшениями остаётся отложенной.
