@@ -81,3 +81,16 @@ describe("shared P1 attachment error identity", () => {
     expect(new productionAttachmentUnavailable()).toBeInstanceOf(neutralAttachmentUnavailable);
   });
 });
+
+import { ComplaintStorageUnavailableError as neutralComplaintStorage } from "../../../db/complaint-storage-error";
+import { ComplaintStorageUnavailableError as productionComplaintStorage } from "../../../db/hyperdrive-complaints";
+
+describe("shared P1 complaints storage error identity", () => {
+  it("preserves the original production class and cause for complaint submission handlers", () => {
+    expect(neutralComplaintStorage).toBe(productionComplaintStorage);
+    const cause = new Error("database unavailable");
+    const error = new productionComplaintStorage("complaint storage unavailable", { cause });
+    expect(error).toBeInstanceOf(neutralComplaintStorage);
+    expect(error.cause).toBe(cause);
+  });
+});
