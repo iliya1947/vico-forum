@@ -123,7 +123,16 @@ export function installPreviewResourceTransport({
     }
     const matches = matchRoutes(paths, url.pathname);
     const id = matches?.at(-1)?.route.id;
-    if (!id || !ids.has(id)) return originalBoundFetch(input, init);
+    if (!id || !ids.has(id)) {
+      // Preview APIs that are not yet bundled must not fall through to
+      // Pages or an actual server. Keep a loud boundary until their real
+      // handler/capability is connected in a later P0/P1 slice.
+      if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+        console.info("P0_UNBUNDLED_API_BLOCKED", request.method, url.pathname);
+        throw new Error("P0 application API route is not bundled: " + url.pathname);
+      }
+      return originalBoundFetch(input, init);
+    }
     const suppliedOrigin = init?.headers ? new Headers(init.headers).get("Origin")
       : input instanceof Request ? input.headers.get("Origin") : null;
     return execute(request, id, suppliedOrigin);

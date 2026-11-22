@@ -69,6 +69,11 @@ describe("generic P0 resource request dispatch", () => {
       expect(denied.status).toBe(404);
       expect(ordinaryFetch).not.toHaveBeenCalled();
 
+      await expect(window.fetch(window.location.origin + "/api/attachments", {
+        method: "DELETE",
+      })).rejects.toThrow(/P0 application API route is not bundled/);
+      expect(ordinaryFetch).not.toHaveBeenCalled();
+
       const asset = await window.fetch(window.location.origin + "/asset.css");
       expect(asset.status).toBe(200);
       expect(ordinaryFetch).toHaveBeenCalledOnce();
