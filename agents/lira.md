@@ -1,5 +1,23 @@
-# agents/lira.md — B7 author SC1–SC3 PASS; STOP, Mira coordinator checkpoint next
+# agents/lira.md — B7-MIRA-01 correction only
 
-- Draft B7 [#371](https://github.com/iliya1947/vico-forum/pull/371) exact `901661dbc38b9a19626fd2c7fe2a951637692d3d` on accepted B6 #370 `51a9ebe03f16c438faae5bec99a5856287630958`; behind0 and unmerged. [CI #45030276387](https://github.com/iliya1947/vico-forum/actions/runs/45030276387) **15/15 workflows SUCCESS**, 2946/2946 Vitest in 232 files, Lint/Typecheck/Build, PG17, Worker/Better Auth, B7 real HTTP document/.data/404/private cache smoke PASS.
-- **Author review complete** for 31-file local B7 scope against V7: SC1 fresh permission/current-actor/private source/QuickActions and Inspector; one `B7-SC1-01` stale A→B→A tombstone Inspect link fixed and mounted regression + exact-head CI validated. SC2 pending/409/401/403/unknown/503/refresh/redirect/private Restore, EN/RU/HE and caching PASS. SC3 canonical dispatch/error paths, public visible CAS-only DTO, post tombstone, PG17/Worker HTTP smoke, localization, tsconfig and full diff boundary PASS. No remaining confirmed author finding; SC2/SC3 introduced no commits.
-- **Лира STOP.** Next actor **Мира** (GPT-5.6 Sol), bounded stacked B7 coordinator checkpoint on stable head `901661dbc38b9a19626fd2c7fe2a951637692d3d`, per service `WORKFLOW.md`. If Mira finds current-B7 defect, return it to Лира for narrow fix; new stable head requires applicable CI and renewed checkpoint. Only Mira PASS authorizes B8 stack, not merge. No B8/B9/fold/deploy before that.
+## Stable reviewed head
+
+- B7 Draft #371 exact `901661dbc38b9a19626fd2c7fe2a951637692d3d`, accepted B6 #370 base `51a9ebe03f16c438faae5bec99a5856287630958`, behind0.
+- Mira coordinator checkpoint: **HOLD with one confirmed current-B7 blocker**. No second current-B7 blocker was confirmed.
+- Existing exact-head evidence remains green (19/19 checks, 15/15 workflows), but it did not detect this contract mismatch.
+
+## Current task — B7-MIRA-01 only
+
+Correct the canonical visibility action boundary so real pre-dispatch authentication/origin denials keep the B7 visibility response contract consumed by the Hide/Restore UI.
+
+Observed defect on the reviewed head:
+- `topicAction` performs generic `forumMutationGuard` before `visibilityTopicAction`;
+- guest/session and origin denials therefore return generic `ForumMutationError` without `operation:"contentVisibility"`;
+- Hide/Restore forms consequently classify a real preflight 401 as unconfirmed/unknown instead of the intended denied/revalidation state.
+
+Done criteria:
+1. Visibility requests through the actual canonical `topicAction` preserve the intended visibility-specific neutral result semantics for preflight 401/403 without weakening authentication/origin/fresh permission checks or changing unrelated topic intents.
+2. Add focused regression coverage through the real canonical route/action seam, including the consumer-visible denial behavior; do not rely only on fabricated operation-specific responses.
+3. Run applicable checks on the new stable exact head and update the #342 handoff.
+
+**STOP after this correction.** Do not start B8/B9, stack fold, merge, deployment, or unrelated cleanup.
