@@ -1,3 +1,5 @@
+> **INVALIDATED — DO NOT APPLY.** Этот материал относится к отклонённой архитектуре до перезапуска задачи 2026-11-22. Он сохраняется только как история и не является основанием, target, readiness-evidence или инструкцией для переноса.
+
 # Transfer readiness — current exact drafts
 
 Проверены текущие exact drafts:
