@@ -862,6 +862,9 @@ export const reviewedCommonFingerprints = {
   historySuperseded: "7c47baef78f3ffcaa531c2cc3347eb383522c4a2ebf81d7ad25bec050eceb0dc",
 
   quickActions: "6d336ab52f96c460bff2e046e58b6a507ee02ec369d437861376b224fbb150cf",
+  visibilityHideTopic: "fd943d5c03f6683e2281647144c2295874316c14ef2ae2047744e3020461827e",
+  visibilityHidePost: "57172c54ef9a1b315e93690787538ac3be93bf22f864264adde8a420578935c0",
+  visibilityHideReason: "ed788dab630735a35058f772ea6b71c54a2599108c8e8359a6c32f2d586c9095",
   topicClosedStatus: "f3839100cc2948e6bd7ef1ae36e907a0a04b22077be6eee5d41c980c231824ac",
   topicClosedNotice: "4fff57d72b6b8e259e6b0d7901259d06743889ee316cc68ef424b2385617dc80",
   topicClose: "2308206f82a1aef7a28413588a575d941658af25122d356719ed46e1f66ad07b",

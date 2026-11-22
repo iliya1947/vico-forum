@@ -2207,6 +2207,7 @@ export function TopicView({
   canCorrectAnySourceLocale = false,
   canManagePin,
   canManageClosure = false,
+  canManageVisibility = false,
   canUseAdminPanel = false,
   topicReadState,
   actionData,
@@ -2247,6 +2248,7 @@ export function TopicView({
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
   canManageClosure?: boolean;
+  canManageVisibility?: boolean;
   canUseAdminPanel?: boolean;
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -2648,7 +2650,7 @@ export function TopicView({
                 ]}
           />
 
-          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel) ? (
+          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel || canManageVisibility) ? (
             <div className="topic-breadcrumb-actions">
               {selectableBestAnswerPosts.length > 0 ? (
                 <details className="topic-best-answer-tools">
@@ -2666,9 +2668,10 @@ export function TopicView({
                 </details>
               ) : null}
 
-              {canUseAdminPanel ? (
-                <TopicQuickActions locale={locale} topic={topic} canManagePin={canManagePin}
-                  canManageClosure={canManageClosure}
+              {(canUseAdminPanel || canManageVisibility) ? (
+                <TopicQuickActions locale={locale} topic={topic} actorId={watchActorId}
+                  canManagePin={canManagePin} canManageClosure={canManageClosure}
+                  canManageVisibility={canManageVisibility}
                   canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
                   canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
                   pendingDuplicateAppeal={pendingDuplicateAppeal}/>
@@ -3108,6 +3111,8 @@ export function TopicView({
                       {!postCollapsed && <PostBodyTranslationControls presentation={postPresentation} />}
                       <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
                         revisionId={post.body.id} sourceLocale={post.body.sourceLocale}
+                        actorId={watchActorId} canHideVisibility={canManageVisibility}
+                        visibilityVersion={post.visibilityVersion}
                         canCorrectAnySourceLocale={canCorrectAnySourceLocale}
                         canReadPostHistory={canReadPostHistory}/>
                       <div className="topic-message-desktop-actions">

@@ -7,6 +7,7 @@ type QuickPost =
   | Pick<ForumVisibleThreadPost,"kind"|"id"|"solutionModerationStatus"|"solutionOutdatedReason">
   | Pick<ForumHiddenThreadPost,"kind"|"id">;
 type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> &
+  Partial<Pick<ForumTopicPage,"visibilityVersion">> &
   Partial<Pick<ForumTopicPage,"isClosed"|"closureVersion">> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
@@ -15,12 +16,14 @@ type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelatio
 import type {UiKey} from "../localization/catalog";
 import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";
 import {forumTopicPath} from "../forum/paths";
+import {VisibilityHideForm} from "./visibility-hide-form";
 
 export interface TopicQuickActionInput {
   topic:QuickTopic;
   postCandidates?:ReadonlyArray<{id:string;number:number}>;
   canManagePin:boolean;
   canManageClosure?:boolean;
+  canManageVisibility?:boolean;
   actorId?:string|null;
   canManageAnySolution:boolean;
   canManageHelpDuplicate:boolean;
@@ -143,8 +146,14 @@ export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActio
  const {topic}=input;
  const actions=topicQuickActionDescriptors({...input,actorId});
  const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
- if(!actions.length)return null;
- return <QuickActions>{actions.map(action=>
+ const canHide = input.canManageVisibility && actorId && typeof topic.visibilityVersion==="number"
+  && Number.isInteger(topic.visibilityVersion) && topic.visibilityVersion>=0
+  && topic.visibilityVersion<=2_147_483_647;
+ if(!actions.length&&!canHide)return null;
+ return <QuickActions>{canHide?<VisibilityHideForm
+   key={JSON.stringify([locale,topic.id,actorId,topic.visibilityVersion,topic.title.id])}
+   locale={locale} topicId={topic.id} actorId={actorId} revisionId={topic.title.id}
+   visibilityVersion={topic.visibilityVersion!}/>:null}{actions.map(action=>
   action.intent==="closeTopic"||action.intent==="reopenTopic"
    ? <TopicClosureQuickActionForm
       key={JSON.stringify([locale,topic.id,actorId,input.canManageClosure,topic.closureVersion])}

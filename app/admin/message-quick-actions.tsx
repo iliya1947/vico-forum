@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { forumTopicPath } from "../forum/paths";
 import type { SourceLocaleCorrectionMutationError } from "../forum/mutations.server";
+import { VisibilityHideForm } from "./visibility-hide-form";
 
 interface MessageQuickActionsProps {
   locale: string;
@@ -13,6 +14,8 @@ interface MessageQuickActionsProps {
   sourceLocale: string;
   canCorrectAnySourceLocale: boolean;
   canReadPostHistory: boolean;
+  canHideVisibility?: boolean;
+  visibilityVersion?: number;
   actorId?: string | null;
 }
 type HistoryResponse = { operation: "postHistory"; postId: string; revisions: Array<{
@@ -23,7 +26,7 @@ type CorrectionResponse = { ok?: boolean; error?: SourceLocaleCorrectionMutation
 
 function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: string }) {
   const { locale, topicId, postId, revisionId, sourceLocale, actorId,
-    canCorrectAnySourceLocale, canReadPostHistory } = props;
+    canCorrectAnySourceLocale, canReadPostHistory, canHideVisibility, visibilityVersion } = props;
   const { t } = useTranslation("common");
   const correction = useFetcher<CorrectionResponse>();
   const history = useFetcher<HistoryResponse>();
@@ -76,6 +79,12 @@ function MessageActionsForActor(props: MessageQuickActionsProps & { actorId: str
   return <details className="message-admin-tools">
     <summary>{t("quickActions")}</summary>
     <div className="message-admin-panel">
+      {canHideVisibility && typeof visibilityVersion==="number"
+        && Number.isInteger(visibilityVersion) && visibilityVersion>=0
+        && visibilityVersion<=2_147_483_647
+        ? <VisibilityHideForm locale={locale} topicId={topicId} postId={postId}
+            actorId={actorId} revisionId={revisionId} visibilityVersion={visibilityVersion}/>
+        : null}
       {canCorrectAnySourceLocale ? <div className="message-source-correction">
         <correction.Form method="post" action={path} className="source-locale-form">
           <input type="hidden" name="intent" value="correctPostSourceLocale"/>
@@ -123,9 +132,13 @@ export function MessageQuickActions(props: MessageQuickActionsProps) {
   const actorId = props.actorId ?? headerActorId;
   // A stale private admin loader must not keep displaying an earlier actor's history.
   if (props.actorId && props.actorId !== headerActorId) return null;
-  if (!actorId || (!props.canCorrectAnySourceLocale && !props.canReadPostHistory)) return null;
+  const canHide = props.canHideVisibility && typeof props.visibilityVersion==="number"
+    && Number.isInteger(props.visibilityVersion) && props.visibilityVersion>=0
+    && props.visibilityVersion<=2_147_483_647;
+  if (!actorId || (!props.canCorrectAnySourceLocale && !props.canReadPostHistory && !canHide)) return null;
   const key = JSON.stringify([
-    actorId, props.topicId, props.postId, props.canCorrectAnySourceLocale, props.canReadPostHistory,
+    actorId, props.topicId, props.postId, props.revisionId, props.canCorrectAnySourceLocale,
+    props.canReadPostHistory, canHide, props.visibilityVersion,
   ]);
   return <MessageActionsForActor key={key} {...props} actorId={actorId}/>;
 }
