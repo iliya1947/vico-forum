@@ -4,7 +4,7 @@ import { redirect, useActionData, useLoaderData, type RouterContextProvider, typ
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { forumReaderForRequest } from "../forum/request-context";
 import type {
   ForumHelpSolutionsFilters,
