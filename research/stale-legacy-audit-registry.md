@@ -113,6 +113,80 @@ E — недостаточно доказательств необходимос
 
 PR #322 закрыт без merge 2026-11-21, head e23c0e0ade79e786e29b4057af1dfd292814e34e. Там существовали изменения Search, Complaints, Security, registration flags, Bookmarks/Filters, Settings, Owner roles и Super-admin, но они отсутствуют в main. Последний review имел HOLD: Preview ownership (author-only actions) и реальный ComplaintActivity network leak в статическом Pages. Закрытый head нельзя считать готовым решением.
 
+## Exact verified inventory — 31 stale elements
+
+Повторная независимая поштучная проверка выполнена на main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. Все 31 ранее посчитанных элемента подтверждены; ошибочно включённых элементов не найдено.
+
+### A-01 Legacy Settings — 2
+1. `app/forum/under-development.ts`: `admin-settings` остаётся в `UNDER_DEVELOPMENT_FEATURES`.
+2. `app/routes/admin-forum-legacy.test.ts`: тест `keeps the Settings placeholder` закрепляет устаревшее unfinished-состояние.
+
+### A-02 Search preview — 1
+3. `app/ui-preview/preview-app.tsx`: scenario `under-development-search`.
+
+### A-03 Complaints preview — 2
+4. `attention-complaints` всё ещё имеет label `Moderation · Complaints placeholder`.
+5. `PreviewAttentionRoute` не подаёт representative `complaintQueue` / `complaintAppeals` / `complaintHistory` и соответствующие read capabilities.
+
+### A-04 Security preview — 2
+6. `attention-security` всё ещё имеет label `Moderation · Security placeholder`, хотя attachments-group реализована.
+7. `PreviewAttentionRoute` не подаёт representative `securityQueue`, поэтому реализованная attachments-group выглядит пустой.
+
+### A-05 Authorization preview — 3
+8. Manager-preview жёстко получает `canMutateAuthorization={true}`, хотя mutations exact-Owner-only.
+9. `admin-success` — Manager-only mutation-success fixture, недостижимая в production contract.
+10. `admin-conflict` — Manager-only mutation-conflict fixture, недостижимая в production contract.
+
+### A-06 Registration preview — 1
+11. `previewCredential(..., "sign-up")` не передаёт `registrationFlags`, из-за чего обе реализованные registration methods отображаются закрытыми.
+
+### A-07 Attachments preview — 3
+12. Help question composer preview не передаёт `canUploadAttachments`; default оставляет реальный upload path активным.
+13. Create topic composer preview не передаёт `canUploadAttachments`.
+14. Reply composer preview не передаёт `canUploadAttachments`.
+
+### A-08 Localization catalogue — 16
+Каждый ключ считается одним логическим stale-элементом, даже если поддерживается синхронно в `catalog.ts`, `manual-values.ts` и `manual-fingerprints.ts`.
+
+15. `onlinePresencePending`.
+16. `viewDevelopmentStatus`.
+17. `underDevelopmentFeatureSearch`.
+18. `underDevelopmentFeatureNotifications`.
+19. `underDevelopmentFeatureRegistration`.
+20. `underDevelopmentFeaturePinnedTopics`.
+21. `underDevelopmentFeatureUnread`.
+22. `underDevelopmentFeatureProfiles`.
+23. `underDevelopmentFeatureTechnologyTags`.
+24. `underDevelopmentFeatureUnansweredFilter`.
+25. `underDevelopmentFeaturePopular`.
+26. `underDevelopmentFeatureForumDiscovery`.
+27. `underDevelopmentFeatureMessageLinks`.
+28. `underDevelopmentFeatureReplyQuote`.
+29. `underDevelopmentFeatureEditor`.
+30. `underDevelopmentFeatureOnlinePresence`.
+
+Реально unfinished `underDevelopmentFeatureDrafts`, `Rules`, `Help`, `About`, `Feedback`, `Privacy` в этот список не входят.
+
+### A-09 signUp descriptor — 1
+31. `app/localization/catalog.ts`: description `Future registration entry point in the forum header.` противоречит действующей header link и рабочему `/:locale/sign-up`.
+
+`manual-fingerprints.ts` для A-09 не считается отдельным stale-элементом: fingerprint корректно отражает текущий descriptor и должен измениться как производное следствие правки descriptor.
+
+## Next planning assignment
+
+Следующий этап — технический план устранения подтверждённых A-01…A-09. По текущему `AGENTS.md` полный технический план готовит Лёва (Codex-6.1 Sol) до реализации.
+
+Scope planning:
+- только 31 подтверждённый A-элемент выше;
+- не расширять cleanup на B/C/D/E;
+- не использовать закрытый PR #322 как готовое решение;
+- не менять backend/domain/schema/dependencies без установленной необходимости;
+- сохранить intentional compatibility boundaries и действительно unfinished features;
+- выбрать минимальный, обратимый pre-release cleanup и необходимые проверки;
+- определить, нужен ли один bounded implementation PR или несколько, исходя из реальных зависимостей, а не количества findings.
+
+Критерий готовности плана: для всех A-01…A-09 определён конечный current-state contract, область изменений, зависимости/порядок, проверки и критерии завершения без оставшихся подтверждённых stale-tail из этого реестра.
+
 ## Итог
 
 - 9 уникальных групп A, в том числе 1 real Settings legacy status path; остальные преимущественно preview/catalogue.
