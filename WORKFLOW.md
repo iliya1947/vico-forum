@@ -13,24 +13,25 @@
 ## Канонические рабочие файлы
 
 1. `USER_INSTRUCTIONS.current.md` — неизменяемый эталон.
-2. `USER_INSTRUCTIONS.draft.md` — 42 rules / 52 semantic guards; consistency PASS, но transfer BLOCKED по размеру.
+2. `USER_INSTRUCTIONS.draft.md` — compact User draft: 20 rules / 4999 chars; 52/52 expanded semantic guards mapped.
 3. `PROJECT_INSTRUCTIONS.current.md` — неизменяемый эталон.
-4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules; semantic PASS.
+4. `PROJECT_INSTRUCTIONS.draft.md` — 16 rules; semantic PASS до User compact rewrite.
 5. `AGENTS.current.md` — exact snapshot актуального main AGENTS.
-6. `AGENTS.draft.md` — 58 rules; semantic PASS.
+6. `AGENTS.draft.md` — 58 rules; semantic PASS до User compact rewrite.
 
-## Transfer readiness
+## User compact pass
 
-Полный статус: `research/instruction-transfer-readiness.md`.
-
-1. User draft: 8364 characters; официальный global Custom Instructions limit для Plus/Pro/Enterprise/Business/Education — 5000. **BLOCKED**.
-2. Project draft: 2713 characters; semantic PASS. Точный Project Instructions character limit в найденной официальной документации не указан — информация не проверена.
-3. AGENTS draft: 16186 characters; semantic PASS; должен переноситься отдельным repository PR, не merge #368.
-4. Безопасный order: User → AGENTS → Project.
-5. Реальные instruction sources не изменены.
+1. Было: 42 rules / 8364 chars.
+2. Стало: 20 rules / 4999 chars.
+3. Compact blob: `f042613fa65d2484895c5bf3f9e427d5fb3b27cc`.
+4. 52/52 semantic guards mapped: `research/user-5000-semantic-coverage.md`.
+5. Намеренно отсутствуют только ранее подтверждённые DELETE-SAFE old 17, 29, 44.
+6. Character-limit blocker снят по размеру.
+7. Current 15-rule coverage после compact rewrite ещё требует отдельного exact recheck.
+8. Three-layer consistency после User rewrite ещё не перепроверена.
 
 Проверяющий: не назначен.
 
-Блокер: User draft превышает допустимый global Custom Instructions limit на 3364 characters.
+Блокер: transfer ещё не готов до exact current-coverage + three-layer consistency recheck.
 
-Следующий переход: отдельным этапом сократить User draft до ≤5000 characters с сохранением 52 semantic guards, затем повторить User current coverage и three-layer consistency.
+Следующий переход: exact recheck `USER_INSTRUCTIONS.current.md` → compact `USER_INSTRUCTIONS.draft.md`; drafts не менять на этом шаге.
