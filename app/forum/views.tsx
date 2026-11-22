@@ -17,7 +17,7 @@ import { ComplaintQueueList } from "../complaints/queue-view";
 import type { ComplaintQueuePage } from "../complaints/queue-contract";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation, useRevalidator } from "react-router";
+import { Form, Link, useFetcher, useLocation, useMatches, useNavigate, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministratorPreferences, recordAttentionIndex } from "../settings/administrator-preferences";
@@ -2324,10 +2324,17 @@ export function TopicView({
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const headerActorId = useHeaderAuthUser()?.id ?? null;
-  // A stale public loader must not advertise private inspection for another account.
-  // The private inspection loader independently repeats fresh authorization and active-actor checks.
+  // A returning actor cannot re-trust the same loader snapshot after a viewer
+  // switch or sign-out. Only a fresh public GET can reopen the inspector link.
+  // The private inspection route independently enforces fresh authorization.
+  const topicLoaderSnapshot = useMatches().at(-1)?.loaderData;
+  const inspectorLinkLifetime = useRef({ snapshot: topicLoaderSnapshot, invalidated: false });
+  if (inspectorLinkLifetime.current.snapshot !== topicLoaderSnapshot) {
+    inspectorLinkLifetime.current = { snapshot: topicLoaderSnapshot, invalidated: false };
+  }
+  if (headerActorId !== watchActorId) inspectorLinkLifetime.current.invalidated = true;
   const canOpenHiddenInspection = canManageVisibility && watchActorId !== null
-    && headerActorId === watchActorId;
+    && headerActorId === watchActorId && !inspectorLinkLifetime.current.invalidated;
   // Canonical loaders supply an explicit private snapshot even for guests.
   // Legacy view-only test stubs without filter metadata do not represent a stale actor.
   // Guest->authenticated, A->B, and A->guest must not use a prior actor's graph.
