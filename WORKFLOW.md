@@ -2,19 +2,22 @@
 
 ## Активный этап
 
-**Moderation visibility B7 — MIRA COORDINATOR PASS; STOP BEFORE B8.**
+**Moderation visibility B8 ACTIVATED — only B8-A is assigned; STOP after B8-A.**
 
-- Accepted B6 base remains #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`.
-- Draft B7 #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, behind0, unmerged.
-- Prior blocker `B7-MIRA-01` is **CLOSED**:
-  - canonical `topicAction` keeps generic auth/origin preflight before FormData parsing;
-  - visibility forms mark their canonical action URL with authority-neutral `?visibilityAction=1`, allowing preflight 401/origin-403 to retain the B7 `operation:"contentVisibility"` envelope without reading a denied body;
-  - admitted mutations still require the original strict visibility intent/payload, same-origin/session, current permission, actor expectation, CAS revision/version, reason and transaction-owned DB/AP-10 checks;
-  - unrelated unmarked topic actions retain their prior generic preflight responses.
-- Mira re-reviewed the corrective diff `901661dbc38b9a19626fd2c7fe2a951637692d3d..f92778606f1c8ea4e64f53c1660910f34c48b84c` (8 files; no B8/B9 implementation) and found no new current-B7 blocker.
-- Exact-head GitHub evidence independently verified: **19/19 check-runs SUCCESS, 15/15 workflow runs SUCCESS**. Main CI #45036679050 is SUCCESS on run attempt 2; current jobs `checks` and the database-only retry are both SUCCESS on the same exact SHA. No code change occurred for the retry.
-- B7 remains an intermediate stacked Draft. This PASS is not B8 acceptance, whole-feature final review, merge or deployment.
-- Lira is **STOPPED**. **B8 requires fresh owner continuation.** No B8/B9/fold/Leva/merge/deploy before that continuation.
+- Accepted B7 Draft #371 stable exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`, coordinator PASS, unmerged.
+- B8 must be a new stacked Draft implementation/acceptance PR with base = B7 branch `feature/moderation-visibility-b7-actions-ui` at that exact head. B1–B7 remain Draft/unmerged.
+- B8 is split for owner control:
+  1. **B8-A — real PostgreSQL state/History/authority/race acceptance** — **ACTIVE NOW**.
+  2. B8-B — actual Worker/Better Auth/local R2/public-private transport and protected-domain acceptance — inactive.
+  3. B8-C — Chromium UI/cache EN/RU/HE, narrow RTL, keyboard, account-switch/revoke/late-response acceptance — inactive.
+- **B8-A required result:**
+  - close the acceptance matrix for State/History and Authority using real PostgreSQL connections, including topic/post Hide+Restore, no-op/stale/overflow, exact one-event/reason semantics, forced History failure rollback, active actor/current permission/AP-10 restriction and non-proxy Admin/History/Complaint authority;
+  - cover the real PG race/ordering boundaries assigned by V8 for visibility against reply/parent/edit/title/source/solution/duplicate/new translation plan/accepted execution/Complaint, both relevant orders where the contract requires them; JS-only promise ordering is not sufficient evidence;
+  - include two-moderator and actor-deactivation behavior and prove unrelated content/state remains unchanged where required;
+  - use existing PG suites/seams where practical; do not duplicate unrelated acceptance.
+- If B8-A exposes a real current visibility defect, diagnose it against current-stage scope and fix only the bounded defect needed to make B8-A truthful. Do not expand architecture or Stage6.
+- **STOP after B8-A.** Report B8 PR number, exact head, changed/test scope, real PG results and any current-stage defects/corrections. Do not start Worker/R2/Chromium B8-B/B8-C, B9, fold, Leva review, merge or deploy.
+- Intermediate B8-A uses targeted relevant PG checks; whole B8 connected/full matrix and final exact-head CI belong after the remaining B8 packets, not as a reason to skip this STOP.
 
 ## Baseline
 
