@@ -156,3 +156,25 @@ describe("shared P1 Owner lifecycle contract identity", () => {
     expect(new productionLifecycleUnavailable({ cause }).cause).toBe(cause);
   });
 });
+
+import {
+  InvalidUserMeasureInputError as neutralMeasureInvalid,
+  UserMeasureConflictError as neutralMeasureConflict,
+} from "../../../db/user-measures-error";
+import {
+  InvalidUserMeasureInputError as productionMeasureInvalid,
+  UserMeasureConflictError as productionMeasureConflict,
+} from "../../../db/user-measures";
+import { measureResponseError, measureUuid } from "../../measures/routes.server";
+
+describe("shared P1 measure route error identity", () => {
+  it("preserves production constructors and original HTTP mapping", () => {
+    expect(neutralMeasureInvalid).toBe(productionMeasureInvalid);
+    expect(neutralMeasureConflict).toBe(productionMeasureConflict);
+    expect(new productionMeasureInvalid("invalid")).toBeInstanceOf(neutralMeasureInvalid);
+    expect(new productionMeasureConflict("conflict")).toBeInstanceOf(neutralMeasureConflict);
+    expect(measureResponseError(new productionMeasureInvalid()).status).toBe(400);
+    expect(measureResponseError(new productionMeasureConflict()).status).toBe(409);
+    expect(() => measureUuid("invalid")).toThrow(neutralMeasureInvalid);
+  });
+});
