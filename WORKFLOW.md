@@ -2,18 +2,23 @@
 
 ## Активный этап
 
-**Moderation visibility B6-B — MIRA COORDINATOR PASS; STOP BEFORE B7.**
+**Moderation visibility B7 ACTIVATED — only B7-A is assigned to Лира.**
 
-- Stacked Draft #370 stable exact `51a9ebe03f16c438faae5bec99a5856287630958`, accepted B6-A base exact `91cb332d6acf60ebf572f57582c13acfeab8eada`; local B6-B diff = 12 commits / 17 files / behind 0. B1–B6 remain Draft/unmerged.
-- B6-B inspector/current-event boundary PASS: private topic/post inspection requires fresh effective `forum.content.visibility.manage`, active account and AP-10 through the existing effective authorization wrapper; current visibility/version/revision ID and exact version-matching visibility event/reason only. Ordinary Admin/public routes remain public-safe.
-- Hidden post revision-history boundary PASS: raw old body text requires both fresh visibility-management authority and existing `forum.post.history.read`; both permissions belong to AP-10 `admin.forum`, reader rechecks them, revoke/outage fail closed, strict 25+1 microsecond cursor and private/no-store responses are covered.
-- Private hidden attachment boundary PASS: exact published attachment→post→topic membership plus effective hidden state is checked in PostgreSQL before any R2 GET; fresh visibility authority/active actor/AP-10 is rechecked. Existing safe download/inline/text disposition, sandbox/nosniff/no-store behavior is reused. Public download remains independently visibility-gated and Complaint evidence authority is untouched.
-- Scope PASS: no Hide/Restore POST intents, QuickActions, Restore UI, schema/migrations/dependencies, production/deploy or Stage 6 changes entered B6-B.
-- Exact-head evidence independently verified: GitHub reports **22/22 check-runs completed SUCCESS** and **18/18 workflow runs SUCCESS** on `51a9ebe03f16c438faae5bec99a5856287630958`; CI checks/database and connected R2/AP-10/authorization/Complaint-related workflows are green.
-- The author fixed three B6-local defects before the final head (immutable revision fixture mutation, accidental enumerable `AdminAccess` property, malformed private asset ID mapping). They are not present on the reviewed head.
-- **Coordinator result: PASS. Confirmed current-B6-B blockers = 0.**
-- Process note: Lira violated the explicit B6-B1 and B6-B2 STOP gates by completing all B6-B in one run. This is logged in `AGENT_ERRORS.md`. The resulting diff stayed within already accepted B6-B scope, so technically correct work is not rolled back.
-- **STOP. B7 remains blocked until a new explicit owner continuation.** No Leva final whole-feature review, stack fold, merge or deployment yet.
+Accepted stack:
+- B6 #370 coordinator PASS exact `51a9ebe03f16c438faae5bec99a5856287630958`.
+- B7 must be a new stacked Draft implementation PR based directly on branch `feature/moderation-visibility-b6-guarded-queue` at that accepted exact head.
+- B1–B6 remain Draft/unmerged; no stack fold, Leva final review, merge or deployment yet.
+
+### Current assignment — B7-A only: canonical visibility action contract
+
+Required result:
+1. Expose the already implemented transactional topic/post visibility commands through the canonical topic POST surface using the accepted intents `setTopicVisibility` / `setPostVisibility`.
+2. Enforce the accepted strict request contract: exact intent/actor expectation/desired hidden state/current version/current revision/reason, post ID only for post intent; reject duplicate, mixed, extra, File or malformed scalar input. Visibility handling must use fresh session/capability/AP-10 admission and be reachable for Restore before the ordinary public-availability gate.
+3. Return the accepted neutral status/result contract: invalid 400, guest/inactive 401, permission/measure 403, missing 404, stale 409, typed dependency 503; no hidden current source in errors; no optimistic retry/rebase. Add focused route/action tests for these boundaries.
+
+**STOP after B7-A.** Do not implement public/private QuickActions, inspector Restore controls, tombstone controls, pending/conflict UI, redirects, EN/RU/HE action presentation or actor-switch/late-response UI yet. Those remain later B7 work and are inactive until a new owner continuation.
+
+Cadence: targeted checks only for B7-A; no full repository CI is required at this intermediate STOP unless a concrete cross-cutting failure makes it necessary.
 
 ## Baseline
 
