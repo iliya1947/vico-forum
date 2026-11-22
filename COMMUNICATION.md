@@ -18,13 +18,13 @@
 
 Это подтверждает, что production-код уже не полностью жёстко связан с конкретной инфраструктурой.
 
-Это **не доказывает**, что весь production router можно без изменений исполнять на static GitHub Pages. Server-only imports, runtime boundaries и внешние capabilities должны быть исследованы уже после/в рамках проверки концепции.
+Это **не доказывает**, что весь production router можно без изменений исполнять на static GitHub Pages. Server-only imports, runtime boundaries и capabilities исследованы на уровне исходников; их browser-исполнение проверяется bounded P0 по PLAN. Новый browser proof в рамках оформления документа не выполнялся.
 
 ## Актуальная граница и материал
 
 Владелец прямо уточнил GitHub-only/browser-only и общий product UI main; сохранение необязательно, simulated success разрешён. D-06–D-08 в DECISIONS.md имеют приоритет над прежними предположениями о необходимости write/SQL parity.
 
-Текущее пересмотренное предложение: research/leva-chat-plan.md. Авторский completeness self-check завершён (§16); следующая — Мира для scope/fit проверки. Это ещё не acceptance архитектуры или permission начать P0/реализацию. PLAN.md — навигационная точка, WORKFLOW.md — актуальный маршрут.
+**Концепция прямо принята владельцем**, Лёве поручено оформить финальный технический PLAN (D-09). Канонический [PLAN.md](PLAN.md) подготовлен: в нём architecture/contracts, P0–P6, зависимости и проверки. Прежнее research/leva-chat-plan.md заменено указателем на PLAN. Следующая — Мира для проверки финального плана, выбора delivery mode и подготовки bounded назначения P0. Повторное принятие концепции не требуется. P0/реализация не начинались; product code, #322 и deployment не менялись. WORKFLOW.md — актуальный маршрут.
 
 
 ## Конкретные симптомы текущей архитектуры #322
