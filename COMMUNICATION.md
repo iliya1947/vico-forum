@@ -6,8 +6,10 @@
 
 Первый compact User draft 20 rules / 4999 chars сохранил все смыслы, но провалил structural executability: 9/17 stress-сценариев попали в перегруженные «суперпункты».
 
-Этот blocker локально исправлен новым User draft: 35 rules / 4999 chars, blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`. Проблемные former groups 5, 7, 9, 10, 13, 14 разбиты; preservation-check подтвердил 52/52 guards и 15/15 current rules.
+Текущий User draft: 35 rules / 4999 chars, blob `ef1c0efd10d2e95a5481476d91b336884d7d9c61`. Preservation-check подтвердил 52/52 guards и 15/15 current rules. Повтор того же 17-сценарного stress-test дал **17/17 EXEC PASS, EXEC RISK 0**.
 
-Новый exact blob ещё не прошёл повторный stress-test, поэтому transfer package по-прежнему не готовится. Подробности: `research/user-35-redesign-preservation-check.md`.
+Structural executability blocker закрыт. Это не эмпирическое доказательство фактической частоты ошибок модели после установки.
+
+Transfer package всё ещё не готовится: новый exact User blob должен отдельно пройти three-layer consistency с текущими Project/AGENTS drafts.
 
 Рабочий PR является временным аналитическим пространством и не предназначен для merge.
