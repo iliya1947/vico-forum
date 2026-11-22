@@ -2,14 +2,20 @@
 
 ## Активный этап
 
-**B7 — B7-B1a visible-only CAS baseline authored; Лира STOP before B7-B1b QuickActions forms.**
+**Moderation visibility B7 — B7-B1b visible-only public Hide QuickActions authored. Лира STOP before next package.**
 
-- B6 accepted coordinator PASS on `51a9ebe03f16c438faae5bec99a5856287630958`; no changes to B6 base.
-- Stacked [Draft B7 PR #371](https://github.com/iliya1947/vico-forum/pull/371), branch `feature/moderation-visibility-b7-actions-ui`, exact head `0500c337d566306ceb6d9ec6202d146dde6e4a38` (B7-A + B7-B1a), unmerged.
-- **B7-A:** guarded canonical topic/post POST actions at preceding exact `dedaff7a7783df1a8666926a911c0f1790540ac9` (7 commits / 4 files vs B6), strict scalar/form/origin/session/actor/version/revision/reason, capability and transactional AP-10; neutral private no-store 400/401/403/404/409/503, safe explicit response. Focused route test matrix authored, 21/21 scoped static source checks; **Vitest/PG/CI not run**.
-- **B7-B1a (current complete microstep):** one commit `0500c337d566306ceb6d9ec6202d146dde6e4a38`, exactly three files vs B7-A: `db/forum-repository.ts`, `app/routes/topic.tsx`, `tests/database/moderation-visibility-commands.test.ts`. Within existing REPEATABLE READ public topic snapshot, project `visibilityVersion` for **visible** topic and post only; hidden topic still 404 and hidden post tombstone **does not** include version/revision/source. Public topic loader derives `canManageVisibility` from current effective `forum.content.visibility.manage`, with safe default false when auth unavailable. Focused real PG regression **authored** for visible baseline, post Hide→tombstone→Restore, topic Hide→404→Restore version. **12/12 scoped static assertions PASS; real PG/Vitest/CI not executed**.
-- **Next only after explicit owner continuation:** **B7-B1b** — render Hide for visible topic/post in public QuickActions using exactly these observed baselines, fresh action authority, mandatory reason. No Restore controls for hidden tombstones/topics, no private inspector Restore, no redirects/conflict/actor-switch UI or broad B7 closeout unless separately authorized.
-- **STOP now.** B7-B1a is not a runtime PASS or complete B7. No B8/B9, whole-feature review, stack fold, merge or deploy.
+- B6 #370 accepted coordinator PASS exact `51a9ebe03f16c438faae5bec99a5856287630958`, unchanged.
+- [Draft B7 #371](https://github.com/iliya1947/vico-forum/pull/371), branch `feature/moderation-visibility-b7-actions-ui`, exact current head `e9cfcd0ddeadc3a6661293c4db968dde2195a269`. Stacked on unchanged B6 branch, unmerged; no production/deployment.
+- **B7-A** canonical POST `setTopicVisibility` / `setPostVisibility` server contract and targeted action test matrix previously authored, 21/21 static checks, no Vitest/PG/CI run.
+- **B7-B1a** public visible-only topic/post `visibilityVersion` CAS snapshot, hidden topic 404 and hidden post tombstone without revision/source/version, public topic loader `canManageVisibility` derived from current permission; PG regression authored, 12/12 static checks, not runtime-tested.
+- **B7-B1b current packet:** four commits / eight changed files vs B7-B1a `0500c337d566306ceb6d9ec6202d146dde6e4a38`, behind 0:
+  - `app/admin/visibility-hide-form.tsx` reuses canonical topic POST for **Hide only**, exact `intent`, `editorActorId`, `hidden=true`, `expectedVisibilityVersion`, `expectedRevisionId`, conditional `postId`, required bounded `reason`; no extra `inlineQuickAction` / `operationScope`. Independent fetcher form with submit disabled during request.
+  - Public topic and visible post QuickActions render Hide only with current effective visibility grant + observed valid version + session/header actor match. Public TopicView permits visibility-only moderators to see QuickActions. Hidden topic remains public 404; hidden tombstone renders before any message actions, with no Hide/Restore or hidden current baseline. Shared generic Admin/Complaint actions do not receive implicit visibility permission.
+  - Three new canonical EN keys `visibilityHideTopic`, `visibilityHidePost`, `visibilityHideReason` with manually reviewed RU/HE translations and source fingerprints.
+  - Focused `app/admin/visibility-hide-form.test.tsx` authors DOM/submit regressions for exact canonical topic/post FormData, required reason, visibility-only permissions, absent baseline, stale actor and hidden tombstone.
+  - **21/21 scoped static checks PASS.** Manual fingerprint hashes independently matched canonical `sourceFingerprint` semantics. **Vitest, browser, PostgreSQL and whole B7 CI not run on this head.** No runtime PASS or whole-B7 acceptance claim.
+- **STOP after B7-B1b.** On fresh owner continuation, next bounded UI package: B7-B2a guarded private inspector Restore (current private state/revision/version; no public hidden-source CAS, no ordinary Admin bypass), after reviewing current plan and head. Separate later slices own tombstone/queue navigation, redirect-after-Hide, 409/reload and pending/actor-switch handling, EN/RU/HE status presentation, exact-head CI/acceptance.
+- B8/B9, fold, whole-feature review, merge and deployment remain blocked.
 
 ## Baseline
 
