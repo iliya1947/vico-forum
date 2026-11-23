@@ -89,6 +89,7 @@ Permission key означает существующую capability прилож
 - `forum.post.history.read`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -146,6 +147,21 @@ confirmed-duplicate reply restriction and never changes solved/best-answer.
 The authoritative transaction, no-op/History and preserved receipt replay
 are specified in `../ADMIN_PANEL.md`.
 
+`forum.content.visibility.manage` разрешает обратимое Hide/Restore опубликованной
+темы или сообщения и отдельно защищённое чтение очереди скрытого контента,
+точечной инспекции и допущенных скрытых вложений. Операции выполняются
+только при authenticated active actor, свежем effective permission, применимой
+AP-10 `admin.forum` admission, принадлежности target, текущих
+revision/visibility-version CAS и обязательной причине реального перехода.
+Начальные grants — built-in moderator/admin, **не** user; role grants и
+personal overrides остаются динамическими. Само permission не предоставляет
+произвольное редактирование скрытого текста, общий Admin/History reader
+или независимые Complaint/Appeal/Help management capabilities.
+Просмотр прежнего текста скрытых post revisions требует дополнительно
+`forum.post.history.read`, а ordinary Admin topic page остаётся
+публично-безопасной проекцией с обезличенными заглушками.
+Подробный контракт — в [ADMIN_PANEL.md](../ADMIN_PANEL.md).
+
 Complaint permissions protect the server-only domain capabilities documented in
 [`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits
 authenticated Complaint submission. `forum.complaint.review` independently permits
@@ -197,6 +213,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -220,6 +237,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
