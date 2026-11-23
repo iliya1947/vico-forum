@@ -1,11 +1,11 @@
-# agents/leva.md — Task 6 / F4 correction ACTIVE
+# agents/leva.md — F4-01 correction завершён, STOP
 
-- F1/F2/F3 accepted; F4 #382 exact `86aadfe49dfe175b7f42baeaa6fa78883631ebeb` received Mira coordinator **HOLD**.
-- One confirmed blocker: **F4-01 — mandatory structure singleton invariant is not enforced consistently by F4 readers**.
-- `listDestinations` already throws `StructureInvariantError` when `forum_structure_state(id=1)` is absent.
-- `readMoveContext` currently collapses the same state to `undefined`/private 404 because its CROSS JOIN returns no row.
-- Admin F4 projections can return `structureVersion:null` for existing objects despite the typed string contract.
-- Required result: all F4 reads that promise structureVersion fail as invariant when the singleton is absent; move-context must not disguise that invariant as target absence. Add focused regressions.
-- Scope is F4-01 only. Do not begin F5.
-- After correction, new stable exact head + author self-check/applicable checks → STOP → Mira F4 re-check.
-- Stack PRs remain Draft/unmerged; final independent whole-feature reviewer remains Mark if code-independent.
+- F4 #382 corrected exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`, base F3 `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78` неизменна. F1/F2/F3 accepted, стек Draft/unmerged.
+- Мира HOLD на86aadfe по F4-01 (missing singleton маскировался как false404/null version). Исправление только5files/+84−29: db/admin-forum.ts, db/forum-structure-reader.ts и3testfiles.
+- Move/Admin reads используют single-statement envelope с независимой mandatory version; null version → StructureInvariantError до target absence/success. Existing picker invariant сохранён. Нет дополнительных queries/locks/default fallback/schema/grants.
+-14 новых real PG regressions покрывают visible/hidden/absent/Help context, все Admin projections/empty filter/absent roots и оба picker kinds; route checks сохраняют invariant как private500.
+- Author gate PASS: CI45264492368 —3072 unit/1829 PostgreSQL + all17 applicable acceptance на новом head, с первой попытки. Локально45 PG/119 unit/TypeScript/lint PASS.
+- Актуальные seam details и все ссылки: [F4_REPORT](../stages/forum-structure/F4_REPORT.md).
+- Следующая Мира: повторный whole bounded F4 coordinator checkpoint. Старый HOLD не закрыт независимым review. Лёва STOP; F5 без назначения не начинать.
+- Worktree /workspace/work/visibility-review clean feat/forum-structure-f4 at18627a8; временный node_modules symlink удалён. vico_f4_fix_test удалена; исходно stopped vico-title-edit-pg возвращён в stopped.
+- Final independent whole-feature reviewer — Марк при code independence. #342 единственный service channel, никогда не merge; #300/Stage6/general UI/UX/deploy не активированы.
