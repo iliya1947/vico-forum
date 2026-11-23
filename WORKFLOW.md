@@ -2,45 +2,35 @@
 
 ## Активный этап
 
-**Task 6 — forum structure/topic move: F1/F2/F3 coordinator PASS; F4 ACTIVE → Лёва.**
+**Task 6 — forum structure/topic move: F1/F2/F3 coordinator PASS; F4 author gate PASS → Мира.**
 
-- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Current main baseline: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Канонический plan: [stages/forum-structure/PLAN.md](stages/forum-structure/PLAN.md), S0–S10 / F1–F7.
 - Delivery: stacked F1→F6, затем отдельный F7 docs.
-- F1 Draft #379 / `feat/forum-structure-f1`: accepted exact `8227db6003f5a23a369e11b645194da229315f7a`, Draft/unmerged.
-- F2 Draft #380 / `feat/forum-structure-f2`: accepted exact `11a2808f14a79efd69dbbb120f5b732bf2880d4f`, Draft/unmerged.
-- F3 Draft #381 / `feat/forum-structure-f3`: accepted exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`, Draft/unmerged.
+- F1 Draft #379 / `feat/forum-structure-f1`: accepted `8227db6003f5a23a369e11b645194da229315f7a`.
+- F2 Draft #380 / `feat/forum-structure-f2`: accepted `11a2808f14a79efd69dbbb120f5b732bf2880d4f`.
+- F3 Draft #381 / `feat/forum-structure-f3`: accepted `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`.
+- F4 Draft [#382](https://github.com/iliya1947/vico-forum/pull/382) / `feat/forum-structure-f4`: stable exact `86aadfe49dfe175b7f42baeaa6fa78883631ebeb`.
+- F4 base = `feat/forum-structure-f3` exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`, dependency не изменилась. Все четыре PR Draft/unmerged.
 
-## Текущее назначение — Лёва: F4
+## Текущее назначение — Мира: bounded F4 coordinator checkpoint
 
-Implementation: Draft [#382](https://github.com/iliya1947/vico-forum/pull/382), branch `feat/forum-structure-f4`, exact head `86aadfe49dfe175b7f42baeaa6fa78883631ebeb`; base F3 exact не изменился. Реализация и targeted author checks завершены; full CI/applicable acceptance запущены. Следующий шаг сейчас — Лёва проверяет результаты exact-head checks и затем передаёт Мире bounded checkpoint.
+Проверить whole bounded F4 diff против S2.1/S3/S6/S7.1/S8/S9 PLAN на указанном exact head. Author evidence и seams для следующего этапа: [F4_REPORT.md](stages/forum-structure/F4_REPORT.md).
 
-Реализовать **только F4 — coherent readers, ordering и private move context/picker** из S8 PLAN.
+F4 реализует coherent public/Admin hierarchy reads и persisted SQL order до LIMIT, versioned bounded cursors/independent totals/First recovery, source-free guarded move context и ordinary destination picker, read-only routes/named Admin routing/WEB_HYPERDRIVE wiring, private document/.data/error boundaries. Public/ordinary Admin hidden source access не расширен.
 
-Граница результата:
-- affected public/Admin hierarchy readers дают coherent snapshots и используют принятый persisted order до LIMIT;
-- hierarchy/location/counts/breadcrumbs отражают accepted F2/F3 reparent/move semantics, Help exclusions сохраняются;
-- отдельные guarded private move-context и destination-picker reads/routes соответствуют S2.1/S7.1, не расширяя public/ordinary Admin hidden source access;
-- versioned bounded cursor/filter/total contracts, private no-store/error boundaries и named Admin routing/Hyperdrive capability wiring входят в F4.
+Авторский gate PASS:
+- [CI45261384641](https://github.com/iliya1947/vico-forum/actions/runs/45261384641): 3070 unit / 1815 PostgreSQL tests, lint/typecheck/build/UI-preview, migration/schema/runtime/credential checks и built Worker HTTP smokes.
+- Все 17 применимых acceptance workflows на том же final head PASS.
+- Реальные snapshot races и exact web-role/max1 pool; начальные route enumeration/profile-fixture integration failures исправлены без production fallback, final checks green.
 
-Критерий author gate — F4 Done из PLAN: page/filter/global ordering, first-three sections, correct post-reparent/move projections, snapshot-race coverage, hidden neutral/public-safe behavior, actor/key revoke/AP-10/query/ID/cursor denial и private document/.data/error no-store.
+После coordinator PASS Мира отдельно определяет F5/исполнителя. При подтверждённых current-scope дефектах вернуть один bounded пакет Лёве. Лёва после author gate **STOP**, F5 самостоятельно не начинает.
 
-Delivery:
-- открыть отдельный stacked Draft implementation PR с **base = `feat/forum-structure-f3`** exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`;
-- PR показывает только bounded F4 diff;
-- после author self-check и применимых exact-head checks Лёва **STOP** → Mira bounded F4 coordinator checkpoint.
+## Границы
 
-Вне F4:
-- F5 live structure forms, shared Move control/QuickActions, mutation POST dispatch, editor-lifetime behavior и Owner History projection;
-- F6 final assembly/whole-feature acceptance/review.
-
-Не merge #379/#380/#381/F4 в main. Если accepted F3 head изменится, сначала синхронизировать dependency до продолжения.
-
-## Reviewer route и границы
-
-Лёва участвует в implementation Task 6, поэтому final independent whole-feature Codex reviewer — **Марк**, если остаётся code-independent.
-
+- F5 live structure forms/shared Move control/QuickActions/POST dispatch/editor lifetime/Owner History projection и F6 final assembly не активированы.
+- Новые private endpoints пока read-only resources; новые mutable controls отсутствуют. Existing acceptance regressions не выдаются за F6 whole-feature browser acceptance новых форм.
+- Не merge #379/#380/#381/#382 отдельно. Если accepted dependency или implementation head изменится, checkpoint относится к новому stable exact head.
+- Лёва участвует в implementation; final independent whole-feature Codex reviewer — **Марк**, если остаётся code-independent.
 - #342 — единственный service channel; никогда не merge.
-- F5+ не активированы.
-- #300, Stage6, deploy и general UI/UX не активированы.
-- После F7/docs closeout — переход к #320.
+- #300/Stage6/general UI/UX/deploy не активированы. После F7/docs — установленный переход к #320.
