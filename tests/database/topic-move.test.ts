@@ -12,6 +12,9 @@ import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
 import { DrizzleForumRepository, ForumPublicationReplayConflictError } from "../../db/forum-repository";
 import { DrizzleForumAttachments } from "../../db/forum-attachments";
 import { PostgresAdminForumReader } from "../../db/admin-forum";
+import { PostgresOwnerSa02History } from "../../db/owner-sa02-history";
+import { PostgresOwnerUserHistory } from "../../db/owner-user-history";
+import { nativeHistoryCoverageSql } from "../../db/owner-native-history";
 import { readComplaintEvidenceObject } from "../../db/complaint-review-read";
 import { ContentTopicTitleTranslationPlanner } from "../../app/localization/content-translation-planning";
 import { ContentSourceLocaleResolver, ThresholdContentSourceLocalePolicy } from "../../app/localization/content-source-locale";
@@ -125,6 +128,107 @@ beforeEach(async()=>{
   await forum().createPost({id:"p2",topicId:"t",authorId:"reader",bodyRevision:{id:"body2",originalContent:"Second body",sourceLocale:"en"}});
 });
 
+describe("F5-D original Owner forum.structure History projection",()=>{
+  it("maps all eight real F2/F3 committed actions to one original identity across global, scoped, filtered and person views",async()=>{
+    const coverageSql=nativeHistoryCoverageSql("forum.structure");
+    const empty=await pool.query<{first:Date|null}>(coverageSql,["forum.structure"]);
+    expect(empty.rows[0].first).toBeNull(); // seeded structure must not synthesize past events
+
+    const created=await structure().createCategory("structurer",{name:"新しい category",expectedStructureVersion:"0"});
+    expect(created.changed).toBe(true);
+    await structure().renameCategory("structurer","ca",{name:"Категория עברית",expectedStructureVersion:"1"});
+    await structure().reorderCategory("structurer","ca",{direction:"down",expectedStructureVersion:"2"});
+    const section=await structure().createSection("structurer","ca",{name:"New section",expectedStructureVersion:"3"});
+    await structure().renameSection("structurer","a",{name:"Renamed section",expectedStructureVersion:"4"});
+    await structure().reorderSection("structurer","a",{direction:"down",expectedStructureVersion:"5"});
+    await structure().moveSection("structurer","b",{
+      expectedCategoryId:"ca",targetCategoryId:"cb",expectedStructureVersion:"6",
+    });
+    expect(await moves().moveTopic("mover","t",input({expectedStructureVersion:"7"})))
+      .toMatchObject({currentSectionId:"x",locationVersion:"1",changed:true});
+    expect((await moves().moveTopic("mover","t",input({
+      expectedStructureVersion:"7",expectedSectionId:"x",targetSectionId:"x",expectedLocationVersion:"1",
+    }))).changed).toBe(false);
+
+    const stored=(await client.query<{id:string;action:string;actor_id:string;target_type:string;target_id:string;
+      context:Record<string,unknown>;occurred_at:Date}>(
+      "select id,action,actor_id,target_type,target_id,context,occurred_at from admin_history order by position"
+    )).rows;
+    expect(stored).toHaveLength(8);
+    const owner=new PostgresOwnerSa02History(pool);
+    const projected=await owner.readTimeline({area:"forum",monitorKey:"forum.structure",limit:25});
+    const expectedKinds=["category.created","category.renamed","category.reordered",
+      "section.created","section.renamed","section.moved","section.reordered","topic.moved"];
+    expect(projected.entries).toHaveLength(8);
+    expect(projected.next).toBeNull();
+    expect(new Set(projected.entries.map(e=>e.origin+":"+e.id)).size).toBe(8);
+    expect(projected.entries.map(e=>e.kind).sort()).toEqual(expectedKinds.slice().sort());
+    for(const row of stored){
+      const projectedEntry=projected.entries.find(e=>e.id===row.id);
+      expect(projectedEntry).toMatchObject({
+        origin:"admin-history",id:row.id,kind:row.action,
+        source:"admin_history",monitorKeys:["forum.structure"],
+        values:{actorUserId:row.actor_id,targetType:row.target_type,targetId:row.target_id},
+      });
+      expect(projectedEntry?.values.afterVersion).toBe(row.context.version);
+      expect(projectedEntry?.values.beforeVersion).toBe(row.context.previousVersion);
+    }
+    const byKind=(kind:string)=>projected.entries.find(e=>e.kind===kind)!;
+    expect(byKind("category.created").values).toMatchObject({
+      beforeExists:false,afterName:"新しい category",afterSortPosition:"2",
+    });
+    expect(byKind("category.renamed").values).toMatchObject({
+      beforeExists:true,beforeName:"Category A",afterName:"Категория עברית",
+    });
+    expect(byKind("category.reordered").values).toMatchObject({
+      neighborId:"cb",beforeSortPosition:"0",afterSortPosition:"1",
+      neighborBeforePosition:"1",neighborAfterPosition:"0",
+    });
+    expect(byKind("section.created").values).toMatchObject({
+      beforeExists:false,afterName:"New section",afterCategoryId:"ca",
+    });
+    expect(byKind("section.renamed").values).toMatchObject({
+      beforeName:"Section A",afterName:"Renamed section",
+    });
+    expect(byKind("section.reordered").values).toMatchObject({
+      neighborId:"b",beforeSortPosition:"0",afterSortPosition:"1",
+    });
+    expect(byKind("section.moved").values).toMatchObject({
+      beforeCategoryId:"ca",afterCategoryId:"cb",beforeSortPosition:"0",afterSortPosition:"1",
+    });
+    expect(byKind("topic.moved").values).toMatchObject({
+      actorUserId:"mover",targetType:"topic",targetId:"t",
+      beforeCategoryId:"ca",beforeCategoryName:"Категория עברית",
+      beforeSectionId:"a",beforeSectionName:"Renamed section",
+      afterCategoryId:"cb",afterCategoryName:"Category B",
+      afterSectionId:"x",afterSectionName:"Section X",
+      beforeVersion:"0",afterVersion:"1",
+    });
+    const json=JSON.stringify(projected.entries);
+    expect(json).not.toMatch(/Secret title|Secret body|originalContent|sourceLocale|revisionId|privateReason/);
+    const scoped=await owner.readTimeline({area:"forum",monitorKey:"forum.structure",origin:"admin-history",kind:"topic.moved"});
+    const globallyFiltered=await owner.readTimeline({origin:"admin-history",kind:"topic.moved"});
+    expect(scoped.entries.map(e=>e.id)).toEqual([byKind("topic.moved").id]);
+    expect(globallyFiltered.entries.map(e=>e.id)).toEqual([byKind("topic.moved").id]);
+    expect(scoped.entries[0].values).toEqual(globallyFiltered.entries[0].values);
+    expect((await owner.readTimeline({area:"forum",monitorKey:"forum.state"})).entries
+      .some(e=>expectedKinds.includes(e.kind))).toBe(false);
+    await expect(owner.readTimeline({area:"forum",monitorKey:"forum.state",kind:"topic.moved"})).rejects.toThrow();
+
+    const persons=new PostgresOwnerUserHistory(pool);
+    const mover=await persons.readHistory("mover"),structurer=await persons.readHistory("structurer");
+    expect(mover.entries.filter(e=>e.kind==="topic.moved").map(e=>e.id)).toEqual([byKind("topic.moved").id]);
+    expect(mover.entries.find(e=>e.kind==="topic.moved")?.values).toEqual(byKind("topic.moved").values);
+    expect(structurer.entries.filter(e=>expectedKinds.includes(e.kind))).toHaveLength(7);
+    expect((await persons.readHistory("author")).entries.some(e=>e.kind==="topic.moved")).toBe(false);
+
+    const coverage=await pool.query<{first:Date|null}>(coverageSql,["forum.structure"]);
+    const oldest=Math.min(...stored.map(row=>row.occurred_at.getTime()));
+    expect(coverage.rows[0].first?.getTime()).toBe(oldest);
+    expect(await version()).toBe("7");
+    expect(await moveEvents()).toHaveLength(1);
+  });
+});
 describe("F3 authoritative move and retained state",()=>{
   it.each(["b","x"])("moves within/across categories to %s, changes only location and emits one neutral fact",async target=>{
     const before=await freeze();
