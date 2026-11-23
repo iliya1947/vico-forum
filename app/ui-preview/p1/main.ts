@@ -26,12 +26,48 @@ const publishedAssets: PreviewAttachmentAsset[] = [{
   reference: publishedReference, fileName: P0_ATTACHMENT_NAME, detectedType: "png",
   bytes: publishedBytes,
 }];
-const attachmentFixture = createP1AttachmentFixture(publishedAssets);
-const attachmentUrls = createPreviewAttachmentUrls(publishedAssets);
+// Keep the active fixture and native Blob URL registry in one generation. Reset
+// replaces both, while the old generation remains alive until its view URLs
+// have been replaced and their image loads have completed.
+const liveGenerations = new Set<{
+  fixture: ReturnType<typeof createP1AttachmentFixture>;
+  urls: ReturnType<typeof createPreviewAttachmentUrls>;
+}>();
+const revokedUrls = new Set<string>();
+const urlApi = {
+  createObjectURL: (blob: Blob) => URL.createObjectURL(blob),
+  revokeObjectURL: (url: string) => {
+    URL.revokeObjectURL(url);
+    revokedUrls.add(url);
+  },
+};
+function createGeneration() {
+  const state = {
+    fixture: createP1AttachmentFixture(publishedAssets),
+    urls: createPreviewAttachmentUrls(publishedAssets, urlApi),
+  };
+  liveGenerations.add(state);
+  return state;
+}
+function releaseGeneration(state: ReturnType<typeof createGeneration>) {
+  if (!liveGenerations.delete(state)) return;
+  state.urls.dispose();
+  state.fixture.dispose();
+}
+let generation = createGeneration();
 const transport = installPreviewResourceTransport({
   manifest: routeManifest,
-  createContext: attachmentFixture.createContext,
+  createContext: () => generation.fixture.createContext(),
 });
+function dispose() {
+  transport.dispose();
+  for (const state of [...liveGenerations]) releaseGeneration(state);
+  window.removeEventListener("pagehide", dispose);
+  mount.dataset.cleanup = "complete";
+  mount.dataset.revokedUrls = String(revokedUrls.size);
+  mount.dataset.liveGenerations = String(liveGenerations.size);
+}
+window.addEventListener("pagehide", dispose);
 // Framework imports can capture fetch once. Keep that function usable across reset.
 const moduleCapturedFetch = window.fetch;
 
@@ -229,7 +265,7 @@ void (async () => {
   if (foreignPost.status !== 404 || foreignPost.headers.get("Cache-Control") !== "private, no-store") {
     throw new Error("P1 published attachment leaked to unreferenced post");
   }
-  const nativeInline = attachmentUrls.resolve(publishedReference, "inline");
+  const nativeInline = generation.urls.resolve(publishedReference, "inline");
   const image = new Image();
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
@@ -239,7 +275,7 @@ void (async () => {
   if (image.naturalWidth !== 2 || image.naturalHeight !== 2) {
     throw new Error("P1 published native Blob image dimensions differ");
   }
-  const nativeDownload = attachmentUrls.resolve(publishedReference, "download");
+  const nativeDownload = generation.urls.resolve(publishedReference, "download");
   if (!nativeDownload.startsWith("blob:") || nativeDownload === nativeInline) {
     throw new Error("P1 published native Blob download URL mismatch");
   }
@@ -289,9 +325,11 @@ void (async () => {
     nextOperationList.status);
   // Reuse the same imported product handlers and installed transport with fresh
   // request-scoped attachment state; the cancelled operation must not bleed into it.
-  const resetFixture = createP1AttachmentFixture(publishedAssets);
+  const retiring = generation;
+  const replacement = createGeneration();
   const installedXhr = window.XMLHttpRequest;
-  transport.reset(routes, modules, resetFixture.createContext);
+  transport.reset(routes, modules, replacement.fixture.createContext);
+  generation = replacement;
   if (window.fetch !== moduleCapturedFetch || window.XMLHttpRequest !== installedXhr) {
     throw new Error("P1 reset replaced module-captured transport functions");
   }
@@ -310,8 +348,34 @@ void (async () => {
     || (await baselineAfterReset.arrayBuffer()).byteLength !== publishedBytes.byteLength) {
     throw new Error("P1 reset failed to use fresh published asset fixture");
   }
-  attachmentFixture.dispose();
   console.info("P1_RESET_RETAINED_FETCH_200", afterReset.status, baselineAfterReset.status);
+  // Finish any old image display and install the new generation's usable
+  // download href BEFORE revoking the old object URLs.
+  const nextInline = generation.urls.resolve(publishedReference, "inline");
+  const nextDownload = generation.urls.resolve(publishedReference, "download");
+  if (nextInline === nativeInline || nextDownload === nativeDownload) {
+    throw new Error("P1 reset reused an old generation Blob URL");
+  }
+  const nextImage = new Image();
+  await new Promise<void>((resolve, reject) => {
+    nextImage.onload = () => resolve();
+    nextImage.onerror = () => reject(new Error("P1 replacement Blob image failed"));
+    nextImage.src = nextInline;
+  });
+  if (nextImage.naturalWidth !== 2 || nextImage.naturalHeight !== 2) {
+    throw new Error("P1 replacement Blob image dimensions mismatch");
+  }
+  downloadLink.href = nextDownload;
+  image.removeAttribute("src");
+  nextImage.removeAttribute("src");
+  releaseGeneration(retiring);
+  if (!revokedUrls.has(nativeInline) || !revokedUrls.has(nativeDownload)
+    || revokedUrls.has(nextInline) || revokedUrls.has(nextDownload)
+    || liveGenerations.size !== 1) {
+    throw new Error("P1 reset did not retire only the previous Blob/fixture generation");
+  }
+  console.info("P1_ATTACHMENT_RESET_RESOURCE_LIFECYCLE",
+    revokedUrls.size, liveGenerations.size);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }
@@ -321,9 +385,7 @@ void (async () => {
   mount.appendChild(downloadLink);
   console.info("P1_ALL_MODULES_IMPORTED", modules.size);
 })().catch((error: unknown) => {
-  transport.dispose();
-  attachmentUrls.dispose();
-  attachmentFixture.dispose();
+  dispose();
   mount.dataset.status = "failed";
   mount.textContent = error instanceof Error ? error.stack ?? error.message : String(error);
   console.error("P1_IMPORT_FAILURE", error);

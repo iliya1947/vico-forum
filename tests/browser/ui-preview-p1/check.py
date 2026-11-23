@@ -45,6 +45,7 @@ with sync_playwright() as playwright:
     assert "P1_ATTACHMENT_PUBLISHED_READ_200 200 200 404 2 2" in logs, logs[-10:]
     assert "P1_ATTACHMENT_CANCEL_200 200 200 410 404 200" in logs, logs[-10:]
     assert "P1_RESET_RETAINED_FETCH_200 200 200" in logs, logs[-10:]
+    assert "P1_ATTACHMENT_RESET_RESOURCE_LIFECYCLE 2 1" in logs, logs[-10:]
     download_link = page.locator("#p1-published-download")
     assert (download_link.get_attribute("href") or "").startswith("blob:")
     with page.expect_download() as event:
@@ -53,6 +54,12 @@ with sync_playwright() as playwright:
     assert downloaded.suggested_filename == "p0-preview-swatch.png"
     file_bytes = Path(downloaded.path()).read_bytes()
     assert len(file_bytes) == 79 and file_bytes[:8] == b"\x89PNG\r\n\x1a\n", len(file_bytes)
+    # Dispose only after the download finished; both generation-scoped Blob
+    # URLs and all attachment fixtures must be released on page teardown.
+    page.evaluate("window.dispatchEvent(new Event('pagehide'))")
+    assert page.locator("#root").get_attribute("data-cleanup") == "complete"
+    assert page.locator("#root").get_attribute("data-revoked-urls") == "4"
+    assert page.locator("#root").get_attribute("data-live-generations") == "0"
     assert not errors, errors
     assert not external, external
     assert not unexpected_network, unexpected_network
