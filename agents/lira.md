@@ -30,3 +30,12 @@
 - Add only the targeted regression evidence needed to prove the corrected generic path and preserve the already accepted clientAction/resource behavior.
 - After the minimal fix: run applicable targeted checks + exact-head CI/browser evidence, then complete the **final P1 author self-check** and hand the stable exact P1 head to Mira.
 - Do not continue hunting for speculative gaps after this confirmed blocker is closed. Do not start P2, merge, deploy, rebase or stack-sync.
+
+
+## Execution rule for the active G4c assignment
+
+- **G4c is already authorized implementation work.** It is not waiting for another assignment or another coordinator decision.
+- When the developer activates Lira with `...` while this assignment is current, that activation means: **perform the next concrete implementation step now**. Do not answer by restating that G4c is open, that Lira remains the assignee, or that no changes have been made.
+- The next concrete step is to implement the minimal generic ordinary-screen-action request normalization in Draft #375, add the targeted regression, and run the applicable checks.
+- Only stop without changing #375 if an actual technical blocker is discovered that prevents the authorized fix. In that case report the blocker itself, not the assignment status.
+- After the fix and exact-head evidence, complete final P1 author self-check and hand the stable head to Mira. No additional coordinator confirmation is required before implementing G4c.
