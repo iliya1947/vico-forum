@@ -145,7 +145,7 @@ it("restores only the current owner/context/operation through the original draft
     expect(payload).not.toContain("objectKey");
     expect(payload).not.toContain(operationId);
     expect(payload).not.toContain(editorContext);
-    expect((await (await list()).json()).attachments).toHaveLength(1);
+    expect(await (await list()).json()).toEqual(JSON.parse(payload));
 
     const otherOperation = new Headers(headers);
     otherOperation.set("X-Vico-Operation-Id", "33333333-3333-4333-8333-333333333333");
