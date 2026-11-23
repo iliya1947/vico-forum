@@ -94,3 +94,10 @@ there are only N.
 - **Что произошло:** новый Playwright test сначала обращался к неуточнённому `form.visibility-hide-form`, хотя на странице одновременно были формы темы и сообщения. После исправления тест дважды делал вывод об unknown outcome по transient `fetcher.state=idle` сразу после click, до фактического завершения network request; из-за этого три промежуточных SA04-N запуска завершились ошибкой тестовой диагностики, не продукта.
 - **Почему ошибка:** DOM locator не был привязан к уже выбранной целевой форме; визуальный признак не был синхронизирован с authoritative Worker/Chromium request lifecycle. Промежуточный UI render не доказывает окончательного сетевого результата.
 - **Предотвращение:** повторные действия выполнять через scoped locator; для connected отказов ждать `requestfailed`/конкретный ответ и только затем проверять UI, PG state, History и количество POST. Итоговый `c0e5e693ccaf22e129d7e2a5cb518dbfb42035fd` подтвердил полный B8-C2 сценарий.
+
+
+## 2026-11-23 — B9 final-closeout missed stale stack base
+
+- **Что произошло:** B9 author self-check объявил финальный exact-head handoff готовым к fold на `108e0ba...`, сверив B8 diff только с accepted B7 и отметив current main как «unchanged», но не проверил merge-base всей stacked-цепочки против актуального `main`. Фактически стек всё ещё ответвлялся от `6fa2a43...` и был behind current main `9cff976...` на 5 commits; среди них #362/#363 меняют текущий PR-test contract и те же SA04-N/K5 workflow files, которые расширяет B8.
+- **Почему это ошибка:** из неизменности текущего main относительно последней service-проверки не следует, что feature head уже основан на этом main. Для final closeout требуется интеграционная готовность против актуального source-of-truth, особенно когда обе стороны меняют CI/acceptance seams.
+- **Предотвращение:** перед финальным closeout/fold stacked feature всегда проверять `merge-base`, ahead/behind относительно current main и overlap изменённых файлов; same-head green checks на старой базе не заменяют проверку интеграции с актуальным main.
