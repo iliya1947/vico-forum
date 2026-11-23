@@ -1,26 +1,11 @@
-# agents/leva.md — Task 6 current-main plan reconciliation
+# agents/leva.md — Task6 plan reconciliation complete
 
-## Goal
+2026-11-23: полный accepted S0–S10 восстановлен из `8181645:USER_ACTIONS_SERVICE_PLAN.md` (1508–1946) и адаптирован к main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Канонический файл — stages/forum-structure/PLAN.md; компактная миграционная запись заменена.
 
-Make the already accepted forum-structure/topic-move S0–S10 plan implementation-ready on current main. Do not redesign the feature from scratch.
+S-P1–S-P4/S-T1/S-T2 приняты ранее, не спрашивать повторно. В полном исходном S2.6 уже требуются move+visibility authority для hidden ordinary topic: это найденное основание, не новая policy. Новый конкретный seam: source-free TopicMoveContextReader/private move route, inline shared form/picker из public/Admin без editor unmount; hidden inspector entry guarded обоими ключами. Canonical move POST проверяет actual hidden state под topic lock, не public reader/includeHidden.
 
-## Baseline
+Сохранены structure singleton→topic/containers→actor→History, global CAS/location-version ABA, bigint strings, current-section receipt replay без actor→topic lock, neutral topic.moved label, original Admin→Owner forum.structure events/coverage, accepted snapshots/ACL/state/acceptance. F1→F7 в S8. PG17 NKU/KEY SHARE/isolation основания сверены по official docs; runtime races новой функции ещё не выполнялись.
 
-- main `a3dae5815e26d158c566a27c552127b4b1ab29aa`
-- accepted plan: `stages/forum-structure/PLAN.md`
-- task: create/rename ordinary categories/sections, sibling Up/Down order, section reparent, ordinary topic move; no delete/archive/merge/bulk; ordinary↔Help conversion forbidden.
+Авторский planning self-check выполнен. Code/schema/deps/tests/CI/deploy/implementation PR не начинались. Следующая Мира — scope/fit reconciliation + delivery-mode/исполнитель/F1 assignment; Лёва STOP. Owner разрешил дальнейшую implementation роль Лёвы, но текущий gate остаётся planning. Если буду реализатором, independent reviewer — другой не участвовавший агент.
 
-## Required reconciliation
-
-Independently verify current main and preserve accepted plan unless a real conflict exists.
-
-Explicitly resolve the post-visibility seam:
-- ordinary/public-safe topic readers intentionally do not expose hidden topic source;
-- topic move must not weaken that boundary;
-- determine the correct protected targeting/presentation path for a hidden ordinary topic if it is movable under the accepted scope;
-- preserve `is_hidden`, visibility state and all retained domain/personal state;
-- recheck actual move×Hide/Restore lock ordering/races.
-
-Also revalidate the already accepted current-section publication-receipt replay and Owner `forum.structure` History projection against actual current code.
-
-Deliver the final implementation-ready technical plan/amendment with bounded stages, dependencies and done criteria. Then STOP for Mira delivery-mode decision. Do not implement yet.
+Task5 #355 +docs#378 завершены в main, VIS-FINAL-LEVA-01/02 CLOSED. Не возвращаться к ним без нового основания. #342 единственный канал; #300/Stage6/general UI/UX не активировать.
