@@ -19,7 +19,7 @@ V-P1/V-P2/V-P3 **ACCEPTED**, V-T1/V-T2 technical fit **PASS**. Полный пл
 
 Moderation visibility реализуется stacked-лестницей B1→B9. B1 открывается от `main`, каждый следующий bounded PR — от head-ветки предыдущего. Промежуточные PR не merge в `main`. После B9 итоговый head всей лестницы переносится в ветку B1; B2–B9 закрываются как superseded. Собранный B1 становится единым feature PR и проходит final author self-check → Mira whole-feature review → Leva independent review того же exact head → owner merge; затем отдельный docs closeout.
 
-B1–B9 собраны в #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`. После Mira whole-feature PASS независимый review Лёвы — **HOLD, VIS-FINAL-LEVA-01/02 [P2]**. Полный результат и критерии correction: `stages/moderation-visibility/REVIEW.md`; текущий handoff — WORKFLOW.md. Следующая Мира для reconciliation/correction route. Нового product re-approval не требуется; implementation ещё не merged.
+B1–B9 собраны в #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`. После correction fresh Mira whole-feature PASS и Leva independent whole-feature PASS относятся к одному head. VIS-FINAL-LEVA-01/02 CLOSED; полный итог — `stages/moderation-visibility/REVIEW.md`, текущий маршрут — WORKFLOW.md. Следующее действие — owner merge после снятия Draft, затем отдельное назначение docs closeout. Implementation пока не merged.
 
 ## 4. Последний продуктовый этап — forum structure/topic move
 
