@@ -255,7 +255,7 @@ describe("generic P0 resource request dispatch", () => {
       ["root", { default: () => null }],
       ["routes/locale-negotiation", actualLocaleNegotiation],
       ["routes/locale-boundary", { default: () => null }],
-      ["routes/redirect-get", { loader: () => redirect("target?from=jump", {
+      ["routes/redirect-get", { loader: () => redirect("/en/target?from=jump", {
         status: 302, headers: { "X-Redirect-Only": "source" },
       }) }],
       ["routes/redirect-post", { action: () => redirect("/en/target", { status: 307 }) }],
@@ -294,7 +294,7 @@ describe("generic P0 resource request dispatch", () => {
         redirect: "manual",
       });
       expect(manual.status).toBe(302);
-      expect(manual.headers.get("Location")).toBe("target?from=jump");
+      expect(manual.headers.get("Location")).toBe("/en/target?from=jump");
       expect(manual.headers.get("X-Redirect-Only")).toBe("source");
 
       await expect(window.fetch(window.location.origin + "/en/jump", {
