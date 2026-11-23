@@ -17,7 +17,6 @@ function ids(route: typeof routeManifest): string[] {
 const routeIds = ids(routeManifest);
 const transport = installPreviewResourceTransport({
   manifest: routeManifest,
-  resourceIds: [],
   createContext: () => new RouterContextProvider(),
 });
 
@@ -37,6 +36,12 @@ void (async () => {
   }
   const routes = createPreviewDataRoutes(routeManifest, modules);
   transport.configure(routes, modules);
+  // Real catch-all module: prove HTTP interception with no Pages/backend fetch.
+  const unknownApi = await fetch(new URL("/api/vico-preview-resource-probe", window.location.origin));
+  if (unknownApi.status !== 404) {
+    throw new Error("P1 resource dispatch returned unexpected HTTP " + unknownApi.status);
+  }
+  console.info("P1_RESOURCE_DISPATCH_404", unknownApi.status);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }

@@ -64,15 +64,15 @@ export function installPreviewResourceTransport({
   manifest, resourceIds, createContext, host = window,
 }: {
   manifest: PreviewRouteDescriptor;
-  resourceIds: readonly string[];
+  resourceIds?: readonly string[];
   createContext: ContextFactory;
   host?: Window & typeof globalThis;
 }) {
   const originalFetch = host.fetch;
   const originalBoundFetch = originalFetch.bind(host);
   const paths = [routePaths(manifest)];
-  const ids = new Set(resourceIds);
-  if (ids.size !== resourceIds.length) throw new Error("Duplicate P0 resource route ID");
+  const ids = new Set(resourceIds ?? []);
+  if (resourceIds && ids.size !== resourceIds.length) throw new Error("Duplicate P0 resource route ID");
 
   let handler: StaticHandler | null = null;
   let modules: ResourceModules | null = null;
@@ -142,6 +142,16 @@ export function installPreviewResourceTransport({
   return {
     configure(routes: RouteObject[], loaded: ResourceModules) {
       if (closed || handler) throw new Error("P0 resource transport already initialized or disposed");
+      // P0 may select a bounded proof subset; the full P1 registry derives all
+      // resource modules from the same original exports used by the Data Router.
+      if (resourceIds === undefined) {
+        for (const [id, module] of loaded) {
+          if (typeof module.default !== "function"
+            && (typeof module.loader === "function" || typeof module.action === "function")) {
+            ids.add(id);
+          }
+        }
+      }
       for (const id of ids) {
         const module = loaded.get(id);
         if (!module || typeof module.default === "function"

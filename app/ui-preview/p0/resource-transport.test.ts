@@ -4,6 +4,10 @@ import {
   createContext, RouterContextProvider, type RouteObject,
 } from "react-router";
 import { installPreviewResourceTransport, resourceResponse } from "./resource-transport";
+import { createPreviewDataRoutes } from "./route-adapter";
+import { createP0Context } from "./fixture";
+import * as actualApiRoute from "../../routes/api";
+import * as actualPresenceRoute from "../../routes/presence";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
 
 const manifest: PreviewRouteDescriptor = {
@@ -81,6 +85,50 @@ describe("generic P0 resource request dispatch", () => {
       adapter.dispose();
     }
     expect(window.fetch).toBe(ordinaryFetch);
+  });
+
+
+  it("auto-discovers original resource exports from generated routes without a URL allowlist", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/api", file: "routes/api.ts", path: "api/*" },
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/topic", file: "routes/topic.tsx", path: "topics/:topicId" },
+            { id: "routes/presence", file: "routes/presence.ts", path: "presence" },
+          ],
+        },
+      ],
+    };
+    const originalModules = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/api", actualApiRoute],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/topic", { default: () => null, loader: () => ({ id: "topic" }) }],
+      ["routes/presence", actualPresenceRoute],
+    ]);
+    const originalFetch = vi.fn(async () => Response.json({ native: true }));
+    window.fetch = originalFetch;
+    const installed = installPreviewResourceTransport({
+      manifest: all, createContext: createP0Context, host: window,
+    });
+    try {
+      installed.configure(createPreviewDataRoutes(all, originalModules), originalModules);
+      const missing = await window.fetch(window.location.origin + "/api/not-registered");
+      expect(missing.status).toBe(404);
+      const presence = await window.fetch(window.location.origin + "/en/presence", {
+        method: "POST", body: new URLSearchParams({ intent: "heartbeat" }),
+      });
+      expect(presence.status).toBe(204);
+      expect(presence.headers.get("Cache-Control")).toBe("no-store");
+      expect(originalFetch).not.toHaveBeenCalled();
+
+      const asset = await window.fetch(window.location.origin + "/static/example.css");
+      expect(asset.status).toBe(200);
+      expect(originalFetch).toHaveBeenCalledOnce();
+    } finally {
+      installed.dispose();
+    }
   });
 
   it("retains responses and typed data status/headers without a fake 200", async () => {
