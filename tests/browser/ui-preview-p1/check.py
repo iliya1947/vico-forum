@@ -99,8 +99,20 @@ with sync_playwright() as playwright:
     with context.expect_page() as new_tab_event:
         profile_link.click(button="middle")
     new_tab = new_tab_event.value
+    profile_logs = []
+    new_tab.on("console", lambda message: profile_logs.append(message.text))
     new_tab.wait_for_load_state("domcontentloaded")
     assert parse_qs(urlparse(new_tab.url).query)["path"] == ["/en/users/sample-author"]
+    # A real product Link must initialize the complete generated route tree.
+    # P2 will supply profile capabilities; until then a normal route-level
+    # failure is permitted but the P1 bootstrap must not reject this route.
+    new_tab.wait_for_function("""() => ["complete", "route-error", "failed"].includes(
+      document.querySelector("#root")?.dataset.status
+    )""", timeout=30000)
+    assert new_tab.locator("#root").get_attribute("data-status") != "failed", profile_logs[-15:]
+    assert any(line == "P1_FULL_ROUTER_MOUNTED root,routes/locale-boundary,routes/profile"
+               for line in profile_logs), profile_logs[-15:]
+    assert not any(line.startswith("P1_IMPORT_FAILURE") for line in profile_logs), profile_logs[-15:]
     new_tab.close()
     page.evaluate("window.history.back()")
     page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", arg=initial_path)

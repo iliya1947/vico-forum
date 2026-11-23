@@ -412,8 +412,11 @@ void (async () => {
     initialEntries: [initialEntry],
     getContext: () => generation.fixture.createContext(),
   });
-  if (fullRouter.state.matches.at(-1)?.route.id !== "routes/topic") {
-    throw new Error("P1 generated Data Router did not match the original topic route");
+  // A valid generated route must be allowed to initialize even if its
+  // P2-only fixture capability is not yet configured. Route error handling
+  // belongs to the original product ErrorBoundary, not preview bootstrap.
+  if (fullRouter.state.matches.length === 0) {
+    throw new Error("P1 generated Data Router returned no route matches");
   }
   activeRouter = fullRouter;
   activePagesAdapter = installPagesLocationAdapter(fullRouter, { codec });
