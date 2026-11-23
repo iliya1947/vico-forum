@@ -33,25 +33,20 @@
 
 ## Текущий этап
 
-Этап 13 — финальный whole-system recheck current-based Task 1 drafts завершён.
+Этап 14 — два Project finding из independent review проверены независимо.
 
-Evidence: `research/task1-final-whole-system-recheck.md`.
+Результат: `research/project-review-findings-verification.md`.
 
-Exact drafts:
-- User `a6f16c64a68ebf372a4a6bb3ff146112463e7d68`;
-- Project `8cdf099aa3ecd0c1bbd295cbbba1353cca327995`;
-- AGENTS `3505f50d275e7e938575fa366bd6f00d1e4c9972`.
+Подтверждено:
+- **2 semantic regressions** в `PROJECT_INSTRUCTIONS.draft.md`;
+- удалённый unconditional goal guard шире surviving AGENTS Logic trigger;
+- удалённый mandatory pre-answer context/interpretation checkpoint не имеет эквивалентного every-answer coverage в AGENTS;
+- User draft этим review не затронут;
+- AGENTS draft этим review не затронут;
+- предыдущий финальный whole-system PASS **INVALIDATED**.
 
-Итог от current baseline:
-- chars: 22363 → 18945 (**-15.28%**);
-- words: 2837 → 2412 (**-14.98%**);
-- numbered rules: 97 → 97;
-- новых требований: 0;
-- confirmed semantic regressions: 0;
-- новых cross-layer conflicts: 0;
-- confirmed remaining delete-safe duplicates: 0 under current layer architecture.
+Статус Task 1: **HOLD**.
 
-Task 1 compression/fix-pass завершён на уровне exact drafts.
-Реальные User/Project Instructions и `main:AGENTS.md` не изменены.
+На этом bounded-этапе drafts не изменялись.
 
-Следующий bounded-этап: показать разработчику exact финальные drafts для решения; Task 2 с новыми интеллектуально-логическими улучшениями остаётся отложенной.
+Следующий bounded-этап: локально восстановить в `PROJECT_INSTRUCTIONS.draft.md` оба исходных Project guards в компактной семантически эквивалентной форме и затем проверить exact diff/coverage.
