@@ -153,13 +153,13 @@ describe("P1 clientAction/serverAction and fetcher request-scope identity", () =
       context.set(requestId, ++sequence);
       return context;
     };
-    const requireScopedId = (context: RouterContextProvider) => {
+    const requireScopedId = (context: Readonly<RouterContextProvider>) => {
       const id = context.get(requestId);
       expect(context.get(middlewareId)).toBe(id);
       return id;
     };
     const loaderIds: number[] = [];
-    const clients: RouterContextProvider[] = [];
+    const clients: Array<ClientActionFunctionArgs["context"]> = [];
     const servers: RouterContextProvider[] = [];
     const fetcherIds: number[] = [];
     const modules = new Map<string, Record<string, unknown>>([
