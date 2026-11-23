@@ -26,6 +26,11 @@ export function createPreviewDataRoutes(
       return null;
     }
     used.add(descriptor.id);
+    // Framework clientLoader has no direct Data Router export; dropping it would
+    // silently change the production loader contract.
+    if (module.clientLoader !== undefined) {
+      throw new Error("UI preview cannot adapt Framework clientLoader: " + descriptor.id);
+    }
     const hasComponent = typeof module.default === "function";
     const isResource = !hasComponent && !children.length
       && (typeof module.loader === "function" || typeof module.action === "function");

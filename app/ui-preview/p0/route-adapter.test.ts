@@ -43,6 +43,16 @@ describe("P0 generated Data Router adaptation", () => {
     expect((locale as RouteObject & { children: RouteObject[] }).children).toHaveLength(2);
   });
 
+  it("rejects a Framework clientLoader rather than silently running only the server loader", () => {
+    const modules = fixtures();
+    modules.set("routes/topic", {
+      default: dummy, loader: fakeLoader,
+      clientLoader: async () => ({ source: "browser" }),
+    });
+    expect(() => createPreviewDataRoutes(manifest, modules))
+      .toThrow("UI preview cannot adapt Framework clientLoader: routes/topic");
+  });
+
   it("does not silently replace missing ancestor routes or foreign modules", () => {
     const modules = fixtures();
     modules.delete("routes/locale-boundary");
