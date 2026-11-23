@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  createContext, RouterContextProvider, type RouteObject,
+  createContext, redirect, RouterContextProvider, type RouteObject,
 } from "react-router";
 import { installPreviewResourceTransport, resourceResponse } from "./resource-transport";
 import { createPreviewDataRoutes } from "./route-adapter";
 import { createP0Context } from "./fixture";
 import * as actualApiRoute from "../../routes/api";
 import * as actualPresenceRoute from "../../routes/presence";
+import * as actualLocaleNegotiation from "../../routes/locale-negotiation";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
 
 const manifest: PreviewRouteDescriptor = {
@@ -232,6 +233,106 @@ describe("generic P0 resource request dispatch", () => {
       adapter.dispose();
     }
     expect(window.fetch).toBe(nativeFetch);
+  });
+
+  it("preserves original redirect Location/headers and handles P1 fetch redirect modes locally", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/locale-negotiation", file: "routes/locale-negotiation.ts", index: true },
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/redirect-get", file: "routes/redirect-get.ts", path: "jump" },
+            { id: "routes/redirect-post", file: "routes/redirect-post.ts", path: "submit" },
+            { id: "routes/target", file: "routes/target.ts", path: "target" },
+            { id: "routes/external", file: "routes/external.ts", path: "external" },
+            { id: "routes/loop", file: "routes/loop.ts", path: "loop" },
+            { id: "routes/presence", file: "routes/presence.ts", path: "presence" },
+          ],
+        },
+      ],
+    };
+    const originals = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/locale-negotiation", actualLocaleNegotiation],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/redirect-get", { loader: () => redirect("target?from=jump", {
+        status: 302, headers: { "X-Redirect-Only": "source" },
+      }) }],
+      ["routes/redirect-post", { action: () => redirect("/en/target", { status: 307 }) }],
+      ["routes/target", {
+        loader: ({ request }: { request: Request }) => Response.json({
+          method: request.method,
+          query: new URL(request.url).search,
+        }, { headers: { "X-Target": "loaded" } }),
+        action: async ({ request }: { request: Request }) => Response.json({
+          method: request.method,
+          trace: request.headers.get("X-Trace"),
+          origin: request.headers.get("Origin"),
+          marker: (await request.formData()).get("marker"),
+        }, { headers: { "X-Target": "posted" } }),
+      }],
+      ["routes/external", { loader: () => redirect("https://outside.example.invalid/sink") }],
+      ["routes/loop", { loader: () => redirect("/en/loop") }],
+      ["routes/presence", actualPresenceRoute],
+    ]);
+    const nativeFetch = vi.fn(async () => { throw new Error("Unexpected Pages/backend request"); });
+    window.fetch = nativeFetch;
+    const adapter = installPreviewResourceTransport({
+      manifest: all, createContext: createP0Context, host: window,
+    });
+    try {
+      adapter.configure(createPreviewDataRoutes(all, originals), originals);
+
+      const negotiated = await window.fetch(window.location.origin + "/?from=root", {
+        headers: { Cookie: "vico_locale=en" }, redirect: "manual",
+      });
+      expect(negotiated.status).toBe(307);
+      expect(negotiated.headers.get("Location")).toBe("/en/?from=root");
+      expect(negotiated.headers.get("Cache-Control")).toBe("no-store");
+
+      const manual = await window.fetch(window.location.origin + "/en/jump", {
+        redirect: "manual",
+      });
+      expect(manual.status).toBe(302);
+      expect(manual.headers.get("Location")).toBe("target?from=jump");
+      expect(manual.headers.get("X-Redirect-Only")).toBe("source");
+
+      await expect(window.fetch(window.location.origin + "/en/jump", {
+        redirect: "error",
+      })).rejects.toThrow(/redirect denied/);
+
+      const followed = await window.fetch(window.location.origin + "/en/jump");
+      expect(followed.status).toBe(200);
+      expect(followed.headers.get("X-Target")).toBe("loaded");
+      expect(followed.headers.get("X-Redirect-Only")).toBeNull();
+      expect(await followed.json()).toEqual({ method: "GET", query: "?from=jump" });
+
+      const post = await window.fetch(window.location.origin + "/en/submit", {
+        method: "POST", body: new URLSearchParams({ marker: "kept" }),
+        headers: { "X-Trace": "request-header" },
+      });
+      expect(post.status).toBe(200);
+      expect(post.headers.get("X-Target")).toBe("posted");
+      expect(await post.json()).toEqual({
+        method: "POST", trace: "request-header",
+        origin: window.location.origin, marker: "kept",
+      });
+
+      const deniedOrigin = await window.fetch(window.location.origin + "/en/presence", {
+        method: "POST", body: new URLSearchParams({ intent: "heartbeat" }),
+        headers: { Origin: "https://outside.example.invalid" },
+      });
+      expect(deniedOrigin.status).toBe(403);
+      expect(deniedOrigin.headers.get("Cache-Control")).toBe("no-store");
+
+      await expect(window.fetch(window.location.origin + "/en/external"))
+        .rejects.toThrow(/external fetch denied/);
+      await expect(window.fetch(window.location.origin + "/en/loop"))
+        .rejects.toThrow(/redirect limit exceeded/);
+      expect(nativeFetch).not.toHaveBeenCalled();
+    } finally {
+      adapter.dispose();
+    }
   });
 
   it("retains responses and typed data status/headers without a fake 200", async () => {

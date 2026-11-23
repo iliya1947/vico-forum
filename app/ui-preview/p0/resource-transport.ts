@@ -113,9 +113,15 @@ export function installPreviewResourceTransport({
     return result;
   }
 
-  const wrapped: typeof fetch = async (input, init) => {
-    if (closed) return originalBoundFetch(input, init);
-    const request = new Request(input, init);
+  // The in-process queryRoute Response does not apply native fetch redirect modes.
+  // Re-dispatch follow-up requests locally, never to Pages or an external backend.
+  async function dispatch(
+    request: Request,
+    suppliedOrigin: string | null,
+    redirectCount: number,
+    nativeFetch: () => Promise<Response>,
+  ): Promise<Response> {
+    if (closed) throw new Error("P1 resource transport disposed");
     const url = new URL(request.url);
     // No external service may be called from the synthetic preview.
     if (url.origin !== host.location.origin) {
@@ -132,7 +138,7 @@ export function installPreviewResourceTransport({
     if (resourceIds === undefined && !concreteMatch
       && (request.method === "GET" || request.method === "HEAD")
       && /\/[^/]+\.[^/.]+$/u.test(url.pathname)) {
-      return originalBoundFetch(input, init);
+      return nativeFetch();
     }
     if (!handler && resourceIds === undefined && concreteMatch) {
       throw new Error("P1 application fetch before resource transport configured: " + url.pathname);
@@ -148,11 +154,47 @@ export function installPreviewResourceTransport({
         console.info("P0_UNBUNDLED_API_BLOCKED", request.method, url.pathname);
         throw new Error("P0 application API route is not bundled: " + url.pathname);
       }
-      return originalBoundFetch(input, init);
+      return nativeFetch();
     }
+    // Preserve P0's original response contract; P1 adds fetch redirect modes.
+    const replay = resourceIds === undefined && request.redirect === "follow"
+      && request.body !== null ? request.clone() : null;
+    const result = await execute(request, id, suppliedOrigin);
+    const location = result.headers.get("Location");
+    if (resourceIds !== undefined || !location
+      || ![301, 302, 303, 307, 308].includes(result.status)) return result;
+    if (request.redirect === "manual") return result;
+    if (request.redirect === "error") throw new TypeError("P1 resource fetch redirect denied");
+    if (redirectCount >= 20) throw new TypeError("P1 resource fetch redirect limit exceeded");
+
+    const target = new URL(location, request.url);
+    if (target.origin !== host.location.origin) {
+      throw new Error("P0 external fetch denied: " + target.origin);
+    }
+    const toGet = (result.status === 303 && request.method !== "HEAD")
+      || ([301, 302].includes(result.status) && request.method === "POST");
+    const headers = new Headers(request.headers);
+    if (toGet) {
+      headers.delete("Content-Type");
+      headers.delete("Content-Length");
+    }
+    const next = new Request(target, {
+      method: toGet ? "GET" : request.method,
+      headers,
+      body: toGet || request.method === "GET" || request.method === "HEAD" ? null : replay?.body,
+      signal: request.signal,
+      redirect: request.redirect,
+      duplex: "half",
+    } as RequestInit);
+    return dispatch(next, suppliedOrigin, redirectCount + 1, () => originalBoundFetch(next));
+  }
+
+  const wrapped: typeof fetch = async (input, init) => {
+    if (closed) return originalBoundFetch(input, init);
+    const request = new Request(input, init);
     const suppliedOrigin = init?.headers ? new Headers(init.headers).get("Origin")
       : input instanceof Request ? input.headers.get("Origin") : null;
-    return execute(request, id, suppliedOrigin);
+    return dispatch(request, suppliedOrigin, 0, () => originalBoundFetch(input, init));
   };
   host.fetch = wrapped;
 
