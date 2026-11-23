@@ -132,7 +132,8 @@ describe("F5-C3 canonical Move revalidation preserves mounted Editor 2.0 state",
       expect(view.container.querySelector<HTMLTextAreaElement>('.topic-post-edit-form textarea')).toBe(postNode);
       expect(postNode.value).toContain("Unsent post correction");
       if(replyFile)expect(view.container.querySelector('.topic-reply-form input[type="file"]')).toBe(replyFile);
-      expect(view.container.querySelector<HTMLAnchorElement>('a[href="/en/sections/destination"]')).not.toBeNull();
+      await waitFor(()=>expect(view.container.querySelector<HTMLAnchorElement>('a[href="/en/sections/destination"]')).not.toBeNull());
+      expect(loader.mock.calls.length).toBeGreaterThan(1);
     }finally{router.dispose();}
   });
 });
