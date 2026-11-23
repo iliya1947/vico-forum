@@ -186,12 +186,14 @@ void (async () => {
     throw new Error("P1 published native Blob image dimensions differ");
   }
   const nativeDownload = attachmentUrls.resolve(publishedReference, "download");
-  const nativeBytes = new Uint8Array(await (await fetch(nativeDownload)).arrayBuffer());
-  if (nativeBytes.length !== publishedBytes.length
-    || nativeBytes.some((byte, index) => byte !== publishedBytes[index])) {
-    throw new Error("P1 published native Blob download mismatch");
+  if (!nativeDownload.startsWith("blob:") || nativeDownload === nativeInline) {
+    throw new Error("P1 published native Blob download URL mismatch");
   }
-  attachmentUrls.dispose();
+  const downloadLink = document.createElement("a");
+  downloadLink.id = "p1-published-download";
+  downloadLink.href = nativeDownload;
+  downloadLink.download = P0_ATTACHMENT_NAME;
+  downloadLink.textContent = "P1 published attachment download proof";
   console.info("P1_ATTACHMENT_PUBLISHED_READ_200", publicFile.status, inlineFile.status,
     foreignPost.status, image.naturalWidth, image.naturalHeight);
   if (modules.size !== routeIds.length) {
@@ -200,6 +202,7 @@ void (async () => {
   mount.dataset.status = "complete";
   mount.dataset.routes = String(modules.size);
   mount.textContent = "Imported original modules: " + modules.size;
+  mount.appendChild(downloadLink);
   console.info("P1_ALL_MODULES_IMPORTED", modules.size);
 })().catch((error: unknown) => {
   transport.dispose();

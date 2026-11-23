@@ -1,6 +1,7 @@
 """P1 browser proof: dynamically import every real Framework route module."""
 import argparse
 import json
+from pathlib import Path
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
@@ -41,6 +42,14 @@ with sync_playwright() as playwright:
     assert any(line.startswith("P1_ATTACHMENT_UPLOAD_201 201 ") for line in logs), logs[-10:]
     assert "P1_ATTACHMENT_PRIVATE_READ_200 200 404" in logs, logs[-10:]
     assert "P1_ATTACHMENT_PUBLISHED_READ_200 200 200 404 2 2" in logs, logs[-10:]
+    download_link = page.locator("#p1-published-download")
+    assert (download_link.get_attribute("href") or "").startswith("blob:")
+    with page.expect_download() as event:
+        download_link.click()
+    downloaded = event.value
+    assert downloaded.suggested_filename == "p0-preview-swatch.png"
+    file_bytes = Path(downloaded.path()).read_bytes()
+    assert len(file_bytes) == 79 and file_bytes[:8] == b"\x89PNG\r\n\x1a\n", len(file_bytes)
     assert not errors, errors
     assert not external, external
     assert not unexpected_network, unexpected_network

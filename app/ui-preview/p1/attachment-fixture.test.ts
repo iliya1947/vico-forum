@@ -161,8 +161,16 @@ it("publishes baseline image bytes through the original public loader and shared
     expect(attachmentUrls.resolve(reference, "inline")).toBe("blob:preview-public-1");
     expect(attachmentUrls.resolve(reference, "download")).toBe("blob:preview-public-2");
     expect(created.map(blob => blob.type)).toEqual(["image/png", "application/octet-stream"]);
-    expect([...new Uint8Array(await created[0].arrayBuffer())]).toEqual([...bytes]);
-    expect([...new Uint8Array(await created[1].arrayBuffer())]).toEqual([...bytes]);
+    async function readBlob(blob: Blob): Promise<Uint8Array> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsArrayBuffer(blob);
+      });
+    }
+    expect([...await readBlob(created[0])]).toEqual([...bytes]);
+    expect([...await readBlob(created[1])]).toEqual([...bytes]);
   } finally {
     attachmentUrls.dispose();
     environment.dispose();
