@@ -42,6 +42,28 @@ void (async () => {
     throw new Error("P1 resource dispatch returned unexpected HTTP " + unknownApi.status);
   }
   console.info("P1_RESOURCE_DISPATCH_404", unknownApi.status);
+  // Browser-native File/XHR, using the real generated API catch-all action.
+  // A 404 is expected; any native Pages request is forbidden by Chromium smoke.
+  const uploaded = new File(["preview upload"], "notes.txt", { type: "text/plain" });
+  const xhr = await new Promise<{ status: number; progress: number; text: string }>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    let progress = 0;
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) progress = event.loaded;
+    };
+    request.onload = () => resolve({
+      status: request.status, progress, text: request.responseText,
+    });
+    request.onerror = () => reject(new Error("P1 XHR/File local dispatch failed"));
+    request.open("POST", "/api/vico-preview-xhr-upload-probe");
+    request.responseType = "text";
+    request.setRequestHeader("Content-Type", uploaded.type);
+    request.send(uploaded);
+  });
+  if (xhr.status !== 404 || xhr.text !== "Not Found" || xhr.progress !== uploaded.size) {
+    throw new Error("P1 XHR/File request contract mismatch: " + JSON.stringify(xhr));
+  }
+  console.info("P1_XHR_FILE_DISPATCH_404", xhr.status, xhr.progress);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }

@@ -37,6 +37,7 @@ with sync_playwright() as playwright:
     assert count > 0, count
     assert any(line == "P1_ALL_MODULES_IMPORTED " + str(count) for line in logs), logs[-10:]
     assert "P1_RESOURCE_DISPATCH_404 404" in logs, logs[-10:]
+    assert any(line.startswith("P1_XHR_FILE_DISPATCH_404 404 ") for line in logs), logs[-10:]
     assert not errors, errors
     assert not external, external
     assert not unexpected_network, unexpected_network

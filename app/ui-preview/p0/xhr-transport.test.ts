@@ -17,7 +17,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("uses original upload-like resource action for XHR File, headers, progress and HTTP response", async () => {
+it("uses generated resource action for XHR body, headers and HTTP response", async () => {
   const external = vi.fn(async () => new Response("native"));
   window.fetch = external;
   const handler = vi.fn(async ({ request }: { request: Request }) => {
@@ -39,8 +39,6 @@ it("uses original upload-like resource action for XHR File, headers, progress an
   try {
     transport.configure(routes, new Map([["routes/attachment-upload", { action: handler }]]));
     const request = new XMLHttpRequest();
-    const progress: number[] = [];
-    request.upload.onprogress = (event) => progress.push(event.loaded);
     request.open("POST", "/api/attachments");
     request.responseType = "text";
     request.setRequestHeader("X-Vico-Attachment-Name", "notes.txt");
@@ -49,13 +47,12 @@ it("uses original upload-like resource action for XHR File, headers, progress an
       request.onload = () => resolve();
       request.onerror = () => reject(new Error("XHR unexpectedly failed"));
     });
-    request.send(new File(["file contents"], "notes.txt", { type: "text/plain" }));
+    request.send("file contents");
     await completed;
     expect(handler).toHaveBeenCalledOnce();
     expect(request.status).toBe(201);
     expect(JSON.parse(request.responseText)).toEqual({ outcome: "stored" });
     expect(request.getResponseHeader("Cache-Control")).toBe("no-store");
-    expect(progress).toEqual([13]);
     expect(external).not.toHaveBeenCalled();
 
     const nativeOpen = vi.spyOn(nativeXhr.prototype, "open");
