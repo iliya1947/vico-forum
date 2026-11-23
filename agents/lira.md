@@ -1,15 +1,8 @@
-# agents/lira.md — Task 6 / F5 ACTIVE
+# agents/lira.md — Task 6 / F5-А author microcheckpoint PASS; STOP
 
-- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- F1/F2/F3/F4 have Mira coordinator PASS and remain Draft/unmerged.
-- Accepted F4 exact: `18627a8c53a6db681a7f4f278b88fcdd55f579c1`.
-- Current assignment: **implement F5 only** from `stages/forum-structure/PLAN.md` S7/S7.1/S8.
-- Create a separate stacked Draft PR with base `feat/forum-structure-f4` exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`.
-- F5 scope: Admin structure forms; shared topic Move control/form and canonical POST dispatch; stale/conflict/unknown/fresh verification; editor-lifetime preservation; EN/RU/HE/accessibility; existing original Admin structural History projected into Owner `forum.structure` monitoring/history without duplicate journal.
-- Preserve F1–F4 authority/read/privacy contracts. Hidden source must not leak; mixed intents must not fall through to publication or visibility actions.
-- Prove F5 Done from PLAN with real handler/form negative paths, stable mounted editors/undo/uploads, actor/target response isolation and truthful single-source Owner History projection.
-- Do **not** start F6 final assembly/whole-feature acceptance.
-- After author self-check + applicable exact-head checks: STOP → Mira F5 coordinator checkpoint.
-- Do not merge stack stages.
-- Final independent whole-feature Codex reviewer remains Mark because Leva participated in earlier implementation stages.
-- #342 is the only service channel; #300/Stage6/general UI/UX/deploy remain inactive.
+- Current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`; F1–F4 coordinator PASS, accepted F4 `18627a8c53a6db681a7f4f278b88fcdd55f579c1`, Draft #382 unmerged.
+- Current stacked [Draft F5 PR #383](https://github.com/iliya1947/vico-forum/pull/383), base `feat/forum-structure-f4`, exact `6d526f8520e78450b995be4561f996b09d11f610`, open/unmerged.
+- F5-А micro: Admin index create-category action+form over F2 `StructureWriter`; strict actor/session/Origin/permission/CAS/fields with private-no-store response, request-scoped Worker writer adapter, EN/RU/HE translations+valid hashes, route/DOM tests. 11 scoped files.
+- [CI 45274600503](https://github.com/iliya1947/vico-forum/actions/runs/45274600503) exact SHA `checks` and `database` SUCCESS, 9/9 manual translation fingerprints verified. Only F5-А done; **F5 whole feature not done**.
+- **STOP now.** With next developer `...`, implement F5-Б: remaining category/section create/rename/reorder/reparent forms over existing F2 writers, targeted tests and internal micro STOP. Later separate Move canonical POST+direct/inline UI/editor lifetime, Owner `forum.structure` original History, and final F5 author checks → Mira coordinator checkpoint.
+- No F6, merge, docs, #300, Stage6 or deployment. Mark remains final independent whole-feature Codex reviewer owing to Leva involvement.
