@@ -2,29 +2,33 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — Leva independent whole-feature review HOLD: два current-feature finding P2.**
+**Moderation visibility assembled #355 — final review correction assigned to Лира; HOLD.**
 
-Проверен exact head `fdad1930fc68a854d52bee31922f923be5c1c751` против current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. Head/base повторно подтверждены при завершении review; implementation остаётся open/Draft/unmerged.
+Stable reviewed head remains `fdad1930fc68a854d52bee31922f923be5c1c751` against current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Mira whole-feature Parts 1–4 ранее PASS. Независимая проверка Лёвы выявила:
-- **VIS-FINAL-LEVA-01 [P2]:** own pending Help signal withdrawal запрещён новым visibility gate при hidden topic/proposed original/answer вопреки protected exception V6. Текущие PG tests закрепляют неправильный запрет.
-- **VIS-FINAL-LEVA-02 [P2]:** ordinary Admin topic удаляет tombstones до presentation; номера сообщений сдвигаются, hidden root заменяется первым видимым ответом, нарушаются anchors/candidates. Подтверждено тремя локальными reproduction failures.
+Leva independent whole-feature review found two P2 current-feature defects. Mira independently reconciled both against the accepted V5/V6 contract and current source and **confirms both findings**:
 
-Полный результат/причины/ссылки/критерии исправления: [stages/moderation-visibility/REVIEW.md](stages/moderation-visibility/REVIEW.md), первый раздел. Проверка продолжена по остальному whole-feature scope; дополнительных блокирующих findings не подтверждено.
+1. **VIS-FINAL-LEVA-01 [P2] — protected own Help withdrawal is incorrectly blocked by Hide.**
+   - Accepted V6 explicitly keeps pending own Help withdrawal outside ordinary hidden-content edit denial.
+   - Current `withdrawHelpSignal()` calls `lockVisibleHelpSignalDependencies()` before author/pending checks, so hidden topic/proposed original/selected answer incorrectly makes own withdrawal 404.
+   - Correction scope: restore the protected own-withdrawal lifecycle while preserving signal identity/topic membership, author-only, pending-only, active-account and safe lock ordering. Do **not** weaken creation, accepted/rejected review, content mutation or other hidden-content gates.
+   - Done evidence must include real PG regressions for hidden primary topic, hidden proposed original and hidden selected-answer dependency; foreign/nonpending/inactive negatives; no hidden-source disclosure.
 
-Evidence: локальные 16 files /295 targeted tests PASS; отдельные 3 expected FAIL воспроизводят finding 02. Fresh #355 exact-head GitHub checks независимо сверены: 24 SUCCESS +24 expected SKIPPED, 0 failed/pending; CI/connected harness steps SUCCESS. Full hosted suites локально повторно не запускались. Исходный код #355 не менялся; review worktree clean.
+2. **VIS-FINAL-LEVA-02 [P2] — ordinary Admin topic loses stable chronology after hidden tombstones are dropped.**
+   - Accepted V5/V7 requires stable post positions/anchors/relations for the public-safe ordinary Admin reader.
+   - Current `projectAdminTopic()` filters out `post.kind === "hidden"`; `AdminTopicView` then numbers the shortened array and treats its first row as original question. Hidden root/middle post therefore shifts numbers, original identity, parent links and best-answer candidates.
+   - Correction scope: ordinary Admin presentation must retain sanitized hidden tombstone positions/identity needed for chronology/relations while never exposing hidden body/revision/attachments/source. Keep the ordinary Admin reader public-safe; do not add `includeHidden` or private inspector data.
+   - Done evidence must cover hidden root, hidden middle/parent and best-answer candidate behavior, stable permanent numbers/anchors/parent links, and absence of hidden source.
 
-## Следующее назначение
+### Correction route
 
-**Лёва завершил independent review. Следующая — Мира для reconciliation findings и организации correction.**
+- **Implementer: Лира**, in existing assembled Draft #355 / branch `feature/moderation-visibility-b1-foundation`.
+- Keep correction bounded to these two confirmed findings and their necessary tests. No unrelated cleanup/refactor/product expansion.
+- After implementation: author self-check plus meaningful targeted/PG checks; run fresh applicable `run:ci` and `run:acceptance` if correction touches paths covered by those workflows; then STOP on a new stable exact head.
+- Any implementation-head change invalidates Mira/Leva final review verdicts on `fdad1930...`.
+- Next after Lira author PASS: fresh Mira whole-feature review of the new exact head, then independent reviewer on that same head.
 
-Вход: актуальный AGENTS.md → RULES.md → TASK.md → этот WORKFLOW → актуальный final раздел REVIEW.md; V5/V6 принятого moderation PLAN.
-
-Мира сопоставляет подтверждённые findings с прежним coordinator PASS и задаёт bounded исправления исполнителю. Продуктовая модель уже принята; повторное принятие V-P1/V-P2/V-P3 не требуется. Лёва не начинает implementation в режиме проверки.
-
-После correction: author self-check/meaningful regressions и применимые checks → fresh Mira whole-feature review нового stable head → независимый review того же head. При изменении implementation старый PASS не переносится автоматически.
-
-**STOP:** #355 не merge до закрытия findings и завершения нового review cycle; docs/deploy/следующая structure task не активированы. #342 — служебный канал, никогда не merge.
+**STOP for Mira.** #355 remains Draft/unmerged. No docs closeout, next structure task, deploy or merge while correction/review cycle is open.
 
 ## Baseline
 
