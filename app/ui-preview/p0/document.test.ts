@@ -40,8 +40,8 @@ function modules() {
       links: () => [{ rel: "icon", href: "/favicon.ico" }],
     }],
     ["routes/topic", {
-      meta: ({ data, params }: { data: unknown; params: { topicId?: string } }) => {
-        expect(data).toEqual({ topic: { id: "sample" } });
+      meta: ({ loaderData, params }: { loaderData: unknown; params: { topicId?: string } }) => {
+        expect(loaderData).toEqual({ topic: { id: "sample" } });
         expect(params.topicId).toBe("sample");
         return [
           { title: "Topic title" },
@@ -93,6 +93,23 @@ describe("shared Framework root document mapping", () => {
     adapter.dispose();
     expect(document.querySelectorAll("[data-vico-preview-document]")).toHaveLength(0);
     expect(document.title).toBe("Fallback document");
+  });
+
+  it("supplies React Router v8 loaderData to matched parent and current meta exports", () => {
+    const productionStyle = modules();
+    productionStyle.set("routes/topic", {
+      meta: ({ loaderData, matches }: {
+        loaderData: { topic: { id: string } };
+        matches: Array<{ id: string; loaderData?: { locale?: { translationLocale: string } } }>;
+      }) => {
+        const locale = matches.find((match) => match.id === "routes/locale-boundary")?.loaderData?.locale?.translationLocale;
+        expect(matches.find((match) => match.id === "routes/topic")?.loaderData)
+          .toEqual(loaderData);
+        return [{ title: locale + " · " + loaderData.topic.id }];
+      },
+    });
+    createPreviewDocumentAdapter(productionStyle).sync(state("he", "rtl"));
+    expect(document.title).toBe("he · sample");
   });
 
   it("rejects unsupported metadata rather than treating malformed exports as valid", () => {
