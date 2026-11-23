@@ -145,11 +145,11 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 
 ## Parallel side assignment — stale/legacy audit (Mira-2)
 
-- Direct owner assignment through service PR #342; audit remains side-task and must not alter active moderation-visibility B7.
-- Original registry `research/stale-legacy-audit-registry.md` on main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` is **HOLD for completeness correction**.
-- Mira's independent review found no false positive among the original 31 listed A-elements, but confirmed **at least 7 omitted current stale catalogue elements**; therefore the recorded "31 exact" total is invalid and only a minimum of **38** is currently established.
-- Confirmed omissions: stale descriptions for `attentionModeComplaints`, `attentionModeSecurity`, `attentionPlaceholderGroup2`, `attentionPlaceholderGroup3`; dead stale keys `attentionPlaceholderGroup1`, `complaintResultAppealUnavailable`, `superAdminAreasLater`.
-- Detailed evidence and correction method are in `research/stale-legacy-audit-handoff.md`.
-- **Next side-task executor: Mira-2.** Repeat the completeness pass from the current capability map, incorporate these omissions, look for further contradictions of the same class, produce one corrected exact A-registry, and STOP.
-- **Cleanup is blocked.** Do not create implementation PR or fix any stale item until the corrected registry receives a fresh review.
+- Direct owner assignment through service PR #342; audit remains isolated from moderation-visibility work.
+- Source product remains `main` exact `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Fresh review of the 84-candidate registry confirmed **80 exact A-elements** and removed four false positives: old `A-007` plus old `A-012…A-014`.
+- Registry is corrected and renumbered to current `A-001…A-080`; no duplicate or additional confirmed A omission was found.
+- Intentional negative tests that explicitly prove removed draft requests stay absent are not stale findings.
+- **Mira-2 STOP after registry correction. Cleanup remains blocked pending separate owner decision; no runtime/test implementation PR is authorized.**
+
 

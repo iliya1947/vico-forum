@@ -113,33 +113,17 @@
 - По завершении first-stage registry — STOP и вернуть результат Илье.
 
 
-## Coordinator review — 2026-11-22 HOLD
+## Fresh review — 2026-11-23
 
-Mira independently reviewed the completed registry against the same current main
-`9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+Review выполнен на том же `main` exact `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-The existing 31 listed A-elements remain supported; no false positive was confirmed in
-that original set. However the claim **"31 exact stale elements" is not accepted** because
-the completeness pass missed at least these seven current stale catalogue elements:
+1. Из corrected registry на 84 кандидата подтверждены **80 A-элементов**.
+2. С A сняты прежний `A-007` и `A-012…A-014`: это допустимые representative/static-preview boundaries, а не stale tails.
+3. Прежние `A-069…A-077` перепроверены отдельно от intentional negative assertions; проверки, которые доказывают отсутствие старых draft-запросов, не классифицируются как stale.
+4. Дублей среди оставшихся 80 не установлено.
+5. Новых подтверждённых A-пропусков не установлено.
+6. Реестр перенумерован в текущие `A-001…A-080`.
 
-1. `attentionModeComplaints` — active Complaints mode, but its catalog description still says
-   "Placeholder mode for future complaint handling."
-2. `attentionModeSecurity` — active Security/Attachments surface, but its catalog description
-   still says "Placeholder mode for future security notices."
-3. `attentionPlaceholderGroup1` — localization-only dead key for the old temporary Complaints
-   Group 1; current Complaints group1 uses `complaintQueueHeading`.
-4. `attentionPlaceholderGroup2` — key remains valid for Security group2, but its catalog
-   description still incorrectly says it is also a temporary Complaints group.
-5. `attentionPlaceholderGroup3` — same stale Complaints claim in the description; current
-   Complaints group3 uses its real History label.
-6. `complaintResultAppealUnavailable` — localization-only dead key still saying Appeals are
-   unavailable / future, while Complaints Package 6 Appeal routes and flow are implemented.
-7. `superAdminAreasLater` — localization-only dead key still saying other Monitoring areas are
-   unavailable, while SA-08 has all 12 measured Monitoring areas; only Infrastructure remains
-   the separate Stage-6 placeholder.
+**Итог first-stage audit: 80 exact A.**
 
-Important: this proves a **minimum of 38**, not an exact revised total. Mira-2 must not merely
-append these seven and declare 38 exact. Repeat the completeness pass from the capability map,
-including active localization descriptions and localization-only dead keys, then produce one
-corrected exact A-registry and STOP. No cleanup/implementation before a fresh review accepts the
-corrected registry.
+Audit-only boundary сохраняется: runtime/tests не исправлять и cleanup не начинать без отдельного owner decision.

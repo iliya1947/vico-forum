@@ -144,7 +144,10 @@ Fresh checkpoint completed on #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e
 
 ## Mira-2 side assignment — systematic stale/legacy audit
 
-Новый audit-only handoff от Ильи через #342. Не продолжать прежний grep-first подход. Читать `research/stale-legacy-audit-handoff.md`, построить current capability map, затем проверить все проекции и выдать один классифицированный registry. Не исправлять и не вмешиваться в B4.
+Fresh review on unchanged main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` reduced the corrected registry from 84 to **80 exact A-elements**. Old `A-007` and `A-012…A-014` were false positives caused by treating representative/static preview boundaries as mandatory runtime parity. Remaining 80 are confirmed, with no duplicates or additional confirmed omission; intentional no-old-draft-request negative assertions are explicitly excluded from cleanup findings. Registry is now renumbered `A-001…A-080`.
+
+Current Mira-2 state: **STOP after audit-registry correction.** Do not modify runtime/tests or start cleanup without a separate owner decision.
+
 
 ## 2026-11-21 — B4 coordinator checkpoint PASS
 
