@@ -2,62 +2,27 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — fresh Mira whole-feature review PASS on corrected exact head; Leva independent re-review next.**
+**Moderation visibility assembled #355 — Mira whole-feature PASS + Leva independent whole-feature re-review PASS на одном exact head.**
 
-Stable target:
-- Draft #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`;
-- current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
-- open/Draft, mergeable clean;
-- previous final-review head `fdad1930...` is superseded.
+- Проверенный implementation head: `66b1bb7ec0f4a1f5bed17583398d5acc041da143`.
+- Base/current main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- #355 open/Draft/unmerged. Reviewer не выполнял merge и не менял implementation.
+- **VIS-FINAL-LEVA-01 и VIS-FINAL-LEVA-02 CLOSED.**
+- Own pending Help withdrawal сохраняется при hidden dependencies с прежними author/pending/active/membership checks и locks; ordinary review/content gates не ослаблены.
+- Ordinary Admin сохраняет source-free tombstones, permanent numbers/anchors/root/best identity и visible-only candidates/translation inputs.
+- Независимо проверены весь 8-file correction delta и связанные whole-feature границы; остальные implementation files и main не изменились относительно предыдущего review.
+- Локально: 17 files/304 targeted tests PASS, включая три прежних reproductions; diff check PASS, worktree clean.
+- Fresh exact-head #355 checks независимо API-checked: 24 SUCCESS +24 expected SKIPPED, без failures/pending. CI `45168532264`, browser `45168532275` и local-R2 `45168532028` SUCCESS. Full PG/browser/build локально заново не запускались.
 
-### Correction delta reviewed
+Канонический итог/основания/границы evidence: [stages/moderation-visibility/REVIEW.md](stages/moderation-visibility/REVIEW.md). Старый HOLD на `fdad1930...` superseded, открытых current-feature blockers нет.
 
-Exactly 8 files / 5 commits changed from the prior reviewed head. No schema, grant, deployment, R2, provider, public-reader or unrelated product changes.
+## Следующее действие — владелец
 
-1. **VIS-FINAL-LEVA-01 — PASS**
-   - `withdrawHelpSignal` retains sorted topic/proposed-original + optional target-post dependency locks and signal→topic membership.
-   - Only own pending withdrawal calls the shared dependency helper with `requireVisible=false`.
-   - Rejected/accepted review continues using the default `requireVisible=true`; creation/content gates are unchanged.
-   - Author-only, pending-only and active-account admission remain after signal lock.
-   - Canonical route has no public-reader pre-gate that would re-block withdrawal on hidden content.
-   - Real PG coverage includes hidden primary topic, proposed original and selected answer; foreign actor, wrong topic, resolved and inactive actor; review remains denied; no new History/source disclosure.
+**#355 готов к owner merge на проверенном head после перевода из Draft в Ready.**
 
-2. **VIS-FINAL-LEVA-02 — PASS**
-   - Ordinary Admin projection now retains only sanitized hidden tombstone `{kind,id,parentPostId,createdAt}`; no author/body/revision/attachments/private reason.
-   - Admin loader still sends translation service only visible revisions; hidden posts never enter translation source/presentation.
-   - Stable post ordinal map is built from the full chronological sequence including tombstones, so root/middle numbers, anchors and parent links stay permanent.
-   - Original-question and best-answer identity remain attached to the persisted ids even when the card is a tombstone.
-   - Best-answer candidates explicitly exclude hidden posts while keeping permanent visible-post numbers.
-   - Ordinary Admin still uses public-safe `readTopicPage`; private inspector/includeHidden authority is not added.
-   - Focused route/model/render/QuickActions regressions cover hidden root/middle/best and no hidden serialization.
+Новый coordinator review при неизменном head не требуется: оба обязательных review PASS уже относятся к `66b1bb7e...`. При изменении implementation этот вывод не переносится автоматически на новый head.
 
-### Fresh exact-head evidence independently checked
-
-- 48 PR check-runs: **24 SUCCESS + 24 expected SKIPPED**, zero failed/pending.
-- 38 workflows: **20 SUCCESS + 18 expected SKIPPED**, zero failed/pending.
-- CI #45168532264 SUCCESS:
-  - unit: **232 files / 2958 tests PASS**;
-  - PostgreSQL17: **114 files / 1693 tests PASS**;
-  - `moderation-visibility-commands.test.ts`: 151 PASS;
-  - `sa04-forum-help-signal-lifecycle.test.ts`: 36 PASS;
-  - lint/typecheck/build/migration/schema/privilege/provisioning checks PASS.
-- SA04-N #45168532275 SUCCESS: B8-C1/C2/C3 Chromium visibility lifecycle/cache/fault cases PASS.
-- SA04-K5 #45168532028 SUCCESS: 33 connected attachment cases + B8-B2 local-R2 visibility boundary PASS.
-- Existing expected fault-injection error logs are not treated as product failures; final jobs completed SUCCESS.
-
-### Whole-feature verdict
-
-Because `main` and the previously reviewed feature body outside these 8 files did not change, the fresh whole-feature cycle revalidated the changed surfaces and their cross-boundaries rather than redundantly rereading unchanged implementation. No confirmed current-feature blocker remains.
-
-**Mira whole-feature PASS on exact `66b1bb7e...`.**
-
-### Next assignment
-
-**Лёва:** perform independent whole-feature re-review of #355 on the same exact head `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, with explicit re-check of VIS-FINAL-LEVA-01/02 corrections and any whole-feature regressions they could introduce. Do not implement during review.
-
-If implementation head changes, this handoff expires.
-
-**STOP for Mira.** No owner merge, docs closeout, next structure task or deploy before Leva verdict and owner gate.
+После фактического merge — отдельное назначение documentation closeout. Не создавать/не поручать себе docs PR автоматически и не заявлять feature состоянием main до merge. Следующая forum structure/topic move остаётся неактивной до закрытия visibility и docs debts. Deployment не входит в текущий gate. #342 — служебный канал, никогда не merge.
 
 ## Baseline
 
