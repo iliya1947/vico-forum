@@ -108,3 +108,10 @@ there are only N.
 - **Что произошло:** B1 был сначала fast-forward'нут на финальный stacked head, после чего промежуточные PR #357/#359/#365/#367/#370/#371/#376 при закрытии GitHub записал как `merged` в B1, потому что их heads уже содержались в новой B1 base. `main` не изменился и merge action в main не выполнялся, но требуемая метаистория `closed-unmerged superseded` была потеряна.
 - **Почему это ошибка:** перед необратимым изменением base-ветки не была проверена семантика GitHub для stacked PR, чьи heads становятся ancestors новой base. Я скрыто предположила, что последующее обычное close сохранит unmerged status.
 - **Как предотвращать:** перед следующим fold отдельно проверить безопасную последовательность операций на GitHub, которая сохраняет требуемый PR state; не считать `move first → close later` метадата-нейтральным. Кодовый результат и main проверять отдельно от PR metadata.
+
+
+## 2026-11-23 — final moderation visibility review missed two contract regressions
+
+- **Что произошло:** Mira whole-feature review #355 дал PASS, но последующий independent review Лёвы подтвердил два P2 дефекта: protected own Help withdrawal был ошибочно заблокирован Hide, а ordinary Admin projection удалял tombstones и ломал permanent numbering/original identity.
+- **Почему это ошибка:** review проверил общие hidden-content gates и public-safe Admin boundary, но не сопоставил явное V6 protected-withdrawal exception с конкретным withdrawal helper и не проследил chronology от sanitized public tombstone через Admin projection до index-based presentation.
+- **Как предотвращать:** при whole-feature review отдельно проверять явные исключения плана против каждого затронутого writer/read projection; для sanitized DTO проходить цепочку storage/read model → projection → numbering/identity/candidates, а не останавливаться на отсутствии source leak.
