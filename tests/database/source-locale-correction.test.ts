@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
@@ -94,54 +94,10 @@ beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
   await client.query(`set search_path to ${schemaName}`);
-  for (const file of [
-    "0003_gorgeous_donald_blake.sql",
-    "0004_forum_domain_foundation.sql",
-    "0005_calm_proemial_gods.sql",
-    "0006_loving_sentinels.sql",
-    "0014_content_translation_persistence.sql",
-    "0018_source_locale_correction_permissions.sql",
-    "0021_forum_tags.sql",
-    "0022_forum_reply_relationships.sql",
-    "0024_forum_reply_notifications.sql",
-    "0025_forum_topic_pins.sql",
-    "0026_best_answer_independent_from_solved.sql",
-    "0027_help_solutions_foundation.sql",
-    "0028_help_solution_moderation.sql",
-    "0029_help_question_needs_details.sql",
-    "0030_help_duplicate_workflow.sql",
-    "0031_help_user_moderation_signals.sql",
-    "0032_forum_profiles.sql",
-    "0033_forum_online_presence.sql",
-    "0034_forum_editor_drafts.sql",
-    "0035_forum_attachments_foundation.sql",
-    "0036_forum_attachment_security_events.sql",
-    "0037_forum_attachment_draft_generations.sql",
-    "0038_forum_attachment_cleanup_claims.sql",
-    "0040_post_edit_history_permissions.sql",
-    "0041_published_mentions.sql",
-  "0042_attachment_edit_snapshots.sql",
-  "0049_admin_history.sql",
-  "0051_forum_admin_history.sql",
-    "0065_sa04_account_state_foundation.sql",
-    "0068_topic_watch.sql",
-    "0070_personal_filters.sql",
-  ]) {
+  for (const file of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
-  // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
-  // Supply only AP-08 columns here without changing the historical migration sequence.
-  await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
-  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
-  await client.query(`alter table forum_topics
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3);
-    alter table forum_posts
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3)`);
 });
 
 beforeEach(async () => {

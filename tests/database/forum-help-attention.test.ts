@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -15,35 +15,6 @@ if (!["localhost", "127.0.0.1"].includes(parsed.hostname) || !parsed.pathname.en
 
 const schema = "forum_help_attention_test";
 const client = new Client({ connectionString: url, options: `-c search_path=${schema}` });
-const migrations = [
-  "0000_tan_johnny_storm.sql",
-  "0001_seed-locales.sql",
-  "0002_ui_translation_storage.sql",
-  "0003_gorgeous_donald_blake.sql",
-  "0004_forum_domain_foundation.sql",
-  "0005_calm_proemial_gods.sql",
-  "0006_loving_sentinels.sql",
-  "0018_source_locale_correction_permissions.sql",
-  "0020_translation_generation_permission.sql",
-  "0021_forum_tags.sql",
-  "0022_forum_reply_relationships.sql",
-  "0024_forum_reply_notifications.sql",
-  "0025_forum_topic_pins.sql",
-  "0026_best_answer_independent_from_solved.sql",
-  "0027_help_solutions_foundation.sql",
-  "0028_help_solution_moderation.sql",
-  "0029_help_question_needs_details.sql",
-  "0030_help_duplicate_workflow.sql",
-  "0031_help_user_moderation_signals.sql",
-  "0040_post_edit_history_permissions.sql",
-  "0041_published_mentions.sql",
-  "0042_attachment_edit_snapshots.sql",
-  "0049_admin_history.sql",
-  "0051_forum_admin_history.sql",
-  "0065_sa04_account_state_foundation.sql",
-  "0068_topic_watch.sql",
-  "0070_personal_filters.sql",
-] as const;
 let clock = Date.parse("2026-10-01T00:00:00Z");
 const forum = new DrizzleForumRepository(drizzle(client), {
   cooldownMs: 5000,
@@ -54,23 +25,11 @@ beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
   await client.query(`set search_path to ${schema}`);
-  for (const name of migrations) {
+  for (const name of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
     const statement = (await readFile(`drizzle/${name}`, "utf8"))
       .replaceAll('"public".', `"${schema}".`);
     await client.query(statement);
   }
-  // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
-  // Supply only AP-08 columns here without changing the historical migration sequence.
-  await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
-  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
-  await client.query(`alter table forum_topics
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3);
-    alter table forum_posts
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3)`);
   for (const id of ["author", "reporter", "manager"]) {
     await client.query(
       `insert into "user" (id, name, email, email_verified, created_at, updated_at)
