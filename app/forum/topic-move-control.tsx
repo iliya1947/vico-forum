@@ -14,7 +14,7 @@ type InlineRead<T>=T|StructureInlineError;
 const isReadError=(value:unknown):value is StructureInlineError=>
   Boolean(value&&typeof value==="object"&&"operation" in value&&value.operation==="structureInlineRead");
 const readMessage=(error:StructureInlineError["error"])=>error==="unavailable"?"topicMoveUnconfirmed":
-  error==="conflict"?"topicMoveConflict":error==="invalid"?"topicMoveInvalid":"topicMoveDenied";
+  error==="invalid"?"topicMoveInvalid":"topicMoveDenied";
 type Attempt={actorId:string;topicId:string;sectionId:string;structureVersion:string;locationVersion:string;targetId:string};
 
 /** One source-free Move form, used both inside an open topic and by the private direct route. */

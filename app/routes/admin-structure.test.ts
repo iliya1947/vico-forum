@@ -41,7 +41,8 @@ it("context denies structure-only and neutral missing/hidden target; validates o
  const e=environment();e.readMoveContext.mockResolvedValueOnce(undefined as never);await expect(move(args(e.context))).rejects.toMatchObject({status:404});
  for(const id of ["","\0","a\nb","x".repeat(2049)])await expect(move(args(environment().context,"",id))).rejects.toMatchObject({status:400});
  for(const query of ["?q=x","?actorId=other","?after=x","?isHidden=false"])await expect(move(args(environment().context,query))).rejects.toMatchObject({status:400});
- expect((await move(args(environment().context,"?_routes=routes%2Fadmin-topic-move","a/b עברית"))).data.topicId).toBe("t");
+ const persisted=await move(args(environment().context,"?_routes=routes%2Fadmin-topic-move","a/b עברית"));
+ expect("topicId" in persisted.data && persisted.data.topicId).toBe("t");
 });
 it("returns request-matched source-free typed inline data instead of unmounting the calling route",async()=>{
   for(const [name,loader] of [["move",move],["destinations",destinations]] as const){

@@ -156,7 +156,7 @@ describe("F5-C2 shared visible/direct topic Move form",()=>{
     await waitFor(()=>expect(v.submitted).toHaveBeenCalledTimes(1));
     await waitFor(()=>expect(v.container.textContent).toContain("Topic or structure changed."));
     expect(v.container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
-    expect(v.container.querySelector<HTMLSelectElement>('select[name="targetSectionId"]')?.value).toBe("target/שלום");
+    expect((v.container.querySelector('select[name="targetSectionId"]') as HTMLSelectElement|null)?.value).toBe("target/שלום");
     v.behavior.current={...v.behavior.current,structureVersion:"11"};
     v.behavior.list={...destination,structureVersion:"11"};
     fireEvent.click(v.getByRole("button",{name:"Refresh move details"}));
