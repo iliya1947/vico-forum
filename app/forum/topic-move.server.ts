@@ -47,8 +47,17 @@ export async function topicMoveAction(
 
   // Early exact capability; F3 writer independently rechecks active actor and dual
   // visibility authority for a hidden topic under the actual topic lock.
-  const forbidden = await requireForumPermission(context, "forum.topic.move");
-  if (forbidden) return topicMoveFailure(forbidden.data.error, forbidden.init?.status ?? 403);
+  try {
+    const forbidden = await requireForumPermission(context, "forum.topic.move");
+    if (forbidden) return topicMoveFailure(forbidden.data.error, forbidden.init?.status ?? 403);
+  } catch (error) {
+    if (error instanceof UserMeasureRestrictedError) return topicMoveFailure("forbidden", 403);
+    if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
+      return topicMoveFailure("unauthenticated", 401);
+    if (error instanceof AuthorizationUnavailableError || error instanceof AccountStateUnavailableError)
+      return topicMoveFailure("unavailable", 503);
+    throw error;
+  }
 
   if (MOVE_FIELDS.some(field => form.getAll(field).length !== 1
       || typeof form.get(field) !== "string")

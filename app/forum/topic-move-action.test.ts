@@ -209,6 +209,20 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       expect(e.setTopicVisibility).not.toHaveBeenCalled();
     }
   });
+  it("classifies permission admission lifecycle, sanction and dependency errors before any write",async()=>{
+    for(const [error,status,kind] of [
+      [new UserMeasureRestrictedError("admin.forum"),403,"forbidden"],
+      [new AccountInactiveError(),401,"unauthenticated"],
+      [new AccountMissingError(),401,"unauthenticated"],
+      [new AccountStateUnavailableError(),503,"unavailable"],
+    ] as const) {
+      const e=makeContext();
+      e.has.mockRejectedValueOnce(error);
+      const response=await run(e);
+      expect(response).toMatchObject({data:{operation:"topicMove",error:kind},init:{status}});
+      expect(e.moveTopic).not.toHaveBeenCalled();
+    }
+  });
   it("fails closed on authorization outages and propagates unexpected writer faults",async()=>{
     const e=makeContext();
     e.has.mockRejectedValueOnce(new AuthorizationUnavailableError());
