@@ -1,8 +1,9 @@
-# agents/lira.md — B9 current-main sync author PASS; STOP before fold
+# agents/lira.md — pre-fold sync MIRA PASS; STOP before fold
 
-- Current Draft #376 / `feature/moderation-visibility-b8-acceptance` stable exact **`fdad1930fc68a854d52bee31922f923be5c1c751`**. Merge commit integrates accepted B8-C/B9 old `108e0ba31ed34f891e8b46e411991b893b9da56b` (first parent) + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` (second parent). **Ahead 315 / behind 0** vs main; B7 stacked base remains `f92778606f1c8ea4e64f53c1660910f34c48b84c`.
-- Exactly one source merge: 20 non-overlapping current-main changed files imported verbatim, two overlapping SA04-N/K5 workflows combined current-main one-shot label/`workflow_dispatch` policy + all B8 C1/C2/C3 Chromium and local R2 calls. No B8 feature/runtime/schema change caused by sync.
-- Final cumulative exact diff **132 visibility implementation/test/manifest/CI paths vs current main**, no unrelated main policy drift. Full scope/integration and final V8 verification in `WORKFLOW.md`.
-- Fresh exact-head `run:ci` + `run:acceptance` finished: **38 workflows: 20 SUCCESS +18 expected SKIPPED**; **48 check-runs: 24 SUCCESS +24 expected SKIPPED**, no FAIL. [CI #45088550855](https://github.com/iliya1947/vico-forum/actions/runs/45088550855) 2951 unit, 1689 PG17, history/metadata/manifest, lint/typecheck/build/preview, Worker B8-B1/B3; [SA04-N #45088550926](https://github.com/iliya1947/vico-forum/actions/runs/45088550926) C1+C2+C3 all PASS; [SA04-K5 #45088550961](https://github.com/iliya1947/vico-forum/actions/runs/45088550961) 33 R2/Chromium and B8-B2 positive PASS. Other acceptance suites SUCCESS; both labels consumed.
-- **Лира author PASS, STOP.** Previous Mira HOLD (outdated main merge-base) has been corrected in branch and acceptance verified; this is not independent Mira coordinator PASS on new head and not whole-feature review.
-- **Next Мира** to independently verify the synchronized exact head and issue the next permitted fold assignment. No B1 move, intermediate PR closure, formal reviews, merge/docs/deploy without next authorization.
+- Draft #376 exact `fdad1930fc68a854d52bee31922f923be5c1c751` independently reviewed by Мира.
+- Merge parents: old B8/B9 `108e0ba31ed34f891e8b46e411991b893b9da56b` + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Current-main relation: ahead 315 / behind 0.
+- SA04-N/K5 reconciliation preserves current manual-label/dispatch semantics and only adds accepted B8 connected visibility calls.
+- Exact-head evidence: 48 checks = 24 SUCCESS + 24 expected SKIPPED; 38 workflows = 20 SUCCESS + 18 expected SKIPPED; zero failures. CI #45088550855, SA04-N #45088550926, SA04-K5 #45088550961 SUCCESS.
+- **Mira coordinator PASS. No current pre-fold blocker confirmed.**
+- **Лира STOP.** No B1 fold, intermediate PR closure, assembled-head self-check/reviews, merge, docs or deploy until fresh owner continuation.
