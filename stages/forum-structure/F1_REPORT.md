@@ -33,13 +33,31 @@
 - Production manifest parity: 75 public tables; реальные web privilege probes PASS.
 - Локальный split-authority provisioning не стартовал из-за фиксированных ролей, оставшихся от прежних disposable tests. Итоговый gate использует чистый PG17 GitHub CI, без изменения этих старых ролей.
 
-## GitHub exact-head gate
+## GitHub exact-head gate — PASS
 
-Stable head: `8227db6003f5a23a369e11b645194da229315f7a`.
-- [CI / database job](https://github.com/iliya1947/vico-forum/actions/runs/45205128204/job/137798657433): PASS — 115 files / 1707 PostgreSQL tests, manifest75, positive/negative runtime privileges, split-authority provisioning, credential diagnostic/recovery/bootstrap, build and Worker smoke.
-- CI checks: 2972/2973 unit tests прошли с первого раза на этом head; один прежний Settings 409 UI test не дождался текста. Production код относительно первого green unit head не менялся; отдельный локальный Settings suite9 PASS. Повторена только failed checks job на том же head, результат ещё ожидается.
-- Applicable acceptance: 13/14 PASS; AP-10 ещё в работе.
+Stable head: `8227db6003f5a23a369e11b645194da229315f7a`; PR #379 по-прежнему Draft, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+
+- [CI / checks](https://github.com/iliya1947/vico-forum/actions/runs/45205128204/job/137802256448): PASS — 233 files / 2973 unit tests, lint/typecheck, build, UI preview build, migration guard, Drizzle check и generation parity (`No schema changes`).
+- [CI / database](https://github.com/iliya1947/vico-forum/actions/runs/45205128204/job/137798657433): PASS — 115 files / 1707 PostgreSQL tests, manifest75, positive/negative runtime privileges, split-authority provisioning, credential diagnostic/recovery/bootstrap, build and Worker smoke.
+- Все 14 applicable acceptance workflows на том же head — PASS:
+
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205144895) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145056) — PASS.
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145527) — PASS.
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145037) — PASS.
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145631) — PASS.
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145121) — PASS.
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145058) — PASS.
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145117) — PASS.
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145074) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145431) — PASS.
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145276) — PASS.
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145098) — PASS.
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205144959) — PASS.
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45205145486) — PASS.
+
+В первой попытке checks на этом final head один прежний Settings 409 UI test не дождался сообщения; 2972 остальных прошли. Production код относительно первого green unit head не менялся; отдельный локальный Settings suite9 PASS. Повторена только failed checks job без изменения head: все2973 PASS, затем сборки/metadata/parity PASS. Однократный сбой зафиксирован, исправление unrelated Settings в F1 не заявляется.
 
 ## Передача
 
-После подтверждения exact-head CI/acceptance: следующий Мира — bounded F1 coordinator checkpoint по PLAN/AGENTS. F2 только после её PASS и назначения. Leva STOP; независимый final whole-feature Codex reviewer — Марк, если остаётся вне реализации. Merge/deploy/Stage6 не выполнялись.
+Exact-head CI/acceptance подтверждены. Следующий — Мира — bounded F1 coordinator checkpoint по PLAN/AGENTS. F2 только после её PASS и назначения. Leva STOP; независимый final whole-feature Codex reviewer — Марк, если остаётся вне реализации. Merge/deploy/Stage6 не выполнялись.
