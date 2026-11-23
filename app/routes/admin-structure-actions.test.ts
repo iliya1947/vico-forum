@@ -105,6 +105,15 @@ describe("F5-B category and section strict Admin POST actions",()=>{
     Object.values(changed.writers).forEach(w=>expect(w).not.toHaveBeenCalled());
     Object.values(broken.writers).forEach(w=>expect(w).not.toHaveBeenCalled());
   });
+  it("accepts full Unicode code-point names for category rename and section creation",async()=>{
+    const name="😀".repeat(200);
+    for(const v of [variants[0],variants[2]]){
+      const e=env();
+      const result=await invoke(v,e.context,request(v.intent,[["name",name]]));
+      expect(result.init?.status).toBeUndefined();
+      expect(e.writers[v.intent]).toHaveBeenCalledWith("actor",v.target,{name,expectedStructureVersion:"0"});
+    }
+  });
   it("denies unrelated intent across route boundaries",async()=>{
     for(const v of variants){
       const wrong=v.route==="category"?"moveSection":"renameCategory";

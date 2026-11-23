@@ -71,7 +71,7 @@ function CreateCategoryForm({actorId,version,path}:{actorId:string;version:strin
       <input type="hidden" name="editorActorId" value={actorId}/>
       <input type="hidden" name="expectedStructureVersion" value={version}/>
       <label>{t("structureCategoryName")}
-        <input name="name" autoComplete="off" required maxLength={200} value={name}
+        <input name="name" autoComplete="off" required maxLength={400} value={name}
           onChange={event=>setName(event.currentTarget.value)} dir="auto"/>
       </label>
       <button type="submit" disabled={busy||!!blocked||!name.trim()}>{t(busy?"structureActionPending":"structureCreateCategory")}</button>

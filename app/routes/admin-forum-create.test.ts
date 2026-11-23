@@ -76,6 +76,14 @@ describe("Admin structure create-category POST",()=>{
     expect(result.init?.status).toBe(400);
     expect(e.createCategory).not.toHaveBeenCalled();
   });
+  it("accepts 200 Unicode code points even when they require 400 UTF-16 units",async()=>{
+    const e=fixture(),name="😀".repeat(200);
+    const result=await call(e.context,request([
+      ["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","0"],["name",name],
+    ]));
+    expect(result.init?.status).toBeUndefined();
+    expect(e.createCategory).toHaveBeenCalledWith("actor",{name,expectedStructureVersion:"0"});
+  });
   it("treats changed account as conflict without selecting the submitted actor",async()=>{
     const e=fixture();
     const result=await call(e.context,request([

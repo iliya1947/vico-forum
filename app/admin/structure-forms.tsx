@@ -51,7 +51,7 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
   return <fieldset className="admin-forum-picker">
     <legend>{t("structureDestinationCategory")}</legend>
     <label>{t("structureCategorySearch")}
-      <input type="search" maxLength={200} value={query} onChange={event=>setQuery(event.currentTarget.value)} dir="auto"/>
+      <input type="search" maxLength={400} value={query} onChange={event=>setQuery(event.currentTarget.value)} dir="auto"/>
     </label>
     <button type="button" disabled={fetcher.state!=="idle"} onClick={()=>{
       setActiveQuery(query);mode.current="replace";load(query);
@@ -121,7 +121,7 @@ export function StructureChangeForm({locale,path,actorId,version,targetId,operat
       <input type="hidden" name="editorActorId" value={actorId}/>
       <input type="hidden" name="expectedStructureVersion" value={version}/>
       {named?<label>{t(operation==="renameCategory"?"structureCategoryName":"structureSectionName")}
-        <input type="text" name="name" value={name} autoComplete="off" maxLength={200}
+        <input type="text" name="name" value={name} autoComplete="off" maxLength={400}
           onChange={event=>setName(event.currentTarget.value)} dir="auto" required/>
       </label>:null}
       {moved?<><input type="hidden" name="expectedCategoryId" value={currentCategoryId??""}/>
