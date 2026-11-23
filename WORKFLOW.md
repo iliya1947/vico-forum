@@ -2,25 +2,40 @@
 
 ## Активный этап
 
-**Task 5 — moderation visibility: COMPLETE. Task 6 not yet activated.**
+**Task 6 ACTIVE — forum structure management / topic moves. Current-main reconciliation complete; Leva plan reconciliation next.**
 
-Factual closeout:
-- implementation #355 merged into main at `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
-- final implementation exact head `66b1bb7ec0f4a1f5bed17583398d5acc041da143`;
-- final Mira whole-feature PASS + Leva independent whole-feature PASS on that same head;
-- VIS-FINAL-LEVA-01/02 closed before merge;
-- docs-only #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a` passed Lira author-check + Mira docs review and was merged by owner;
-- current main after docs merge: `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
-- permanent contracts/current state/history and Mira logic-error row are now in main;
-- no open task-5 current-feature finding or docs debt remains.
+Current baseline:
+- `main` = `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
+- task 5 moderation visibility + docs are complete;
+- accepted Task-6 product scope remains the existing S0–S10 plan in `stages/forum-structure/PLAN.md`;
+- no full redesign is needed.
 
-### Next bounded task
+### Mira current-main reconciliation
 
-Task 6 from `TASK.md`: **forum structure management — categories, sections, structure and topic moves.**
+Confirmed against current main:
 
-It is **not activated in this checkpoint**. A fresh owner continuation starts scope analysis for task 6 on current main. The owner's newer decision allows Leva to be used as implementer in subsequent implementation work; that decision should be applied when task-6 delivery mode is chosen, not retroactively to completed task 5.
+1. Existing schema still has only category/section identity/name/FK and topic `section_id`; there is no persistent sibling ordering, global structure version or topic location version yet. This matches the accepted foundation work rather than contradicting it.
+2. `forum.structure.manage` and `forum.topic.move` are not yet in the permission catalog; the accepted initial grants/admin admission/AP-10 integration remain future work of Task 6.
+3. Existing `createCategory/createSection` repository helpers are direct technical writers, not authoritative Admin mutation boundaries; they must not be exposed as the management implementation.
+4. Create-topic publication receipt replay currently returns `input.sectionId` after replay while reading only persisted closure state. The accepted Task-6 requirement to return the topic's **current persisted section after a move** is therefore still necessary and correctly scoped.
+5. Owner Monitoring already has the `forum.structure` monitor, but current Admin-History scope mapping has no structural events yet. The accepted plan to project the new original structural History events into that existing monitor is still necessary; no second journal/store is needed.
+6. Moderation visibility adds one required reconciliation point:
+   - ordinary/public-safe topic readers intentionally return no hidden-topic source;
+   - Task 6 must not broaden those readers or leak hidden title/body merely to support topic move;
+   - the final technical plan must explicitly define how a hidden **ordinary** topic, if movable under the accepted scope, is targeted/presented through an appropriately protected seam while preserving `is_hidden` and all retained state.
+   - Ordinary ↔ Help conversion remains forbidden.
 
-**STOP after task-5 closeout.**
+No other current-main conflict was confirmed. The accepted product scope stays unchanged: create/rename ordinary categories/sections, sibling Up/Down order, section reparent, ordinary topic move, no delete/archive/merge/bulk, no mandatory reason/author notification/auto-unpin.
+
+### Next assignment — Leva
+
+Reconcile the already accepted S0–S10 technical plan against current main; **do not redesign the feature from scratch**. Resolve the single post-visibility seam above and revalidate lock/order/race implications introduced by current visibility state. Preserve the already accepted receipt, History/Monitoring, permission/AP-10, ordering/version and acceptance requirements unless current code proves a conflict.
+
+Deliver a final implementation-ready technical plan / amendment with bounded delivery stages and done criteria, then STOP for Mira delivery-mode decision.
+
+Owner has separately allowed Leva to be used as an implementation agent for subsequent work now that limit conservation is unnecessary. That affects the later delivery assignment, not this planning gate.
+
+**STOP for Mira until Leva plan reconciliation.**
 
 ## Baseline
 
