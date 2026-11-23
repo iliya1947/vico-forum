@@ -1,5 +1,8 @@
 import { createP1AttachmentFixture } from "./attachment-fixture";
 import { P0_TOPIC_ID } from "../p0/fixture";
+import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64 } from "../p0/attachment-fixture";
+import { createPreviewAttachmentUrls, type PreviewAttachmentAsset } from "../p0/attachment-urls";
+import { publishedAttachmentReference } from "../../forum/attachment-url";
 import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "../p0/route-adapter";
 import { installPreviewResourceTransport } from "../p0/resource-transport";
@@ -16,7 +19,14 @@ function ids(route: typeof routeManifest): string[] {
 }
 
 const routeIds = ids(routeManifest);
-const attachmentFixture = createP1AttachmentFixture();
+const publishedReference = publishedAttachmentReference("p0-first-post", P0_ATTACHMENT_ID);
+const publishedBytes = Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (char) => char.charCodeAt(0));
+const publishedAssets: PreviewAttachmentAsset[] = [{
+  reference: publishedReference, fileName: P0_ATTACHMENT_NAME, detectedType: "png",
+  bytes: publishedBytes,
+}];
+const attachmentFixture = createP1AttachmentFixture(publishedAssets);
+const attachmentUrls = createPreviewAttachmentUrls(publishedAssets);
 const transport = installPreviewResourceTransport({
   manifest: routeManifest,
   createContext: attachmentFixture.createContext,
@@ -136,6 +146,53 @@ void (async () => {
   }
   console.info("P1_ATTACHMENT_PRIVATE_READ_200", downloadResponse.status,
     wrongContextResponse.status);
+  // The same P0 published reference is readable through the original public
+  // attachment loader and the shared native Blob presentation seam.
+  const publicUrl = new URL("/api/attachments/file/" + P0_ATTACHMENT_ID, window.location.origin);
+  publicUrl.searchParams.set("post", publishedReference.postId);
+  const publicFile = await fetch(publicUrl);
+  const fileBytes = new Uint8Array(await publicFile.arrayBuffer());
+  if (publicFile.status !== 200
+    || publicFile.headers.get("Content-Type") !== "application/octet-stream"
+    || !publicFile.headers.get("Content-Disposition")?.includes(P0_ATTACHMENT_NAME)
+    || fileBytes.length !== publishedBytes.length
+    || fileBytes.some((byte, index) => byte !== publishedBytes[index])) {
+    throw new Error("P1 published attachment HTTP download mismatch");
+  }
+  publicUrl.searchParams.set("view", "inline");
+  const inlineFile = await fetch(publicUrl);
+  const inlineBytes = new Uint8Array(await inlineFile.arrayBuffer());
+  if (inlineFile.status !== 200
+    || inlineFile.headers.get("Content-Type") !== "image/png"
+    || inlineFile.headers.get("Content-Disposition") !== "inline"
+    || inlineBytes.length !== publishedBytes.length
+    || inlineBytes.some((byte, index) => byte !== publishedBytes[index])) {
+    throw new Error("P1 published attachment HTTP inline mismatch");
+  }
+  publicUrl.searchParams.set("post", "p0-other-post");
+  const foreignPost = await fetch(publicUrl);
+  if (foreignPost.status !== 404 || foreignPost.headers.get("Cache-Control") !== "private, no-store") {
+    throw new Error("P1 published attachment leaked to unreferenced post");
+  }
+  const nativeInline = attachmentUrls.resolve(publishedReference, "inline");
+  const image = new Image();
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("P1 published native Blob image failed"));
+    image.src = nativeInline;
+  });
+  if (image.naturalWidth !== 2 || image.naturalHeight !== 2) {
+    throw new Error("P1 published native Blob image dimensions differ");
+  }
+  const nativeDownload = attachmentUrls.resolve(publishedReference, "download");
+  const nativeBytes = new Uint8Array(await (await fetch(nativeDownload)).arrayBuffer());
+  if (nativeBytes.length !== publishedBytes.length
+    || nativeBytes.some((byte, index) => byte !== publishedBytes[index])) {
+    throw new Error("P1 published native Blob download mismatch");
+  }
+  attachmentUrls.dispose();
+  console.info("P1_ATTACHMENT_PUBLISHED_READ_200", publicFile.status, inlineFile.status,
+    foreignPost.status, image.naturalWidth, image.naturalHeight);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }
@@ -145,6 +202,7 @@ void (async () => {
   console.info("P1_ALL_MODULES_IMPORTED", modules.size);
 })().catch((error: unknown) => {
   transport.dispose();
+  attachmentUrls.dispose();
   attachmentFixture.dispose();
   mount.dataset.status = "failed";
   mount.textContent = error instanceof Error ? error.stack ?? error.message : String(error);

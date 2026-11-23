@@ -5,6 +5,9 @@ import { loader as download } from "../../routes/attachment-download";
 import { authSessionContext } from "../../auth/request-context";
 import { createP1AttachmentFixture } from "./attachment-fixture";
 import { P0_TOPIC_ID } from "../p0/fixture";
+import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64, P0_ATTACHMENT_BYTE_SIZE } from "../p0/attachment-fixture";
+import { createPreviewAttachmentUrls, type PreviewAttachmentAsset } from "../p0/attachment-urls";
+import { publishedAttachmentReference } from "../../forum/attachment-url";
 
 const operationId = "11111111-1111-4111-8111-111111111111";
 const attachmentId = "22222222-2222-4222-8222-222222222222";
@@ -104,4 +107,60 @@ it("routes real upload action through original admission, streaming validation a
   } finally {
     environment.dispose();
   }
+});
+
+it("publishes baseline image bytes through the original public loader and shared native URL seam", async () => {
+  const bytes = Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (character) => character.charCodeAt(0));
+  expect(bytes.byteLength).toBe(P0_ATTACHMENT_BYTE_SIZE);
+  const reference = publishedAttachmentReference("p0-first-post", P0_ATTACHMENT_ID);
+  const assets: PreviewAttachmentAsset[] = [{
+    reference, fileName: P0_ATTACHMENT_NAME, detectedType: "png", bytes,
+  }];
+  const environment = createP1AttachmentFixture(assets);
+  const created: Blob[] = [];
+  const revoked: string[] = [];
+  const attachmentUrls = createPreviewAttachmentUrls(assets, {
+    createObjectURL(blob) { created.push(blob); return "blob:preview-public-" + created.length; },
+    revokeObjectURL(url) { revoked.push(url); },
+  });
+  try {
+    const publicRequest = (postId: string, suffix = "", context = environment.createContext()) =>
+      download({
+        request: new Request("http://localhost/api/attachments/file/" + P0_ATTACHMENT_ID
+          + "?post=" + encodeURIComponent(postId) + suffix),
+        params: { attachmentId: P0_ATTACHMENT_ID },
+        context,
+      });
+    const guest = environment.createContext();
+    guest.set(authSessionContext, null);
+    const downloadResult = await publicRequest(reference.postId, "", guest);
+    expect(downloadResult.status).toBe(200);
+    expect(downloadResult.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(downloadResult.headers.get("Content-Disposition")).toContain(P0_ATTACHMENT_NAME);
+    expect(downloadResult.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(downloadResult.headers.get("Content-Security-Policy")).toBe("sandbox");
+    expect([...new Uint8Array(await downloadResult.arrayBuffer())]).toEqual([...bytes]);
+
+    const inlineResult = await publicRequest(reference.postId, "&view=inline");
+    expect(inlineResult.status).toBe(200);
+    expect(inlineResult.headers.get("Content-Type")).toBe("image/png");
+    expect(inlineResult.headers.get("Content-Disposition")).toBe("inline");
+    expect([...new Uint8Array(await inlineResult.arrayBuffer())]).toEqual([...bytes]);
+    expect((await publicRequest(reference.postId, "&view=text")).status).toBe(404);
+    const otherPost = await publicRequest("p0-other-post");
+    expect(otherPost.status).toBe(404);
+    expect(otherPost.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(await otherPost.text()).toBe("");
+
+    expect(attachmentUrls.resolve(reference, "inline")).toBe("blob:preview-public-1");
+    expect(attachmentUrls.resolve(reference, "inline")).toBe("blob:preview-public-1");
+    expect(attachmentUrls.resolve(reference, "download")).toBe("blob:preview-public-2");
+    expect(created.map(blob => blob.type)).toEqual(["image/png", "application/octet-stream"]);
+    expect([...new Uint8Array(await created[0].arrayBuffer())]).toEqual([...bytes]);
+    expect([...new Uint8Array(await created[1].arrayBuffer())]).toEqual([...bytes]);
+  } finally {
+    attachmentUrls.dispose();
+    environment.dispose();
+  }
+  expect(revoked).toEqual(["blob:preview-public-1", "blob:preview-public-2"]);
 });

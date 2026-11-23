@@ -1,4 +1,5 @@
 import type { ForumAttachmentMetadata, CreateDraftAttachmentInput } from "../../../db/forum-attachments";
+import type { PreviewAttachmentAsset } from "../p0/attachment-urls";
 import type { ForumAttachmentStore } from "../../../db/hyperdrive-forum-attachments";
 import type { PrivateAttachmentBucket } from "../../forum/attachment-r2";
 import { isFencedAttachmentKey } from "../../forum/attachment-storage-protocol";
@@ -21,10 +22,30 @@ function key(ownerId: string, contextKey: string, draftId: string, attachmentId:
  * This is not a production DB or a replica of transactional attachment rules.
  * Unsupported store methods fail explicitly until their P1 path is connected.
  */
-export function createP1AttachmentFixture() {
+export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttachmentAsset[] = []) {
   const physical = new Map<string, { etag: string; bytes: Uint8Array | null }>();
   const journal = new Map<string, { ownerId: string; etag: string | null }>();
   const drafts = new Map<string, DraftRecord>();
+  const published = new Map<string, ForumAttachmentMetadata>();
+  for (const asset of publishedAssets) {
+    if (asset.reference.kind !== "published" || !asset.fileName || !asset.bytes.byteLength) {
+      throw new Error("P1 published attachment baseline is invalid");
+    }
+    const publicKey = JSON.stringify([asset.reference.postId, asset.reference.attachmentId]);
+    if (published.has(publicKey)) throw new Error("P1 duplicate published attachment reference");
+    const objectKey = "private/fenced-v1/" + crypto.randomUUID();
+    const bytes = Uint8Array.from(asset.bytes);
+    physical.set(objectKey, { etag: "baseline", bytes });
+    published.set(publicKey, {
+      id: asset.reference.attachmentId, objectKey, fileName: asset.fileName,
+      declaredMime: asset.detectedType === "png" ? "image/png" : "application/octet-stream",
+      detectedType: asset.detectedType,
+      responseMime: asset.detectedType === "png" ? "image/png" : "application/octet-stream",
+      byteSize: bytes.byteLength,
+      verificationStatus: "type-checked",
+      createdAt: new Date("2026-01-01T10:00:00.000Z").toISOString(),
+    });
+  }
 
   const bucket: PrivateAttachmentBucket = {
     async reserve(objectKey) {
@@ -68,6 +89,9 @@ export function createP1AttachmentFixture() {
   };
 
   const implemented = {
+    async readPublishedAttachment(postId: string, attachmentId: string) {
+      return published.get(JSON.stringify([postId, attachmentId])) ?? null;
+    },
     async admitUpload(ownerId: string, contextKey: string, draftId: string, attachmentId: string) {
       if (ownerId !== P0_ACTOR_ID) throw new Error("P1 upload actor not configured");
       return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
@@ -114,7 +138,7 @@ export function createP1AttachmentFixture() {
       return attachment;
     },
   } satisfies Pick<ForumAttachmentStore,
-    "admitUpload" | "readDraftAttachment" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
+    "readPublishedAttachment" | "admitUpload" | "readDraftAttachment" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
 
   const store = new Proxy(implemented, {
     get(target, name, receiver) {
@@ -131,6 +155,7 @@ export function createP1AttachmentFixture() {
       return context;
     },
     dispose() {
+      published.clear();
       drafts.clear();
       journal.clear();
       physical.clear();
