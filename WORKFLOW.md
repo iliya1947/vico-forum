@@ -148,11 +148,9 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 
 ## Parallel side assignment — stale/legacy audit (Mira-2)
 
-- Direct owner assignment through service PR #342; audit remains isolated from moderation-visibility work.
-- Source product remains `main` exact `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Fresh review of the 84-candidate registry confirmed **80 exact A-elements** and removed four false positives: old `A-007` plus old `A-012…A-014`.
-- Registry is corrected and renumbered to current `A-001…A-080`; no duplicate or additional confirmed A omission was found.
-- Intentional negative tests that explicitly prove removed draft requests stay absent are not stale findings.
-- **Mira-2 STOP after registry correction. Cleanup remains blocked pending separate owner decision; no runtime/test implementation PR is authorized.**
-
-
+- Audit result remains **80 exact A-elements** on main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Owner continuation `...` authorized cleanup after the audit-only STOP.
+- **Cleanup C1 active:** Draft #377, branch `cleanup/stale-localization-c1`, exact head `d4f820166bc905e28e2ae818854e6f8038c96ea1`.
+- C1 scope is only audit `A-011…A-026`: 16 dead development-status localization keys removed consistently from canonical catalog, RU/HE manual values, and manual fingerprints.
+- C1 changes exactly 3 localization files, 64 deletions, no additions; no runtime route/schema/docs changes.
+- Next gate: exact-head CI on #377, then Mira author self-check and STOP. Do not start C2 before explicit owner continuation.

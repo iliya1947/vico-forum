@@ -144,9 +144,9 @@ Fresh checkpoint completed on #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e
 
 ## Mira-2 side assignment — systematic stale/legacy audit
 
-Fresh review on unchanged main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` reduced the corrected registry from 84 to **80 exact A-elements**. Old `A-007` and `A-012…A-014` were false positives caused by treating representative/static preview boundaries as mandatory runtime parity. Remaining 80 are confirmed, with no duplicates or additional confirmed omission; intentional no-old-draft-request negative assertions are explicitly excluded from cleanup findings. Registry is now renumbered `A-001…A-080`.
+Audit closed at **80 exact A-elements** on unchanged main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Current Mira-2 state: **STOP after audit-registry correction.** Do not modify runtime/tests or start cleanup without a separate owner decision.
+Owner continuation authorized cleanup. Current bounded package is **C1 / A-011…A-026 only** in Draft #377 exact `d4f820166bc905e28e2ae818854e6f8038c96ea1`: 16 dead development-status localization keys, three localization files only, no runtime/schema/docs changes. Exact-head CI and author self-check are required before C1 can be considered ready. STOP after C1; C2 requires another owner continuation.
 
 
 ## 2026-11-21 — B4 coordinator checkpoint PASS
