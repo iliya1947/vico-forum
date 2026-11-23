@@ -2,17 +2,19 @@
 
 ## Активный этап
 
-**Moderation visibility stack fold completed; repository state assembled in #355. STOP before final assembled-head author self-check.**
+**Moderation visibility assembled #355 — final exact-head author self-check PASS; Лира STOP → Мира whole-feature review.**
 
-- Owner-authorized fold executed by fast-forwarding B1 branch `feature/moderation-visibility-b1-foundation` from original B1 `704d5a46d59841538524424296ac28eaa39aa5e6` to final integrated exact `fdad1930fc68a854d52bee31922f923be5c1c751`.
-- Assembled Draft #355 now targets current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`, is **ahead 315 / behind 0**, mergeable/clean, and contains the whole moderation-visibility feature: 132 files, +24351/−492.
-- `main` is unchanged at `9cff976...`; no merge action into `main` occurred.
-- Intermediate #357/#359/#365/#367/#370/#371/#376 are no longer active and are superseded by #355.
-- **GitHub metadata deviation:** after B1 was fast-forwarded over the stacked heads, GitHub recognized each intermediate head as contained in B1 and recorded those PRs as `merged` into B1 while closing them; their head refs were then auto-deleted. This happened without a merge action into `main`. The intended end-state “closed-unmerged superseded PRs” was therefore not preserved in PR metadata.
-- Their PR descriptions were corrected to state the factual outcome: superseded by #355, no merge into `main`, GitHub recorded containment as merged into B1.
-- This metadata deviation does **not** change assembled code or current-main safety, but it violates the intended PR-history presentation and is recorded as a process error.
-- Final assembled-head author self-check has **not** started. It must run in #355 context because its base is now `main`; prior exact-SHA evidence from #376 had a different PR base context.
-- **Mandatory STOP.** Next pending step, only after fresh owner continuation/acceptance of the metadata deviation: Лира performs final assembled-head author self-check on #355 exact `fdad1930...`, including fresh applicable CI/acceptance in the #355→main PR context. Mira whole-feature review, Leva independent review, owner merge, docs closeout and deploy remain blocked.
+- Single consolidated [Draft #355](https://github.com/iliya1947/vico-forum/pull/355) `feature/moderation-visibility-b1-foundation`, **exact head `fdad1930fc68a854d52bee31922f923be5c1c751`**, targets unchanged current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; ahead 315 / behind 0, mergeable clean. Code/tree identical to accepted pre-fold integrated B8 head, now verified through fresh **#355→main PR-context runs**. PR remains Draft/unmerged.
+- **Whole-feature scope reconciled:** 132 files (+24351/−492) vs current main: B1 schema/history/capability; B2 transactional visibility CAS/writer gates/PG races; B3 public DTO/SQL discovery; B4 assets/translations; B5 personal state/notifications; B6 guarded private reader/queue/inspector; B7 canonical actions/EN-RU-HE UI; B8 actual Worker/PG17/Chromium/local-R2 acceptance. No unrelated Stage6/deployed changes, dependency/provider/config rewrite, or implementation docs. V1–V9 and V8 ten-area acceptance reconciled with accepted B1–B8 stages; no newly confirmed current-feature defect. Unchanged main/test-control semantics retained in assembled head.
+- **Fresh author CI and connected acceptance on #355 exact `fdad1930`, not old #376 PR-context evidence:** triggered one-shot `run:ci` + `run:acceptance`, both labels consumed. **38/38 workflows complete: 20 SUCCESS + 18 expected SKIPPED; 48/48 #355 check-runs: 24 SUCCESS + 24 expected SKIPPED; 0 FAIL, 0 pending.**
+  - [CI #45149489505](https://github.com/iliya1947/vico-forum/actions/runs/45149489505) SUCCESS: 2951/2951 unit, 1689/1689 real PostgreSQL17, lint/typecheck/build/preview, migration history/metadata/schema parity, privileges/provisioning/credential probes, Worker+Better Auth B8-B1/B8-B3 protected/fault smoke PASS.
+  - [SA04-N #45149490457](https://github.com/iliya1947/vico-forum/actions/runs/45149490457) SUCCESS: real Chromium/Worker/Better Auth/PG17, all C1 (5), C2 (7), C3 (6) acceptance markers PASS; EN/RU/HE RTL, denial, 409, cache/outage/rollback.
+  - [SA04-K5 #45149490210](https://github.com/iliya1947/vico-forum/actions/runs/45149490210) SUCCESS: 33 K5 R2/Chromium checks plus B8-B2 published/private/draft/Complaint positive local-R2 PASS.
+  - All other applicable connected browser acceptance workflows SUCCESS, including AP-10, Owner/Admin, Watch/Bookmark/Mute, SA07/SA08. Exact head/main/PR base and labels verified at closeout.
+- **Known fold PR-metadata deviation retained:** contained intermediate stacked #357/#359/#365/#367/#370/#371/#376 were marked merged into B1 by GitHub on fast-forward (auto-deleted branches), not closed-unmerged superseded; **no merge into main**. Already recorded in `AGENT_ERRORS.md`; do not misrepresent as owner acceptance or forget at whole-feature review.
+- Assembled #355 title/body now describe actual whole feature and include final exact-head evidence and metadata deviation. Prior intermediate coordinator PASS remains prior-stage evidence, **not** independent whole-feature PASS.
+- **Next actor: Мира (ChatGPT-5.6 Sol)** independent **whole-feature review #355** on stable exact `fdad1930...`. Review without production edits; if finding, return to author for bounded correction/recheck. Only after Mira PASS next Leva independent whole-feature review on same head; no unilateral Leva/merge/docs/deploy. **Лира mandatory STOP.**
+
 
 ## Baseline
 
