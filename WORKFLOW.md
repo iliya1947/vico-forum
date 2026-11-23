@@ -2,79 +2,17 @@
 
 ## Активный этап
 
-**Moderation visibility #355 merged; documentation closeout assigned to Лира.**
+**Moderation visibility documentation closeout — Лира author-check PASS; STOP → Мира docs review.**
 
-Factual merged state:
-- implementation PR #355 merged by owner at **2026-11-23 12:40:49 UTC**;
-- final reviewed implementation head: `66b1bb7ec0f4a1f5bed17583398d5acc041da143`;
-- merge/current `main`: `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
-- final Mira whole-feature PASS + Leva independent whole-feature PASS were on the same exact implementation head;
-- VIS-FINAL-LEVA-01/02 closed before merge;
-- task 5 code is now factual `main` state. Deployment remains out of scope.
-
-## Active assignment — Лира: moderation visibility documentation closeout
-
-Create a **separate documentation PR from current main**. Documentation only; no runtime/schema/test/code behavior changes.
-
-### Required documentation scope
-
-1. **`PROJECT.md`**
-   - add the permanent high-level product contract for reversible moderation visibility of published topics/posts;
-   - distinguish Hide/Restore from deletion and from personal Mute/Block;
-   - record public hidden-topic absence / source-free hidden-post tombstones, protected moderator inspection, retained independent assets/translations/personal/inbox state and protected own lifecycle exceptions;
-   - link detailed authorization/Admin contracts rather than copying implementation internals.
-
-2. **`PROJECT_STATE.md`**
-   - update factual date/state after #355 merge;
-   - migration repository ceiling `0070 → 0071_moderation_visibility_foundation`;
-   - record moderation visibility as implemented in repository/local-CI, including the guarded private moderation queue/inspection and final exact-head connected acceptance boundary;
-   - do not claim production/deployed migration/runtime acceptance and do not rewrite unrelated external state or global roadmap.
-
-3. **`docs/auth/AUTHORIZATION.md`**
-   - add code-backed `forum.content.visibility.manage`;
-   - initial seed grants: moderator + admin, not user; custom grants/overrides remain dynamic;
-   - document that capability authorizes Hide/Restore/private visibility inspection only under fresh server-side checks and does not grant generic hidden edit-any or History/private-domain authority.
-
-4. **`docs/ADMIN_PANEL.md`**
-   - update Forum admission union and AP-10 `admin.forum` family with `forum.content.visibility.manage`;
-   - replace stale “other topic/message mutations not authorized” boundary with the now-implemented exact Hide/Restore row while retaining the rule for still-unspecified mutations;
-   - update ordinary Admin topic contract to preserve sanitized hidden tombstones/permanent chronology without hidden source;
-   - add permanent visibility contract: reasoned topic/post Hide/Restore, CAS/fresh authority, public redaction, guarded hidden queue/inspector, no generic Admin/private bypass, independent raw revision permission;
-   - add significant History coverage for `topic.hidden/restored` and `post.hidden/restored` with required bounded reason and neutral target context;
-   - preserve Complaints/Attention/Super-admin permission boundaries.
-
-5. **Project history**
-   - add `docs/PROJECT_HISTORY/PROJECT_HISTORY_33.md` for the completed moderation-visibility task: migration 0071, B1–B9 stacked delivery, final #355, significant final-review corrections VIS-FINAL-LEVA-01/02, final exact-head CI/PG/Chromium/local-R2 evidence, owner merge `9c629559...`, and the intermediate-PR metadata deviation as history only;
-   - add entry 33 to `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`.
-   - History is compact completion record, not a new source of truth.
-
-6. **`AGENT_LOGIC_ERRORS.md`**
-   - add one concise row for Mira/#342: whole-feature PASS used insufficient premises because the explicit V6 protected-withdrawal exception and Admin tombstone→consumer chronology were not traced through to their concrete writer/presentation consumers; correct rule is to verify explicit exceptions separately and carry presentation invariants through the final consumer.
-   - Do not duplicate the longer service-local `AGENT_ERRORS.md` narrative.
-
-### Explicit non-scope
-
-- no new `docs/moderation/VISIBILITY.md`; existing source-of-truth layers are sufficient;
-- no `ROADMAP.md` change: Stage sequencing/priority did not change;
-- no `docs/moderation/COMPLAINTS.md` change: its independence boundary is already correct;
-- no Stage 6/deploy/OAuth/provider/production claims;
-- no next forum-structure implementation yet.
-
-### Done
-
-- docs PR contains only the files above;
-- cross-document permission/grant/migration/current-state facts agree with merged main;
-- no stale claim that visibility is future/unimplemented or that #355 is Draft/unmerged;
-- author self-check + diff/link/consistency check;
-- STOP for Mira docs review. Do not merge the docs PR.
-
-After docs closeout merges, task 5 is fully closed and #342 may move to task 6 (forum structure/topic move). Owner's newer instruction permits using Лёва as an implementer for subsequent implementation work; apply that only after this current task's docs closeout is finished.
-
-**STOP for Mira.**
+- Task 5 implementation [#355](https://github.com/iliya1947/vico-forum/pull/355) merged 2026-11-23 12:40:49 UTC into main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`; final reviewed implementation exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`. Mira and Leva whole-feature PASS, VIS-FINAL-LEVA-01/02 CLOSED.
+- Separate docs-only [Draft #378](https://github.com/iliya1947/vico-forum/pull/378): base `main` `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`, exact head `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`; **7 documentation files only**, open/unmerged. Contains `PROJECT.md`, `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, history #33/index and a single `AGENT_LOGIC_ERRORS.md` row.
+- Author self-check compared delivered permission/seed/AP-10/history/guard contracts with merged code; GitHub PR diff exact 7-file allowlist; **14/14** static consistency checks, **6/6** new internal link targets, no trailing whitespace; Draft #378 is mergeable. No new runtime code/SQL/test/workflow changes and no CI triggered for docs-only change. Production/deployed acceptance not claimed.
+- **Next actor: Мира** — independent bounded docs PR #378 review against assigned scope and current main, exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`. Лира STOP. If Mira finds confirmed defects, return them to Лира; if PASS, use the applicable independent reviewer and owner merge gate from current `AGENTS.md`/service assignments. Do not merge #378 as author.
+- Until documentation merge, forum structure/topic move (task 6), Stage 6 deployment and unrelated changes remain inactive.
 
 ## Baseline
 
-- Current main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Current main: `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`.
 - #354 corrective package merged and closed.
 - V-P1/V-P2/V-P3 — ранее приняты и не переоткрываются.
 - V-T1/V-T2 — technical fit PASS на current main.
