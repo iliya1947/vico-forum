@@ -38,6 +38,7 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   const [requestedRead,setRequestedRead]=useState("");
   const [attempt,setAttempt]=useState<Attempt|null>(null);
   const [unknown,setUnknown]=useState(false);
+  const [sawSubmission,setSawSubmission]=useState(false);
   const lastPage=useRef<unknown>(null);
   const seq=useRef(0);
   const pageMode=useRef<"replace"|"append">("replace");
@@ -56,7 +57,7 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   // submission. Never overwrite a pending POST with a newer expected version.
   useEffect(()=>{
     if(moveFetcher.state==="idle")moveFetcher.reset();
-    setAttempt(null);setUnknown(false);
+    setAttempt(null);setUnknown(false);setSawSubmission(false);
     load(searched,"replace");
     // The snapshot itself, rather than a numeric version, establishes freshness.
   },[context,load]);
@@ -75,8 +76,9 @@ export function TopicMoveForm({locale,context,onRefresh}:{
     setEmpty(page.total===0);
   },[destinationFetcher.state,destinationFetcher.data,requestedRead,context.actorId]);
   useEffect(()=>{
-    if(moveFetcher.state==="idle"&&attempt&&!moveFetcher.data)setUnknown(true);
-  },[moveFetcher.state,moveFetcher.data,attempt]);
+    if(moveFetcher.state==="submitting")setSawSubmission(true);
+    if(moveFetcher.state==="idle"&&attempt&&sawSubmission&&!moveFetcher.data)setUnknown(true);
+  },[moveFetcher.state,moveFetcher.data,attempt,sawSubmission]);
   const receipt=moveFetcher.state==="idle"&&attempt&&moveFetcher.data?.operation==="topicMove"
     ?moveFetcher.data:null;
   const stillSame=Boolean(attempt&&attempt.actorId===context.actorId

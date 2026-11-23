@@ -15,7 +15,7 @@ export default function TopicMoveRoute(){
   const {t}=useTranslation("common");
   const routing=useAdministrativeRouting();
   const viewer=useHeaderAuthUser()?.id??null;
-  if(viewer!==context.actorId)return null;
+  if(viewer!==context.actorId || "operation" in context)return null;
   return <ForumShell locale={locale} variant="admin">
     <section className="admin-forum topic-move-private">
       <h1>{t("topicMoveTitle")}</h1>
