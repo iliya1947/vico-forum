@@ -1,4 +1,6 @@
 import type { ForumAttachmentMetadata, CreateDraftAttachmentInput } from "../../../db/forum-attachments";
+import { ForumAttachmentDraftConflictError } from "../../../db/forum-attachment-errors";
+import { AccountMissingError } from "../../../db/account-state-errors";
 import type { PreviewAttachmentAsset } from "../p0/attachment-urls";
 import type { ForumAttachmentStore } from "../../../db/hyperdrive-forum-attachments";
 import type { PrivateAttachmentBucket } from "../../forum/attachment-r2";
@@ -26,6 +28,14 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
   const physical = new Map<string, { etag: string; bytes: Uint8Array | null }>();
   const journal = new Map<string, { ownerId: string; etag: string | null }>();
   const drafts = new Map<string, DraftRecord>();
+  const completed = new Set<string>();
+  const scopeKey = (ownerId: string, contextKey: string, draftId: string) =>
+    JSON.stringify([ownerId, contextKey, draftId]);
+  const assertLive = (ownerId: string, contextKey: string, draftId: string) => {
+    if (completed.has(scopeKey(ownerId, contextKey, draftId))) {
+      throw new ForumAttachmentDraftConflictError("gone");
+    }
+  };
   const published = new Map<string, ForumAttachmentMetadata>();
   for (const asset of publishedAssets) {
     if (asset.reference.kind !== "published" || !asset.fileName || !asset.bytes.byteLength) {
@@ -93,16 +103,30 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       return published.get(JSON.stringify([postId, attachmentId])) ?? null;
     },
     async admitUpload(ownerId: string, contextKey: string, draftId: string, attachmentId: string) {
-      if (ownerId !== P0_ACTOR_ID) throw new Error("P1 upload actor not configured");
+      if (ownerId !== P0_ACTOR_ID) throw new AccountMissingError();
+      assertLive(ownerId, contextKey, draftId);
       return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
+    },
+    async cancelOperation(ownerId: string, contextKey: string, draftId: string) {
+      if (ownerId !== P0_ACTOR_ID) throw new AccountMissingError();
+      // Retiring a draft generation is idempotent; only this exact selection loses refs.
+      completed.add(scopeKey(ownerId, contextKey, draftId));
+      for (const [reference, record] of drafts) {
+        if (record.ownerId === ownerId && record.contextKey === contextKey && record.draftId === draftId) {
+          drafts.delete(reference);
+        }
+      }
+      // Physical bytes and the upload journal are cleaned separately.
     },
     async readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string) {
       // The synthetic P0 actor can read only that actor's matching active draft reference.
       if (ownerId !== P0_ACTOR_ID) return null;
+      assertLive(ownerId, contextKey, draftId);
       return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
     },
     async listDraftAttachments(ownerId: string, contextKey: string, draftId: string) {
       if (ownerId !== P0_ACTOR_ID) return [];
+      assertLive(ownerId, contextKey, draftId);
       return [...drafts.values()]
         .filter((record) => record.ownerId === ownerId
           && record.contextKey === contextKey && record.draftId === draftId)
@@ -123,7 +147,9 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       record.etag = etag;
     },
     async createDraftAttachment(input: CreateDraftAttachmentInput): Promise<ForumAttachmentMetadata> {
-      if (input.ownerId !== P0_ACTOR_ID || !input.requireUploadRecord
+      if (input.ownerId !== P0_ACTOR_ID) throw new AccountMissingError();
+      assertLive(input.ownerId, input.contextKey, input.draftId);
+      if (!input.requireUploadRecord
         || journal.get(input.objectKey)?.ownerId !== input.ownerId
         || !journal.get(input.objectKey)?.etag
         || !physical.get(input.objectKey)?.bytes
@@ -146,8 +172,8 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       return attachment;
     },
   } satisfies Pick<ForumAttachmentStore,
-    "readPublishedAttachment" | "admitUpload" | "readDraftAttachment" | "listDraftAttachments"
-    | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
+    "readPublishedAttachment" | "admitUpload" | "cancelOperation" | "readDraftAttachment"
+    | "listDraftAttachments" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
 
   const store = new Proxy(implemented, {
     get(target, name, receiver) {
@@ -164,6 +190,7 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       return context;
     },
     dispose() {
+      completed.clear();
       published.clear();
       drafts.clear();
       journal.clear();

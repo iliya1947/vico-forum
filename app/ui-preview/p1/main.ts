@@ -248,6 +248,43 @@ void (async () => {
   downloadLink.textContent = "P1 published attachment download proof";
   console.info("P1_ATTACHMENT_PUBLISHED_READ_200", publicFile.status, inlineFile.status,
     foreignPost.status, image.naturalWidth, image.naturalHeight);
+  const cancelHeaders = new Headers(draftHeaders);
+  const cancelResponse = await fetch(new URL("/api/attachments", window.location.origin), {
+    method: "DELETE", headers: cancelHeaders,
+  });
+  if (cancelResponse.status !== 200
+    || cancelResponse.headers.get("Cache-Control") !== "no-store"
+    || (await cancelResponse.json() as { outcome?: string }).outcome !== "cancelled") {
+    throw new Error("P1 original attachment cancel failed");
+  }
+  const cancelledAgain = await fetch(new URL("/api/attachments", window.location.origin), {
+    method: "DELETE", headers: cancelHeaders,
+  });
+  if (cancelledAgain.status !== 200
+    || (await cancelledAgain.json() as { outcome?: string }).outcome !== "cancelled") {
+    throw new Error("P1 attachment cancel is not idempotent");
+  }
+  const retiredList = await listDrafts(draftHeaders);
+  if (retiredList.status !== 410
+    || (await retiredList.json() as { error?: string }).error !== "gone") {
+    throw new Error("P1 cancelled attachment operation was not retired");
+  }
+  draftDownloadUrl.searchParams.set("context", "topic:" + P0_TOPIC_ID + ":reply");
+  const retiredDownload = await fetch(draftDownloadUrl);
+  if (retiredDownload.status !== 404
+    || retiredDownload.headers.get("Cache-Control") !== "private, no-store") {
+    throw new Error("P1 cancelled attachment is still readable");
+  }
+  const nextOperationHeaders = new Headers(draftHeaders);
+  nextOperationHeaders.set("X-Vico-Operation-Id", crypto.randomUUID());
+  const nextOperationList = await listDrafts(nextOperationHeaders);
+  if (nextOperationList.status !== 200
+    || JSON.stringify(await nextOperationList.json()) !== '{"attachments":[]}') {
+    throw new Error("P1 cancel affected an independent operation");
+  }
+  console.info("P1_ATTACHMENT_CANCEL_200", cancelResponse.status,
+    cancelledAgain.status, retiredList.status, retiredDownload.status,
+    nextOperationList.status);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }

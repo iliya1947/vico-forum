@@ -12,17 +12,17 @@ import { publishedAttachmentReference } from "../../forum/attachment-url";
 
 const operationId = "11111111-1111-4111-8111-111111111111";
 const attachmentId = "22222222-2222-4222-8222-222222222222";
-function request(origin = "http://localhost") {
+function request(origin = "http://localhost", draftId = operationId, assetId = attachmentId) {
   return new Request("http://localhost/api/attachments", {
     method: "POST",
     headers: {
       Origin: origin,
       "Content-Type": "text/plain",
-      "X-Vico-Attachment-Id": attachmentId,
+      "X-Vico-Attachment-Id": assetId,
       "X-Vico-Attachment-Name": encodeURIComponent("notes.txt"),
       "X-Vico-Attachment-Size": "13",
       "X-Vico-Editor-Context": encodeURIComponent("topic:" + P0_TOPIC_ID + ":reply"),
-      "X-Vico-Operation-Id": operationId,
+      "X-Vico-Operation-Id": draftId,
     },
     body: "hello preview",
   });
@@ -183,6 +183,111 @@ it("restores only the current owner/context/operation through the original draft
     const foreignResult = await list(headers, foreign);
     expect(foreignResult.status).toBe(200);
     expect(await foreignResult.json()).toEqual({ attachments: [] });
+  } finally {
+    environment.dispose();
+  }
+});
+
+it("cancels only one operation through the original DELETE action and retires its draft generation", async () => {
+  const environment = createP1AttachmentFixture();
+  try {
+    const editorContext = "topic:" + P0_TOPIC_ID + ":reply";
+    const nextOperationId = "33333333-3333-4333-8333-333333333333";
+    const nextAssetId = "44444444-4444-4444-8444-444444444444";
+    const firstHeaders = new Headers({
+      "X-Vico-Editor-Context": encodeURIComponent(editorContext),
+      "X-Vico-Operation-Id": operationId,
+    });
+    const nextHeaders = new Headers(firstHeaders);
+    nextHeaders.set("X-Vico-Operation-Id", nextOperationId);
+    const actionFor = (headers: Headers, context = environment.createContext()) =>
+      upload({
+        request: new Request("http://localhost/api/attachments", {
+          method: "DELETE", headers: new Headers({
+            ...Object.fromEntries(headers), Origin: "http://localhost",
+          }),
+        }),
+        context,
+      });
+    const listFor = (headers: Headers) => listDrafts({
+      request: new Request("http://localhost/api/attachments", { headers }),
+      context: environment.createContext(),
+    });
+    const downloadFor = (draftId: string, id: string) => download({
+      request: new Request("http://localhost/api/attachments/file/" + id
+        + "?operation=" + draftId + "&context=" + encodeURIComponent(editorContext)),
+      params: { attachmentId: id },
+      context: environment.createContext(),
+    });
+    expect((await upload({ request: request(), context: environment.createContext() })).status).toBe(201);
+    expect((await upload({
+      request: request("http://localhost", nextOperationId, nextAssetId),
+      context: environment.createContext(),
+    })).status).toBe(201);
+    expect((await downloadFor(operationId, attachmentId)).status).toBe(200);
+    expect((await downloadFor(nextOperationId, nextAssetId)).status).toBe(200);
+
+    const deniedOrigin = await upload({
+      request: new Request("http://localhost/api/attachments", {
+        method: "DELETE",
+        headers: new Headers({ ...Object.fromEntries(firstHeaders), Origin: "https://foreign.example.invalid" }),
+      }),
+      context: environment.createContext(),
+    });
+    expect(deniedOrigin.status).toBe(403);
+    expect(await deniedOrigin.json()).toEqual({ error: "origin" });
+    expect(await (await listFor(firstHeaders)).json()).toMatchObject({
+      attachments: [{ id: attachmentId }],
+    });
+
+    const perFileHeaders = new Headers(firstHeaders);
+    perFileHeaders.set("X-Vico-Attachment-Id", attachmentId);
+    const perFile = await actionFor(perFileHeaders);
+    expect(perFile.status).toBe(405);
+    expect(perFile.headers.get("Allow")).toBe("GET, POST, DELETE");
+    expect((await downloadFor(operationId, attachmentId)).status).toBe(200);
+
+    const guest = environment.createContext();
+    guest.set(authSessionContext, null);
+    const guestDelete = await actionFor(firstHeaders, guest);
+    expect(guestDelete.status).toBe(401);
+    expect(await guestDelete.json()).toEqual({ error: "unauthenticated" });
+
+    const foreign = environment.createContext();
+    const session = foreign.get(authSessionContext);
+    if (!session) throw new Error("P0 test actor session missing");
+    foreign.set(authSessionContext, { ...session, user: { ...session.user, id: "other-actor" } });
+    foreign.set(authorizationContext, { forUser: () => ({ has: async () => true }) } as never);
+    const foreignDelete = await actionFor(firstHeaders, foreign);
+    expect(foreignDelete.status).toBe(401);
+    expect(await foreignDelete.json()).toEqual({ error: "unauthenticated" });
+    expect((await downloadFor(operationId, attachmentId)).status).toBe(200);
+
+    const cancelled = await actionFor(firstHeaders);
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.headers.get("Cache-Control")).toBe("no-store");
+    expect(await cancelled.json()).toEqual({ outcome: "cancelled" });
+    const repeat = await actionFor(firstHeaders);
+    expect(repeat.status).toBe(200);
+    expect(await repeat.json()).toEqual({ outcome: "cancelled" });
+
+    const closedSelection = await listFor(firstHeaders);
+    expect(closedSelection.status).toBe(410);
+    expect(closedSelection.headers.get("Cache-Control")).toBe("no-store");
+    expect(await closedSelection.json()).toEqual({ error: "gone" });
+    const closedDownload = await downloadFor(operationId, attachmentId);
+    expect(closedDownload.status).toBe(404);
+    expect(closedDownload.headers.get("Cache-Control")).toBe("private, no-store");
+    const staleUpload = await upload({ request: request(), context: environment.createContext() });
+    expect(staleUpload.status).toBe(410);
+    expect(await staleUpload.json()).toEqual({ error: "gone" });
+
+    const unaffected = await listFor(nextHeaders);
+    expect(unaffected.status).toBe(200);
+    expect(await unaffected.json()).toMatchObject({
+      attachments: [{ id: nextAssetId, fileName: "notes.txt", byteSize: 13 }],
+    });
+    expect((await downloadFor(nextOperationId, nextAssetId)).status).toBe(200);
   } finally {
     environment.dispose();
   }
