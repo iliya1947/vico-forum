@@ -2,36 +2,27 @@
 
 ## Активный этап
 
-**Moderation visibility documentation closeout — Mira docs review PASS; Leva independent docs review next.**
+**Moderation visibility documentation closeout — Mira docs review PASS; owner merge gate.**
 
 Stable docs PR:
 - Draft #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`;
 - base/current main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
 - exactly 7 documentation files, mergeable clean;
-- no runtime/schema/test/workflow files.
+- Lira author-check PASS;
+- Mira independent bounded docs review PASS;
+- no runtime/schema/test/workflow files and no confirmed docs blocker.
 
-### Mira docs review — PASS
+### Process correction
 
-All seven changed documents were read through their actual end and checked against merged main.
+The previous handoff to Leva for an independent docs review was incorrect and is cancelled.
+Current `AGENTS.md` requires the full Mira → independent Codex review cycle for implementation PRs / final assembled implementation, but does **not** require a Leva gate for the separate end-of-task documentation PR.
+Using Leva here would add no required assurance and would waste the technical lead/reviewer capacity the owner explicitly wants available for subsequent implementation work.
 
-Verified:
-1. `PROJECT.md` now states the permanent reversible Hide/Restore product boundary, public neutral 404/source-free tombstones, protected inspection and retained independent state without confusing moderation visibility with deletion or personal Mute/Block.
-2. `PROJECT_STATE.md` correctly advances repository migrations to `0071_moderation_visibility_foundation`, records repository/local-CI completion and keeps external accepted evidence at `0020`; no deployed/production claim is added.
-3. `docs/auth/AUTHORIZATION.md` matches runtime catalog/defaults: `forum.content.visibility.manage` is code-backed, initially seeded to moderator/admin only, dynamic overrides remain authoritative, and hidden revision text still requires independent `forum.post.history.read`.
-4. `docs/ADMIN_PANEL.md` matches current Admin admission and AP-10 runtime families, ordinary public-safe tombstone projection, exact queue/inspector paths, guarded hidden attachments, reason/CAS semantics and the four neutral visibility History actions. Generic Admin/History/Help/Complaint authority does not become hidden-source authority.
-5. `PROJECT_HISTORY_33.md` and history index accurately record B1–B9, the intermediate PR metadata deviation, VIS-FINAL-LEVA-01/02 correction cycle, exact-head evidence and owner merge.
-6. `AGENT_LOGIC_ERRORS.md` contains one concise confirmed row for Mira's missed explicit exception/final-consumer invariant, with no duplicated service narrative.
-7. Assigned non-scope is respected: no ROADMAP, Complaints, runtime, schema or next-task changes; no new visibility document.
+### Next gate
 
-No confirmed documentation defect or current-task blocker found.
+#378 goes directly to **owner merge**. After actual docs merge, moderation-visibility task 5 is fully closed and task 6 may be activated separately.
 
-### Next assignment — Leva
-
-Independently review docs PR #378 on exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a` against merged main and the docs-closeout assignment. Verify the whole 7-file documentation scope, not only Mira's conclusions. Do not edit the docs during review.
-
-If #378 head changes, this handoff expires and Mira must re-review the new head.
-
-**STOP for Mira.** No docs merge and no task 6/forum-structure implementation until Leva verdict and owner merge gate.
+**STOP for Mira.** No task 6 implementation and no deployment before owner merge of #378.
 
 ## Baseline
 
