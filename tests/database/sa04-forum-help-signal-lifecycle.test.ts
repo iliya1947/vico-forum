@@ -229,7 +229,7 @@ describe("SA04-J9 Help Signals AccountState lifecycle", () => {
       await expect(forum.withdrawHelpSignal(signal.id, x.topicId, owner))
         .rejects.toBeInstanceOf(ForumStateConflictError);
       await expect(forum.resolveHelpSignal(signal.id, other, "accepted"))
-        .rejects.toBeInstanceOf(ForumStateConflictError);
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     },
   );
 

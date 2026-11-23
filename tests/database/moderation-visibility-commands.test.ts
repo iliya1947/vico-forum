@@ -657,29 +657,33 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     expect(signal.status).toBe("pending");
   });
 
-  it("blocks signal withdrawal and both review outcomes on hidden topic; pending remains intact", async () => {
+  it("permits only own withdrawal under hidden topic while denying both protected reviews", async () => {
     const f = await helpFixture();
     const signal = await service.createHelpSignal(details(f));
     await service.setTopicVisibility(topicCommand(f));
     const before = await facts(f);
-    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
-      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     expect(await facts(f)).toEqual(before);
+    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    const withdrawn = await facts(f);
+    expect(withdrawn.signals[0]).toMatchObject({ id: signal.id, status: "withdrawn", resolved_by_user_id: "ordinary" });
+    expect(withdrawn.needsDetails).toBe(before.needsDetails);
+    expect(withdrawn.relationships).toEqual(before.relationships);
+    expect(withdrawn.history).toEqual(before.history);
     await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
-    expect(await service.resolveHelpSignal(signal.id, "moderator1", "accepted")).toBe("accepted");
-    expect((await facts(f)).needsDetails).toBe(true);
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "accepted"))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await facts(f)).needsDetails).toBe(before.needsDetails);
   });
 
-  it("permits withdrawal after Restore with no ordinary History changes", async () => {
+  it("retains pending Help signal through Hide/Restore and permits own withdrawal afterward", async () => {
     const f = await helpFixture();
     const signal = await service.createHelpSignal(details(f));
     await service.setTopicVisibility(topicCommand(f));
-    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
-      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect((await facts(f)).signals[0]?.status).toBe("pending");
     await service.setTopicVisibility(topicCommand(f, "moderator1", false, 1, "Reviewed question"));
     const beforeHistory = (await facts(f)).history;
     await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
@@ -745,22 +749,26 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
     expect((await facts(f)).signals[0]?.status).toBe("accepted");
   });
 
-  it("denies withdrawal and rejected review of a duplicate while its proposed original is hidden", async () => {
+  it("permits own duplicate withdrawal while proposed original is hidden, never review", async () => {
     const f = await helpFixture(), original = await helpFixture();
     const signal = await service.createHelpSignal(duplicate(f, original));
     await service.setTopicVisibility(topicCommand(original));
     const before = await facts(f);
-    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
-      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     expect(await facts(f)).toEqual(before);
+    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    const withdrawn = await facts(f);
+    expect(withdrawn.signals[0]).toMatchObject({ id: signal.id, status: "withdrawn" });
+    expect(withdrawn.relationships).toEqual(before.relationships);
+    expect(withdrawn.history).toEqual(before.history);
     await service.setTopicVisibility(topicCommand(original, "moderator1", false, 1, "Reviewed original"));
-    expect(await service.resolveHelpSignal(signal.id, "moderator1", "rejected")).toBe("rejected");
-    expect((await facts(f)).signals[0]?.status).toBe("rejected");
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
+    expect((await facts(f)).signals[0]?.status).toBe("withdrawn");
   });
 
-  it("denies withdrawal/rejection of a selected-answer signal while its post is hidden", async () => {
+  it("permits own withdrawal with hidden selected answer but never hidden review", async () => {
     const f = await helpFixture(), answerId = randomUUID(), answerRevisionId = randomUUID();
     await repository.createPost({
       id: answerId, topicId: f.topicId, authorId: "ordinary",
@@ -777,70 +785,21 @@ describe("V4 Help signal admission under hidden topics and answer", () => {
       expectedVisibilityVersion: 0, expectedRevisionId: answerRevisionId, reason: "Hide answer",
     });
     const before = await facts(f);
-    await expect(service.withdrawHelpSignal(signal.id, f.topicId, "ordinary"))
-      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
     expect(await facts(f)).toEqual(before);
+    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    const withdrawn = await facts(f);
+    expect(withdrawn.signals[0]?.status).toBe("withdrawn");
+    expect(withdrawn.history).toEqual(before.history);
     await service.setPostVisibility({
       topicId: f.topicId, postId: answerId, actorId: "moderator1", hidden: false,
       expectedVisibilityVersion: 1, expectedRevisionId: answerRevisionId, reason: "Restore answer",
     });
-    await service.withdrawHelpSignal(signal.id, f.topicId, "ordinary");
+    await expect(service.resolveHelpSignal(signal.id, "moderator1", "rejected"))
+      .rejects.toBeInstanceOf(ForumStateConflictError);
     expect((await facts(f)).signals[0]?.status).toBe("withdrawn");
   });
-});
-
-describe("V4 solution moderation admission under topic and answer visibility", () => {
-  async function solvedQuestion() {
-    const topicId = randomUUID(), postId = randomUUID();
-    const titleRevisionId = randomUUID(), bodyRevisionId = randomUUID();
-    const answerId = randomUUID(), answerRevisionId = randomUUID();
-    await repository.createTopicWithInitialPost({
-      id: topicId, sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID, authorId: "author",
-      titleRevision: { id: titleRevisionId, originalContent: "Help question", sourceLocale: "en" },
-      initialPost: {
-        id: postId, topicId, authorId: "author",
-        bodyRevision: { id: bodyRevisionId, originalContent: "Help body", sourceLocale: "en" },
-      },
-    });
-    await repository.createPost({
-      id: answerId, topicId, authorId: "ordinary",
-      bodyRevision: { id: answerRevisionId, originalContent: "Selected answer", sourceLocale: "en" },
-    });
-    await repository.selectBestAnswer(topicId, answerId, "author", "own");
-    await repository.markTopicSolved(topicId, "author", "own");
-    return { topicId, postId, titleRevisionId, bodyRevisionId, answerId, answerRevisionId };
-  }
-  async function state(f: Awaited<ReturnType<typeof solvedQuestion>>) {
-    const [post, signals, history] = await Promise.all([
-      client.query(
-        "select solution_moderation_status,solution_outdated_reason,solution_outdated_reason_kind from forum_posts where id=$1",
-        [f.answerId],
-      ),
-      client.query(
-        "select id,kind,status,resolved_by_user_id from forum_help_signals where topic_id=$1 order by id",
-        [f.topicId],
-      ),
-      client.query("select action,reason,context from admin_history where target_id=$1 order by position", [f.topicId]),
-    ]);
-    return { post: post.rows[0], signals: signals.rows, history: history.rows };
-  }
-  const moderate = (f: Awaited<ReturnType<typeof solvedQuestion>>,
-    status: "needs-review" | "outdated" | null, actorId = "moderator1") =>
-    service.setHelpSolutionModeration(
-      f.topicId, status, status === "outdated" ? "Answer is stale" : null, actorId, f.answerId,
-    );
-  const hideTopic = (f: Awaited<ReturnType<typeof solvedQuestion>>, hidden: boolean, version: number) =>
-    service.setTopicVisibility({
-      topicId: f.topicId, actorId: "moderator1", hidden,
-      expectedVisibilityVersion: version, expectedRevisionId: f.titleRevisionId, reason: "Visibility review",
-    });
-  const hideAnswer = (f: Awaited<ReturnType<typeof solvedQuestion>>, hidden: boolean, version: number) =>
-    service.setPostVisibility({
-      topicId: f.topicId, postId: f.answerId, actorId: "moderator1", hidden,
-      expectedVisibilityVersion: version, expectedRevisionId: f.answerRevisionId, reason: "Answer review",
-    });
 
   it("rejects all moderation states, including unchanged clear, while topic hidden", async () => {
     const f = await solvedQuestion();

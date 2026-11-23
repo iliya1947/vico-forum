@@ -120,7 +120,7 @@ describe("AP-07 admin topic presentation", () => {
       const posts: AdminTopic["posts"] = position === "root"
         ? [hidden("p1", null), topic.posts[1], topic.posts[2]]
         : position === "middle"
-          ? [topic.posts[0], hidden("p2", "p1"), topic.posts[2]]
+          ? [topic.posts[0], hidden("p2", "p1"), { ...topic.posts[2], parentPostId: "p2" }]
           : [topic.posts[0], topic.posts[1], hidden("p3", "p1")];
       const node = mount(undefined, false, { ...topic, posts });
       const cards = [...node.querySelectorAll(".admin-topic .topic-message")];
@@ -129,7 +129,7 @@ describe("AP-07 admin topic presentation", () => {
         .toEqual(["Message #1", "Message #3", "Message #2"]);
       const hiddenCard = node.querySelector("[data-moderation-hidden-post]");
       expect(hiddenCard).not.toBeNull();
-      expect(hiddenCard?.textContent).toContain("hidden");
+      expect(hiddenCard?.textContent).toContain("unavailable");
       expect(hiddenCard?.querySelector(".topic-message-profile-link")).toBeNull();
       expect(hiddenCard?.querySelector(".content-translation-body")).toBeNull();
       expect(hiddenCard?.querySelector(".topic-message-attachments")).toBeNull();
@@ -142,7 +142,7 @@ describe("AP-07 admin topic presentation", () => {
       }
       if (position === "middle") {
         expect(hiddenCard?.querySelector(".topic-message-parent-link")?.getAttribute("href")).toBe("#post-p1");
-        expect(node.querySelector("#post-p3 .topic-message-parent-link")?.getAttribute("href")).toBe("#post-p1");
+        expect(node.querySelector("#post-p3 .topic-message-parent-link")?.getAttribute("href")).toBe("#post-p2");
       }
       if (position === "best") {
         expect(hiddenCard?.classList.contains("best-answer")).toBe(true);
