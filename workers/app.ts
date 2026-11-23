@@ -38,6 +38,8 @@ import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telem
 import { RequestAuthFactCollector } from "../app/observability/auth-fact-collector.server";
 import { createHyperdriveAuthFactWriter } from "../db/hyperdrive-auth-facts";
 import {forumStructureReaderContext} from "../app/admin/structure.server";
+import {forumStructureWriterContext} from "../app/admin/structure-actions.server";
+import {createHyperdriveForumStructureWriter} from "../db/hyperdrive-forum-structure-writer";
 import {createHyperdriveForumStructureReader} from "../db/hyperdrive-forum-structure-reader";
 import {adminForumContext} from "../app/admin/forum.server";
 import {hiddenQueueContext} from "../app/admin/visibility-queue.server";
@@ -151,6 +153,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     );
     context.set(authorizationContext, effectiveAuthorization);
     context.set(forumStructureReaderContext,createHyperdriveForumStructureReader(webConnectionString,effectiveAuthorization,ownerUserId));
+    context.set(forumStructureWriterContext,createHyperdriveForumStructureWriter(webConnectionString,effectiveAuthorization,ownerUserId));
     context.set(hiddenQueueContext, createHyperdriveHiddenQueue(webConnectionString, effectiveAuthorization));
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization, undefined, ownerUserId));
