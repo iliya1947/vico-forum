@@ -1,5 +1,5 @@
 import { createElement, type ComponentType } from "react";
-import { useActionData, useMatches, useParams, useRouteLoaderData } from "react-router";
+import { useActionData, useMatches, useParams, useRouteError, useRouteLoaderData } from "react-router";
 import type { RouteObject } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
 import { previewAction } from "./action-bridge";
@@ -12,6 +12,20 @@ function withFrameworkComponentProps(id: string, Component: ComponentType<Record
     const params = useParams();
     const matches = useMatches();
     return createElement(Component, { loaderData, actionData, params, matches });
+  };
+}
+
+/** Preserve Framework ErrorBoundary props while keeping the original useRouteError hook working. */
+function withFrameworkErrorBoundaryProps(
+  id: string,
+  ErrorBoundary: ComponentType<Record<string, unknown>>,
+): ComponentType {
+  return function PreviewFrameworkErrorBoundary() {
+    const error = useRouteError();
+    const loaderData = useRouteLoaderData(id);
+    const actionData = useActionData();
+    const params = useParams();
+    return createElement(ErrorBoundary, { error, loaderData, actionData, params });
   };
 }
 
@@ -72,7 +86,11 @@ export function createPreviewDataRoutes(
         : typeof module.action === "function" ? { action: module.action } : {}),
       ...(module.middleware ? { middleware: module.middleware } : {}),
       ...(typeof module.ErrorBoundary === "function"
-        ? { ErrorBoundary: module.ErrorBoundary as ComponentType } : {}),
+        ? {
+          ErrorBoundary: withFrameworkErrorBoundaryProps(
+            descriptor.id, module.ErrorBoundary as ComponentType<Record<string, unknown>>,
+          ),
+        } : {}),
       ...(module.handle === undefined ? {} : { handle: module.handle }),
       ...(typeof module.shouldRevalidate === "function"
         ? { shouldRevalidate: module.shouldRevalidate } : {}),
