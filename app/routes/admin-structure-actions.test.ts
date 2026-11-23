@@ -35,8 +35,8 @@ function env(keys:string[]=["forum.structure.manage"],signedIn=true){
   context.set(forumStructureWriterContext,writers as never);
   return {context,has,writers};
 }
-function request(intent:string,extra:readonly (readonly [string,string])[],origin="https://vico.test"){
-  const fields=new URLSearchParams([["intent",intent],["editorActorId","actor"],["expectedStructureVersion","0"],...extra.map(([key,value]):Entry=>[key,value])]);
+function request(intent:string,extra:readonly (readonly [string,string])[],origin="https://vico.test",actorId="actor"){
+  const fields=new URLSearchParams([["intent",intent],["editorActorId",actorId],["expectedStructureVersion","0"],...extra.map(([key,value]):Entry=>[key,value])]);
   return new Request("https://vico.test/en/admin/forum",{method:"POST",headers:{
     Origin:origin,"Content-Type":"application/x-www-form-urlencoded",
   },body:fields});
@@ -95,7 +95,7 @@ describe("F5-B category and section strict Admin POST actions",()=>{
   });
   it.each(variants)("rejects stale actor and invalid target path for %s without mutation",async v=>{
     const changed=env();
-    const result=await invoke(v,changed.context,request(v.intent,[["editorActorId","other"],["expectedStructureVersion","0"],...v.extra]));
+    const result=await invoke(v,changed.context,request(v.intent,v.extra,"https://vico.test","other"));
     expect(result.init?.status).toBe(409);
     const broken=env();
     for(const invalid of ["", "bad\npath","x".repeat(2049)]){
