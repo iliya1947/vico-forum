@@ -2,33 +2,14 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — final review correction assigned to Лира; HOLD.**
+**Moderation visibility assembled #355 — VIS-FINAL-LEVA-01/02 corrected; Лира author-check PASS → STOP for fresh Mira whole-feature review.**
 
-Stable reviewed head remains `fdad1930fc68a854d52bee31922f923be5c1c751` against current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-
-Leva independent whole-feature review found two P2 current-feature defects. Mira independently reconciled both against the accepted V5/V6 contract and current source and **confirms both findings**:
-
-1. **VIS-FINAL-LEVA-01 [P2] — protected own Help withdrawal is incorrectly blocked by Hide.**
-   - Accepted V6 explicitly keeps pending own Help withdrawal outside ordinary hidden-content edit denial.
-   - Current `withdrawHelpSignal()` calls `lockVisibleHelpSignalDependencies()` before author/pending checks, so hidden topic/proposed original/selected answer incorrectly makes own withdrawal 404.
-   - Correction scope: restore the protected own-withdrawal lifecycle while preserving signal identity/topic membership, author-only, pending-only, active-account and safe lock ordering. Do **not** weaken creation, accepted/rejected review, content mutation or other hidden-content gates.
-   - Done evidence must include real PG regressions for hidden primary topic, hidden proposed original and hidden selected-answer dependency; foreign/nonpending/inactive negatives; no hidden-source disclosure.
-
-2. **VIS-FINAL-LEVA-02 [P2] — ordinary Admin topic loses stable chronology after hidden tombstones are dropped.**
-   - Accepted V5/V7 requires stable post positions/anchors/relations for the public-safe ordinary Admin reader.
-   - Current `projectAdminTopic()` filters out `post.kind === "hidden"`; `AdminTopicView` then numbers the shortened array and treats its first row as original question. Hidden root/middle post therefore shifts numbers, original identity, parent links and best-answer candidates.
-   - Correction scope: ordinary Admin presentation must retain sanitized hidden tombstone positions/identity needed for chronology/relations while never exposing hidden body/revision/attachments/source. Keep the ordinary Admin reader public-safe; do not add `includeHidden` or private inspector data.
-   - Done evidence must cover hidden root, hidden middle/parent and best-answer candidate behavior, stable permanent numbers/anchors/parent links, and absence of hidden source.
-
-### Correction route
-
-- **Implementer: Лира**, in existing assembled Draft #355 / branch `feature/moderation-visibility-b1-foundation`.
-- Keep correction bounded to these two confirmed findings and their necessary tests. No unrelated cleanup/refactor/product expansion.
-- After implementation: author self-check plus meaningful targeted/PG checks; run fresh applicable `run:ci` and `run:acceptance` if correction touches paths covered by those workflows; then STOP on a new stable exact head.
-- Any implementation-head change invalidates Mira/Leva final review verdicts on `fdad1930...`.
-- Next after Lira author PASS: fresh Mira whole-feature review of the new exact head, then independent reviewer on that same head.
-
-**STOP for Mira.** #355 remains Draft/unmerged. No docs closeout, next structure task, deploy or merge while correction/review cycle is open.
+- **Implementation Draft #355:** exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, base/current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. Draft and unmerged; source review head `fdad1930fc68a854d52bee31922f923be5c1c751` is superseded for whole-feature review. Exactly **8 changed files / 5 new commits** relative to original review: scoped Help writer, ordinary Admin topic projection/render and associated PG/route/UI/QuickActions tests; no schema, new grants, public bypass, R2, external/deploy or unrelated product changes.
+- **VIS-FINAL-LEVA-01 [P2] corrected:** `withdrawHelpSignal` retains sorted topic→target-post dependency locks, existence/membership, signal/author/pending checks and active actor; its protected own lifecycle is no longer wrongly blocked by hidden primary/proposed original/selected answer. **Only withdrawal** disables the visibility condition in the shared helper; new signal creation, accepted/rejected review, content writers and their hidden visibility restrictions remain unchanged. Real PostgreSQL17 acceptance in `sa04-forum-help-signal-lifecycle.test.ts` and `moderation-visibility-commands.test.ts` covers all three hidden dependencies plus foreign actor, wrong membership, resolved signal and inactive actor, no new History or hidden source return; retained review-denial assertions.
+- **VIS-FINAL-LEVA-02 [P2] corrected:** ordinary `projectAdminTopic` now preserves the `{kind:"hidden",id,parentPostId,createdAt}` typed tombstones in chronological post positions, explicitly excludes private author/body/revision/attachments. `AdminTopicView` displays neutral unavailability, permanent numbers, original/best markers and parent anchors, without hidden author/source/media/edit controls. Visible-only translation inputs unchanged; QuickActions candidates explicitly exclude hidden posts but use stable original ordinal. Focused loader/model/render/QuickActions tests cover root, middle/parent, best and no hidden serialization.
+- **Fresh exact-head #355→main evidence:** [CI #45168532264](https://github.com/iliya1947/vico-forum/actions/runs/45168532264) SUCCESS: `checks` 2958/2958 unit, lint/typecheck/build/preview/migration metadata/Drizzle; `database` 1693/1693 real PostgreSQL17, migrations/schema manifest/runtime privilege/provisioning/credentials plus built Worker Better Auth B8-B1/B8-B3 smoke PASS. [SA04-N #45168532275](https://github.com/iliya1947/vico-forum/actions/runs/45168532275) SUCCESS, real Chromium B8-C1/C2/C3 PASS. [SA04-K5 #45168532028](https://github.com/iliya1947/vico-forum/actions/runs/45168532028) SUCCESS, original 33 connected Chromium/local-R2 + B8-B2 actual asset checks PASS. **38 workflows = 20 SUCCESS + 18 expected SKIPPED, zero FAIL/pending**; **48 #355 check-runs = 24 SUCCESS +24 expected SKIPPED**, no failures. One-shot labels consumed.
+- Correction history: first full-run test assertions assumed obsolete Help withdrawal denial and literal English "hidden", updated against accepted V5/V6. In one interim edit a test `describe` helper block was displaced; restored before final SHA. Initial SA04-K5 `editorOperationId` length assertion failed, then passed on exact same-SHA job rerun without code change; subsequent new final SHA K5 passed. Neither interim failed result should be misrepresented as product bug or final CI.
+- No current-feature blocker confirmed in author-level correction checks. **Mandatory STOP. Next actor Мира** independently repeats whole-feature review of **new** stable #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` (prior Mira/Leva whole-feature verdicts on old SHA expired). If Mira PASS, only then Leva independent whole-feature review on same head. #355 remains Draft; no owner merge, docs, structure task or deploy.
 
 ## Baseline
 
