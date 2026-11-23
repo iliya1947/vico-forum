@@ -67,3 +67,9 @@
 - Separate docs-only #378 passed Lira author-check and Mira docs review, then owner merged it; current main became `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Permanent product/Admin/authorization/current-state/history documentation and the confirmed Mira logic-error row are now in main.
 - Task 5 has no remaining current-scope finding or documentation debt. Task 6 is next but was not activated in this checkpoint.
+
+## 2026-11-23 — Task6 accepted plan reconciled
+
+- После owner activation Лёва восстановил полный accepted S0–S10 из `8181645:USER_ACTIONS_SERVICE_PLAN.md` вместо сокращённой записи и сверил с main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Конкретизирован уже принятый hidden-topic dual-authority move seam, source-free context, move×Hide/Restore ordering, receipt/History integrations; определены bounded F1–F7/done criteria без нового product redesign.
+- Planning завершён, implementation не начиналась. Следующий gate — Мира для scope/fit reconciliation и delivery assignment.
