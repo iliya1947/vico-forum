@@ -34,10 +34,21 @@ Actual effect изменяет только нужные container fields и о�
   - structure parent NO KEY UPDATE → actor wait, тогда publication с тем же actor завершает FK KEY SHARE без deadlock; обратная очередь также завершается и сохраняет topic.section_id/current parent.
 - TypeScript и lint PASS; migration immutability guard PASS: 0 new migrations.
 
-## Exact-head CI/acceptance
+## Exact-head CI/acceptance — PASS
 
-Запрошены `run:ci` и `run:acceptance` на указанном F2 head; результаты ожидаются. Не объявлять этап переданным Мире до applicable checks.
+Stable head: `11a2808f14a79efd69dbbb120f5b732bf2880d4f`. F1 dependency и base #380 остались `8227db6003f5a23a369e11b645194da229315f7a` / `feat/forum-structure-f1`; Draft, unmerged, 4-file bounded diff.
+
+- [CI checks](https://github.com/iliya1947/vico-forum/actions/runs/45235340129/job/137905436687) — PASS: 234 files / 3010 unit tests, lint/typecheck, build, UI preview build, accepted migration guard, Drizzle metadata/check и generation parity (`No schema changes`).
+- [CI database](https://github.com/iliya1947/vico-forum/actions/runs/45235340129/job/137905436347) — PASS: 116 files / 1743 PostgreSQL tests, manifest75, runtime privilege/row-lock probes, split-authority provisioning, credential diagnostic/recovery/bootstrap, build и Worker smoke.
+- Все 4 применимых acceptance workflows, выбранные штатными path-фильтрами, — PASS:
+
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45235352494) — PASS.
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45235352475) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45235352521) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45235352449) — PASS.
+
+Все jobs прошли с первой CI-попытки; code/head после запуска не менялись. Это author gate F2, не независимый review и не завершение всей Task 6.
 
 ## Граница передачи
 
-После exact-head checks следующий — Мира для bounded F2 coordinator checkpoint, не whole-feature/independent author review. После PASS — отдельное назначение F3. F3 move/hidden/receipt, F4 readers/contexts/routes, F5 UI/Owner projection и F6 assembly не начинались. F1/F2 остаются Draft/unmerged; docsF7 только после финального implementation merge.
+Exact-head checks подтверждены. Следующая — Мира для bounded F2 coordinator checkpoint, не whole-feature/independent author review. После PASS — отдельное назначение F3. F3 move/hidden/receipt, F4 readers/contexts/routes, F5 UI/Owner projection и F6 assembly не начинались. F1/F2 остаются Draft/unmerged; docsF7 только после финального implementation merge.
