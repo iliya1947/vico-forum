@@ -1,7 +1,9 @@
-# agents/mira.md — task 5 complete; STOP before task 6
+# agents/mira.md — Task 6 activated; current-main reconciliation complete
 
-- Moderation visibility implementation #355 and docs #378 are both merged.
-- Current main after docs closeout: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- Task 5 has no open current-feature findings or docs debt.
-- Next task in #342 is task 6: forum structure management / topic moves.
-- Do not activate task 6 until fresh owner continuation. When activated, re-read current main/source-of-truth and choose delivery roles from the owner's latest decision, including permission to use Leva as implementer for subsequent implementation work.
+- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Task 5 fully closed.
+- Task 6 forum structure/topic move is active.
+- Existing accepted S0–S10 plan remains valid; no full redesign.
+- Confirmed expected pending seams: ordering/version schema, structure/move permissions, authoritative writers/History, current-section receipt replay, Owner `forum.structure` association.
+- One post-visibility reconciliation is required: hidden ordinary topic move must not broaden the ordinary/public-safe reader or leak hidden source; Leva must make this boundary explicit and recheck move×hide concurrency.
+- Next: Leva plan reconciliation only. Mira STOP until that result.
