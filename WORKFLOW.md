@@ -13,6 +13,8 @@
 
 ## Текущее назначение — Лёва: F4
 
+Implementation: Draft [#382](https://github.com/iliya1947/vico-forum/pull/382), branch `feat/forum-structure-f4`, exact head `25ff04836ecafcda81a980d1711f6e8fa21dd16d`; base F3 exact не изменился. Реализация и targeted author checks завершены; full CI/applicable acceptance запущены. Следующий шаг сейчас — Лёва проверяет результаты exact-head checks и затем передаёт Мире bounded checkpoint.
+
 Реализовать **только F4 — coherent readers, ordering и private move context/picker** из S8 PLAN.
 
 Граница результата:
