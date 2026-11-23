@@ -20,7 +20,7 @@ async function mount(locale:string,kind:"index"|"category"|"section",empty=false
   const common=flatten(Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key,value])=>[key,value.source])));
   const i18n=createTranslationRuntime({locale:{translationLocale:locale,direction:locale==="he"?"rtl":"ltr",formatting:{locale,timeZone:"UTC"},fallbackLocales:locale==="en"?[]:["en"],nativeName:locale,presentationMetadata:{}},
     fallbackLocales:locale==="en"?[]:["en"],resourcesByLocale:{en:{common},[locale]:{common:flatten(resources)}},bundleVersions:{en:{common:"test"},[locale]:{common:"test"}},staleKeys:{}});
-  const page={items:empty?[]:[category],total:empty?0:26,next:empty?null:"cursor/slash"};const query={search:"%_ עברית",after:"previous"};
+  const page={items:empty?[]:[category],total:empty?0:26,next:empty?null:"cursor/slash",structureVersion:"0"};const query={search:"%_ עברית",after:"previous"};
   const element=kind==="index"?<AdminForumView locale={locale} access={access} page={page} query={query}/>:kind==="category"?<AdminCategoryView locale={locale} access={access} category={category} sections={{...page,items:empty?[]:[section]}} query={query}/>:<AdminSectionView locale={locale} access={access} section={section} topics={{items:empty?[]:[{id:"t/עברית",title:"נושא",sourceLocale:"he",postCount:1,isSolved:false}],total:empty?0:1,next:null}} query={query}/>;
   const router=createMemoryRouter([{path:"*",element}],{initialEntries:[`/${locale}/admin/forum`]});dispose=()=>router.dispose();
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>).container;
