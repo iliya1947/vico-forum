@@ -859,14 +859,15 @@ export class DrizzleForumRepository {
         if (existing) {
           // An idempotent receipt is not active-account admission.
           await assertActiveAccountForDrizzleMutation(tx, input.authorId);
-          // Receipt replay may follow closure: project persisted closure, not a default.
+          // Replay projects persisted closure/location without taking a topic lock after actor admission.
           const [persisted] = await tx.select({
             isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+            sectionId: forumTopics.sectionId,
           }).from(forumTopics).where(eq(forumTopics.id, existing.topicId));
           if (!persisted) throw new ForumEntityNotFoundError("replayed topic does not exist");
           return {
             topic: {
-              id: existing.topicId, sectionId: input.sectionId, authorId: input.authorId,
+              id: existing.topicId, sectionId: persisted.sectionId, authorId: input.authorId,
               title: input.titleRevision, isSolved: false, bestAnswerPostId: null,
               isClosed: persisted.isClosed, closureVersion: persisted.closureVersion,
             },
