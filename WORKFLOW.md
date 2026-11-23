@@ -140,11 +140,14 @@ Forum structure/topic move → затем #320. #300/Stage6/general UI/UX не �
 - No open process-side finding or docs debt remains.
 - **Current active work:** B4 Draft #365 exact `97b9187cc42e5479c5cab43d9f69a9bfa6ed8a9e` author self-check PASS with 9/9 workflows SUCCESS. Next **Мира bounded B4 coordinator checkpoint**. B5 blocked until coordinator PASS plus owner continuation.
 
-## Parallel side assignment — stale/legacy audit (Mira-2)
+## Parallel side assignment — stale/legacy audit / cleanup
 
-- Audit result remains **80 exact A-elements** on main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Owner continuation `...` authorized cleanup after the audit-only STOP.
-- **Cleanup C1 active:** Draft #377, branch `cleanup/stale-localization-c1`, exact head `d4f820166bc905e28e2ae818854e6f8038c96ea1`.
-- C1 scope is only audit `A-011…A-026`: 16 dead development-status localization keys removed consistently from canonical catalog, RU/HE manual values, and manual fingerprints.
-- C1 changes exactly 3 localization files, 64 deletions, no additions; no runtime route/schema/docs changes.
-- Next gate: exact-head CI on #377, then Mira author self-check and STOP. Do not start C2 before explicit owner continuation.
+- Audit result: **80 exact A-elements** on main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Owner continuation authorized cleanup after the audit STOP.
+- **C1 author PASS:** Draft #377 exact `d4f820166bc905e28e2ae818854e6f8038c96ea1`, base current main, ahead 3 / behind 0, mergeable.
+- C1 covers audit `A-011…A-026` only: 16 dead development-status localization keys removed from canonical catalog, RU/HE manual values and manual fingerprints.
+- Exact diff: 3 files, 0 additions / 64 deletions. Direct branch check confirms all 16 removed keys are absent; still-genuine unfinished `Drafts/Rules/Help/About/Feedback/Privacy` keys and core Under-development labels remain.
+- Exact-head CI run `45091506393`: `checks` SUCCESS and `database` SUCCESS. Manual PR test controller SUCCESS; unrelated acceptance workflows skipped by gate.
+- Mira performed implementation + author self-check, therefore does not perform an independent review of her own C1.
+- **Next reviewer: Lira — bounded independent review of #377 exact `d4f820166bc905e28e2ae818854e6f8038c96ea1` only.** Verify scope against A-011…A-026, localization contract/fingerprint consistency, no live consumer loss, and exact-head evidence. Do not modify the PR during review.
+- **STOP. C2 must not start before C1 review result and fresh owner continuation.**

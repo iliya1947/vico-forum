@@ -142,11 +142,13 @@ Reviewed #359 exact `3fa0740c4bec304eb3912aedfffb8e6c4ff309e1` against B2 `77856
 
 Fresh checkpoint completed on #359 exact `cde5219046dcac9cbde3d62c4eb819fcfd2f6e91`. The only implementation delta since my prior full B3 review is the two-file VIS-B3-MIRA-01 correction: raw `readPost` restored byte-identical to B2 and focused real-PG trusted-hierarchy/public-denial regression added. Exact-head CI `44904360356` is green (2782 unit / 1600 PG), all 15 workflows green, changed-file scope remains 34 B3 files. VIS-B3-MIRA-01 CLOSED; no other current-B3 blocker remains from the prior complete checkpoint. B3 coordinator PASS. Stop before B4 until owner continuation.
 
-## Mira-2 side assignment — systematic stale/legacy audit
+## Mira-2 stale/legacy cleanup
 
-Audit closed at **80 exact A-elements** on unchanged main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+Audit closed at **80 exact A-elements** on main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 
-Owner continuation authorized cleanup. Current bounded package is **C1 / A-011…A-026 only** in Draft #377 exact `d4f820166bc905e28e2ae818854e6f8038c96ea1`: 16 dead development-status localization keys, three localization files only, no runtime/schema/docs changes. Exact-head CI and author self-check are required before C1 can be considered ready. STOP after C1; C2 requires another owner continuation.
+C1 / audit `A-011…A-026` implemented in Draft #377 exact `d4f820166bc905e28e2ae818854e6f8038c96ea1`: 16 dead localization keys removed from exactly three localization files. Diff is 0 additions / 64 deletions, behind 0; exact-head CI `45091506393` checks+database SUCCESS. Direct self-check confirms removed keys are gone and genuine unfinished Under-development keys remain.
+
+**Mira author PASS; STOP.** Because Mira authored C1, next step is Lira independent bounded review of the same exact head. No C2 before that review and owner continuation.
 
 
 ## 2026-11-21 — B4 coordinator checkpoint PASS
