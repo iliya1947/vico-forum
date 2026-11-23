@@ -112,7 +112,8 @@ it("routes real upload action through original admission, streaming validation a
 it("publishes baseline image bytes through the original public loader and shared native URL seam", async () => {
   const bytes = Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (character) => character.charCodeAt(0));
   expect(bytes.byteLength).toBe(P0_ATTACHMENT_BYTE_SIZE);
-  const reference = publishedAttachmentReference("p0-first-post", P0_ATTACHMENT_ID);
+  const postId = "p0-first-post";
+  const reference = publishedAttachmentReference(postId, P0_ATTACHMENT_ID);
   const assets: PreviewAttachmentAsset[] = [{
     reference, fileName: P0_ATTACHMENT_NAME, detectedType: "png", bytes,
   }];
@@ -120,7 +121,11 @@ it("publishes baseline image bytes through the original public loader and shared
   const created: Blob[] = [];
   const revoked: string[] = [];
   const attachmentUrls = createPreviewAttachmentUrls(assets, {
-    createObjectURL(blob) { created.push(blob); return "blob:preview-public-" + created.length; },
+    createObjectURL(blob) {
+      if (!(blob instanceof Blob)) throw new Error("Preview attachment must be a Blob");
+      created.push(blob);
+      return "blob:preview-public-" + created.length;
+    },
     revokeObjectURL(url) { revoked.push(url); },
   });
   try {
@@ -133,7 +138,7 @@ it("publishes baseline image bytes through the original public loader and shared
       });
     const guest = environment.createContext();
     guest.set(authSessionContext, null);
-    const downloadResult = await publicRequest(reference.postId, "", guest);
+    const downloadResult = await publicRequest(postId, "", guest);
     expect(downloadResult.status).toBe(200);
     expect(downloadResult.headers.get("Content-Type")).toBe("application/octet-stream");
     expect(downloadResult.headers.get("Content-Disposition")).toContain(P0_ATTACHMENT_NAME);
@@ -141,12 +146,12 @@ it("publishes baseline image bytes through the original public loader and shared
     expect(downloadResult.headers.get("Content-Security-Policy")).toBe("sandbox");
     expect([...new Uint8Array(await downloadResult.arrayBuffer())]).toEqual([...bytes]);
 
-    const inlineResult = await publicRequest(reference.postId, "&view=inline");
+    const inlineResult = await publicRequest(postId, "&view=inline");
     expect(inlineResult.status).toBe(200);
     expect(inlineResult.headers.get("Content-Type")).toBe("image/png");
     expect(inlineResult.headers.get("Content-Disposition")).toBe("inline");
     expect([...new Uint8Array(await inlineResult.arrayBuffer())]).toEqual([...bytes]);
-    expect((await publicRequest(reference.postId, "&view=text")).status).toBe(404);
+    expect((await publicRequest(postId, "&view=text")).status).toBe(404);
     const otherPost = await publicRequest("p0-other-post");
     expect(otherPost.status).toBe(404);
     expect(otherPost.headers.get("Cache-Control")).toBe("private, no-store");

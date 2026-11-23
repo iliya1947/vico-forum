@@ -19,7 +19,8 @@ function ids(route: typeof routeManifest): string[] {
 }
 
 const routeIds = ids(routeManifest);
-const publishedReference = publishedAttachmentReference("p0-first-post", P0_ATTACHMENT_ID);
+const publishedPostId = "p0-first-post";
+const publishedReference = publishedAttachmentReference(publishedPostId, P0_ATTACHMENT_ID);
 const publishedBytes = Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (char) => char.charCodeAt(0));
 const publishedAssets: PreviewAttachmentAsset[] = [{
   reference: publishedReference, fileName: P0_ATTACHMENT_NAME, detectedType: "png",
@@ -149,7 +150,7 @@ void (async () => {
   // The same P0 published reference is readable through the original public
   // attachment loader and the shared native Blob presentation seam.
   const publicUrl = new URL("/api/attachments/file/" + P0_ATTACHMENT_ID, window.location.origin);
-  publicUrl.searchParams.set("post", publishedReference.postId);
+  publicUrl.searchParams.set("post", publishedPostId);
   const publicFile = await fetch(publicUrl);
   const fileBytes = new Uint8Array(await publicFile.arrayBuffer());
   if (publicFile.status !== 200
