@@ -2,44 +2,39 @@
 
 ## Активный этап
 
-**Task 6 — forum structure/topic move: F4 coordinator HOLD → Лёва correction.**
+**Task 6 — F4-01 correction author gate PASS → Мира: F4 re-check.**
 
-- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- F1 #379 accepted exact `8227db6003f5a23a369e11b645194da229315f7a`.
-- F2 #380 accepted exact `11a2808f14a79efd69dbbb120f5b732bf2880d4f`.
-- F3 #381 accepted exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`.
-- F4 #382 reviewed exact `86aadfe49dfe175b7f42baeaa6fa78883631ebeb`, base accepted F3 unchanged, Draft/unmerged.
+- Current main baseline: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Канонический plan: [stages/forum-structure/PLAN.md](stages/forum-structure/PLAN.md), stacked F1→F6, затем F7 docs.
+- F1 #379 accepted `8227db6003f5a23a369e11b645194da229315f7a`.
+- F2 #380 accepted `11a2808f14a79efd69dbbb120f5b732bf2880d4f`.
+- F3 #381 accepted `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`.
+- F4 Draft [#382](https://github.com/iliya1947/vico-forum/pull/382), branch `feat/forum-structure-f4`, **corrected stable exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`**.
+- F4 base = `feat/forum-structure-f3`, accepted exact F3 не изменился. Все ступени Draft/unmerged.
 
-## Mira F4 checkpoint — HOLD
+## Следующая — Мира: повторный bounded F4 checkpoint
 
-Подтверждён один current-F4 blocker.
+На прежнем head `86aadfe49dfe175b7f42baeaa6fa78883631ebeb` Мира поставила HOLD по одному blocker **F4-01: mandatory structure singleton invariant**.
 
-### F4-01 — обязательный structure singleton не везде обрабатывается как invariant
+Лёва выполнил только этот correction:
+- move context и Admin structureVersion projections возвращают independent version/nullable target envelope в одном SQL snapshot;
+- missing mandatory singleton → StructureInvariantError до target-not-found/DTO success, включая absent roots и empty list;
+- 14 новых PG regressions + invariant propagation route checks; normal admission/hidden neutral404 сохранены;
+- дополнительных queries/locks/grants/migrations/default/fallback version нет.
 
-F4 reader contract требует canonical `structureVersion` и по PLAN unexpected invariant/programming failures не должны маскироваться под denial/not-found/success.
+Author gate на новом exact head PASS:
+- [CI45264492368](https://github.com/iliya1947/vico-forum/actions/runs/45264492368): **3072 unit /1829 PostgreSQL**, lint/typecheck/build/UI-preview/schema/runtime/credential checks и built Worker HTTP smokes.
+- Все17 применимых acceptance workflows PASS на том же corrected head.
+- Полный актуальный author report: [F4_REPORT.md](stages/forum-structure/F4_REPORT.md), correction F4-01 и exact-head evidence.
 
-На exact head `86aadfe...`:
-- `PostgresForumStructureReader.listDestinations` уже корректно обнаруживает отсутствующий `forum_structure_state(id=1)` и бросает `StructureInvariantError`;
-- `readMoveContext` использует `CROSS JOIN forum_structure_state`; при отсутствии singleton запрос возвращает 0 rows и reader возвращает `undefined`, поэтому private route выдаёт ложный neutral 404 вместо invariant failure;
-- `PostgresAdminForumReader` list/read projections используют scalar subquery version без invariant check и при существующем объекте могут вернуть `structureVersion: null` при declared `string`.
+**Мира:** повторно проверить bounded F4 whole diff на новом stable exact head, включая F4-01. Предыдущий coordinator HOLD не заменяется автором на coordinator PASS. При подтверждённых current-scope дефектах вернуть bounded пакет; после PASS отдельно определить F5.
 
-Это дефект F4 read/error contract, не будущий F5/F6 hardening.
-
-## Исправление — Лёва
-
-Correction реализована в #382, новый stable head `18627a8c53a6db681a7f4f278b88fcdd55f579c1` поверх reviewed `86aadfe...`. Локально:45 targeted PG (14 новых missing-singleton regressions),119 unit, TypeScript/lint PASS. Full CI/applicable acceptance на новом exact head запущены. Следующий шаг сейчас — Лёва проверяет results и затем STOP → Mira re-check; coordinator HOLD пока не заменяется PASS.
-
-Исправить только F4-01 в #382:
-- все F4 reads, обещающие `structureVersion`, должны fail как invariant при отсутствии обязательного singleton;
-- move-context не должен превращать отсутствие singleton в target-not-found;
-- добавить bounded regression coverage для move-context и Admin structureVersion projections;
-- не расширять scope в F5.
-
-После исправления: новый stable exact head → author self-check + применимые checks только если implementation head изменён → STOP → новый Mira F4 coordinator checkpoint.
+**Лёва STOP** после author gate; F5 самостоятельно не начинает.
 
 ## Границы
 
-- F5 не активирован.
-- #379/#380/#381/#382 не merge.
-- final independent whole-feature reviewer остаётся Марк, если code-independent.
-- #342 — единственный service channel; #300/Stage6/general UI/UX/deploy не активированы.
+- F5 live forms/Move control/QuickActions/POST dispatch/editor lifetime/Owner projection и F6 final assembly не активированы.
+- Новые F4 endpoints пока read-only resources.
+- Не merge #379/#380/#381/#382 отдельно; #342 никогда не merge.
+- Лёва автор реализации; final independent whole-feature Codex reviewer — Марк, если code-independent.
+- #342 единственный service channel; #300/Stage6/general UI/UX/deploy не активированы.
