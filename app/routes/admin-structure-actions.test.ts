@@ -36,7 +36,7 @@ function env(keys:string[]=["forum.structure.manage"],signedIn=true){
   return {context,has,writers};
 }
 function request(intent:string,extra:readonly (readonly [string,string])[],origin="https://vico.test"){
-  const fields=new URLSearchParams([["intent",intent],["editorActorId","actor"],["expectedStructureVersion","0"],...extra]);
+  const fields=new URLSearchParams([["intent",intent],["editorActorId","actor"],["expectedStructureVersion","0"],...extra.map(([key,value]):Entry=>[key,value])]);
   return new Request("https://vico.test/en/admin/forum",{method:"POST",headers:{
     Origin:origin,"Content-Type":"application/x-www-form-urlencoded",
   },body:fields});
