@@ -1,6 +1,6 @@
 import { data, type RouterContextProvider } from "react-router";
 import { SA02_MONITORS, type Sa02Area } from "../../db/owner-sa02-catalog";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
+import { OwnerSystemUnavailableError } from "../../db/owner-system-error";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "./access.server";
 import { ownerSa02MonitoringForRequest } from "./request-context";
 
