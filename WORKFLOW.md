@@ -2,14 +2,20 @@
 
 ## Активный этап
 
-**Task 6 — forum structure/topic move: F1 coordinator PASS; F2 ACTIVE → Лёва.**
+**Task 6 — forum structure/topic move: F1 coordinator PASS; F2 реализован Лёвой в Draft #380, exact-head checks в работе.**
 
 - Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Канонический plan: [stages/forum-structure/PLAN.md](stages/forum-structure/PLAN.md), S0–S10 / F1–F7.
 - Delivery: stacked F1→F6, затем отдельный F7 docs.
 - F1 Draft #379: branch `feat/forum-structure-f1`, accepted exact head `8227db6003f5a23a369e11b645194da229315f7a`; Mira bounded coordinator PASS. #379 остаётся Draft/unmerged.
 
-## Текущее назначение — Лёва: F2
+## Текущее назначение — Лёва: завершить проверки F2
+
+- Stacked Draft [#380](https://github.com/iliya1947/vico-forum/pull/380), base `feat/forum-structure-f1`.
+- Stable F2 head: `11a2808f14a79efd69dbbb120f5b732bf2880d4f`.
+- Авторский report: [stages/forum-structure/F2_REPORT.md](stages/forum-structure/F2_REPORT.md).
+- Локально PASS: 36 PG17 command/concurrency/ACL tests, 37 unit tests, typecheck/lint/migration guard. Запрошены `run:ci`/`run:acceptance`; до результата gate остаётся у Лёвы.
+
 
 Реализовать **только F2 — authoritative structure commands + atomic History** из S8 PLAN.
 
