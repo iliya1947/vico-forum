@@ -43,6 +43,38 @@ it("context denies structure-only and neutral missing/hidden target; validates o
  for(const query of ["?q=x","?actorId=other","?after=x","?isHidden=false"])await expect(move(args(environment().context,query))).rejects.toMatchObject({status:400});
  expect((await move(args(environment().context,"?_routes=routes%2Fadmin-topic-move","a/b עברית"))).data.topicId).toBe("t");
 });
+it("returns request-matched source-free typed inline data instead of unmounting the calling route",async()=>{
+  for(const [name,loader] of [["move",move],["destinations",destinations]] as const){
+    const query=name==="move"?"?inlineMove=1&readId=13":"?kind=sections&inlineMove=1&readId=13";
+    const allowed=environment();
+    const success=await loader(args(allowed.context,query));
+    expect(success.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    expect(success.data.readId).toBe("13");
+    expect(success.data).not.toHaveProperty("operation");
+    expect(JSON.stringify(success.data)).not.toMatch(/originalContent|authorName|reason|revisionId/);
+    const guest=environment([],false);
+    const denied=await loader(args(guest.context,query+" & ".trim()));
+    expect(denied.init?.status).toBe(401);
+    expect(denied.data).toEqual({operation:"structureInlineRead",error:"unauthenticated",readId:"13"});
+    expect(guest.readMoveContext).not.toHaveBeenCalled();
+    expect(guest.listDestinations).not.toHaveBeenCalled();
+    const noAccess=environment([]);
+    const forbidden=await loader(args(noAccess.context,query));
+    expect(forbidden).toMatchObject({data:{error:"forbidden",readId:"13"},init:{status:403}});
+    const expired=environment();
+    (name==="move"?expired.readMoveContext:expired.listDestinations)
+      .mockRejectedValueOnce(new StructureReadUnavailableError("sensitive private SQL"));
+    const unavailable=await loader(args(expired.context,query));
+    expect(unavailable).toMatchObject({data:{error:"unavailable",readId:"13"},init:{status:503}});
+    expect(JSON.stringify(unavailable.data)).not.toContain("sensitive private SQL");
+    const bad=environment();
+    await expect(loader(args(bad.context,query.replace("readId=13","readId=0")))).rejects.toMatchObject({status:400});
+  }
+  const missing=environment();
+  missing.readMoveContext.mockResolvedValueOnce(undefined as never);
+  const absent=await move(args(missing.context,"?inlineMove=1&readId=17"));
+  expect(absent).toMatchObject({data:{error:"notFound",readId:"17"},init:{status:404}});
+});
 it("picker accepts structure-only and validates closed bounded query without authority hints",async()=>{
  const e=environment(["forum.structure.manage"]);await destinations(args(e.context,"?kind=sections&q=%25_&parent=category"));expect(e.listDestinations).toHaveBeenCalledWith("actor",{kind:"sections",search:"%_",parent:"category"});
  for(const query of ["?kind=topics","?kind=sections&kind=categories","?q=a&q=b","?after=a&after=b","?after=","?q=%00","?q="+"x".repeat(201),"?parent=","?kind=categories&parent=c","?after="+"x".repeat(16385),"?actorId=other","?includeHidden=true"]){

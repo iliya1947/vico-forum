@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useFetcher, useMatches, useRevalidator } from "react-router";
+import { Link, useFetcher, useMatches, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
@@ -126,7 +126,7 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   return <div className="admin-forum-structure-form topic-move-form">
     <h3>{t("topicMoveTitle")}</h3>
     <p>{t("topicMoveCurrent")}: <bdi dir="auto">{context.currentSection.name} ({context.currentSection.id})</bdi></p>
-    {!context.isHidden?<p><a href={forumSectionPath(locale,context.currentSection.id)}>{t("topicMoveCurrent")}</a></p>:null}
+    {!context.isHidden?<p><Link to={forumSectionPath(locale,context.currentSection.id)}>{t("topicMoveCurrent")}</Link></p>:null}
     <moveFetcher.Form method="post" action={forumTopicPath(locale,context.topicId)+"?moveAction=1"}
       aria-busy={busy} onSubmit={submit}>
       <input type="hidden" name="intent" value="moveTopic"/>

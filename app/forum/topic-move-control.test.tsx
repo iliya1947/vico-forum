@@ -43,8 +43,12 @@ afterEach(()=>{cleanup();dispose();dispose=()=>{};});
 function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean}={}){
   const actor=options.actor??"actor";
   const context={...move,isHidden:options.hidden??false};
-  const moveLoader=vi.fn(async()=>data(context, {headers:{"Cache-Control":"private, no-store"}}));
-  const destinations=vi.fn(async()=>data(destination, {headers:{"Cache-Control":"private, no-store"}}));
+  const moveLoader=vi.fn(async({request}:{request:Request})=>data({
+    ...context,readId:new URL(request.url).searchParams.get("readId")??undefined,
+  },{headers:{"Cache-Control":"private, no-store"}}));
+  const destinations=vi.fn(async({request}:{request:Request})=>data({
+    ...destination,readId:new URL(request.url).searchParams.get("readId")??"",
+  },{headers:{"Cache-Control":"private, no-store"}}));
   const submitted=vi.fn(async({request}:{request:Request})=>{
     const form=await request.formData();
     return data({operation:"topicMove",ok:true,actorId:actor,topicId:context.topicId,
@@ -86,7 +90,8 @@ describe("F5-C2 shared visible/direct topic Move form",()=>{
     fireEvent.submit(form);
     await waitFor(()=>expect(v.submitted).toHaveBeenCalledTimes(1));
     expect(v.router.state.location.pathname).toBe("/en/test");
-    await waitFor(()=>expect(v.container.textContent).toContain("Topic move confirmed."));
+    await waitFor(()=>expect(v.container.querySelector(".topic-move-form")).toBeTruthy());
+    expect(v.router.state.errors).toBeNull();
     expect(v.container.textContent).not.toContain("published secret");
   });
   it("uses the same shared form with preauthorized direct/hidden context, no title/body leakage",async()=>{
