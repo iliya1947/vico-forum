@@ -5,7 +5,7 @@ import {ForumRouteError} from "../forum/ui";
 export {headers,meta} from "./admin";
 export async function loader({request,params,context}:{request:Request;params:{locale?:string};context:RouterContextProvider}) {
   const access=await requireAdminForumAccess(context);
-  const query=adminBrowseQuery(request.url);
+  const query=adminBrowseQuery(request.url,true);
   const page=await readAdminForum(context,reader=>reader.listCategories(query));
   return data({locale:params.locale??"en",access,page,query},{headers:adminPrivateHeaders});
 }

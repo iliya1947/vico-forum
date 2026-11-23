@@ -43,7 +43,7 @@ for(const [name,loader,index] of [["forum",forum,0],["category",category,1],["se
   const error=new Error("unexpected SQL");h.reads[index].mockRejectedValueOnce(error);await expect(loader(args(h.context))).rejects.toBe(error);
  });
  it("validates bounded literal search and cursors before reading",async()=>{
-  for(const query of ["?q=a&q=b","?after=a&after=b","?after=","?q=%00","?after=%00","?q="+"x".repeat(201),"?after="+"x".repeat(2049)]){
+  for(const query of ["?q=a&q=b","?after=a&after=b","?after=","?q=%00","?after=%00","?q="+"x".repeat(201),"?after="+"x".repeat(index===2?2049:16385)]){
    const e=environment(["forum.topic.pin"]);await expect(loader(args(e.context,query))).rejects.toMatchObject({status:400});e.reads.forEach(read=>expect(read).not.toHaveBeenCalled());
   }
   const e=environment(["forum.topic.pin"]);await loader(args(e.context,"?q="+encodeURIComponent("😀".repeat(200))));expect(e.reads[index]).toHaveBeenCalled();

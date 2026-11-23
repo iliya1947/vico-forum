@@ -37,6 +37,8 @@ import {
 import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telemetry";
 import { RequestAuthFactCollector } from "../app/observability/auth-fact-collector.server";
 import { createHyperdriveAuthFactWriter } from "../db/hyperdrive-auth-facts";
+import {forumStructureReaderContext} from "../app/admin/structure.server";
+import {createHyperdriveForumStructureReader} from "../db/hyperdrive-forum-structure-reader";
 import {adminForumContext} from "../app/admin/forum.server";
 import {hiddenQueueContext} from "../app/admin/visibility-queue.server";
 import {createHyperdriveHiddenQueue} from "../db/hyperdrive-private-visibility-queue";
@@ -74,7 +76,7 @@ import {ownerLocalizationMonitoringContext} from "../app/super-admin/request-con
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
-import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, protectFrameworkFailure } from "./private-failure-response";
+import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, isPrivateForumReadPath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -148,6 +150,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
       authorization, webConnectionString, undefined, ownerUserId,
     );
     context.set(authorizationContext, effectiveAuthorization);
+    context.set(forumStructureReaderContext,createHyperdriveForumStructureReader(webConnectionString,effectiveAuthorization,ownerUserId));
     context.set(hiddenQueueContext, createHyperdriveHiddenQueue(webConnectionString, effectiveAuthorization));
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization, undefined, ownerUserId));
@@ -185,13 +188,14 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
 
 export default {
   async fetch(request, env, executionContext?: ExecutionContext) {
-    const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
-      || isOwnerMonitoringPath(new URL(request.url).pathname);
+    const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+      || isOwnerMonitoringPath(new URL(request.url).pathname)
+      || isPrivateForumReadPath(new URL(request.url).pathname);
     try {
       const response = await applicationFetch(request, env, executionContext);
-      return ownerAction ? protectFrameworkFailure(request, response) : response;
+      return privateBoundary ? protectFrameworkFailure(request, response) : response;
     } catch (error) {
-      if (!ownerAction) throw error;
+      if (!privateBoundary) throw error;
       if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
       const status = error instanceof Response ? error.status : 500;
       return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
