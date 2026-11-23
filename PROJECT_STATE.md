@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-19
+Последнее обновление: 2026-11-23
 
 ## Назначение
 
@@ -45,7 +45,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0070` (Watch `0068_topic_watch`; Bookmarks `0069_topic_bookmarks`; personal Mute/Block `0070_personal_filters`);
+- repository migration history: `0000`–`0071` (Watch `0068_topic_watch`; Bookmarks `0069_topic_bookmarks`; personal Mute/Block `0070_personal_filters`; moderation visibility `0071_moderation_visibility_foundation`);
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -72,7 +72,27 @@ Vico Forum находится в pre-release разработке.
 - public profiles, profile navigation и online presence foundation;
 - `/:locale/attention` как отдельный permission-scoped Signals / Complaints / Security workspace.
 
+- обратимое Hide/Restore опубликованных тем и сообщений с отдельным `forum.content.visibility.manage`, server-side CAS и причинами, приватной очередью и инспекцией, публичной нейтральной проекцией скрытого содержимого и сохранением существующего связанного состояния.
+
 Email verification, transactional email sender и password recovery намеренно отложены.
+
+### Moderation visibility
+
+Модерация видимости тем и сообщений реализована в `main` в repository/local-CI
+после миграции `0071_moderation_visibility_foundation`. Публичные readers,
+поиск, ссылки на вложения и переводы не раскрывают скрытые источники:
+скрытая тема недоступна через нейтральный 404; скрытое сообщение
+отображается обезличенной заглушкой со стабильной хронологией.
+Отдельные защищённые очередь/инспекция и Hide/Restore используют
+актуальные серверные права, AP-10 admission, CAS, bounded reason и
+атомарную административную History. Собственные и независимые
+Complaint/Appeal/Help lifecycle-действия сохраняют свои полномочия.
+
+На финальном exact head проведены CI с PostgreSQL 17 и Worker/Better Auth
+smoke, подключённые Chromium и локальный R2 acceptance; это не
+deployed/production acceptance и не свидетельство применения
+`0071` во внешней БД. Постоянные контракты —
+в `PROJECT.md`, `docs/auth/AUTHORIZATION.md` и `docs/ADMIN_PANEL.md`.
 
 ### Editor 2.0
 

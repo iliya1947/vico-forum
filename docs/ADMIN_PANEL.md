@@ -21,6 +21,11 @@ AP-02 itself added no schema
 or permission keys; AP-03 adds `admin.history.read`, AP-09 adds `admin.users.read`, and AP-10
 adds the two block-management capabilities plus its measure persistence.
 
+После AP-11 отдельно реализована модерация видимости опубликованного содержимого:
+точное `forum.content.visibility.manage` разрешает Hide/Restore, отдельную
+приватную очередь и инспекцию. Это не общее edit-any или расширение
+публичного/Admin reader; подробный постоянный контракт приведён ниже.
+
 Other routes and capabilities described below as delivery targets become available only
 through their respective bounded implementation PRs. Settings is a separate sequence outside
 the completed AP-01–AP-11 delivery scope. SET-01–SET-02 now provide a real protected
@@ -90,7 +95,7 @@ separate administrative page.
 An object page does not authorize unspecified create, rename, move, delete, bulk or edit-any
 operations. Each new operation needs concrete behavior, an authoritative backend contract,
 its applicable permission, state validation, reason rule and tests before implementation.
-Topic closure/reopening to new replies follows the approved AP-08 boundary below.
+Topic closure/reopening follows the approved AP-08 boundary below; отдельный реализованный Hide/Restore следует контракту moderation visibility ниже.
 
 Three boundaries remain distinct:
 
@@ -176,9 +181,12 @@ states retain the existing AP-06 semantics.
 a section or directly. Its loader independently checks the implemented Forum admission
 permissions before target validation/private reads; it rechecks the individual Quick action
 permissions for the current actor. It reuses the current `ForumReader.readTopicPage()` rather
-than adding another writer, topic domain model or history-paging API. An explicit private
-admin DTO exposes current title and messages, their revision identities, author labels,
-timestamps, relationships, current solution/Help states and published attachment metadata.
+than adding another writer, topic domain model or history-paging API. The ordinary admin DTO exposes only the public-safe current title and visible
+messages with their permitted revision identities, author labels, timestamps,
+relationships, solution/Help states and published attachment metadata. Hidden posts
+remain sanitized tombstones with stable IDs, permanent numbering, parent anchors and
+original/best-answer identities; their author/body/revisions/attachments/translations
+are not projected. Hidden-topic source is not exposed by this reader.
 The private Help duplicate relationship ID and pending appeal ID are present only with
 current `forum.helpDuplicate.manage`; no private appeal explanation, complaint Case data,
 prior revision bodies, email or session data is serialized.
@@ -228,7 +236,7 @@ grant global admission either. Each section and action independently checks its 
 | Surface | Admission/read boundary | Action boundary |
 | --- | --- | --- |
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
-| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close` | Exact operation permission and authoritative object/resource conditions, as below |
+| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close`, `forum.content.visibility.manage` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
 | Users / canonical profile / measures | Public canonical profile baseline; `admin.users.read` only for the Users index and guarded legacy detail redirect; `access.authorization.manage` for the targeted authorization section; `admin.users.blocks.manage` for exact target/measures lookup under AP-10; exact bound Owner for the private account/session/history section | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
@@ -268,6 +276,7 @@ reused without creating a second identity store.
 | Correct topic-title or post-body source locale | `forum.sourceLocale.correctAny`, or `forum.sourceLocale.correctOwn` with authoritative ownership | Existing current-revision CAS, canonical non-`und` source-locale validation; no general content-edit right |
 | Read message revision history | `forum.post.history.read` | Post belongs to target topic; read independently before loading revision bodies |
 | Close/reopen topic | `forum.topic.close` for both commands | Existing ordinary/Help topic, authoritative closure-version CAS and state transition; no author/role bypass or required reason |
+| Hide/Restore published topic or post; inspect hidden targets | `forum.content.visibility.manage` | Fresh effective authority and AP-10 `admin.forum`, target membership, visibility-version/current-revision CAS and bounded reason on each real transition; separate protected inspection, with additional `forum.post.history.read` for older post-revision text |
 | Create/change/lift measure; review measure appeal | `admin.users.blocks.manage` plus privileged-target capability when needed | Exact target/measure, no self/owner target, raw issuer/target hierarchy, current effective permission, active lifecycle and expected measure version |
 | Other category/section/topic/message mutations | Not authorized by page visibility | Define concrete behavior and capability in a separately bounded package first |
 
@@ -464,6 +473,7 @@ current operation contract; it does not introduce a new reason form or persisten
 | Review Help signal | Actual persisted review outcome and applicable effect | No new mandatory reviewer reason; existing kind-specific submission explanations remain unchanged |
 | Administrative source-locale correction | Actual new revision/source-metadata change | Not required by current contract |
 | Close/reopen topic | Actual closed-state transition, recording before/after and previous/new closure versions | Not required by the approved AP-08 contract |
+| Hide/Restore topic/post | Committed `topic.hidden`/`topic.restored`/`post.hidden`/`post.restored`, neutral target identity, before/after visibility and version context | Nonblank validated reason is mandatory for every real transition; admitted no-op creates no event |
 | Create/change/lift temporary or permanent measure; decide its appeal | Committed `measure.created`, `measure.changed`, `measure.lifted` or `measure.appealResolved` with exact measure ID and bounded state context | Nonblank reasons for create/change/explicit lift, and reviewer explanation for appeal decision; expiry creates no synthetic event |
 
 “Administrative” is determined by the authoritative operation/scope, not by actor role or
@@ -500,6 +510,14 @@ when the actor also holds administrative capabilities. Unpin forwards the sessio
 the authoritative transaction. Actual insert/delete/state/revision results decide emission;
 no-op or rejected/stale requests do not append. Forward migration 0051 extends only the
 History action/target constraint; existing SELECT/INSERT runtime grants remain sufficient.
+
+Visibility History сохраняет один исходный нейтральный event на реально
+изменённый topic/post внутри той же транзакции. Используются ID-based
+target label, action, actor, ограниченная причина и контекст видимости
+(before/after, previous/new version, observed revision ID);
+заголовки, тексты, исходные версии и private Case context не копируются.
+Повторение, отказ, no-op и rollback не создают событие; History read
+по-прежнему требует отдельно `admin.history.read`.
 
 Persist only bounded useful context, sufficient to retain event meaning if its target later
 ceases to exist. Do not copy passwords, tokens, sessions, full requests, complete authorization
@@ -570,6 +588,57 @@ closure does not introduce drafts, autosave or new attachment policies.
 These are repository/local-CI implementation contracts, not evidence of
 production deployment, independent review, real-browser acceptance or owner
 visual approval.
+
+## Moderation visibility: topic/post Hide/Restore
+
+В `main` реализован отдельный reversible visibility lifecycle для
+опубликованных тем и сообщений. `forum.content.visibility.manage` имеет
+initial moderator/admin grants (не user), но реальный доступ всегда зависит
+от current effective permissions и AP-10 `admin.forum`; роль сама по
+себе не является авторизацией. Единый canonical
+`/:locale/topics/:topicId` POST принимает точный topic/post target,
+желаемое состояние и ожидаемые visibility version/current revision.
+Каждый реальный Hide/Restore требует непустую bounded reason. Изменения
+и единственное нейтральное History-событие атомарны; version/revision
+conflict, denied/no-op и rollback не создают нового события. Безопасное
+повторение не делает скрытое содержимое доступным, POST не
+автоматически переигрывается при неизвестном исходе.
+
+Hide темы исключает её из публичного discovery/search и даёт
+нейтральный 404 на прямом document/data URL. Hide отдельного сообщения
+в видимой теме оставляет server-sanitized tombstone с ID, постоянным
+номером, позицией и parent/root/best связями, но без автора, body,
+revision, attachment, translation и служебной причины. Обычная Admin
+topic page использует тот же public-safe reader; сохраняет
+chronology/anchors и не становится private source reader только из-за
+доступа к Forum. Hide темы не меняет собственные visibility flags
+сообщений; Restore темы не раскрывает отдельно скрытые posts.
+
+Отдельный `/:locale/admin/forum/content` показывает защищённую
+очередь скрытых тем/сообщений. Точечная инспекция
+`/:locale/admin/forum/topics/:topicId/inspect` и guarded чтение
+скрытых published attachments повторно проверяют active account и
+`forum.content.visibility.manage`; previous post revision **text**
+дополнительно требует `forum.post.history.read`. Сами `admin.history.read`,
+общее Forum admission, обычный Admin, Help/Complaint authority и
+авторство не дают обхода к hidden source. Приватные ответы и ошибки
+используют `private, no-store`; отказ закрытый.
+
+Hide/Restore сохраняет опубликованные revision bodies, вложения,
+Complaint evidence, retained translations/accepted translation jobs,
+Watch/Bookmarks/Mute/Block, inbox/read-state, solved/best/duplicate/Help
+и связанные независимые процессы. Обычные content writers остаются
+закрыты для скрытых dependencies. Исключение: защищённый отзыв
+собственного pending Help-сигнала допустим после Hide его topic,
+proposed original либо selected answer при прежних author, membership,
+pending и active-account проверках. Создание сигналов и review этого
+исключения не наследуют; Complaint/Appeal protected lifecycle
+сохраняет собственные проверки и права.
+
+Это состояние repository/local-CI, подтверждённое PostgreSQL 17,
+Worker/Better Auth, Chromium и локальным R2 acceptance. Production
+deployment, external migration и deployed permission acceptance
+этим контрактом не подтверждаются.
 
 ## Users index, canonical profile and existing authorization controls (AP-09 / SA-03)
 
@@ -652,7 +721,7 @@ a presentation shortcut and not a policy key. Expiry and restrictions are indepe
 Four administrative restrictions suppress exactly these permissions on the current
 action/read request; they never modify raw role grants or user overrides:
 
-- `admin.forum`: `forum.topic.pin`, `forum.topic.close`,
+- `admin.forum`: `forum.topic.pin`, `forum.topic.close`, `forum.content.visibility.manage`,
   `forum.solution.manageAny`, `forum.helpNeedsDetails.manage`,
   `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`,
   `forum.post.history.read`.
