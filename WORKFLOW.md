@@ -2,24 +2,20 @@
 
 ## Активный этап
 
-**Moderation visibility B9 final exact-head author self-check PASS; Лира STOP before stack fold.**
+**Moderation visibility B9 closeout — HOLD before fold: final stack is behind current main by 5 commits. Pre-fold main sync only is active.**
 
-- Owner authorized **B9 only**. Existing stacked [Draft B8 #376](https://github.com/iliya1947/vico-forum/pull/376), immutable implementation exact **`108e0ba31ed34f891e8b46e411991b893b9da56b`**; Draft B7 #371 head/base **`f92778606f1c8ea4e64f53c1660910f34c48b84c`** still matches #376 base, behind 0. `main` unchanged `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. B8-A/B/C each received independent Mira coordinator PASS; B9 author self-check is not a whole-feature review or coordinator checkpoint.
-- **Complete B8 diff classification vs B7:** **43 commits, 14 files, +3376/−23 lines**, all under `tests/database/`, `tests/browser/sa04-complaints/`, `scripts/smoke-visibility-*.ts`, `scripts/smoke-complaints-local.ts`, or two existing `.github/workflows/sa04-{k5,n}-*.yml`. Only test fixtures, test-only smoke/connected probes and workflow calls. **No production implementation, schema/migrations, runtime dependencies, permissions/config, Stage6, deployed resources, feature docs, or unrelated UI work.** No new code commit in B9.
-- **V1–V9 / V8 ten-cell author reconciliation (accepted prior stage evidence retained):**
-  1. State/History CAS/reason/no-op/atomicity, authority and AP-10/Owner/current-actor under real PG: B1/B2 author + Mira PASS; B8-A tests `moderation-visibility-commands.test.ts`, `visibility-accepted-execution.test.ts`, `complaints-foundation.test.ts` and full PG suite.
-  2. Public DTO/discovery/queries/root/best/duplicate/relations/visibility filtering: accepted B3 current DTO/SQL tests, latest unit/PG regression; B8-B1 Worker legacy HTML/data/HE and B8-C1/C3 fresh Chromium source suppression.
-  3. Related retained state and own/inbox preferences, read/unread, notification and suppressed receipts: accepted B2/B3/B5 and same-head regression suites; no new B8 production changes.
-  4. Asset/translation/generation plans: accepted B4 boundaries, B8-A real two-order accepted execution and no Restore re-enqueue; B8-B2 real local-R2 positive published/private/draft/evidence bytes, denied old download modes.
-  5. PG races: B2 real lock graph and B8-A 48 lock-order combinations plus 8 full-schema accepted-publication vs real visibility-command orders with observed `pg_blocking_pids`; custom/revoke AP-10 cases.
-  6. UI and cache: B7 forms/route tests plus B8-C1 EN/RU/HE RTL/keyboard Hide/Restore; C2 pending/409/unknown/actor-switch/revoke/retained buffers; C3 public/private no-store HTML/.data/legacy, real PG read503 recovery and History500 rollback.
-  7. Protected Complaint/Case/Decision/Appeal/History/evidence and replay: B6 guarded access, B8-A9 PG cases, B8-B3 real Worker/Better Auth HTTP including outage/recovery.
-  8. Full V8 row `Authority` additionally covered by B8-B1 revocation/guest/ordinary/moderator transport and C2/C3 private updated-actor denial; no optional admin/history-only proxy used.
-  9. Full V8 `Races` and `Protected domains` mapped to tested real Worker+PG fixtures rather than fake JS-only concurrency.
-  10. **Evidence boundary:** all V8 acceptance areas have accepted earlier test evidence; not every area reran as a distinct Chromium test. No production-external Stage6/deploy verification claimed; no new current B8 blocker established.
-- **All final evidence on one unchanged SHA (not a new B9 execution):** [CI #45083893513](https://github.com/iliya1947/vico-forum/actions/runs/45083893513) **SUCCESS attempt 1**: `checks` 2951/2951 unit plus lint/typecheck/build/UI preview, accepted migration history, migration metadata, Drizzle schema parity; `database` 1689/1689 PostgreSQL17 and actual Worker smoke plus production schema manifest, runtime privilege probes, split-authority relation provisioning and credential diagnostic/recovery/bootstrap/rollback probes SUCCESS. [SA04-N #45083893569](https://github.com/iliya1947/vico-forum/actions/runs/45083893569) **SUCCESS attempt 1**, explicit C1+C2+C3 browser markers. [SA04-K5 #45083893627](https://github.com/iliya1947/vico-forum/actions/runs/45083893627) **SUCCESS attempt 1**, existing 33 real R2/browser checks plus explicit B8-B2 positive asset marker. GitHub SHA check-run API confirms **4/4 completed SUCCESS**. B9 independently rechecked these exact-head logs/steps; HEAD unchanged since B8-C3, so per `AGENTS.md` no unnecessary re-run/new dummy commit. A renewed `run:acceptance` label did not produce new runs, and was removed; do **not** claim freshly rerun CI.
-- **Mandatory STOP after B9 author PASS.** Stack fold into B1, closure of intermediate Draft PRs, final collected author self-check, Mira whole-feature review, Leva independent review, owner merge, docs closeout and deployment all remain blocked until **fresh owner continuation**. Service #342 remains permanent unmerged channel; next gate is owner authorization of fold and its exact actor/workflow, not unilateral B9 promotion.
-
+- B8-A/B/C coordinator checkpoints remain valid for their accepted exact heads. B9 author self-check evidence on #376 exact `108e0ba31ed34f891e8b46e411991b893b9da56b` is retained, but it is **not sufficient as final fold handoff**.
+- Fresh coordinator pre-fold check found the whole B1→B8 stack still descends from old main merge-base `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf`.
+- Current `main` is `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; final B8 exact head is **ahead 314 / behind 5** relative to current main.
+- The five missing main commits include the accepted stacked-process updates and, critically, #362/#363 manual PR-test policy. Current main changes `.github/workflows/ci.yml`, `sa04-n-complaints-browser.yml`, `sa04-k5-attachments-browser.yml` and other acceptance workflows. B8 itself also changes SA04-N/K5, so a final collected head must reconcile both sides before review/fold.
+- **Current assignment — pre-fold main sync only:**
+  - synchronize existing B8 final branch `feature/moderation-visibility-b8-acceptance` with current main `9cff976a...`;
+  - preserve current-main `run:ci` / `run:acceptance` label + workflow_dispatch semantics and B8's C1/C2/C3 / local-R2 visibility invocations;
+  - do not broaden product/runtime/schema scope;
+  - on the resulting new exact head, rerun/obtain final CI and applicable connected acceptance using the **current main manual test-control contract**;
+  - reconcile final diff against current main and confirm the feature remains only the accepted moderation-visibility implementation + B8 acceptance additions.
+- **Mandatory STOP after synced exact-head author self-check.** Do not move B1 branch, close B2–B8 PRs, start Mira/Leva whole-feature reviews, merge, docs closeout or deploy.
+- B9 final closeout returns to PASS only after this current-main integration and same-head evidence are verified.
 
 ## Baseline
 
