@@ -56,3 +56,14 @@ Exact drafts:
 
 Evidence: `research/task1-final-whole-system-recheck.md`.
 Реальные sources не изменены.
+
+## Task 1 — correction after independent review
+
+Status: **HOLD**.
+
+Подтверждены 2 semantic regressions в Project cross-layer dedupe:
+1. unconditional goal guard был удалён при более узком AGENTS trigger;
+2. mandatory pre-answer context/interpretation checkpoint был удалён без эквивалентного every-answer AGENTS coverage.
+
+Предыдущий final whole-system PASS invalidated.
+Evidence: `research/project-review-findings-verification.md`.
