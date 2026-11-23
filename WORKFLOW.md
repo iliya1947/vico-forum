@@ -2,13 +2,36 @@
 
 ## Активный этап
 
-**Moderation visibility documentation closeout — Лира author-check PASS; STOP → Мира docs review.**
+**Moderation visibility documentation closeout — Mira docs review PASS; Leva independent docs review next.**
 
-- Task 5 implementation [#355](https://github.com/iliya1947/vico-forum/pull/355) merged 2026-11-23 12:40:49 UTC into main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`; final reviewed implementation exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`. Mira and Leva whole-feature PASS, VIS-FINAL-LEVA-01/02 CLOSED.
-- Separate docs-only [Draft #378](https://github.com/iliya1947/vico-forum/pull/378): base `main` `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`, exact head `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`; **7 documentation files only**, open/unmerged. Contains `PROJECT.md`, `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, history #33/index and a single `AGENT_LOGIC_ERRORS.md` row.
-- Author self-check compared delivered permission/seed/AP-10/history/guard contracts with merged code; GitHub PR diff exact 7-file allowlist; **14/14** static consistency checks, **6/6** new internal link targets, no trailing whitespace; Draft #378 is mergeable. No new runtime code/SQL/test/workflow changes and no CI triggered for docs-only change. Production/deployed acceptance not claimed.
-- **Next actor: Мира** — independent bounded docs PR #378 review against assigned scope and current main, exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`. Лира STOP. If Mira finds confirmed defects, return them to Лира; if PASS, use the applicable independent reviewer and owner merge gate from current `AGENTS.md`/service assignments. Do not merge #378 as author.
-- Until documentation merge, forum structure/topic move (task 6), Stage 6 deployment and unrelated changes remain inactive.
+Stable docs PR:
+- Draft #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`;
+- base/current main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
+- exactly 7 documentation files, mergeable clean;
+- no runtime/schema/test/workflow files.
+
+### Mira docs review — PASS
+
+All seven changed documents were read through their actual end and checked against merged main.
+
+Verified:
+1. `PROJECT.md` now states the permanent reversible Hide/Restore product boundary, public neutral 404/source-free tombstones, protected inspection and retained independent state without confusing moderation visibility with deletion or personal Mute/Block.
+2. `PROJECT_STATE.md` correctly advances repository migrations to `0071_moderation_visibility_foundation`, records repository/local-CI completion and keeps external accepted evidence at `0020`; no deployed/production claim is added.
+3. `docs/auth/AUTHORIZATION.md` matches runtime catalog/defaults: `forum.content.visibility.manage` is code-backed, initially seeded to moderator/admin only, dynamic overrides remain authoritative, and hidden revision text still requires independent `forum.post.history.read`.
+4. `docs/ADMIN_PANEL.md` matches current Admin admission and AP-10 runtime families, ordinary public-safe tombstone projection, exact queue/inspector paths, guarded hidden attachments, reason/CAS semantics and the four neutral visibility History actions. Generic Admin/History/Help/Complaint authority does not become hidden-source authority.
+5. `PROJECT_HISTORY_33.md` and history index accurately record B1–B9, the intermediate PR metadata deviation, VIS-FINAL-LEVA-01/02 correction cycle, exact-head evidence and owner merge.
+6. `AGENT_LOGIC_ERRORS.md` contains one concise confirmed row for Mira's missed explicit exception/final-consumer invariant, with no duplicated service narrative.
+7. Assigned non-scope is respected: no ROADMAP, Complaints, runtime, schema or next-task changes; no new visibility document.
+
+No confirmed documentation defect or current-task blocker found.
+
+### Next assignment — Leva
+
+Independently review docs PR #378 on exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a` against merged main and the docs-closeout assignment. Verify the whole 7-file documentation scope, not only Mira's conclusions. Do not edit the docs during review.
+
+If #378 head changes, this handoff expires and Mira must re-review the new head.
+
+**STOP for Mira.** No docs merge and no task 6/forum-structure implementation until Leva verdict and owner merge gate.
 
 ## Baseline
 
