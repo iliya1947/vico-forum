@@ -1,7 +1,15 @@
-# agents/lira.md — moderation visibility docs author PASS; STOP → Мира
+# agents/lira.md — Task 6 / F5 ACTIVE
 
-- Task 5 implementation #355 merged in main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`; Mira/Leva whole-feature PASS on implementation exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, both final P2 findings closed.
-- Separate [Draft docs PR #378](https://github.com/iliya1947/vico-forum/pull/378), exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`, base merge-main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`. The only seven changed paths are `PROJECT.md`, `PROJECT_STATE.md`, `docs/auth/AUTHORIZATION.md`, `docs/ADMIN_PANEL.md`, `docs/PROJECT_HISTORY/PROJECT_HISTORY_33.md`, history index and `AGENT_LOGIC_ERRORS.md`.
-- Docs include permanent reversible Hide/Restore contract, code-backed grants and AP-10 family, admin tombstones, guarded queue/inspection/revision gates, neutral History, factual migration 0071 and repository/local-CI (not deployed) status, compact history #33 and the confirmed Mira logic-error entry.
-- Author self-review: exact GitHub diff = allowed 7 docs files; 14/14 content assertions, 6/6 newly referenced internal targets, no whitespace errors; code/schema/tests/CI untouched. PR open/Draft, no docs merge.
-- **Лира STOP. Next Мира:** independently review #378 exact head, return PASS/HOLD via #342. Task 6/deployment not active until docs closure.
+- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- F1/F2/F3/F4 have Mira coordinator PASS and remain Draft/unmerged.
+- Accepted F4 exact: `18627a8c53a6db681a7f4f278b88fcdd55f579c1`.
+- Current assignment: **implement F5 only** from `stages/forum-structure/PLAN.md` S7/S7.1/S8.
+- Create a separate stacked Draft PR with base `feat/forum-structure-f4` exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`.
+- F5 scope: Admin structure forms; shared topic Move control/form and canonical POST dispatch; stale/conflict/unknown/fresh verification; editor-lifetime preservation; EN/RU/HE/accessibility; existing original Admin structural History projected into Owner `forum.structure` monitoring/history without duplicate journal.
+- Preserve F1–F4 authority/read/privacy contracts. Hidden source must not leak; mixed intents must not fall through to publication or visibility actions.
+- Prove F5 Done from PLAN with real handler/form negative paths, stable mounted editors/undo/uploads, actor/target response isolation and truthful single-source Owner History projection.
+- Do **not** start F6 final assembly/whole-feature acceptance.
+- After author self-check + applicable exact-head checks: STOP → Mira F5 coordinator checkpoint.
+- Do not merge stack stages.
+- Final independent whole-feature Codex reviewer remains Mark because Leva participated in earlier implementation stages.
+- #342 is the only service channel; #300/Stage6/general UI/UX/deploy remain inactive.
