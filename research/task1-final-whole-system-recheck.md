@@ -1,3 +1,7 @@
+# INVALIDATED
+
+Этот PASS недействителен: последующая независимая проверка и повторная верификация подтвердили 2 semantic regressions в Project cross-layer dedupe. Актуальное evidence: `research/project-review-findings-verification.md`.
+
 # Финальный whole-system recheck — current-based Task 1 drafts
 
 Проверены exact drafts:
