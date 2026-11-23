@@ -1,10 +1,9 @@
-# agents/mira.md — final #355 review HOLD reconciled
+# agents/mira.md — corrected #355 whole-feature PASS
 
-- Leva independent whole-feature review on exact `fdad1930fc68a854d52bee31922f923be5c1c751` returned HOLD with VIS-FINAL-LEVA-01/02.
-- I independently checked accepted V5/V6 plus current source and confirm both as current-feature P2 defects.
-- My earlier whole-feature PASS missed two contradictions:
-  1. protected own pending Help withdrawal was incorrectly treated like ordinary hidden-content mutation;
-  2. ordinary Admin projection dropped sanitized tombstones before numbering/original-post presentation.
-- Correction is assigned to Лира in existing assembled #355, bounded to these findings plus necessary regressions.
-- After any implementation change: old Mira/Leva verdicts are invalid; next gate is fresh Mira whole-feature review of Lira's new stable head, then independent review on the same head.
-- Mira STOP until Lira author PASS. No merge/docs/deploy/next task.
+- Reviewed corrected Draft #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` against unchanged main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Delta from prior reviewed head is exactly 8 files / 5 commits.
+- VIS-FINAL-LEVA-01 correction PASS: only own pending withdrawal bypasses visibility predicate; dependency locks, membership, author/pending/active actor remain; review/create gates stay visible-only.
+- VIS-FINAL-LEVA-02 correction PASS: ordinary Admin keeps source-free tombstones and stable chronology/root/best/parent identity; translations/actions/candidates remain visible-only; no private-reader bypass.
+- Fresh exact-head CI/PG/Chromium/local-R2 evidence independently checked: zero final failures/pending.
+- **Whole-feature Mira verdict: PASS; no confirmed current-feature blockers.**
+- Next: Leva independent whole-feature re-review same exact head. Mira STOP; no merge/docs/deploy/next task.
