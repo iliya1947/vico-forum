@@ -580,6 +580,59 @@ describe("generic P0 resource request dispatch", () => {
     expect(window.XMLHttpRequest).toBe(nativeXhr);
   });
 
+  it("rejects duplicate P1 transport installation without nesting fetch/XHR or leaking an owner", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [{
+        id: "routes/echo", file: "routes/echo.ts", path: "api/echo",
+      }],
+    };
+    const originalFetch = vi.fn(async () => new Response("native only"));
+    const originalXhr = window.XMLHttpRequest;
+    window.fetch = originalFetch;
+    const modules = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/echo", { loader: () => new Response("first generation") }],
+    ]);
+    const first = installPreviewResourceTransport({
+      manifest: all, createContext: () => new RouterContextProvider(), host: window,
+    });
+    let remounted: ReturnType<typeof installPreviewResourceTransport> | null = null;
+    try {
+      first.configure(createPreviewDataRoutes(all, modules), modules);
+      const capturedFetch = window.fetch;
+      const capturedXhr = window.XMLHttpRequest;
+      expect(() => installPreviewResourceTransport({
+        manifest: all, createContext: () => new RouterContextProvider(), host: window,
+      })).toThrow("P1 resource transport already installed");
+      expect(window.fetch).toBe(capturedFetch);
+      expect(window.XMLHttpRequest).toBe(capturedXhr);
+      const url = window.location.origin + "/api/echo";
+      expect(await (await capturedFetch(url)).text()).toBe("first generation");
+
+      first.dispose();
+      first.dispose();
+      expect(window.fetch).toBe(originalFetch);
+      expect(window.XMLHttpRequest).toBe(originalXhr);
+      await expect(capturedFetch(url)).rejects.toThrow("P1 resource transport disposed");
+
+      const nextModules = new Map(modules);
+      nextModules.set("routes/echo", { loader: () => new Response("second generation") });
+      remounted = installPreviewResourceTransport({
+        manifest: all, createContext: () => new RouterContextProvider(), host: window,
+      });
+      remounted.configure(createPreviewDataRoutes(all, nextModules), nextModules);
+      expect(window.fetch).not.toBe(capturedFetch);
+      expect(window.XMLHttpRequest).not.toBe(capturedXhr);
+      expect(await (await window.fetch(url)).text()).toBe("second generation");
+      expect(originalFetch).not.toHaveBeenCalled();
+    } finally {
+      remounted?.dispose();
+      first.dispose();
+    }
+    expect(window.fetch).toBe(originalFetch);
+    expect(window.XMLHttpRequest).toBe(originalXhr);
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);

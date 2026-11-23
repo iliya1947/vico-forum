@@ -8,6 +8,10 @@ type ResourceModules = ReadonlyMap<string, Record<string, unknown>>;
 type ContextFactory = () => RouterContextProvider;
 type StaticHandler = ReturnType<typeof createStaticHandler>;
 
+// P1 shares one host runtime across cached module imports and resets. Installing
+// another wrapper would chain fetch/XHR through an instance later disposed.
+const activeP1Hosts = new WeakSet<Window & typeof globalThis>();
+
 function routePaths(route: PreviewRouteDescriptor): RouteObject {
   return {
     id: route.id,
@@ -69,6 +73,12 @@ export function installPreviewResourceTransport({
   createContext: ContextFactory;
   host?: Window & typeof globalThis;
 }) {
+  if (resourceIds === undefined) {
+    if (activeP1Hosts.has(host)) {
+      throw new Error("P1 resource transport already installed");
+    }
+    activeP1Hosts.add(host);
+  }
   const originalFetch = host.fetch;
   const originalXhr = host.XMLHttpRequest;
   const originalBoundFetch = originalFetch.bind(host);
@@ -258,9 +268,16 @@ export function installPreviewResourceTransport({
     }
   };
   host.fetch = wrapped;
-  const xhr = resourceIds === undefined
-    ? installPreviewXhrTransport({ host, originalXhr, nativeAsset })
-    : null;
+  let xhr: ReturnType<typeof installPreviewXhrTransport> | null;
+  try {
+    xhr = resourceIds === undefined
+      ? installPreviewXhrTransport({ host, originalXhr, nativeAsset })
+      : null;
+  } catch (error) {
+    if (host.fetch === wrapped) host.fetch = originalFetch;
+    activeP1Hosts.delete(host);
+    throw error;
+  }
 
   return {
     configure(routes: RouteObject[], loaded: ResourceModules) {
@@ -330,6 +347,7 @@ export function installPreviewResourceTransport({
       ready();
       xhr?.dispose();
       if (host.fetch === wrapped) host.fetch = originalFetch;
+      if (resourceIds === undefined) activeP1Hosts.delete(host);
     },
   };
 }
