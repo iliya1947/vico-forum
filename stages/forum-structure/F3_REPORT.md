@@ -42,10 +42,27 @@ Shared PG test utility вынесен из F2 без изменения пров
 - actor deactivation first / admission first, actual effect и no-op; revoke move/visibility и AP-10 до native admission;
 - receipt × move той же учётной записи: receipt-first plain SELECT завершается, пока move ждёт actor; move-first receipt ждёт actor и получает новую persisted location. Нет actor→topic/structure inversion.
 
-## Exact-head CI/acceptance
+## Exact-head CI/acceptance — PASS
 
-[CI45252637056](https://github.com/iliya1947/vico-forum/actions/runs/45252637056) и 10 applicable acceptance workflows запущены на указанном head; результат пока ожидается. До подтверждения gate остаётся у Лёвы.
+Stable head: `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`. #381 остаётся Draft/unmerged, base `feat/forum-structure-f2` exact `11a2808f14a79efd69dbbb120f5b732bf2880d4f`; dependency повторно подтверждён до и после проверок.
+
+- [CI checks](https://github.com/iliya1947/vico-forum/actions/runs/45252637056/job/137966041017) — PASS: 234 files / 3014 unit tests, lint/typecheck, build, UI preview build, accepted migration guard, Drizzle metadata/check и generation parity (`No schema changes`).
+- [CI database](https://github.com/iliya1947/vico-forum/actions/runs/45252637056/job/137966040343) — PASS: 117 files / 1791 PostgreSQL tests, manifest75, runtime privilege/row-lock probes, split-authority provisioning, credential diagnostic/recovery/bootstrap, build и Worker smoke.
+- Все 10 применимых acceptance workflows по штатным path-фильтрам — PASS:
+
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646915) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646886) — PASS.
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646418) — PASS.
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646672) — PASS.
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646374) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646835) — PASS.
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646349) — PASS.
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646316) — PASS.
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646807) — PASS.
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45252646351) — PASS.
+
+Все CI jobs прошли с первой попытки на этом exact head; implementation после запуска не менялся. Это author gate F3, не whole-feature/независимый review.
 
 ## Передача
 
-После applicable checks — Мира для bounded F3 coordinator checkpoint на этом exact head. Это author self-check, не independent/whole-feature review. Лёва STOP; F4 readers/private context/picker/routes, F5 live forms/UI/Owner projection и F6 assembly не начинаются без отдельного назначения. #379/#380/#381 Draft/unmerged, docsF7 после фактического implementation merge.
+Applicable exact-head checks подтверждены. Следующая — Мира для bounded F3 coordinator checkpoint на этом exact head. Это author self-check, не independent/whole-feature review. Лёва STOP; F4 readers/private context/picker/routes, F5 live forms/UI/Owner projection и F6 assembly не начинаются без отдельного назначения. #379/#380/#381 Draft/unmerged, docsF7 после фактического implementation merge.
