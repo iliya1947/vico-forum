@@ -2,36 +2,44 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — Mira whole-feature review PART 1/4 PASS; STOP before PART 2.**
+**Moderation visibility assembled #355 — Mira whole-feature review PART 2/4 PASS; STOP before PART 3.**
 
-Stable review target:
+Stable review target unchanged:
 - Draft #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`;
 - current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
-- ahead 315 / behind 0, mergeable clean, 132 files (+24351/−492);
-- final author self-check and fresh #355→main CI/acceptance already PASS on same exact head.
+- ahead 315 / behind 0, mergeable clean;
+- final author self-check / fresh #355→main CI+acceptance PASS remain valid.
 
 ### Whole-feature review decomposition
 
 1. **PART 1 — scope + schema/History/authority foundation: PASS.**
-2. PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: pending fresh owner continuation.
-3. PART 3 — assets/translations/personal state/inbox: blocked until PART 2.
+2. **PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: PASS.**
+3. PART 3 — assets/translations/personal state/inbox: pending fresh owner continuation.
 4. PART 4 — UI/races/connected acceptance + final whole-feature verdict: blocked until PART 3.
 
-### PART 1 verified
+### PART 2 verified
 
-- Scope matches accepted moderation-visibility V1–V9; no Stage6/deploy/provider/dependency expansion in assembled diff.
-- Migration ceiling is correctly extended `0070 → 0071_moderation_visibility_foundation`; journal order is correct.
-- Topic/post visibility foundation matches V3: `is_hidden`, nonnegative `visibility_version`, ms-precision `visibility_changed_at`, version-0 visible/null invariant, hidden queue partial indexes `changed_at DESC,id DESC`.
-- Permission `forum.content.visibility.manage` is independent, initial grants only moderator/admin, custom grant remains possible; ordinary user baseline unchanged.
-- AP-10 mapping places visibility management in `admin.forum`; request-scoped restriction path remains fresh and Owner exemption remains existing policy.
-- Existing Admin History action/target constraints are preserved and extended only with topic/post Hide/Restore; visibility reasons are required/nonblank/≤2000, while prior action reason semantics remain unchanged.
-- Visibility History uses neutral ID-only labels, retains observed revision/version context, appends under the existing shared History ordering lock, and rolls back with the caller transaction.
-- Owner history/monitor classification includes visibility actions in existing `forum.content` / `forum.state` areas; no new monitoring subsystem.
-- Production schema manifest contains the new checks/index predicates; PG17 migration tests compare live definitions against manifest hashes.
-- Fresh final CI on #355 exact head already proves clean migration, Drizzle parity, manifest, privileges/provisioning and database suite. Green CI was used as evidence only after source review, not as substitute for it.
-- No confirmed current-feature defect in PART 1.
+- Public topic direct read returns neutral absence for hidden topic; thread read is REPEATABLE READ.
+- Hidden posts project as typed tombstones containing only stable id/topic/parent/time; no author identity, revision, body, translation, attachment metadata or visibility baseline is serialized.
+- Attachment metadata is joined only for visible post ids.
+- Public post location/history/edit-recovery seams require both visible post and visible parent topic.
+- Homepage/category/section, Popular, Unanswered, Tags/Tag, Search, Help/similar, profile counts, unread and generic Admin forum browsing all apply visibility in SQL before public count/rank/LIMIT/pagination rather than filtering React-ready rows afterward.
+- Search joins only visible posts before body matching; visible title/tag search remains valid with zero visible bodies.
+- Unanswered uses the persisted chronological root but counts only visible non-root replies, matching V5.
+- Hidden duplicate-original public presentation becomes an unavailable empty stub; hidden original id/title are not returned in the public reference.
+- Hide/Restore canonical POST branch runs before ordinary public availability gates, allowing Restore without public-source reads.
+- Payload is scalar/allowlisted, exact intent, session actor-bound, same-origin, canonical version/revision/member id; reason is NUL/code-point bounded and trimmed before writer.
+- Writer locks topic → target post when applicable → active actor/AP-10 → dynamic RBAC; CAS precedes no-op; no-op still passes admission; real transition requires reason, guards integer exhaustion, updates state once and appends neutral History last in the same transaction.
+- Generic Admin/history/Complaint permissions do not grant private visibility inspection. Existing admin topic route remains public-safe and returns 404 for hidden topic.
+- Private hidden queue is isolated from public ForumReader, 25+1 keyset-paged, exposes only ids/state/effective-parent status; capability + active-account admission is performed on every read.
+- Inspector reads current state/revision id/current visibility event reason only. Missing matching History for nonzero visibility version is invariant failure/503, not a synthetic reason.
+- Raw prior post revisions require both `forum.content.visibility.manage` and existing `forum.post.history.read`; private route checks the extra grant before parsing history cursor.
+- Queue/inspection document/data responses are `private, no-store`; auth/storage/unexpected failures fail closed without private SQL/source text.
+- Public visibility action error responses are neutral and `private, no-store`; stale/unknown outcomes do not auto-retry or fetch hidden source.
+- Existing ordinary topic actions were checked for dispatch overlap; visibility detection cannot fall through from a malformed mixed payload to another writer.
+- No confirmed current-feature defect in PART 2.
 
-**Mandatory STOP.** No PART 2, Leva review, merge, docs or deploy until fresh owner continuation.
+**Mandatory STOP.** No PART 3, Leva review, merge, docs or deploy until fresh owner continuation.
 
 ## Baseline
 
