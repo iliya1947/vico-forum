@@ -18,15 +18,15 @@
 
 ## Текущий этап
 
-Собранная moderation visibility feature #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751` против main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` прошла Mira whole-feature PASS. Независимый whole-feature review Лёвы завершён **HOLD**: VIS-FINAL-LEVA-01 (protected own Help withdrawal неправомерно blocked by Hide) и VIS-FINAL-LEVA-02 (ordinary Admin chronology/root identity после удаления tombstones).
+Собранная moderation visibility #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` против current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` получила fresh Mira whole-feature PASS и Leva independent whole-feature re-review PASS.
 
-Evidence, конкретные ссылки и correction criteria — первый раздел `stages/moderation-visibility/REVIEW.md`. Три локальных reproductions второго finding FAIL; остальные 295 целевых unit/route/UI tests PASS. Hosted exact-head checks SUCCESS независимо сверены; это не отменяет findings.
+**VIS-FINAL-LEVA-01/02 CLOSED**, текущих блокирующих findings нет. Проверены protected own Help withdrawal и ordinary Admin tombstone chronology/root/best/candidates, весь 8-file correction delta и взаимодействия с canonical action/translation/shared controls. Main и остальная feature implementation не изменились.
 
-Следующая — Мира для reconciliation findings с coordinator PASS и подготовки bounded correction assignment. Code review не является назначением reviewer на исправление. До закрытия findings и fresh exact-head cycle #355 остаётся Draft/unmerged; docs/deploy/structure не активируются.
+Канонический report — `stages/moderation-visibility/REVIEW.md`. Локально 17 files/304 tests PASS, включая 3 прежних reproductions. Fresh exact-head CI/browser/local-R2 SUCCESS независимо API-checked; full hosted suites локально не повторялись. Старый HOLD на fdad1930 superseded.
 
 ## Дальнейший маршрут
 
-Correction → author checks → fresh whole-feature Mira review → independent reviewer на том же head → owner merge → отдельный docs closeout. Затем forum structure/topic move, потом #320. V-P1/V-P2/V-P3 приняты; повторное согласование не требуется.
+#355 остаётся Draft/unmerged и готов к owner merge после снятия Draft на проверенном head. При новом implementation head нужен новый применимый review cycle. После фактического merge — отдельное назначение docs closeout; затем forum structure/topic move по #342. Reviewer не merge, не начинает docs/structure и не запускает deployment. V-P1/V-P2/V-P3 уже приняты.
 
 ## 2026-11-20 — stacked delivery adopted
 
