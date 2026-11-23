@@ -27,6 +27,8 @@ F4 reader contract требует canonical `structureVersion` и по PLAN unex
 
 ## Исправление — Лёва
 
+Correction реализована в #382, новый stable head `18627a8c53a6db681a7f4f278b88fcdd55f579c1` поверх reviewed `86aadfe...`. Локально:45 targeted PG (14 новых missing-singleton regressions),119 unit, TypeScript/lint PASS. Full CI/applicable acceptance на новом exact head запущены. Следующий шаг сейчас — Лёва проверяет results и затем STOP → Mira re-check; coordinator HOLD пока не заменяется PASS.
+
 Исправить только F4-01 в #382:
 - все F4 reads, обещающие `structureVersion`, должны fail как invariant при отсутствии обязательного singleton;
 - move-context не должен превращать отсутствие singleton в target-not-found;
