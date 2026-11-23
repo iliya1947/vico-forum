@@ -53,8 +53,16 @@ export interface ForumWriter {
   correctTopicTitleSourceLocale(input: { topicId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   correctPostBodySourceLocale(input: { topicId: string; postId: string; expectedRevisionId: string; sourceLocale: string; actorId: string; scope: SourceLocaleCorrectionScope }): Promise<void>;
   advanceTopicReadState(input: { userId: string; topicId: string; postId: string }): Promise<void>;
-  markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<{ topicId: string; postId: string }>;
+  markReplyNotificationRead(input: { userId: string; notificationId: string }): Promise<import("./forum-repository").ForumReplyNotificationTarget>;
   markNotificationRead(input:{userId:string;notificationId:string}):Promise<import("./forum-repository").ForumNotificationTarget>;
+  setTopicVisibility(input: {
+    topicId: string; actorId: string; hidden: boolean; expectedVisibilityVersion: number;
+    expectedRevisionId: string; reason: string;
+  }): Promise<{ hidden: boolean; visibilityVersion: number; changed: boolean }>;
+  setPostVisibility(input: {
+    topicId: string; postId: string; actorId: string; hidden: boolean; expectedVisibilityVersion: number;
+    expectedRevisionId: string; reason: string;
+  }): Promise<{ hidden: boolean; visibilityVersion: number; changed: boolean }>;
   setTopicClosed(input: {
     topicId: string; actorId: string; isClosed: boolean; expectedClosureVersion: number;
   }): Promise<{ isClosed: boolean; closureVersion: number; changed: boolean }>;
@@ -146,12 +154,13 @@ export function createHyperdriveForumWriter(
   writePolicy: ForumWritePolicy = forumWritePolicy,
   measureAdmission: typeof assertNoActiveUserMeasureRestriction = assertNoActiveUserMeasureRestriction,
   operational?:OwnerOperationalFactSink,
+  ownerUserId?: string,
 ): ForumWriter {
   async function write<T>(operation: (service: ForumService) => Promise<T>): Promise<T> {
     const client = clientFactory();
     try {
       await client.connect();
-      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission,operational)));
+      return await operation(new ForumService(new DrizzleForumRepository(drizzle(client), writePolicy, measureAdmission,operational,ownerUserId)));
     } catch (error) {
       if (isForumStorageAvailabilityFailure(error)) throw new ForumStorageUnavailableError({ cause: error });
       throw error;
@@ -273,6 +282,8 @@ export function createHyperdriveForumWriter(
     markReplyNotificationRead: ({ userId, notificationId }) => writeCorrection(
       (forum) => forum.markReplyNotificationRead(userId, notificationId),
     ),
+    setTopicVisibility: (input) => writeCorrection((forum) => forum.setTopicVisibility(input)),
+    setPostVisibility: (input) => writeCorrection((forum) => forum.setPostVisibility(input)),
     setTopicClosed: (input) => writeCorrection((forum) => forum.setTopicClosed(input)),
     pinTopic: ({ topicId, actorId }) => writeCorrection(async (forum) => {
       await forum.pinTopic(topicId, actorId);

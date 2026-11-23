@@ -29,18 +29,43 @@ import {
   localeContext,
   registryLoaderContext,
 } from "../localization/request-context";
-import CategoryRoute, { loader as categoryLoader } from "../routes/category";
+import CategoryRoute, { loader as rawCategoryLoader, headers as categoryHeaders } from "../routes/category";
+async function categoryLoader(args: Parameters<typeof rawCategoryLoader>[0]) {
+  return (await rawCategoryLoader(args)).data;
+}
 import AttentionRoute, { loader as attentionLoader, action as attentionAction } from "../routes/attention";
 import Home, { loader as homeLoader } from "../routes/home";
-import PopularRoute, { loader as popularLoader } from "../routes/popular";
-import SearchRoute, { loader as searchLoader } from "../routes/search";
-import TagsRoute, { loader as tagsLoader } from "../routes/tags";
-import TagRoute, { loader as tagLoader } from "../routes/tag";
-import UnansweredRoute, { loader as unansweredLoader } from "../routes/unanswered";
-import UnreadRoute, { loader as unreadLoader } from "../routes/unread";
+import PopularRoute, { loader as rawPopularLoader, headers as popularHeaders, meta as popularMeta } from "../routes/popular";
+async function popularLoader(args: Parameters<typeof rawPopularLoader>[0]) {
+  return (await rawPopularLoader(args)).data;
+}
+import SearchRoute, { loader as rawSearchLoader, headers as searchHeaders, meta as searchMeta } from "../routes/search";
+async function searchLoader(args: Parameters<typeof rawSearchLoader>[0]) {
+  return (await rawSearchLoader(args)).data;
+}
+import TagsRoute, { loader as rawTagsLoader, headers as tagsHeaders, meta as tagsMeta } from "../routes/tags";
+async function tagsLoader(args: Parameters<typeof rawTagsLoader>[0]) {
+  return (await rawTagsLoader(args)).data;
+}
+import TagRoute, { loader as rawTagLoader, headers as tagHeaders, meta as tagMeta } from "../routes/tag";
+async function tagLoader(args: Parameters<typeof rawTagLoader>[0]) {
+  return (await rawTagLoader(args)).data;
+}
+import UnansweredRoute, { loader as rawUnansweredLoader, headers as unansweredHeaders, meta as unansweredMeta } from "../routes/unanswered";
+async function unansweredLoader(args: Parameters<typeof rawUnansweredLoader>[0]) {
+  return (await rawUnansweredLoader(args)).data;
+}
+import UnreadRoute, { loader as rawUnreadLoader, headers as unreadHeaders } from "../routes/unread";
+async function unreadLoader(args: Parameters<typeof rawUnreadLoader>[0]) {
+  return (await rawUnreadLoader(args)).data;
+}
 import { ErrorBoundary as NotFoundErrorBoundary, loader as notFoundLoader } from "../routes/not-found";
-import SectionRoute, { loader as sectionLoader } from "../routes/section";
-import TopicRoute, { loader as rawTopicLoader } from "../routes/topic";
+import { ForumRouteError } from "./ui";
+import SectionRoute, { loader as rawSectionLoader, headers as sectionHeaders } from "../routes/section";
+async function sectionLoader(args: Parameters<typeof rawSectionLoader>[0]) {
+  return (await rawSectionLoader(args)).data;
+}
+import TopicRoute, { loader as rawTopicLoader, headers as topicHeaders } from "../routes/topic";
 async function topicLoader(args: Parameters<typeof rawTopicLoader>[0]) {
   const result = await rawTopicLoader(args);
   return "data" in result && "init" in result ? result.data : result;
@@ -371,7 +396,7 @@ function topicRenderData(
     locale: "en",
     topic: value,
     titlePresentation: originalPresentation("topic-title", value.id, value.title),
-    postPresentations: value.posts.map((post) =>
+    postPresentations: value.posts.filter((post) => post.kind !== "hidden").map((post) =>
       originalPresentation("post-body", post.id, post.body)
     ),
     generationUnits: [],
@@ -436,7 +461,7 @@ describe.each([
     if (categoryData.kind !== "category") throw new Error("expected regular category page");
     expect(categoryData.category.sections).toHaveLength(1);
     expect(sectionData.section.topics).toHaveLength(1);
-    expect(topicData.topic.posts[0]?.body.originalContent).toBe("Start with an explicit response type.");
+    expect(topicData.topic.posts[0]?.kind !== "hidden" ? topicData.topic.posts[0]?.body.originalContent : undefined).toBe("Start with an explicit response type.");
     expect(topicData.generationUnits).toEqual([]);
 
     const homeView = renderRoute(Home, home, `/${locale}`, locale, direction);
@@ -1596,6 +1621,7 @@ describe("Help & solutions modes and authoring", () => {
       forumTopicPath("en", duplicateTopic.id),
       "en",
       "ltr",
+      {id:"manager",name:"Manager"},
     );
     expect(await screen.findByText("Private appeal reason.")).toBeVisible();
     expect(screen.getByText("Disputed")).toBeVisible();
@@ -1846,7 +1872,8 @@ describe("Help & solutions modes and authoring", () => {
     });
     expect(topicData.canModerateHelpSolution).toBe(true);
     expect(topicData.canUseAdminPanel).toBe(true);
-    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr");
+    renderRoute(TopicRoute, topicData, forumTopicPath("en", helpTopic.id), "en", "ltr",
+      {id:"manager",name:"Manager"});
     expect(await screen.findByText("Why this solution is outdated")).toBeVisible();
     const bestAnswer = screen.getByText("Best answer").closest("li");
     expect(bestAnswer).not.toBeNull();
@@ -5138,5 +5165,689 @@ describe("personal Block presentation in ordinary TopicView", () => {
     expect(document.querySelector("#post-help-answer [data-message-body]")).not.toBeNull();
     expect(document.querySelector("#post-help-question-post [data-message-body]")).not.toBeNull();
     expect(document.getElementById("post-help-answer")).toBeInTheDocument();
+  });
+
+  it("renders hidden tombstones without author/Reveal/source/actions, retaining anchors and reply relations", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "answer", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const visible = {
+      ...topic.posts[0]!, id: "visible-reply", parentPostId: "answer",
+      authorId: "ada", authorName: "Ada",
+      body: { id: "visible-reply-rev", originalContent: "Visible answer remains.", sourceLocale: "en" },
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden, visible] };
+    renderRoute(TopicRoute, topicRenderData(page, {
+      canReply: true, editablePostIds: [], canManageAnySolution: true,
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    }), "/en/topics/typed%2Fapi", "en", "ltr", { id: "viewer-a", name: "Viewer" });
+    expect(await screen.findByText("This message is unavailable.")).toBeInTheDocument();
+    expect(document.querySelector("#post-answer[data-moderation-hidden-post]")).not.toBeNull();
+    expect(document.querySelector("#post-answer [data-message-body]")).toBeNull();
+    expect(document.querySelector('#post-answer a[href="#post-answer"]')).not.toBeNull();
+    expect(document.querySelector('#post-answer a[href="#post-visible-reply"]')).not.toBeNull();
+    expect(document.querySelector("#post-answer .topic-message-profile-link")).toBeNull();
+    expect(document.querySelector("#post-answer .topic-message-mobile-actions-toggle")).toBeNull();
+    expect(document.querySelector("#post-answer .message-quick-actions")).toBeNull();
+    expect(document.querySelector("#post-answer button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(screen.getByText("Visible answer remains.")).toBeInTheDocument();
+  });
+  it("B7-B2b links hidden tombstones only for the same authorized viewer without exposing hidden CAS", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "hidden/post-1", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden] };
+    // The public serializable DTO has no private revision/version, for moderators or guests.
+    expect(page.posts[0]).toEqual(hidden);
+    expect(JSON.stringify(page.posts[0])).not.toMatch(/revision|visibilityVersion|originalContent|sourceLocale|attachment/i);
+    for (const { locale, direction } of [
+      { locale: "en", direction: "ltr" as const },
+      { locale: "he", direction: "rtl" as const },
+    ]) {
+      const view=renderRoute(TopicRoute,topicRenderData(page,{
+        locale,canManageVisibility:true,watchActorId:"moderator1",
+      }),forumTopicPath(locale,topic.id),locale,direction,{id:"moderator1",name:"Moderator"});
+      try {
+        await screen.findByText("This message is unavailable.");
+        const tombstone=view.container.querySelector("[data-moderation-hidden-post]");
+        expect(tombstone).not.toBeNull();
+        const link=tombstone?.querySelector<HTMLAnchorElement>(".topic-message-private-inspection a");
+        expect(link?.textContent).toBe("Inspect");
+        expect(link?.getAttribute("aria-label")).toBe("Inspect: Message #1");
+        const href=link?.getAttribute("href");
+        expect(href).toBe(`/${locale}/admin/forum/topics/typed%2Fapi/inspect?postId=hidden%2Fpost-1`);
+        const destination=new URL(href!,"https://forum.test");
+        expect([...destination.searchParams.keys()]).toEqual(["postId"]);
+        expect(destination.searchParams.get("postId")).toBe(hidden.id);
+        expect(destination.pathname).not.toContain("revision");
+        expect(tombstone?.querySelector("[data-message-body]")).toBeNull();
+        expect(tombstone?.querySelector(".message-admin-tools, .visibility-hide-form, .visibility-restore-form")).toBeNull();
+        expect(tombstone?.querySelector("button")).toBeNull();
+        expect(JSON.stringify(page.posts[0])).not.toContain("visibilityVersion");
+      } finally {view.unmount();}
+    }
+
+    for(const { permission, snapshotActorId, headerUser } of [
+      { permission:false, snapshotActorId:"moderator1", headerUser:{id:"moderator1",name:"Moderator"} },
+      { permission:true, snapshotActorId:"moderator1", headerUser:{id:"another-user",name:"Other"} },
+      { permission:true, snapshotActorId:"moderator1", headerUser:null },
+      { permission:true, snapshotActorId:null, headerUser:{id:"moderator1",name:"Moderator"} },
+    ]) {
+      const view=renderRoute(TopicRoute,topicRenderData(page,{
+        canManageVisibility:permission,watchActorId:snapshotActorId,
+      }),forumTopicPath("en",topic.id),"en","ltr",headerUser);
+      try {
+        await screen.findByText("This message is unavailable.");
+        const tombstone=view.container.querySelector("[data-moderation-hidden-post]");
+        expect(tombstone?.querySelector(".topic-message-private-inspection")).toBeNull();
+        expect(tombstone?.querySelector("button")).toBeNull();
+        expect(tombstone?.querySelector("[data-message-body]")).toBeNull();
+      } finally {view.unmount();}
+    }
+  });
+
+  it("B7-SC1-01 invalidates a hidden-post inspector link across A→B→A until a fresh public loader GET", async () => {
+    const hidden = {
+      kind: "hidden" as const, id: "hidden/post-1", topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const page: ForumTopicPage = { ...topic, posts: [hidden] };
+    const privateFlags = { canManageVisibility: true, watchActorId: "moderator1" };
+    let snapshot = topicRenderData(page, privateFlags);
+    const loader = vi.fn(() => snapshot);
+    const router = createMemoryRouter([
+      { id: "page", path: "*", Component: TopicRoute, loader },
+    ], { initialEntries: [forumTopicPath("en", topic.id)] });
+    const i18n = runtime("en", "ltr");
+    const moderator: HeaderAuthUser = { id: "moderator1", name: "Moderator" };
+    const other: HeaderAuthUser = { id: "other-user", name: "Other" };
+    const tree = (viewer: HeaderAuthUser | null) =>
+      <I18nextProvider i18n={i18n}>
+        <HeaderAuthProvider initialUser={viewer}>
+          <RouterProvider router={router} />
+        </HeaderAuthProvider>
+      </I18nextProvider>;
+    const view = render(tree(moderator));
+    const inspectorLink = () =>
+      view.container.querySelector<HTMLAnchorElement>(".topic-message-private-inspection a");
+    try {
+      await screen.findByText("This message is unavailable.");
+      await waitFor(() => expect(inspectorLink()).not.toBeNull());
+      for (const newViewer of [other, null]) {
+        const before = loader.mock.calls.length;
+        await act(async () => { view.rerender(tree(newViewer)); });
+        expect(inspectorLink()).toBeNull();
+        await act(async () => { view.rerender(tree(moderator)); });
+        // The header switched back, but the same loader still carries stale authority.
+        expect(inspectorLink()).toBeNull();
+        expect(loader).toHaveBeenCalledTimes(before);
+
+        // Only a new GET/snapshot may re-enable the link for the current actor.
+        snapshot = topicRenderData(page, privateFlags);
+        await act(async () => { router.revalidate(); });
+        await waitFor(() => expect(loader.mock.calls.length).toBeGreaterThan(before));
+        await waitFor(() => expect(inspectorLink()).not.toBeNull());
+        expect(inspectorLink()?.getAttribute("href"))
+          .toBe("/en/admin/forum/topics/typed%2Fapi/inspect?postId=hidden%2Fpost-1");
+        expect(view.container.querySelector("[data-moderation-hidden-post] [data-message-body]")).toBeNull();
+      }
+    } finally {
+      router.dispose();
+      view.unmount();
+    }
+  });
+
+  it("renders a hidden middle parent with stable message numbers and bidirectional descendant anchors", async () => {
+    const root = {
+      ...topic.posts[0]!, id: "tree-root", authorId: "ada", authorName: "Ada", parentPostId: null,
+      body: { id: "tree-root-revision", originalContent: "Visible root remains.", sourceLocale: "en" },
+    };
+    const hiddenMiddle = {
+      kind: "hidden" as const, id: "tree-middle", topicId: topic.id,
+      parentPostId: "tree-root", createdAt: new Date("2026-01-03"),
+    };
+    const child = {
+      ...topic.posts[0]!, id: "tree-leaf", authorId: "ada", authorName: "Ada", parentPostId: "tree-middle",
+      body: { id: "tree-leaf-revision", originalContent: "Visible descendant remains.", sourceLocale: "en" },
+    };
+    const page: ForumTopicPage = {
+      ...topic, bestAnswerPostId: null, posts: [root, hiddenMiddle, child],
+    };
+    const rendered = renderRoute(TopicRoute, topicRenderData(page, {
+      canReply: true, canManageAnySolution: true,
+      blockedActorId: "viewer-a", blockedAuthorIds: ["lin"],
+    }), forumTopicPath("en", topic.id), "en", "ltr", { id: "viewer-a", name: "Viewer" });
+    expect(await screen.findByText("This message is unavailable.")).toBeInTheDocument();
+    expect(rendered.container.querySelector("#post-tree-root")).not.toBeNull();
+    expect(rendered.container.querySelector("#post-tree-middle[data-moderation-hidden-post]")).not.toBeNull();
+    expect(rendered.container.querySelector("#post-tree-leaf")).not.toBeNull();
+    const middle = rendered.container.querySelector("#post-tree-middle")!;
+    expect(middle.querySelector('a[href="#post-tree-middle"]')).not.toBeNull();
+    expect(middle.querySelector('a[href="#post-tree-root"]')).not.toBeNull();
+    expect(middle.querySelector('a[href="#post-tree-leaf"]')).not.toBeNull();
+    expect(rendered.container.querySelector('#post-tree-leaf a[href="#post-tree-middle"]')).not.toBeNull();
+    expect(middle.querySelector(".topic-message-author-number")).toHaveTextContent("2");
+    expect(rendered.container.querySelector('#post-tree-leaf .topic-message-author-number')).toHaveTextContent("3");
+    expect(middle.querySelector("[data-message-body]")).toBeNull();
+    expect(middle.querySelector(".topic-message-profile-link")).toBeNull();
+    expect(middle.querySelector(".message-quick-actions")).toBeNull();
+    expect(middle.querySelector("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show message" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Visible descendant remains.")).toBeInTheDocument();
+  });
+
+});
+
+
+describe("B3 protected Help appeal masked card", () => {
+  it("renders hidden source placeholders without public links and retains exact resolution form IDs", async () => {
+    const hiddenId = "b3-hidden-duplicate-6132";
+    const payload = {
+      locale: "en", accountId: "moderator1", mode: "signals" as const, group: "appeals" as const,
+      queue: {
+        cases: [{
+          type: "appeal" as const, kind: "appeal" as const, id: "b3-appeal-6132",
+          topicId: hiddenId, topicTitle: "", topicUnavailable: true,
+          original: null,
+          submittedByUserId: "author", submittedByName: "Author",
+          explanation: "Appeal remains available", createdAt: new Date("2026-01-20").toISOString(),
+          targetPostId: null,
+        }],
+        hasMore: false, page: 0,
+      },
+      securityQueue: null, counts: {
+        "needs-details": 0, "needs-review": 0, "solution-outdated": 0,
+        duplicate: 0, appeals: 1, mixed: 0,
+      },
+      canViewHelpAttention: true, canReadSecurityAttachments: false,
+      canReviewComplaints: false, canReviewAppeals: false,
+    };
+    const rendered=renderRoute(AttentionRoute,payload,
+      "/en/attention?mode=signals&group=appeals","en","ltr",
+      {id:"moderator1",name:"Moderator"});
+    expect(await screen.findByText("Topic unavailable")).toBeInTheDocument();
+    expect(rendered.container.querySelector(".attention-case-topic")).toHaveTextContent("Topic unavailable");
+    expect(rendered.container.querySelector(".attention-case-topic")?.tagName).toBe("SPAN");
+    expect(rendered.container.querySelector('.attention-case a[href^="/en/topics/"]')).toBeNull();
+    expect(rendered.container.querySelector(".attention-case-original"))
+      .toHaveTextContent("Original topic unavailable");
+    expect(rendered.container.querySelector(".attention-case-original a")).toBeNull();
+    expect(rendered.container.querySelector('input[name="topicId"]'))
+      .toHaveValue(hiddenId);
+    expect(rendered.container.querySelector('input[name="caseId"]'))
+      .toHaveValue("b3-appeal-6132");
+    expect(rendered.container.querySelector('button[name="intent"][value="rejectHelpDuplicateAppeal"]'))
+      .not.toBeNull();
+    expect(rendered.container.querySelector('button[name="intent"][value="acceptHelpDuplicateAppeal"]'))
+      .not.toBeNull();
+  });
+});
+
+describe("B3 public source and negative-response sentinels", () => {
+  it("excludes hidden revisions and unsolicited translations from topic data and rendered HTML", async () => {
+    const hiddenId = "b3-hidden-middle";
+    const hidden = {
+      kind: "hidden" as const, id: hiddenId, topicId: topic.id,
+      parentPostId: null, createdAt: new Date("2026-01-02"),
+    };
+    const visible = {
+      ...topic.posts[0]!, id: "b3-visible-descendant", parentPostId: hiddenId,
+      authorId: "ada", authorName: "Ada",
+      body: { id: "b3-visible-revision", originalContent: "B3_VISIBLE_DESCENDANT_6021", sourceLocale: "en" },
+    };
+    const hiddenRevision = "B3_SECRET_HIDDEN_REVISION_6021";
+    const hiddenTranslation = "B3_SECRET_HIDDEN_TRANSLATION_6021";
+    const rogueTranslation: StoredContentTranslation = {
+      contentType: "post-body", contentId: hiddenId, revisionId: hiddenRevision,
+      targetLocale: "he", sourceLocale: "en", translatedContent: hiddenTranslation,
+      provenance: { origin: "persistent_manual" },
+    };
+    const readBatch = vi.fn(async (identities: readonly { contentId: string; revisionId: string }[]) => {
+      void identities;
+      return { translations: [rogueTranslation] };
+    });
+    const ctx = context("he", "rtl");
+    ctx.set(forumReaderContext, {
+      ...reader, readTopicPage: async () => ({ ...topic, posts: [hidden, visible] }),
+    });
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+
+    const loaded = await rawTopicLoader({
+      params: { locale: "he", topicId: topic.id }, context: ctx,
+    });
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    expect(loaded.data.topic.posts[0]).toEqual(hidden);
+    expect(loaded.data.topic.posts[1]).toMatchObject({ id: visible.id, parentPostId: hiddenId });
+    expect(loaded.data.postPresentations.map((item) => item.contentId)).toEqual([visible.id]);
+    expect(readBatch).toHaveBeenCalledTimes(1);
+    expect(readBatch.mock.calls[0]![0].map((item) => item.contentId))
+      .toEqual([topic.id, visible.id]);
+    expect(readBatch.mock.calls[0]![0].map((item) => item.revisionId))
+      .not.toContain(hiddenRevision);
+    const serialized = JSON.stringify(loaded.data);
+    for (const secret of [hiddenRevision, hiddenTranslation]) {
+      expect(serialized).not.toContain(secret);
+    }
+
+    const rendered = renderRoute(TopicRoute, loaded.data,
+      forumTopicPath("he", topic.id), "he", "rtl");
+    expect(await screen.findByText("B3_VISIBLE_DESCENDANT_6021")).toBeInTheDocument();
+    expect(rendered.container.querySelector("#post-b3-hidden-middle[data-moderation-hidden-post]"))
+      .not.toBeNull();
+    expect(rendered.container.querySelector('#post-b3-visible-descendant a[href="#post-b3-hidden-middle"]'))
+      .not.toBeNull();
+    for (const secret of [hiddenRevision, hiddenTranslation]) {
+      expect(rendered.container.innerHTML).not.toContain(secret);
+    }
+    expect(rendered.container.querySelector("#post-b3-hidden-middle [data-message-body]"))
+      .toBeNull();
+  });
+
+  it("gives missing and hidden topics the same neutral 404 before translations or metadata", async () => {
+    const ctx = context("he", "rtl");
+    const readTopicPage = vi.fn(async () => undefined);
+    const registry = vi.fn(async () => ({
+      registry: localeRegistry, semanticIdentity: "test",
+      health: { status: "healthy" as const },
+    }));
+    const readBatch = vi.fn(async () => ({ translations: [] }));
+    ctx.set(forumReaderContext, { ...reader, readTopicPage });
+    ctx.set(registryLoaderContext, registry);
+    ctx.set(contentTranslationPresentationContext, new ContentTranslationPresentationService({ readBatch }));
+
+    const responses: Response[] = [];
+    for (const id of ["b3-secret-hidden-topic", "b3-nonexistent-topic"]) {
+      const response = await rawTopicLoader({
+        params: { locale: "he", topicId: id }, context: ctx,
+      }).catch((error: unknown) => error);
+      expect(response).toBeInstanceOf(Response);
+      responses.push(response as Response);
+    }
+    expect(readTopicPage).toHaveBeenCalledTimes(2);
+    expect(registry).not.toHaveBeenCalled();
+    expect(readBatch).not.toHaveBeenCalled();
+    expect(responses.map((response) => response.status)).toEqual([404, 404]);
+    expect(await Promise.all(responses.map((response) => response.text())))
+      .toEqual(["Not Found", "Not Found"]);
+    const documentHeaders = topicHeaders({
+      parentHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+      loaderHeaders: new Headers(),
+      actionHeaders: new Headers(),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(documentHeaders.get("Cache-Control")).toBe("no-store");
+  });
+});
+
+describe("B3 neutral public document-error presentation", () => {
+  it.each([
+    { status: 404, expected: "Forum page not found" },
+    { status: 503, expected: "Temporarily unavailable" },
+  ])("hides raw title, body and revision in a mounted $status boundary", async ({ status, expected }) => {
+    const secrets = [
+      "B3_SECRET_ERROR_TITLE_6240",
+      "B3_SECRET_ERROR_BODY_6240",
+      "B3_SECRET_ERROR_REVISION_6240",
+    ];
+    const raw = secrets.join(" ");
+    const response = new Response(raw, {
+      status,
+      headers: { "X-Hidden-Metadata": raw, "Cache-Control": "public, max-age=3600" },
+    });
+    const router = createMemoryRouter([{
+      id: "page",
+      path: "/:locale/topics/:topicId",
+      Component: TopicRoute,
+      loader: async () => { throw response; },
+      ErrorBoundary: ForumRouteError,
+    }], { initialEntries: ["/en/topics/b3-hidden-6240"] });
+
+    const rendered = render(
+      <I18nextProvider i18n={runtime("en", "ltr")}>
+        <HeaderAuthProvider initialUser={null}>
+          <RouterProvider router={router} />
+        </HeaderAuthProvider>
+      </I18nextProvider>,
+    );
+    expect(await screen.findByRole("heading", { name: expected })).toBeInTheDocument();
+    expect(rendered.container.querySelector("[data-status]")).toHaveAttribute("data-status", String(status));
+    for (const secret of secrets) expect(rendered.container.innerHTML).not.toContain(secret);
+    expect(rendered.container.innerHTML).not.toContain("X-Hidden-Metadata");
+    expect(screen.queryByText(raw)).not.toBeInTheDocument();
+
+    const documentHeaders = topicHeaders({
+      parentHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+      loaderHeaders: new Headers(),
+      actionHeaders: new Headers(),
+      errorHeaders: response.headers,
+    });
+    expect(documentHeaders.get("Cache-Control")).toBe("no-store");
+    expect(documentHeaders.get("X-Hidden-Metadata")).toBeNull();
+  });
+});
+
+describe("B3 public document error and metadata sentinels", () => {
+  it("renders identical neutral 404 HTML for hidden and absent topics and a hidden-only tag", async () => {
+    const secret = "B3_SECRET_HIDDEN_TITLE_IN_URL_7331";
+    const ctx = context("en", "ltr");
+    const readTopicPage = vi.fn(async () => undefined);
+    const readTag = vi.fn(async () => undefined);
+    ctx.set(forumReaderContext, { ...reader, readTopicPage, readTag });
+
+    const snapshots: string[] = [];
+    for (const target of [
+      { path: `/en/topics/${secret}`, tag: false },
+      { path: "/en/topics/b3-absent-topic-7331", tag: false },
+      { path: "/en/tags/b3-hidden-only-7331", tag: true },
+    ]) {
+      const router = createMemoryRouter([{
+        path: target.tag ? "/:locale/tags/:tagKey" : "/:locale/topics/:topicId",
+        loader: ({ params }) => target.tag
+          ? rawTagLoader({ params, context: ctx })
+          : rawTopicLoader({ params, context: ctx }),
+        Component: target.tag ? TagRoute : TopicRoute,
+        ErrorBoundary: ForumRouteError,
+      }], { initialEntries: [target.path] });
+
+      const rendered = render(
+        <I18nextProvider i18n={runtime("en", "ltr")}>
+          <HeaderAuthProvider initialUser={null}><RouterProvider router={router} /></HeaderAuthProvider>
+        </I18nextProvider>,
+      );
+      expect(await screen.findByRole("heading", { name: "Forum page not found" }))
+        .toBeInTheDocument();
+      expect(rendered.container.querySelector('[role="alert"][data-status="404"]'))
+        .not.toBeNull();
+      const html = rendered.container.querySelector('[role="alert"][data-status="404"]')?.outerHTML ?? "";
+      expect(html).not.toContain(secret);
+      expect(html).not.toContain("Not Found");
+      expect(html).not.toContain("B3_SECRET_HIDDEN_REVISION_7331");
+      snapshots.push(html);
+      rendered.unmount();
+    }
+
+    expect(snapshots[0]).toBe(snapshots[1]);
+    expect(snapshots[1]).toBe(snapshots[2]);
+    expect(readTopicPage).toHaveBeenCalledTimes(2);
+    expect(readTag).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps public discovery document metadata independent of hidden topic data", () => {
+    const titles = [searchMeta(), tagsMeta(), tagMeta(), popularMeta(), unansweredMeta()];
+    expect(titles).toEqual([
+      [{ title: "Search · Vico Forum" }],
+      [{ title: "Tags · Vico Forum" }],
+      [{ title: "Tag · Vico Forum" }],
+      [{ title: "Popular · Vico Forum" }],
+      [{ title: "Unanswered · Vico Forum" }],
+    ]);
+    expect(JSON.stringify(titles)).not.toContain("B3_SECRET_HIDDEN_TITLE_IN_URL_7331");
+  });
+});
+
+describe("B3 public content cache policy", () => {
+
+  it("does not cache the tag index even with cacheable parent or error headers", async () => {
+    const index = await rawTagsLoader({
+      params: { locale: "en" }, context: context(),
+    });
+    expect(index.data.tags).toHaveLength(1);
+    expect(new Headers(index.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = tagsHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const errorHeaders = tagsHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("does not cache tagged topics or a neutral missing-tag 404", async () => {
+    const tagged = await rawTagLoader({
+      params: { locale: "en", tagKey: "typescript" }, context: context(),
+    });
+    expect(tagged.data.page.topics).toHaveLength(1);
+    expect(new Headers(tagged.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = tagHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const missing = context();
+    missing.set(forumReaderContext, { ...reader, readTag: async () => undefined });
+    await expect(rawTagLoader({
+      params: { locale: "en", tagKey: "hidden-tag" }, context: missing,
+    })).rejects.toMatchObject({ status: 404 });
+    const errorHeaders = tagHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+
+  const routeHeaders = (parentCache: string) => ({
+    parentHeaders: new Headers({ "Cache-Control": parentCache, "X-Parent-Test": "retained" }),
+    loaderHeaders: new Headers(),
+    actionHeaders: new Headers(),
+    errorHeaders: undefined,
+  });
+
+  it("sets no-store for public Section and private no-store for signed-in read state", async () => {
+    const guest=await rawSectionLoader({
+      params:{locale:"en",sectionId:section.id},context:context(),
+    });
+    expect(guest.data.section.id).toBe(section.id);
+    expect(new Headers(guest.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"lin",name:"Lin"}} as never);
+    ctx.set(authorizationContext,{forUser:()=>({has:async()=>false})} as never);
+    const signed=await rawSectionLoader({
+      params:{locale:"en",sectionId:section.id},context:ctx,
+    });
+    expect(signed.data.topicReadStates).toEqual({[topic.id]:"new"});
+    expect(new Headers(signed.init?.headers).get("Cache-Control")).toBe("private, no-store");
+
+    const publicHeaders=sectionHeaders(routeHeaders("public, max-age=600"));
+    expect(publicHeaders.get("Cache-Control")).toBe("no-store");
+    expect(publicHeaders.get("X-Parent-Test")).toBe("retained");
+    const actionHeaders=sectionHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders:new Headers({"Cache-Control":"private, no-store","Retry-After":"60"}),
+    });
+    expect(actionHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(actionHeaders.get("Retry-After")).toBe("60");
+  });
+
+  it("sets no-store on public Category and Help, private no-store on signed-in Help", async () => {
+    const normal=await rawCategoryLoader({
+      params:{locale:"en",categoryId:category.id},context:context(),
+    });
+    expect(normal.data.kind).toBe("category");
+    expect(new Headers(normal.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const help=await rawCategoryLoader({
+      params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:context(),
+    });
+    expect(help.data.kind).toBe("help-solutions");
+    expect(new Headers(help.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const ctx=context();
+    ctx.set(authSessionContext,{user:{id:"ada",name:"Ada"}} as never);
+    ctx.set(authorizationContext,{forUser:()=>({has:async()=>false})} as never);
+    const privateHelp=await rawCategoryLoader({
+      params:{locale:"en",categoryId:HELP_SOLUTIONS_CATEGORY_ID},context:ctx,
+    });
+    expect(privateHelp.data.kind).toBe("help-solutions");
+    expect(new Headers(privateHelp.init?.headers).get("Cache-Control")).toBe("private, no-store");
+
+    const headers=categoryHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const actionHeaders=categoryHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders:new Headers({"Cache-Control":"private, no-store","Retry-After":"60"}),
+    });
+    expect(actionHeaders.get("Cache-Control")).toBe("private, no-store");
+    expect(actionHeaders.get("Retry-After")).toBe("60");
+  });
+
+  it("prevents cacheable 404 and dependency-error headers for Section/Category", async () => {
+    const missing=context();
+    missing.set(forumReaderContext,{
+      ...reader,readSection:async()=>undefined,readCategory:async()=>undefined,
+    });
+    await expect(rawSectionLoader({
+      params:{locale:"en",sectionId:"hidden-section"},context:missing,
+    })).rejects.toMatchObject({status:404});
+    await expect(rawCategoryLoader({
+      params:{locale:"en",categoryId:"hidden-category"},context:missing,
+    })).rejects.toMatchObject({status:404});
+    for(const routeHeadersExport of [sectionHeaders,categoryHeaders]){
+      const headers=routeHeadersExport({
+        ...routeHeaders("public, max-age=600"),
+        errorHeaders:new Headers({"Cache-Control":"public, max-age=3600"}),
+      });
+      expect(headers.get("Cache-Control")).toBe("no-store");
+      expect(headers.get("X-Parent-Test")).toBe("retained");
+    }
+  });
+
+  it("does not cache Popular rankings or dependency-error documents", async () => {
+    const loaded = await rawPopularLoader({ params: { locale: "en" }, context: context() });
+    expect(loaded.data.periods["24h"]).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = popularHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const failed = context();
+    failed.set(forumReaderContext, {
+      ...reader, readPopular: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    await expect(rawPopularLoader({ params: { locale: "en" }, context: failed }))
+      .rejects.toMatchObject({ status: 503 });
+    const errorHeaders = popularHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("does not cache Unanswered listings or dependency-error documents", async () => {
+    const loaded = await rawUnansweredLoader({ params: { locale: "en" }, context: context() });
+    expect(loaded.data.topics).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = unansweredHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const failed = context();
+    failed.set(forumReaderContext, {
+      ...reader, readUnanswered: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    await expect(rawUnansweredLoader({ params: { locale: "en" }, context: failed }))
+      .rejects.toMatchObject({ status: 503 });
+    const errorHeaders = unansweredHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(errorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("keeps Unread loader, document and negative responses private no-store", async () => {
+    const guest = context();
+    const readGuest = vi.fn(reader.readUnreadForUser);
+    guest.set(forumReaderContext, { ...reader, readUnreadForUser: readGuest });
+    const denied = await rawUnreadLoader({ params: { locale: "en" }, context: guest })
+      .catch((error: unknown) => error);
+    expect(denied).toBeInstanceOf(Response);
+    expect((denied as Response).status).toBe(401);
+    expect((denied as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    expect(readGuest).not.toHaveBeenCalled();
+
+    const ctx = context();
+    ctx.set(authSessionContext, { user: { id: "reader" } } as never);
+    const loaded = await rawUnreadLoader({ params: { locale: "en" }, context: ctx });
+    expect(loaded.data.topics).toHaveLength(1);
+    expect(new Headers(loaded.init?.headers).get("Cache-Control")).toBe("private, no-store");
+    expect(unreadHeaders()).toEqual({ "Cache-Control": "private, no-store" });
+
+    const unavailable = context();
+    unavailable.set(authSessionContext, { user: { id: "reader" } } as never);
+    unavailable.set(forumReaderContext, {
+      ...reader, readUnreadForUser: async () => { throw new ForumStorageUnavailableError(); },
+    });
+    const failed = await rawUnreadLoader({ params: { locale: "en" }, context: unavailable })
+      .catch((error: unknown) => error);
+    expect(failed).toBeInstanceOf(Response);
+    expect((failed as Response).status).toBe(503);
+    expect((failed as Response).headers.get("Cache-Control")).toBe("private, no-store");
+    expect(await (failed as Response).text()).toBe("Unavailable");
+  });
+
+  it("sets no-store on anonymous topic loader data and document responses", async () => {
+    const result = await rawTopicLoader({
+      params: { locale: "en", topicId: topic.id }, context: context(),
+    });
+    expect(result.data.topic.id).toBe(topic.id);
+    expect(new Headers(result.init?.headers).get("Cache-Control")).toBe("no-store");
+
+    const headers = topicHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+
+    const action = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      actionHeaders: new Headers({ "Cache-Control": "private, no-store", "Retry-After": "60" }),
+    });
+    expect(action.get("Cache-Control")).toBe("private, no-store");
+    expect(action.get("Retry-After")).toBe("60");
+  });
+
+  it("returns neutral topic 404 without retaining a cacheable document", async () => {
+    const ctx = context();
+    ctx.set(forumReaderContext, { ...reader, readTopicPage: async () => undefined });
+    await expect(rawTopicLoader({
+      params: { locale: "en", topicId: "hidden-topic" }, context: ctx,
+    })).rejects.toMatchObject({ status: 404 });
+    const headers = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers(),
+    });
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const staleErrorHeaders = topicHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(staleErrorHeaders.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("sets no-store on search hits and misses in loader data and documents", async () => {
+    const hits = await rawSearchLoader({
+      request: new Request("https://forum.example/en/search?q=TypeScript"),
+      params: { locale: "en" }, context: context(),
+    });
+    expect(hits.data.results).toHaveLength(1);
+    expect(new Headers(hits.init?.headers).get("Cache-Control")).toBe("no-store");
+    const misses = await rawSearchLoader({
+      request: new Request("https://forum.example/en/search?q=NoSuchTopic"),
+      params: { locale: "en" }, context: context(),
+    });
+    expect(misses.data.results).toEqual([]);
+    expect(new Headers(misses.init?.headers).get("Cache-Control")).toBe("no-store");
+    const headers = searchHeaders(routeHeaders("public, max-age=600"));
+    expect(headers.get("Cache-Control")).toBe("no-store");
+    expect(headers.get("X-Parent-Test")).toBe("retained");
+    const staleErrorHeaders = searchHeaders({
+      ...routeHeaders("public, max-age=600"),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(staleErrorHeaders.get("Cache-Control")).toBe("no-store");
   });
 });

@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { redirect, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, redirect, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -20,13 +20,17 @@ import { forumAttentionPath } from "../forum/paths";
 import { CategoryView, HelpSolutionsView } from "../forum/views";
 
 export { helpSolutionsCategoryAction as action } from "../forum/actions.server";
-/** Forward controlled action privacy/retry headers without privatizing public GET. */
+/** Public category/Help discovery changes on Hide/Restore; signed-in Help is private.
+ * Preserve admitted action privacy and retry headers without allowing cacheable output. */
 export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
-  for (const name of ["Cache-Control", "Retry-After"] as const) {
-    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
-    if (value !== null) result.set(name, value);
-  }
+  const policy = errorHeaders?.get("Cache-Control")
+    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control");
+  result.set("Cache-Control", policy?.split(",").some((part) => part.trim().toLowerCase() === "no-store")
+    ? policy : "no-store");
+  const retry = errorHeaders?.get("Retry-After")
+    ?? actionHeaders.get("Retry-After") ?? loaderHeaders.get("Retry-After");
+  if (retry !== null) result.set("Retry-After", retry);
   return result;
 }
 
@@ -130,7 +134,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
               : await reader.readHelpSolutionsAll(filters);
     }
     if (!helpSolutions) throw new Response("Not Found", { status: 404 });
-    return {
+    return data({
       kind: "help-solutions" as const,
       locale,
       mode,
@@ -160,13 +164,13 @@ export const loader = forumReadLoader(async function loader({ request, params, c
           tags,
         })),
       },
-    };
+    }, { headers: { "Cache-Control": session ? "private, no-store" : "no-store" } });
   }
 
   const category = await reader.readCategory(categoryId, 10);
   if (!category) throw new Response("Not Found", { status: 404 });
 
-  return {
+  return data({
     kind: "category" as const,
     locale,
     referenceTime,
@@ -186,7 +190,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
         })),
       })),
     },
-  };
+  }, { headers: { "Cache-Control": "no-store" } });
 });
 
 export default function CategoryRoute() {

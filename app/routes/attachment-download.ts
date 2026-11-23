@@ -6,7 +6,8 @@ import {
   attachmentBucketForRequest,
   attachmentStoreForRequest,
 } from "../forum/attachment-request-context";
-import { ForumAttachmentDraftConflictError, InvalidForumAttachmentError, isForumAttachmentUuid } from "../../db/forum-attachments";
+import { ForumAttachmentDraftConflictError, InvalidForumAttachmentError, isForumAttachmentUuid,
+  type ForumAttachmentMetadata } from "../../db/forum-attachments";
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 
 function failure(status: number): Response {
@@ -57,6 +58,13 @@ export async function loader({ request, params, context }: {
     throw error;
   }
   if (!attachment) return failure(404);
+  return deliverAttachment(context,attachment,view);
+}
+
+/** Shared download/inline/text policy for the public and independently authorized private path. */
+export async function deliverAttachment(
+  context: RouterContextProvider, attachment: ForumAttachmentMetadata, view: string | null,
+): Promise<Response> {
   try {
     const bucket = attachmentBucketForRequest(context);
     const object = await bucket.get(attachment.objectKey, {

@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { useLoaderData, type RouterContextProvider } from "react-router";
+import { data, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
 import { registryForRequest } from "../localization/request-context";
@@ -9,6 +9,13 @@ import { SearchView } from "../forum/views";
 
 export function meta() {
   return [{ title: "Search · Vico Forum" }];
+}
+
+/** Search results change as soon as a topic/post is hidden or restored. */
+export function headers({ parentHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  result.set("Cache-Control", "no-store");
+  return result;
 }
 
 export const loader = forumReadLoader(async function loader({ request, params, context }: {
@@ -26,7 +33,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
     : [];
   const registry = results.length > 0 ? (await registryForRequest(context)).registry : null;
 
-  return {
+  return data({
     locale: params.locale ?? "en",
     query,
     queryTooLong,
@@ -42,7 +49,7 @@ export const loader = forumReadLoader(async function loader({ request, params, c
         ? ("auto" as const)
         : (registry?.find(sourceLocale)?.locale.direction ?? ("auto" as const)),
     })),
-  };
+  }, { headers: { "Cache-Control": "no-store" } });
 });
 
 export default function SearchRoute() {

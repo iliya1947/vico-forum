@@ -305,4 +305,17 @@ describe("real topic action and mounted editor recovery", () => {
     expect(field.isConnected).toBe(true);
     expect(form.querySelector('[name="expectedRevisionId"]')).toHaveValue("r1");
   });
+  it("drops a stale open edit form and old source after Hide revalidation", async () => {
+    const state = setup();
+    const { form } = await editBuffer();
+    const hidden = { kind: "hidden" as const, id: "p1", topicId: "topic",
+      parentPostId: null, createdAt: post.createdAt };
+    state.readTopicPage.mockResolvedValue({ ...initialTopic, posts: [hidden] } as never);
+    await act(async () => { await state.router.revalidate(); });
+    await waitFor(() => expect(form.isConnected).toBe(false));
+    expect(screen.queryByDisplayValue("Unsaved private edit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Initial message")).not.toBeInTheDocument();
+    expect(document.querySelector("#post-p1[data-moderation-hidden-post]")).not.toBeNull();
+    expect(screen.queryByRole("form", { name: "Edit published message" })).not.toBeInTheDocument();
+  });
 });

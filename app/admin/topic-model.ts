@@ -1,8 +1,9 @@
-import type { ForumTopicPage } from "../../db/forum-repository";
+import type { ForumTopicPage, ForumVisibleThreadPost } from "../../db/forum-repository";
 
-type SourcePost = ForumTopicPage["posts"][number];
+type SourcePost = ForumVisibleThreadPost;
 
-export interface AdminTopicPost {
+export interface AdminTopicVisiblePost {
+  kind?: "visible";
   id: string;
   authorId: string;
   authorName: string;
@@ -17,7 +18,16 @@ export interface AdminTopicPost {
   attachments: NonNullable<SourcePost["attachments"]>;
 }
 
-/** Explicit private admin projection; never serialize the full public reader result. */
+export interface AdminTopicHiddenPost {
+  kind: "hidden";
+  id: string;
+  parentPostId: string | null;
+  createdAt: string;
+}
+
+export type AdminTopicPost = AdminTopicVisiblePost | AdminTopicHiddenPost;
+
+/** Explicit public-safe admin projection; never serialize the full public reader result. */
 export interface AdminTopic {
   id: string;
   title: ForumTopicPage["title"];
@@ -48,7 +58,13 @@ export function projectAdminTopic(topic: ForumTopicPage, canManageHelpDuplicate:
     needsDetails: topic.needsDetails,
     duplicateOf: topic.duplicateOf,
     duplicateRelationshipId: canManageHelpDuplicate ? topic.duplicateRelationshipId ?? null : null,
-    posts: topic.posts.map((post) => ({
+    posts: topic.posts.map((post) => post.kind === "hidden" ? ({
+      kind: "hidden" as const,
+      id: post.id,
+      parentPostId: post.parentPostId,
+      createdAt: new Date(post.createdAt).toISOString(),
+    }) : ({
+      kind: "visible" as const,
       id: post.id,
       authorId: post.authorId,
       authorName: post.authorName,

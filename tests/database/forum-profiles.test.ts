@@ -22,6 +22,15 @@ beforeAll(async () => {
   // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
   // Supply only AP-08 columns here without changing the historical migration sequence.
   await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await client.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
   for (const id of ["profile-owner", "profile-helper", "profile-newcomer"]) {
     await client.query(`insert into "user" (id,name,email,image) values ($1,$1,$2,$3)`, [id, `${id}@private.test`, "https://example.com/avatar.png"]);
   }
@@ -195,7 +204,8 @@ describe("persisted forum profiles", () => {
     await repository.selectBestAnswer("profile-topic-a", "profile-replacement", "profile-owner", "own");
     expect(await repository.readProfile("profile-helper")).toMatchObject({ messageCount: 2, bestAnswerCount: 1 });
     expect(await repository.readProfile("profile-newcomer")).toMatchObject({ messageCount: 1, bestAnswerCount: 1 });
-    expect((await repository.readTopicPage("profile-topic-a"))?.posts[0].authorImage).toBe("https://example.com/avatar.png");
+    const firstPost=(await repository.readTopicPage("profile-topic-a"))?.posts[0];
+    expect(firstPost?.kind !== "hidden" ? firstPost?.authorImage : undefined).toBe("https://example.com/avatar.png");
   });
   it("counts Help messages and selected unsolved answers without tag multiplication", async () => {
     const before = await repository.readProfile("profile-helper");
@@ -225,7 +235,6 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
     await topic("profile-c1-topic");
     await reply("profile-c1-helper", "profile-c1-topic", "profile-helper");
     await reply("profile-c1-active", "profile-c1-topic", "profile-newcomer");
-    await client.query("begin");
     try {
       await client.query('update "user" set name=$2, image=$3 where id=$1', [
         "profile-owner", "SECRET_C1_TOPIC_AUTHOR", "https://images.example.test/SECRET_C1_TOPIC_AVATAR.png",
@@ -275,11 +284,13 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
         ],
       });
       expect(result.posts[2]).not.toHaveProperty("authorIdentityKind");
-      expect(result.posts.map(({ id, topicId, parentPostId, createdAt, attachments }) =>
-        ({ id, topicId, parentPostId, createdAt, attachments }))).toEqual(active.posts.map(
-          ({ id, topicId, parentPostId, createdAt, attachments }) =>
-            ({ id, topicId, parentPostId, createdAt, attachments }),
-        ));
+      expect(result.posts.map((post) => ({
+        id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+        createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+      }))).toEqual(active.posts.map((post) => ({
+          id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+          createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+        })));
       const serialized = JSON.stringify(result);
       for (const secret of [
         "SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_TOPIC_AVATAR",
@@ -290,7 +301,9 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
       expect(Object.keys(result.posts[0]!)).not.toContain("authorDeactivatedAt");
       expect(Object.keys(result)).not.toContain("authorRetainAtLeastUntil");
     } finally {
-      await client.query("rollback");
+      await client.query('update "user" set name=id,image=$1,deactivated_at=null,' +
+        'deactivated_by_user_id=null,retain_at_least_until=null where id in ($2,$3)',
+        ["https://example.com/avatar.png", "profile-owner", "profile-helper"]);
     }
   });
 });

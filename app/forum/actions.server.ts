@@ -1,4 +1,4 @@
-import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError, type ForumVisibleThreadPost } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -20,6 +20,7 @@ import {
   type ForumMutationError,
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
+import { visibilityActionFailure, visibilityTopicAction } from "./visibility-actions.server";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
@@ -197,11 +198,25 @@ export async function topicAction({ request, params, context }: {
   const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
+  const isVisibilitySubmission = request.method === "POST"
+    && new URL(request.url).searchParams.get("visibilityAction") === "1";
   const denied = forumMutationGuard(request, context);
-  if (denied) return denied;
+  if (denied) {
+    // The UI marks visibility POSTs in the action URL so preflight can return
+    // the typed 401/403 without reading the rejected request's body.
+    // This hint grants no access and is not trusted for any accepted mutation.
+    return isVisibilitySubmission
+      ? visibilityActionFailure(denied.data.error, denied.init?.status ?? 403) : denied;
+  }
   let formData: FormData;
-  try { formData = await request.formData(); } catch { return mutationFailure("invalid", 400); }
+  try { formData = await request.formData(); } catch {
+    return isVisibilitySubmission ? visibilityActionFailure() : mutationFailure("invalid", 400);
+  }
   const intent = requiredFormText(formData, "intent") ?? "reply";
+  // Handle both visibility intents before any ordinary public-availability reader.
+  // A malformed mixed-intent payload cannot fall through to an unrelated mutation.
+  const visibility = await visibilityTopicAction(request, context, topicId, formData);
+  if (visibility) return visibility;
   const muteIntent = formData.getAll("intent").includes("setTopicMute") || formData.has("muted");
   if (muteIntent) {
     const fields = ["intent", "editorActorId", "muted"];
@@ -425,7 +440,7 @@ export async function topicAction({ request, params, context }: {
       const postId = requiredFormText(formData, "postId");
       if (!postId) return generationFailure("invalid", 400);
       const post = topic.posts.find((candidate) => candidate.id === postId);
-      if (!post) return generationFailure("not-found", 404);
+      if (!post || post.kind === "hidden") return generationFailure("not-found", 404);
       await contentGenerationAdmissionForRequest(context).assertAllowed(session.user.id);
       const input = {
         actorId: session.user.id,
@@ -697,7 +712,7 @@ export async function topicAction({ request, params, context }: {
         // Refresh only the conflicted public baseline. A failing refresh remains action
         // data/a client action failure, so the mounted editor is never replaced by a loader boundary.
         const current = await forumReaderForRequest(context).readTopicPage(topicId);
-        const post = current?.posts.find((post) => post.id === postId && post.authorId === actorId);
+        const post = current?.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === postId && post.authorId === actorId);
         if (!post) return mutationFailure("notFound", 404);
         return data<PostEditConflictData>({ operation: "postEdit", error: "conflict", post,
           ...(error instanceof ForumPublicationReplayConflictError ? { completedOperationId: draftFence.draftId } : {}),

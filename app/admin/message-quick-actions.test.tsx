@@ -155,8 +155,9 @@ describe("AP-07 shared message Quick actions",()=>{
 
   it("never displays a late history result after changing the viewer",async()=>{
     let release: ((value:unknown)=>void) | null=null;
-    const {container}=mount({
-      source:false,history:true,withActorSwitch:true,
+    const loader=vi.fn(async()=>({viewerSnapshot:{}}));
+    const {container,router}=mount({
+      source:false,history:true,withActorSwitch:true,loader,
       onAction:()=>new Promise(resolve=>{release=resolve;}),
     });
     await waitFor(()=>expect(container.querySelector(".message-history-action button")).not.toBeNull());
@@ -164,11 +165,19 @@ describe("AP-07 shared message Quick actions",()=>{
     fireEvent.click(container.querySelector(".message-history-action button")!);
     await waitFor(()=>expect(release).not.toBeNull());
     fireEvent.click(container.querySelector("button")!);
-    await waitFor(()=>expect(container.querySelector(".message-admin-tools")).not.toBeNull());
+    // The previous actor's protected history/control stays absent until a new
+    // route loader GET establishes a fresh snapshot for the switched viewer.
+    await waitFor(()=>expect(container.querySelector(".message-admin-tools")).toBeNull());
     await act(async()=>release?.(data({operation:"postHistory",postId:post.postId,revisions:[{
       id:"old",authorName:"Old",createdAt:"2026-01-02T00:00:00Z",
       sourceLocale:"en",originalContent:"DO NOT LEAK OLD SESSION",
     }]})));
+    expect(container.textContent).not.toContain("DO NOT LEAK OLD SESSION");
+    expect(container.querySelector(".message-history-source")).toBeNull();
+    const before=loader.mock.calls.length;
+    await act(async()=>{router.revalidate();});
+    await waitFor(()=>expect(loader.mock.calls.length).toBeGreaterThan(before));
+    await waitFor(()=>expect(container.querySelector(".message-admin-tools")).not.toBeNull());
     expect(container.textContent).not.toContain("DO NOT LEAK OLD SESSION");
     expect(container.querySelector(".message-history-source")).toBeNull();
   });

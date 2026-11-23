@@ -102,6 +102,15 @@ beforeAll(async () => {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
+  await client.query(`alter table forum_topics
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3);
+    alter table forum_posts
+    add column is_hidden boolean not null default false,
+    add column visibility_version integer not null default 0,
+    add column visibility_changed_at timestamptz(3)`);
 });
 
 afterAll(async () => {
@@ -237,8 +246,8 @@ describe("Stage 4 connected forum authorization flow", () => {
       await replyState.close();
     }
     const withReply = await forum.readTopicPage(topicId);
-    expect(withReply?.posts.some((post) => post.body.originalContent === "Stale publication must roll back")).toBe(false);
-    const reply = withReply?.posts.find((post) => post.authorId === "e2e-replier");
+    expect(withReply?.posts.some((post) => post.kind !== "hidden" && post.body.originalContent === "Stale publication must roll back")).toBe(false);
+    const reply = withReply?.posts.find((post) => post.kind !== "hidden" && post.authorId === "e2e-replier");
     if (!reply) throw new Error("reply was not persisted");
     expect(reply.parentPostId).toBe(initialPostId);
 
@@ -260,7 +269,8 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const publicTopic = await forum.readTopicPage(topicId);
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
-    expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
+    const visibleReply = publicTopic?.posts.find((post) => post.id === reply.id);
+    expect(visibleReply?.kind !== "hidden" ? visibleReply?.body.originalContent : undefined).toBe("Connected reply");
 
     const newerTopicId = await createTopic("e2e-author", "Author", "Newer but inactive topic");
     await client.query(
@@ -361,13 +371,15 @@ describe("Stage 4 connected forum authorization flow", () => {
       await authorization.replaceRoleGrants(
         "e2e-manager",
         "builtin-moderator",
-        INITIAL_ROLE_GRANTS.moderator.filter((permission) => permission !== "forum.solution.manageAny"),
+        INITIAL_ROLE_GRANTS.moderator.filter((permission) =>
+          permission !== "forum.solution.manageAny" && permission !== "forum.content.visibility.manage"),
       );
       const removedGrantTopic = await createTopic("e2e-author", "Author", "Grant removed");
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(403);
       expect((await forum.readTopicPage(removedGrantTopic))?.isSolved).toBe(false);
 
-      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator", [...INITIAL_ROLE_GRANTS.moderator]);
+      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator",
+          INITIAL_ROLE_GRANTS.moderator.filter(permission => permission !== "forum.content.visibility.manage"));
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(302);
 
       const deniedTopic = await createTopic("e2e-author", "Author", "Override denied");

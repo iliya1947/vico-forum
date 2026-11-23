@@ -18,12 +18,12 @@ function topicFixture() {
     duplicateOf: { id: "original", title: "Original" }, duplicateRelationshipId: "private-relationship",
     createdAt: new Date("2026-01-01T00:00:00Z"), tags: [{ key: "react", name: "React" }],
     posts: [
-      { id: "post-a", authorId: "author", authorName: "Author", authorImage: null,
+      { kind: "visible" as const, id: "post-a", authorId: "author", authorName: "Author", authorImage: null,
         parentPostId: null, createdAt: new Date("2026-01-01T00:00:00Z"), editedAt: null,
         body: { id: "body-r1", originalContent: "Hello **markdown**", sourceLocale: "en" },
         solutionModerationStatus: null, solutionOutdatedReason: null,
         attachments: [{ id: "attach-1", fileName: "picture.png", byteSize: 12, detectedType: "png" }] },
-      { id: "post-b", authorId: "other", authorName: "Other", authorImage: null,
+      { kind: "visible" as const, id: "post-b", authorId: "other", authorName: "Other", authorImage: null,
         parentPostId: "post-a", createdAt: new Date("2026-01-02T00:00:00Z"), editedAt: null,
         body: { id: "body-r2", originalContent: "", sourceLocale: "und" },
         solutionModerationStatus: null, solutionOutdatedReason: null, attachments: [] },
@@ -139,4 +139,46 @@ describe("AP-07 private admin topic loader", () => {
     expect(result.data.pendingDuplicateAppeal).toBeNull();
     expect(other.readPendingHelpDuplicateAppeal).not.toHaveBeenCalled();
   });
+
+  it.each(["root", "middle", "answer"] as const)(
+    "preserves a source-free %s tombstone while translating only visible messages",
+    async (position) => {
+      const e = environment(["forum.topic.pin", "forum.solution.manageAny"]);
+      const visible = topicFixture();
+      const secret = "DO_NOT_LEAK_HIDDEN_REVISION_OR_BODY";
+      const parent = { id: "post-a", authorId: "private-author", authorName: secret,
+        parentPostId: null, createdAt: new Date("2026-01-01T00:00:00Z"),
+        kind: "hidden" as const };
+      const middle = { ...parent, id: "post-b", parentPostId: "post-a",
+        createdAt: new Date("2026-01-02T00:00:00Z") };
+      const answer = { ...parent, id: "post-c", parentPostId: "post-b",
+        createdAt: new Date("2026-01-03T00:00:00Z") };
+      const extra = { ...visible.posts[1], id: "post-c", parentPostId: "post-b",
+        createdAt: new Date("2026-01-03T00:00:00Z"), body: {
+          id: "safe-r3", originalContent: "Safe answer", sourceLocale: "en" } };
+      const posts = position === "root" ? [parent, visible.posts[1], extra]
+        : position === "middle" ? [visible.posts[0], middle, extra]
+        : [visible.posts[0], visible.posts[1], answer];
+      e.readTopicPage.mockResolvedValueOnce({ ...visible, bestAnswerPostId: "post-c", posts } as never);
+      const result = await loader(args(e.context));
+      expect(result.data.topic.posts.map(post => post.id)).toEqual(["post-a", "post-b", "post-c"]);
+      const hidden = result.data.topic.posts[position === "root" ? 0 : position === "middle" ? 1 : 2];
+      expect(hidden).toEqual({
+        kind: "hidden", id: position === "root" ? "post-a" : position === "middle" ? "post-b" : "post-c",
+        parentPostId: position === "root" ? null : position === "middle" ? "post-a" : "post-b",
+        createdAt: expect.any(String),
+      });
+      expect(JSON.stringify(result.data)).not.toContain(secret);
+      expect(JSON.stringify(hidden)).not.toContain("author");
+      expect(JSON.stringify(hidden)).not.toContain("revision");
+      expect(result.data.postPresentations.map(post => post.contentId)).toEqual(
+        posts.filter(post => post.kind !== "hidden").map(post => post.id),
+      );
+      expect(e.readCurrent.mock.calls[0]?.[0]?.map(revision => revision.contentId)).toEqual(
+        [visible.id, ...posts.filter(post => post.kind !== "hidden" && post.body.originalContent.trim())
+          .map(post => post.id)],
+      );
+    },
+  );
+
 });

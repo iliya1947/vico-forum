@@ -86,6 +86,27 @@ describe("native protected category/section projection",()=>{
   expect(JSON.stringify(help)).not.toContain("Help body");
   expect(JSON.stringify((await reader.readSectionTopics("s/c-000",{search:""}))!.topics)).not.toContain("private body");
  });
+ it("does not disclose hidden title revision through ordinary forum-admin section discovery",async()=>{
+  await client.query("begin");
+  try {
+    await client.query("update forum_topics set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='t'");
+    const page=(await reader.readSectionTopics("s/c-000",{search:"private title"}))!;
+    expect(page.topics).toEqual({items:[],total:0,next:null});
+    expect((await reader.readCategory("c-000",{search:""}))!.category).toMatchObject({topicCount:52,postCount:52});
+    expect((await reader.readSection("s/c-000"))!).toMatchObject({topicCount:52,postCount:52});
+    const full=(await reader.readSectionTopics("s/c-000",{search:""}))!;
+    expect(full.topics.items.map(item=>item.id)).not.toContain("t");
+  }finally {await client.query("rollback");}
+ });
+ it("excludes individually hidden post from private ordinary section counts and topic summaries",async()=>{
+  await client.query("begin");
+  try {
+    await client.query("update forum_posts set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='p'");
+    expect((await reader.readSectionTopics("s/c-000",{search:"private title"}))!.topics.items[0]).toMatchObject({id:"t",postCount:0});
+    expect((await reader.readCategory("c-000",{search:""}))!.category).toMatchObject({topicCount:53,postCount:52});
+    expect((await reader.readSection("s/c-000"))!).toMatchObject({topicCount:53,postCount:52});
+  }finally{await client.query("rollback");}
+ });
  it("runs using only existing SELECT rights on forum relations including current title revision",async()=>{
   const role="ap06_reader_probe";await client.query(`create role ${role} nologin;grant usage on schema ${schema} to ${role};grant select on forum_categories,forum_sections,forum_topics,forum_posts,forum_topic_title_revisions to ${role}`);
   await client.query("begin");try{await client.query(`set local role ${role}`);expect((await reader.listCategories({search:""})).total).toBe(62);expect((await reader.readCategory("c-000",{search:""}))!.sections.total).toBe(61);expect((await reader.readSection("s/c-000"))!.postCount).toBe(53);expect((await reader.readSectionTopics("s/c-000",{search:""}))!.topics.total).toBe(53);}finally{await client.query("rollback");await client.query(`drop owned by ${role};drop role ${role}`);}

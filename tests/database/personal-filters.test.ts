@@ -81,6 +81,68 @@ describe("Personal filters: own-state PostgreSQL persistence and admission", () 
       .rows[0].n).toBe(0);
   });
 
+  it("keeps own hidden Mute as unavailable, supports safe Unmute and recovers after Restore", async () => {
+    const author = await person(), viewer = await person(), other = await person();
+    const x = await topic(author);
+    await repository.setTopicMute({ actorId: viewer, topicId: x, muted: true });
+    await repository.setTopicMute({ actorId: other, topicId: x, muted: true });
+    const createdAt = (await fixture.query<{ created_at: Date }>(
+      "select created_at from forum_topic_mutes where user_id=$1 and topic_id=$2", [viewer, x]
+    )).rows[0]!.created_at;
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
+    const page = await repository.readMutedTopics(viewer);
+    expect(page.items).toEqual([{ id: x, mutedAt: createdAt, unavailable: true }]);
+    expect(JSON.stringify(page)).not.toContain("Mute topic");
+    expect(JSON.stringify(page)).not.toContain(author);
+
+    await expect(repository.setTopicMute({ actorId: viewer, topicId: x, muted: true }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect(await repository.readTopicMute(viewer, x)).toBe(true);
+    expect(await repository.setTopicMute({ actorId: viewer, topicId: x, muted: false })).toBe(false);
+    expect(await repository.setTopicMute({ actorId: viewer, topicId: x, muted: false })).toBe(false);
+    expect(await repository.readTopicMute(viewer, x)).toBe(false);
+    expect(await repository.readTopicMute(other, x)).toBe(true);
+
+    const absent = uuid();
+    expect(await repository.setTopicMute({ actorId: viewer, topicId: absent, muted: false })).toBe(false);
+    await expect(repository.setTopicMute({ actorId: viewer, topicId: absent, muted: true }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(repository.setTopicMute({ actorId: "missing-actor", topicId: absent, muted: false }))
+      .rejects.toBeInstanceOf(AccountMissingError);
+
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
+    expect((await repository.readMutedTopics(other)).items[0]).toMatchObject({ id: x, title: "Mute topic" });
+    expect(await repository.setTopicMute({ actorId: viewer, topicId: x, muted: true })).toBe(true);
+  });
+
+  it("keeps retained Mute keyset positions when the target is hidden", async () => {
+    const author = await person(), viewer = await person();
+    const ids: string[] = [];
+    for (let i = 0; i < 52; i++) {
+      const x = await topic(author);
+      ids.push(x);
+      await repository.setTopicMute({ actorId: viewer, topicId: x, muted: true });
+    }
+    await fixture.query(
+      "update forum_topic_mutes set created_at='2026-11-19T08:30:00.123Z' where user_id=$1", [viewer],
+    );
+    const hiddenId = ids[0]!;
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [hiddenId]);
+    const first = await repository.readMutedTopics(viewer);
+    expect(first.items).toHaveLength(50);
+    expect(first.next).not.toBeNull();
+    const second = await repository.readMutedTopics(viewer, first.next!);
+    expect(second.items).toHaveLength(2);
+    expect(second.next).toBeNull();
+    const all = [...first.items, ...second.items];
+    expect(all.map(item => item.id)).toEqual([...ids].sort().reverse());
+    expect(all.find(item => item.id === hiddenId)?.unavailable).toBe(true);
+    await repository.setTopicMute({ actorId: viewer, topicId: hiddenId, muted: false });
+    const refreshed = await repository.readMutedTopics(viewer);
+    expect(refreshed.items).toHaveLength(50);
+    expect(new Set(refreshed.items.map(item => item.id)).size).toBe(50);
+  });
+
   it("persists directional Block, admits inactive target, rejects self and missing target", async () => {
     const a = await person(), b = await person();
     expect(await repository.readUserBlock(a, b)).toBe(false);
@@ -189,6 +251,24 @@ describe("Personal Mute/Block: ordinary publication policy", () => {
     expect(await repository.readTopicBlockedAuthors(b, x)).toEqual([]);
     await repository.setUserBlock({ actorId: a, blockedUserId: b, blocked: false });
     expect(await repository.readTopicBlockedAuthors(a, x)).toEqual([]);
+  });
+
+  it("keeps Block retained but never exposes blocked authors from hidden posts or topics", async () => {
+    const hiddenAuthor = await person(), viewer = await person();
+    const x = await topic(hiddenAuthor);
+    const root = (await fixture.query<{ id: string }>(
+      "select id from forum_posts where topic_id=$1 limit 1", [x])).rows[0]!.id;
+    await repository.setUserBlock({ actorId: viewer, blockedUserId: hiddenAuthor, blocked: true });
+    expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
+    await fixture.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [root]);
+    expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([]);
+    expect(await repository.readUserBlock(viewer, hiddenAuthor)).toBe(true);
+    await fixture.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [root]);
+    expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
+    expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([]);
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x]);
+    expect(await repository.readTopicBlockedAuthors(viewer, x)).toEqual([hiddenAuthor]);
   });
 
   it("suppression receipt survives Unmute and prevents edited old mention backfill", async () => {

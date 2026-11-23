@@ -38,7 +38,7 @@ describe("unread route", () => {
     }]);
     value.set(forumReaderContext, { readUnreadForUser } as never);
 
-    const result = await loader({ params: { locale: "ru" }, context: value });
+    const { data: result } = await loader({ params: { locale: "ru" }, context: value });
 
     expect(readUnreadForUser).toHaveBeenCalledWith("user-1");
     expect(result.locale).toBe("ru");

@@ -39,7 +39,7 @@ async function topic(){
     initialPost:{id:post,topicId:id,authorId:member,bodyRevision:{id:revision,sourceLocale:'en',originalContent:'A native Data body'}}});return {id,post,revision};
 }
 it('reads every named full source and actual compatibility subset with distinct connection clocks, without migration-ledger claims',async()=>{
-  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe('0070_personal_filters');expect(s.deployedMigration).toBe('unchecked');
+  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe('0071_moderation_visibility_foundation');expect(s.deployedMigration).toBe('unchecked');
   for(const m of s.monitors){expect(m.recording).toBe('available');expect(m.checks.every(c=>c.status==='measured'||c.status==='compatible')).toBe(true);expect(m.coverageFrom).not.toBeNull();}
   for(const [group,tables]of Object.entries(DATA_COUNT_GROUPS)){
     const actual=check(s,'data.application','counts.'+group);expect(Object.keys(actual.values)).toEqual([...tables]);

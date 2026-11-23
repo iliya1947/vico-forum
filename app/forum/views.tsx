@@ -9,13 +9,15 @@ import { TopicWatchControl, type TopicWatchState } from "./topic-watch-control";
 import { TopicBookmarkControl, type TopicBookmarkState } from "./topic-bookmark-control";
 import { PersonalFilterControl, type PersonalFilterState } from "./personal-filter-control";
 import {MessageQuickActions} from "../admin/message-quick-actions";
+import { hiddenInspectionPath } from "../admin/visibility-queue-path";
+import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ComplaintQueueList } from "../complaints/queue-view";
 import type { ComplaintQueuePage } from "../complaints/queue-contract";
 import { ForumInlineAttachmentProvider } from "./markdown";
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useFetcher, useLocation, useNavigate, useNavigation, useRevalidator } from "react-router";
+import { Form, Link, useFetcher, useLocation, useMatches, useNavigate, useNavigation, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministratorPreferences, recordAttentionIndex } from "../settings/administrator-preferences";
@@ -35,6 +37,7 @@ import type {
   ForumTagPage,
   ForumTagSummary,
   ForumTopicPage,
+  ForumVisibleThreadPost,
   ForumTopicReadKind,
   ForumTopicReadState,
   ForumUnansweredTopicSummary,
@@ -413,8 +416,9 @@ export function NotificationsView({
           <ul className="notifications-list">
             {notifications.map((notification) => {
               const unread = notification.readAt === null;
-              const deletedActor = notification.actorIdentityKind === "deleted";
-              const actorLabel = deletedActor ? t("deletedUser") : notification.actorName ?? "";
+              const unavailable = notification.unavailable === true;
+              const deletedActor = !unavailable && notification.actorIdentityKind === "deleted";
+              const actorLabel = unavailable ? "" : deletedActor ? t("deletedUser") : notification.actorName ?? "";
               return (
                 <li key={notification.id}>
                   <Form method="post" className="notification-form">
@@ -423,14 +427,15 @@ export function NotificationsView({
                     <button
                       className={[ "notification-card", unread?"is-unread":null, (notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result")?"is-system":null ].filter(Boolean).join(" ")}
                       type="submit"
-                      aria-label={`${t("notificationOpen")}: ${notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
+                      aria-label={`${t("notificationOpen")}: ${unavailable?t("notificationUnavailable"):notification.kind==="complaint-decision"?t("notificationDecisionResult"):notification.kind==="complaint-appeal-result"?t("complaintAppealNotification"):notification.topicTitle??""}`}
                     >
-                      {notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
+                      {!unavailable && notification.kind!=="complaint-decision"&&notification.kind!=="complaint-appeal-result"?<span className="notification-avatar" aria-hidden="true">
                         {deletedActor ? "" : actorLabel.trim().slice(0, 1).toUpperCase()}
                       </span>:null}
                       <span className="notification-copy">
                         <span className="notification-summary">
-                          {notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
+                          {unavailable ? <strong>{t("notificationUnavailable")}</strong> :
+                            notification.kind==="complaint-decision"||notification.kind==="complaint-appeal-result"?
                             <strong>{t(notification.kind==="complaint-decision"?"notificationDecisionResult":"complaintAppealNotification")}</strong>:
                             <><span>{t(notification.kind==="mention"?"notificationMentionBy":"notificationReplyBy",{actor:actorLabel})}</span>
                             <strong dir="auto">{notification.topicTitle}</strong></>}
@@ -1727,7 +1732,9 @@ function AttentionCaseCard({ item, locale, isPreview }: {
         <span className="attention-case-id">#{item.id}</span>
         {item.type !== "review-status" ? <time dateTime={item.createdAt}>{dateLabel} UTC</time> : null}
       </div>
-      <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>
+      {item.topicUnavailable
+        ? <span className="attention-case-topic">{t("attentionCaseTopicUnavailable")}</span>
+        : <Link className="attention-case-topic" to={url}><bdi dir="auto">{item.topicTitle}</bdi></Link>}
       <div className="attention-case-metadata">
         {item.submittedByUserId && item.submittedByName ? (
           <span>{t("attentionCaseReporter")}: <Link to={forumProfilePath(locale, item.submittedByUserId)}>
@@ -1751,6 +1758,10 @@ function AttentionCaseCard({ item, locale, isPreview }: {
           {t("attentionCaseOriginal")}: <Link to={forumTopicPath(locale, item.original.id)}>
             <bdi dir="auto">{item.original.title}</bdi>
           </Link>
+        </p>
+      ) : item.type === "appeal" ? (
+        <p className="attention-case-original">
+          {t("attentionCaseOriginal")}: {t("helpDuplicateOriginalUnavailable")}
         </p>
       ) : null}
       {item.type === "review-status" ? (
@@ -2198,6 +2209,7 @@ export function TopicView({
   canCorrectAnySourceLocale = false,
   canManagePin,
   canManageClosure = false,
+  canManageVisibility = false,
   canUseAdminPanel = false,
   topicReadState,
   actionData,
@@ -2238,6 +2250,7 @@ export function TopicView({
   canCorrectAnySourceLocale?: boolean;
   canManagePin: boolean;
   canManageClosure?: boolean;
+  canManageVisibility?: boolean;
   canUseAdminPanel?: boolean;
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -2250,12 +2263,12 @@ export function TopicView({
     if (!actionData || !("operation" in actionData) || actionData.operation !== "postEdit"
       || recoveredActionRef.current === actionData) return;
     recoveredActionRef.current = actionData;
-    const baseline = loadedTopic.posts.find((post) => post.id === actionData.post.id);
+    const baseline = loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === actionData.post.id);
     if (baseline) setEditRecovery({ topicId: loadedTopic.id, loaderRevisionId: baseline.body.id, post: actionData.post, completedOperationId: actionData.completedOperationId });
   }, [actionData, loadedTopic]);
   // A new loader snapshot supersedes recovery data; later failed submissions do not.
   const recoveryBaseline = editRecovery?.topicId === loadedTopic.id
-    ? loadedTopic.posts.find((post) => post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
+    ? loadedTopic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === editRecovery.post.id && post.body.id === editRecovery.loaderRevisionId)
     : null;
   const recoveredPost = recoveryBaseline && editRecovery
     ? {
@@ -2296,7 +2309,7 @@ export function TopicView({
     : [];
   const messageNumberById = new Map(topic.posts.map((post, index) => [post.id, index + 1]));
   const selectableBestAnswerPosts = canManageSolution && !canManageAnySolution && !topic.duplicateOf
-    ? topic.posts.slice(1).filter((post) => post.id !== topic.bestAnswerPostId)
+    ? topic.posts.slice(1).filter((post) => post.kind !== "hidden" && post.id !== topic.bestAnswerPostId)
     : [];
   const directRepliesByParent = new Map<string, string[]>();
   for (const post of topic.posts) {
@@ -2306,10 +2319,22 @@ export function TopicView({
     directRepliesByParent.set(post.parentPostId, replies);
   }
   const { t } = useTranslation("common");
+  const routing = useAdministrativeRouting();
   const location = useLocation();
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const headerActorId = useHeaderAuthUser()?.id ?? null;
+  // A returning actor cannot re-trust the same loader snapshot after a viewer
+  // switch or sign-out. Only a fresh public GET can reopen the inspector link.
+  // The private inspection route independently enforces fresh authorization.
+  const topicLoaderSnapshot = useMatches().at(-1)?.loaderData;
+  const inspectorLinkLifetime = useRef({ snapshot: topicLoaderSnapshot, invalidated: false });
+  if (inspectorLinkLifetime.current.snapshot !== topicLoaderSnapshot) {
+    inspectorLinkLifetime.current = { snapshot: topicLoaderSnapshot, invalidated: false };
+  }
+  if (headerActorId !== watchActorId) inspectorLinkLifetime.current.invalidated = true;
+  const canOpenHiddenInspection = canManageVisibility && watchActorId !== null
+    && headerActorId === watchActorId && !inspectorLinkLifetime.current.invalidated;
   // Canonical loaders supply an explicit private snapshot even for guests.
   // Legacy view-only test stubs without filter metadata do not represent a stale actor.
   // Guest->authenticated, A->B, and A->guest must not use a prior actor's graph.
@@ -2413,7 +2438,7 @@ export function TopicView({
     const requested = new URLSearchParams(location.search).get("editPost");
     if (requested && editablePostIds.includes(requested)
       && (editingPostId !== requested || editingPostScope !== editScope)) {
-      setEditBaseRevisionId(topic.posts.find((post) => post.id === requested)?.body.id ?? null);
+      setEditBaseRevisionId(topic.posts.find((post): post is ForumVisibleThreadPost => post.kind !== "hidden" && post.id === requested)?.body.id ?? null);
       setEditReady(false);
       setEditingPostId(requested);
       setEditingPostScope(editScope);
@@ -2463,7 +2488,7 @@ export function TopicView({
       return;
     }
     const updated = topic.posts.find((post) => post.id === submitted.postId);
-    if (!updated || updated.body.id === submitted.expectedRevisionId) return;
+    if (!updated || updated.kind === "hidden" || updated.body.id === submitted.expectedRevisionId) return;
     editPublicationRef.current = null;
     closePostEditor();
   }, [navigation.state, forumWriteError, topic.posts]);
@@ -2572,9 +2597,9 @@ export function TopicView({
   }
 
   function insertAttributedQuote(postId: string, content: string) {
-    const source = topic.posts.find((post) => post.id === postId);
+    const source = topic.posts.find((post) => post.kind !== "hidden" && post.id === postId);
     const editor = replyEditorRef.current;
-    if (!source || !editor) return;
+    if (!source || source.kind === "hidden" || !editor) return;
     const permalink = forumTopicPath(locale, topic.id) + "#post-" + encodeURIComponent(postId);
     const quote = attributedQuoteMarkdown({
       author: source.authorName,
@@ -2593,8 +2618,8 @@ export function TopicView({
   }
 
   function quoteWholeMessage(postId: string) {
-    const source = topic.posts.find((post) => post.id === postId);
-    if (source) insertAttributedQuote(postId, source.body.originalContent);
+    const source = topic.posts.find((post) => post.kind !== "hidden" && post.id === postId);
+    if (source && source.kind !== "hidden") insertAttributedQuote(postId, source.body.originalContent);
   }
 
   function quoteSelectedText(postId: string) {
@@ -2639,7 +2664,7 @@ export function TopicView({
                 ]}
           />
 
-          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel) ? (
+          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel || canManageVisibility) ? (
             <div className="topic-breadcrumb-actions">
               {selectableBestAnswerPosts.length > 0 ? (
                 <details className="topic-best-answer-tools">
@@ -2657,9 +2682,10 @@ export function TopicView({
                 </details>
               ) : null}
 
-              {canUseAdminPanel ? (
-                <TopicQuickActions locale={locale} topic={topic} canManagePin={canManagePin}
-                  canManageClosure={canManageClosure}
+              {(canUseAdminPanel || canManageVisibility) ? (
+                <TopicQuickActions locale={locale} topic={topic} actorId={watchActorId}
+                  canManagePin={canManagePin} canManageClosure={canManageClosure}
+                  canManageVisibility={canManageVisibility}
                   canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
                   canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
                   pendingDuplicateAppeal={pendingDuplicateAppeal}/>
@@ -2689,9 +2715,11 @@ export function TopicView({
               <strong>{t("helpDuplicateBadge")}</strong>
               <span>
                 {t("helpDuplicateOf")}{" "}
-                <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
-                  {topic.duplicateOf.title}
-                </Link>
+                {topic.duplicateOf.unavailable
+                  ? <span>{t("helpDuplicateOriginalUnavailable")}</span>
+                  : <Link to={forumTopicPath(locale, topic.duplicateOf.id)} dir="auto">
+                      {topic.duplicateOf.title}
+                    </Link>}
               </span>
               {canManageHelpDuplicate && topic.duplicateDisputed ? (
                 <span className="help-duplicate-disputed-badge">{t("helpDuplicateDisputed")}</span>
@@ -2756,6 +2784,51 @@ export function TopicView({
               const messageNumber = messageNumberById.get(post.id)!;
               const isOriginalQuestion = post.id === originalPost?.id;
               const isBestAnswer = topic.bestAnswerPostId === post.id;
+              if (post.kind === "hidden") {
+                const parentNumber = post.parentPostId ? messageNumberById.get(post.parentPostId) : undefined;
+                const replyIds = directRepliesByParent.get(post.id) ?? [];
+                return (
+                  <li id={`post-${post.id}`} key={post.id}
+                    className="forum-post topic-message moderation-hidden-post"
+                    data-moderation-hidden-post>
+                    <header className="topic-message-author">
+                      <a className="topic-message-anchor topic-message-author-number"
+                        href={`#post-${encodeURIComponent(post.id)}`}>
+                        {t("postNumber", { number: messageNumber })}
+                      </a>
+                    </header>
+                    {post.id === originalPost?.id && (
+                      <div className="topic-question-heading">
+                        <TopicTitlePresentation presentation={titlePresentation} />
+                      </div>
+                    )}
+                    <div className="topic-message-body topic-message-filtered" role="note">
+                      <p>{t("moderationHiddenPostNotice")}</p>
+                    </div>
+                    {canOpenHiddenInspection ? (
+                      <p className="topic-message-private-inspection">
+                        <Link to={hiddenInspectionPath(locale,
+                          {kind:"post",topicId:topic.id,postId:post.id},routing)}
+                          aria-label={t("adminHiddenInspectorOpen") + ": " + t("postNumber", {number:messageNumber})}>
+                          {t("adminHiddenInspectorOpen")}
+                        </Link>
+                      </p>
+                    ) : null}
+                    <div className="topic-message-relations">
+                      {parentNumber !== undefined && (
+                        <a href={`#post-${encodeURIComponent(post.parentPostId!)}`}>
+                          {t("replyToMessageNumberCompact", { number: parentNumber })}
+                        </a>
+                      )}
+                      {replyIds.map((id) => (
+                        <a key={id} href={`#post-${encodeURIComponent(id)}`}>
+                          {t("postNumber", { number: messageNumberById.get(id)! })}
+                        </a>
+                      ))}
+                    </div>
+                  </li>
+                );
+              }
               const generationUnit = generationByContentId.get(post.id);
               const messageLinkState =
                 messageLinkFeedback?.postId === post.id ? messageLinkFeedback.state : null;
@@ -3061,6 +3134,8 @@ export function TopicView({
                       {!postCollapsed && <PostBodyTranslationControls presentation={postPresentation} />}
                       <MessageQuickActions locale={locale} topicId={topic.id} postId={post.id}
                         revisionId={post.body.id} sourceLocale={post.body.sourceLocale}
+                        actorId={watchActorId} canHideVisibility={canManageVisibility}
+                        visibilityVersion={post.visibilityVersion}
                         canCorrectAnySourceLocale={canCorrectAnySourceLocale}
                         canReadPostHistory={canReadPostHistory}/>
                       <div className="topic-message-desktop-actions">

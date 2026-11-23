@@ -1,23 +1,29 @@
 import {useEffect,useRef,type ReactNode} from "react";
-import {Form,useFetcher,useRevalidator} from "react-router";
+import {Form,useFetcher,useMatches,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
-import type {ForumTopicPage} from "../../db/forum-repository";
+import type {ForumTopicPage,ForumVisibleThreadPost,ForumHiddenThreadPost} from "../../db/forum-repository";
 import {useHeaderAuthUser} from "../auth/auth-controls";
+type QuickPost =
+  | Pick<ForumVisibleThreadPost,"kind"|"id"|"solutionModerationStatus"|"solutionOutdatedReason">
+  | Pick<ForumHiddenThreadPost,"kind"|"id">;
 type QuickTopic=Pick<ForumTopicPage,"id"|"isPinned"|"isSolved"|"duplicateRelationshipId"|"bestAnswerPostId"|"title"> &
+  Partial<Pick<ForumTopicPage,"visibilityVersion">> &
   Partial<Pick<ForumTopicPage,"isClosed"|"closureVersion">> & {
   duplicateOf:{id:string;title?:string}|null;
   section:Pick<ForumTopicPage["section"],"id">;
-  posts:Array<Pick<ForumTopicPage["posts"][number],"id"|"solutionModerationStatus"|"solutionOutdatedReason">>;
+  posts:QuickPost[];
 };
 import type {UiKey} from "../localization/catalog";
 import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";
 import {forumTopicPath} from "../forum/paths";
+import {VisibilityHideForm} from "./visibility-hide-form";
 
 export interface TopicQuickActionInput {
   topic:QuickTopic;
   postCandidates?:ReadonlyArray<{id:string;number:number}>;
   canManagePin:boolean;
   canManageClosure?:boolean;
+  canManageVisibility?:boolean;
   actorId?:string|null;
   canManageAnySolution:boolean;
   canManageHelpDuplicate:boolean;
@@ -46,7 +52,7 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
     });
   }
   if(input.canManageAnySolution&&!topic.isSolved&&!topic.duplicateOf)add("markSolved","markSolved");
-  if(input.canManageAnySolution&&!topic.duplicateOf)(input.postCandidates??topic.posts.slice(1).map((post,index)=>({id:post.id,number:index+2}))).forEach(post=>{
+  if(input.canManageAnySolution&&!topic.duplicateOf)(input.postCandidates??topic.posts.slice(1).flatMap((post,index)=>post.kind==="hidden"?[]:[{id:post.id,number:index+2}])).forEach(post=>{
     if(post.id!==topic.bestAnswerPostId&&post.number>1)actions.push({key:`selectBestAnswer:${post.id}`,intent:"selectBestAnswer",label:"postNumber",fields:{postId:post.id,operationScope:"any"},postNumber:post.number});
   });
   if(input.canManageHelpDuplicate&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID){
@@ -59,7 +65,7 @@ export function topicQuickActionDescriptors(input:TopicQuickActionInput):TopicQu
     }else if(!topic.isSolved&&!topic.bestAnswerPostId)add("confirmHelpDuplicate","helpDuplicateConfirm");
   }
   if(input.canCorrectAnySourceLocale)add("correctTitleSourceLocale","sourceLocaleCorrectionSubmit",{expectedRevisionId:topic.title.id});
-  const best=topic.posts.find(p=>p.id===topic.bestAnswerPostId);
+  const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
   if(input.canModerateHelpSolution&&topic.section.id===HELP_SOLUTIONS_SERVICE_SECTION_ID&&topic.isSolved&&best){
     const fields={expectedBestAnswerPostId:topic.bestAnswerPostId??""};
     if(best?.solutionModerationStatus!=="needs-review")add("markSolutionNeedsReview","helpSolutionMarkNeedsReview",fields);
@@ -77,7 +83,7 @@ export function QuickActions({children}: {children:ReactNode}){
 /** All consumers submit existing intents to the canonical topic endpoint, never an admin-only API. */
 
 function TopicQuickActionForm({locale,topic,action,best,inline}:{locale:string;topic:QuickTopic;
- action:TopicQuickActionDescriptor;best:QuickTopic["posts"][number]|undefined;inline:boolean}){
+ action:TopicQuickActionDescriptor;best:Extract<QuickPost,{kind?:"visible"}>|undefined;inline:boolean}){
  const {t}=useTranslation("common");
  const fetcher=useFetcher<{ok?:boolean;error?:string}>();
  const FormComponent=inline?fetcher.Form:Form;
@@ -135,13 +141,25 @@ function TopicClosureQuickActionForm({locale,topic,action}:{
 /** All forms retain the existing canonical topic action; closure uses an isolated inline fetcher. */
 export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActionInput&{locale:string;inline?:boolean}){
  const headerActorId=useHeaderAuthUser()?.id??null;
- if(input.actorId&&input.actorId!==headerActorId)return null;
+ const loaderSnapshot=useMatches().at(-1)?.loaderData;
+ // Returning to an earlier account cannot re-trust the same loader snapshot.
+ const actorLifetime=useRef({snapshot:loaderSnapshot,invalidated:false});
+ if(actorLifetime.current.snapshot!==loaderSnapshot)
+  actorLifetime.current={snapshot:loaderSnapshot,invalidated:false};
+ if(input.actorId&&input.actorId!==headerActorId)actorLifetime.current.invalidated=true;
+ if(actorLifetime.current.invalidated)return null;
  const actorId=input.actorId??headerActorId;
  const {topic}=input;
  const actions=topicQuickActionDescriptors({...input,actorId});
- const best=topic.posts.find(p=>p.id===topic.bestAnswerPostId);
- if(!actions.length)return null;
- return <QuickActions>{actions.map(action=>
+ const best=topic.posts.find((p):p is Extract<QuickPost,{kind?:"visible"}> =>p.kind!=="hidden"&&p.id===topic.bestAnswerPostId);
+ const canHide = input.canManageVisibility && actorId && typeof topic.visibilityVersion==="number"
+  && Number.isInteger(topic.visibilityVersion) && topic.visibilityVersion>=0
+  && topic.visibilityVersion<=2_147_483_647;
+ if(!actions.length&&!canHide)return null;
+ return <QuickActions>{canHide?<VisibilityHideForm
+   key={JSON.stringify([locale,topic.id,actorId,topic.visibilityVersion,topic.title.id])}
+   locale={locale} topicId={topic.id} actorId={actorId!} revisionId={topic.title.id}
+   visibilityVersion={topic.visibilityVersion!}/>:null}{actions.map(action=>
   action.intent==="closeTopic"||action.intent==="reopenTopic"
    ? <TopicClosureQuickActionForm
       key={JSON.stringify([locale,topic.id,actorId,input.canManageClosure,topic.closureVersion])}
