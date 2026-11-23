@@ -1,11 +1,22 @@
-# agents/leva.md — текущая память по #342
+# agents/leva.md — independent moderation visibility docs review assigned
 
-2026-11-23: independent whole-feature re-review собранного #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` против main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` — **PASS**.
+## Target
 
-VIS-FINAL-LEVA-01/02 CLOSED. Весь correction delta проверен: 8 files/5 commits, production только repository withdrawal helper + Admin model/view; остальные feature files/main неизменны. Own withdrawal false visibility requirement private-only, ownership/pending/active/membership и locks сохранены. Admin DTO сохраняет whitelist tombstones, stable chronology/root/best/candidates, без source/translation bypass.
+- Draft docs PR #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`
+- base/current main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`
+- docs-only 7-file closeout after merged implementation #355.
 
-Локальные 17 files/304 tests PASS, включая 3 прежних reproductions; diff-check PASS, temporary repro удалён, worktree clean. Новые #355 exact-head CI/browser/R2 checks независимо API-checked: 24 success+24 skipped, без failures/pending. Full PG/browser/build локально не перезапускал; не выдавать hosted run за свой.
+## Assignment
 
-Полный итог — stages/moderation-visibility/REVIEW.md; operative state — WORKFLOW.md. Mira PASS относится к тому же head, #355 готов к owner merge после снятия Draft. Сам merge/code/deploy не выполнял. После фактического merge требуется отдельное назначение docs closeout; structure/topic move до закрытия visibility/docs не активировать.
+Independently review the whole docs closeout against merged main and the exact assignment in WORKFLOW.md:
+- PROJECT permanent visibility product contract;
+- PROJECT_STATE factual migration/repository/local-CI state;
+- AUTHORIZATION capability + initial grants + independent authority boundaries;
+- ADMIN_PANEL admission/AP-10/tombstones/private inspection/History contract;
+- PROJECT_HISTORY_33 + index;
+- AGENT_LOGIC_ERRORS row;
+- required non-scope.
 
-V-P1/V-P2/V-P3 приняты, повторно не спрашивать. #354 и process #362/#363 CLOSED; #342 единственный service channel. #300/Stage6/general UI/UX не открывать.
+Do not treat Mira PASS or author checks as proof. Check the source facts you need independently. Do not modify PR #378 during review.
+
+Return PASS/HOLD on this exact head and update service state. If head changes, stop because the assignment expires.
