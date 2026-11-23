@@ -2,41 +2,29 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — Mira whole-feature review PASS; Leva independent whole-feature review next.**
+**Moderation visibility assembled #355 — Leva independent whole-feature review HOLD: два current-feature finding P2.**
 
-Stable exact target:
-- Draft #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`;
-- current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
-- PR open/Draft, ahead 315 / behind 0, mergeable clean;
-- final author self-check and fresh exact-head CI/connected acceptance PASS;
-- Mira whole-feature review Parts 1–4 PASS; confirmed current-feature blockers: none.
+Проверен exact head `fdad1930fc68a854d52bee31922f923be5c1c751` против current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. Head/base повторно подтверждены при завершении review; implementation остаётся open/Draft/unmerged.
 
-### Mira whole-feature review
+Mira whole-feature Parts 1–4 ранее PASS. Независимая проверка Лёвы выявила:
+- **VIS-FINAL-LEVA-01 [P2]:** own pending Help signal withdrawal запрещён новым visibility gate при hidden topic/proposed original/answer вопреки protected exception V6. Текущие PG tests закрепляют неправильный запрет.
+- **VIS-FINAL-LEVA-02 [P2]:** ordinary Admin topic удаляет tombstones до presentation; номера сообщений сдвигаются, hidden root заменяется первым видимым ответом, нарушаются anchors/candidates. Подтверждено тремя локальными reproduction failures.
 
-1. **PART 1 — scope + schema/History/authority foundation: PASS.**
-2. **PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: PASS.**
-3. **PART 3 — assets/translations/personal state/inbox: PASS.**
-4. **PART 4 — visibility UI/state machine + real PostgreSQL races + connected acceptance: PASS.**
+Полный результат/причины/ссылки/критерии исправления: [stages/moderation-visibility/REVIEW.md](stages/moderation-visibility/REVIEW.md), первый раздел. Проверка продолжена по остальному whole-feature scope; дополнительных блокирующих findings не подтверждено.
 
-### PART 4 verified
+Evidence: локальные 16 files /295 targeted tests PASS; отдельные 3 expected FAIL воспроизводят finding 02. Fresh #355 exact-head GitHub checks независимо сверены: 24 SUCCESS +24 expected SKIPPED, 0 failed/pending; CI/connected harness steps SUCCESS. Full hosted suites локально повторно не запускались. Исходный код #355 не менялся; review worktree clean.
 
-- Hide/Restore UI is snapshot-bound: synchronous duplicate-submit guard, no automatic replay after 409/401/403/503/unconfirmed result, explicit fresh revalidation before a deliberate retry, matching success receipt required.
-- Public tombstones never manufacture Restore payloads; Restore is available only from fresh guarded private inspection. Actor/viewer changes invalidate the old private lifetime.
-- EN/RU/HE controls and real Chromium flow are covered; HE narrow viewport is RTL and keyboard submission works.
-- Real PostgreSQL lock-order coverage uses `pg_blocking_pids()`, not JS scheduling, for Hide/Restore against solution moderation, duplicate confirmation/removal/appeal decisions, title/body planning, reply/direct reply, edit, changed Source Locale, protected Complaint submission, accepted translation execution and actor deactivation.
-- Exact-head database run passed the visibility suites, including 151 moderation-visibility command/race tests, accepted execution, private queue, History, Watch/Bookmarks and Mute/Block concurrency.
-- Exact-head connected Worker/Better Auth/PostgreSQL/Chromium acceptance passed pending, stale409, lost-response unknown state, revoked private access, sign-out/actor change, no-store public/private cache boundaries, real PostgreSQL outage recovery and unexpected History rollback.
-- Exact-head local-R2 connected acceptance passed public/private/draft/evidence visibility paths. The observed missing `forum_attachment_draft_refs` SQL errors are deliberate disposable-DB fault injection: the acceptance temporarily renames the table, requires protected framework500/no-store behavior, then restores it.
-- General UI/UX product-pass acceptance and Stage6/deployed runtime remain separate scopes and are not claimed by this feature review.
-- No confirmed current-feature defect in PART 4.
+## Следующее назначение
 
-### Next assignment — Leva
+**Лёва завершил independent review. Следующая — Мира для reconciliation findings и организации correction.**
 
-Perform the independent whole-feature review of assembled #355 on the **same exact head**
-`fdad1930fc68a854d52bee31922f923be5c1c751` against current main and accepted V1–V9.
-If the implementation head changes, this handoff is invalid and the coordinator cycle must be repeated.
+Вход: актуальный AGENTS.md → RULES.md → TASK.md → этот WORKFLOW → актуальный final раздел REVIEW.md; V5/V6 принятого moderation PLAN.
 
-**Mandatory STOP for Mira.** No merge, docs closeout, deploy or next #342 product task before Leva's independent whole-feature verdict and the subsequent owner gate.
+Мира сопоставляет подтверждённые findings с прежним coordinator PASS и задаёт bounded исправления исполнителю. Продуктовая модель уже принята; повторное принятие V-P1/V-P2/V-P3 не требуется. Лёва не начинает implementation в режиме проверки.
+
+После correction: author self-check/meaningful regressions и применимые checks → fresh Mira whole-feature review нового stable head → независимый review того же head. При изменении implementation старый PASS не переносится автоматически.
+
+**STOP:** #355 не merge до закрытия findings и завершения нового review cycle; docs/deploy/следующая structure task не активированы. #342 — служебный канал, никогда не merge.
 
 ## Baseline
 
