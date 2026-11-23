@@ -1,7 +1,19 @@
-import type { ComponentType } from "react";
+import { createElement, type ComponentType } from "react";
+import { useActionData, useMatches, useParams, useRouteLoaderData } from "react-router";
 import type { RouteObject } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
 import { previewAction } from "./action-bridge";
+
+/** Framework Mode gives route components props; Data Mode does not. */
+function withFrameworkComponentProps(id: string, Component: ComponentType<Record<string, unknown>>): ComponentType {
+  return function PreviewFrameworkComponent() {
+    const loaderData = useRouteLoaderData(id);
+    const actionData = useActionData();
+    const params = useParams();
+    const matches = useMatches();
+    return createElement(Component, { loaderData, actionData, params, matches });
+  };
+}
 
 /**
  * Convert the generated Framework descriptor tree into Data Router routes.
@@ -51,7 +63,9 @@ export function createPreviewDataRoutes(
       ...(descriptor.path === undefined ? {} : { path: descriptor.path }),
       ...(descriptor.index === undefined ? {} : { index: descriptor.index }),
       ...(descriptor.caseSensitive === undefined ? {} : { caseSensitive: descriptor.caseSensitive }),
-      ...(hasComponent ? { Component: module.default as ComponentType } : {}),
+      ...(hasComponent ? {
+        Component: withFrameworkComponentProps(descriptor.id, module.default as ComponentType<Record<string, unknown>>),
+      } : {}),
       ...(typeof module.loader === "function" ? { loader: module.loader } : {}),
       ...(typeof module.clientAction === "function"
         ? { action: previewAction(descriptor.id, module) }
