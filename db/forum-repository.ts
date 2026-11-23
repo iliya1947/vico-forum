@@ -23,6 +23,7 @@ import {
   forumOnlinePresence,
   userPrivacyPreferences,
   forumCategories,
+  forumStructureState,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
   forumHelpSignals,
@@ -777,13 +778,32 @@ export class DrizzleForumRepository {
   }
 
   async createCategory(input: { id: string; name: string }) {
-    const [created] = await this.database.insert(forumCategories).values(input).returning();
-    return created;
+    // Trusted setup only: no actor admission, structural version or History command.
+    return this.database.transaction(async tx => {
+      await tx.select({ id: forumStructureState.id }).from(forumStructureState)
+        .where(eq(forumStructureState.id, 1)).for("no key update");
+      const [created] = await tx.insert(forumCategories).values({ ...input,
+        sortPosition: input.id === HELP_SOLUTIONS_CATEGORY_ID ? 0n : sql`(
+          select coalesce(max(sort_position) + 1, 0) from forum_categories
+          where id <> ${HELP_SOLUTIONS_CATEGORY_ID}
+        )`,
+      }).returning({ id: forumCategories.id, name: forumCategories.name, createdAt: forumCategories.createdAt });
+      return created;
+    });
   }
 
   async createSection(input: { id: string; categoryId: string; name: string }) {
-    const [created] = await this.database.insert(forumSections).values(input).returning();
-    return created;
+    // Serialize fixture appends; production structure commands are a separate capability.
+    return this.database.transaction(async tx => {
+      await tx.select({ id: forumStructureState.id }).from(forumStructureState)
+        .where(eq(forumStructureState.id, 1)).for("no key update");
+      const [created] = await tx.insert(forumSections).values({ ...input,
+        sortPosition: sql`(select coalesce(max(sort_position) + 1, 0) from forum_sections
+          where category_id = ${input.categoryId})`,
+      }).returning({ id: forumSections.id, categoryId: forumSections.categoryId,
+        name: forumSections.name, createdAt: forumSections.createdAt });
+      return created;
+    });
   }
 
   async createTopic(input: CreateTopicInput): Promise<ForumTopic> {

@@ -8,6 +8,15 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  historyCategoryCreated: "311e48a44c5479684eb29d092a2a20fa3d77ee3b118c4105c49a3ed41b169e02",
+  historyCategoryRenamed: "07f9387afccf68cfb283934c0e15022bc6342278dc6e0fc1e55cabd21acd0aef",
+  historyCategoryReordered: "7580f868046eda292e7c7e35ba335fe91a50296c9708a206a3aed9d73a2c542d",
+  historySectionCreated: "da8ccfdf30a0de5ccf008c8a06a55383b5240a0be6a93dfa551cd449e8607416",
+  historySectionRenamed: "e67c9d711bd28704cccf19f2a5a231b3f53ec33823d837b75d0e020e1a80d96d",
+  historySectionMoved: "952d81843b2f4deb51cd43c9345dccf6c03d60eec05f53358a0e29a39203e274",
+  historySectionReordered: "6c5a7dd4ad7e450c0f3e464646891e400e6014d3ec7dbedf4931fe53c391f44c",
+  historyTopicMoved: "ad186ecd5dd4748f1fab318ea88046eaab2d72c43d29a53c06415859fd4bdefe",
+
   personalFiltersNav: "1120c3d0d03e14245e44f237208ca8d0e997cd34dbb49c951a52fbfa3b3f27bb",
   personalFiltersHeading: "e1b554738d665a21a5323d8beccb5c8246d1ab62c96e266dd222346645902659",
   personalFiltersIntro: "dee5b23e2beea1e8360def58a13df749b44b862af43be31ca2f07d3ed57a6cdd",

@@ -236,9 +236,9 @@ try:
         read_ctx, read, read_id = account(browser, "readstate", "203.0.113.206")
 
         category_id, section_id = prefix + "-cat", prefix + "-section"
-        sql("insert into forum_categories(id,name) values($1,'J12 Browser category')",
+        sql("insert into forum_categories(id,name,sort_position) values($1,'J12 Browser category',(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))",
             [category_id])
-        sql("insert into forum_sections(id,category_id,name) values($1,$2,'J12 Browser section')",
+        sql("insert into forum_sections(id,category_id,name,sort_position) values($1,$2,'J12 Browser section',(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))",
             [section_id, category_id])
         ordinary = topic(member_id, section_id, "ordinary")
         help_topic = topic(member_id, "help-solutions-questions", "Help needs details")

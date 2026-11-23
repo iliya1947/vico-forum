@@ -50,11 +50,11 @@ category_path = '/admin/forum/categories/' + quote(category, safe='')
 section_path = '/admin/forum/sections/' + quote(section, safe='')
 role = prefix + '-role'
 try:
-    sql('insert into forum_categories(id,name) values($1,$2)', [category, 'Long category עברית ' + 'א' * 150])
-    sql('insert into forum_sections(id,category_id,name) values($1,$2,$3)', [section, category, 'Long section עברית ' + 'א' * 150])
+    sql('insert into forum_categories(id,name,sort_position) values($1,$2,(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))', [category, 'Long category עברית ' + 'א' * 150])
+    sql('insert into forum_sections(id,category_id,name,sort_position) values($1,$2,$3,(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))', [section, category, 'Long section עברית ' + 'א' * 150])
     for n in range(60):
-        sql('insert into forum_categories(id,name) values($1,$2)', [prefix + '-c-' + str(n).zfill(3), 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
-        sql('insert into forum_sections(id,category_id,name) values($1,$2,$3)', [prefix + '-s-' + str(n).zfill(3), category, 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
+        sql('insert into forum_categories(id,name,sort_position) values($1,$2,(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))', [prefix + '-c-' + str(n).zfill(3), 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
+        sql('insert into forum_sections(id,category_id,name,sort_position) values($1,$2,$3,(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))', [prefix + '-s-' + str(n).zfill(3), category, 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'])
         context = browser.new_context(viewport={'width':1280,'height':900})

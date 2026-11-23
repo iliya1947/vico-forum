@@ -40,6 +40,8 @@ describe("AP-10 raw authority and owner binding", () => {
     expect(rawUserMeasureAuthorityLevel("target", ordinary, "owner")).toBe(0);
     expect(rawUserMeasureAuthorityLevel("target", privilegedTarget, "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", perms("forum.content.visibility.manage"), "owner")).toBe(1);
+    expect(rawUserMeasureAuthorityLevel("target", perms("forum.structure.manage"), "owner")).toBe(1);
+    expect(rawUserMeasureAuthorityLevel("target", perms("forum.topic.move"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", perms("forum.attachmentSecurity.read"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", perms("access.authorization.manage"), "owner")).toBe(1);
     expect(rawUserMeasureAuthorityLevel("target", elevatedTarget, "owner")).toBe(2);

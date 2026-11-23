@@ -120,8 +120,8 @@ def account(browser, label, ip):
 
 def topic(author_id):
     category_id, section_id = prefix + "-category", prefix + "-section"
-    sql("insert into forum_categories(id,name) values($1,'K5 R2 category')", [category_id])
-    sql("insert into forum_sections(id,category_id,name) values($1,$2,'K5 R2 section')",
+    sql("insert into forum_categories(id,name,sort_position) values($1,'K5 R2 category',(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))", [category_id])
+    sql("insert into forum_sections(id,category_id,name,sort_position) values($1,$2,'K5 R2 section',(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))",
         [section_id, category_id])
     topic_id, title_id, post_id, body_id = [str(uuid4()) for _ in range(4)]
     sql("""with topic as (

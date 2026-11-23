@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0071_moderation_visibility_foundation",
+  "targetMigration": "0072_forum_structure_foundation",
   "tables": {
     "account": {
       "columns": [
@@ -211,7 +211,7 @@
             "action",
             "target_type"
           ],
-          "definitionSha256": "a0eb51aae7e727c5f8392c800bedb94b82023be7a27193b315820d15338d30f7"
+          "definitionSha256": "e92790a71e9d18ad93f5067adbfedb4ad721b92ed9005529b985c4b63c18b2f2"
         },
         {
           "name": "admin_history_context_check",
@@ -402,7 +402,7 @@
           "columns": [
             "key"
           ],
-          "definitionSha256": "29330a5f8b9b674039d73e3ee67aba4a7c3ec7bbb3f345338709412192b3d9ff"
+          "definitionSha256": "3675350d81b01da80470de27b79fc50997882a43e87a336a34b015660df8be2f"
         }
       ],
       "indexes": []
@@ -1986,6 +1986,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "sort_position",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         }
       ],
       "primaryKeys": [
@@ -2005,9 +2011,35 @@
             "name"
           ],
           "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
+        },
+        {
+          "name": "forum_categories_sort_position_check",
+          "columns": [
+            "sort_position"
+          ],
+          "definitionSha256": "9447018f4e52fb54cb89e1de4919d42565b1d39a1f94abdadc9fd65cf1f778cb"
         }
       ],
-      "indexes": []
+      "indexes": [
+        {
+          "name": "forum_categories_order_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "sort_position",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
     },
     "forum_complaint_activity": {
       "columns": [
@@ -5792,6 +5824,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
+          "name": "sort_position",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         }
       ],
       "primaryKeys": [
@@ -5826,6 +5864,13 @@
             "name"
           ],
           "definitionSha256": "33767a1bd55858c73d48eb7c3ed60d929c2237cacbfd58532f8ba93663b19b32"
+        },
+        {
+          "name": "forum_sections_sort_position_check",
+          "columns": [
+            "sort_position"
+          ],
+          "definitionSha256": "9447018f4e52fb54cb89e1de4919d42565b1d39a1f94abdadc9fd65cf1f778cb"
         }
       ],
       "indexes": [
@@ -5839,7 +5884,31 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "forum_sections_order_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "category_id",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "sort_position",
+              "nulls": "last",
+              "order": "asc"
+            },
+            {
+              "name": "id",
+              "nulls": "last",
+              "order": "asc"
+            }
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -6743,6 +6812,12 @@
           "defaultSha256": null
         },
         {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
+        },
+        {
           "name": "is_solved",
           "type": "boolean",
           "nullable": false,
@@ -6753,12 +6828,6 @@
           "type": "text",
           "nullable": true,
           "defaultSha256": null
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": "28a4dae0461e17af56e979c2095abfbe0bfc45fe9ca8abf3144338a518a1bb8f"
         },
         {
           "name": "needs_details",
@@ -6795,6 +6864,12 @@
           "type": "timestamp(3) with time zone",
           "nullable": true,
           "defaultSha256": null
+        },
+        {
+          "name": "location_version",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
         }
       ],
       "primaryKeys": [
@@ -6877,6 +6952,13 @@
           "definitionSha256": "9491d6e43c450af20799a9ae8324870c053b2bb1254af6daae644f251d3f77df"
         },
         {
+          "name": "forum_topics_location_version_check",
+          "columns": [
+            "location_version"
+          ],
+          "definitionSha256": "97a52d701d88f96dc6e147829633bb15a545e220e80e48f737d4b5dcd1071af1"
+        },
+        {
           "name": "forum_topics_visibility_state_check",
           "columns": [
             "is_hidden",
@@ -6897,7 +6979,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": null
         },
         {
           "name": "forum_topics_hidden_queue_idx",
@@ -6927,7 +7010,8 @@
               "order": "asc",
               "nulls": "last"
             }
-          ]
+          ],
+          "predicateSha256": null
         }
       ]
     },
@@ -9845,6 +9929,49 @@
           ]
         }
       ]
+    },
+    "forum_structure_state": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_structure_state_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_structure_state_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
+        },
+        {
+          "name": "forum_structure_state_version_check",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "13dfe986143b3d433922f5bf0e149e3944ea5f5a5b9b0f428b4e969abdb1e192"
+        }
+      ],
+      "indexes": []
     }
   },
   "triggerFunctions": [
