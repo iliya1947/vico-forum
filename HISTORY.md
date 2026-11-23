@@ -58,3 +58,12 @@
 - Mira corrected #362 to the documented Issues REST label-removal endpoint on exact `3387132aeed815fb93cf3094c3d70f5e343ce998`.
 - Erroneous service PR #361 was closed without merge; #342 remains the assigned service channel.
 - 2026-11-21: moderation visibility B5 #367 exact `a2269fb0294feaccb433e76b66e800f3e869658d` received Mira bounded coordinator PASS; owner then authorized B6-A only.
+
+
+## 2026-11-23 — moderation visibility task 5 complete
+
+- Implementation #355 merged after final exact-head Mira whole-feature PASS and Leva independent whole-feature PASS; final implementation head `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, merge commit `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`.
+- Final independent review found VIS-FINAL-LEVA-01/02; both were corrected before the final PASS/merge.
+- Separate docs-only #378 passed Lira author-check and Mira docs review, then owner merged it; current main became `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Permanent product/Admin/authorization/current-state/history documentation and the confirmed Mira logic-error row are now in main.
+- Task 5 has no remaining current-scope finding or documentation debt. Task 6 is next but was not activated in this checkpoint.
