@@ -2,44 +2,33 @@
 
 ## Активный этап
 
-**Task 6 ACTIVE — forum structure management / topic moves. Current-main reconciliation complete; Leva plan reconciliation next.**
+**Task 6 — forum structure/topic move: Лёва завершил current-main reconciliation полного принятого S0–S10; следующая Мира для delivery-mode и bounded назначения.**
 
-Current baseline:
-- `main` = `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
-- task 5 moderation visibility + docs are complete;
-- accepted Task-6 product scope remains the existing S0–S10 plan in `stages/forum-structure/PLAN.md`;
-- no full redesign is needed.
+- Проверенный current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Task5 implementation #355 и docs #378 merged; visibility findings CLOSED, docs debt закрыт.
+- Канонический самодостаточный план Task6: [stages/forum-structure/PLAN.md](stages/forum-structure/PLAN.md). Полный исходный S0–S10 восстановлен из `8181645:USER_ACTIONS_SERVICE_PLAN.md`; прежняя компактная запись заменена.
+- S-P1–S-P4/S-T1/S-T2 уже приняты; scope не перепроектирован. Create/rename/order/reparent/move ordinary only; без delete/archive/Help conversion/reason policy/author notification/auto-unpin.
+- Hidden topic seam разрешён по **уже принятому S2.6**: move+visibility-management capability, отдельный source-free protected context, canonical action с повторной hidden admission под topic lock; public/ordinary Admin readers не расширяются.
+- Move×Hide/Restore lock graph, neutral topic.moved History, original Owner forum.structure projection и persisted-current-section receipt replay явно определены.
+- Сохранены global singleton/CAS, narrow location version, bigint strings, coherent snapshots, runtime ACL, editor/attachments/personal/Complaint/translation state и acceptance requirements.
+- Delivery stages F1→F7 с dependencies/done criteria находятся в S8. Рекомендация — stack одной vertical feature; режим окончательно выбирает Мира.
+- Выполнена авторская проверка полноты плана/actual main/source refs. Это не независимый review, PG/browser/build PASS новой функции.
+- Code/schema/dependencies/implementation PR/CI/deployment не менялись и не запускались; работа сейчас planning-only.
 
-### Mira current-main reconciliation
+## Следующая работа — Мира
 
-Confirmed against current main:
+Вход: актуальный AGENTS.md → RULES.md → TASK.md → этот WORKFLOW → полный Task6 PLAN.
 
-1. Existing schema still has only category/section identity/name/FK and topic `section_id`; there is no persistent sibling ordering, global structure version or topic location version yet. This matches the accepted foundation work rather than contradicting it.
-2. `forum.structure.manage` and `forum.topic.move` are not yet in the permission catalog; the accepted initial grants/admin admission/AP-10 integration remain future work of Task 6.
-3. Existing `createCategory/createSection` repository helpers are direct technical writers, not authoritative Admin mutation boundaries; they must not be exposed as the management implementation.
-4. Create-topic publication receipt replay currently returns `input.sectionId` after replay while reading only persisted closure state. The accepted Task-6 requirement to return the topic's **current persisted section after a move** is therefore still necessary and correctly scoped.
-5. Owner Monitoring already has the `forum.structure` monitor, but current Admin-History scope mapping has no structural events yet. The accepted plan to project the new original structural History events into that existing monitor is still necessary; no second journal/store is needed.
-6. Moderation visibility adds one required reconciliation point:
-   - ordinary/public-safe topic readers intentionally return no hidden-topic source;
-   - Task 6 must not broaden those readers or leak hidden title/body merely to support topic move;
-   - the final technical plan must explicitly define how a hidden **ordinary** topic, if movable under the accepted scope, is targeted/presented through an appropriately protected seam while preserving `is_hidden` and all retained state.
-   - Ordinary ↔ Help conversion remains forbidden.
+1. Проверить scope/fit reconciliation, особенно S2.1/S4.1/S7.1 и stage dependencies. Dual hidden authority уже принята; не запрашивать повторное owner-решение о продуктовой модели.
+2. Выбрать delivery mode по AGENTS.md с учётом технической рекомендации stacked F1–F6 и отдельного docs F7.
+3. Отдельно назначить bounded F1 и исполнителя. В текущем owner handoff разрешено использовать Лёву в последующей реализации; это не активирует его автоматически после плана.
+4. Если Лёва участвует в implementation, независимый whole-feature reviewer должен не участвовать в этом коде (например Марк по назначению); не назначать Лёве проверку собственной реализации.
 
-No other current-main conflict was confirmed. The accepted product scope stays unchanged: create/rename ordinary categories/sections, sibling Up/Down order, section reparent, ordinary topic move, no delete/archive/merge/bulk, no mandatory reason/author notification/auto-unpin.
-
-### Next assignment — Leva
-
-Reconcile the already accepted S0–S10 technical plan against current main; **do not redesign the feature from scratch**. Resolve the single post-visibility seam above and revalidate lock/order/race implications introduced by current visibility state. Preserve the already accepted receipt, History/Monitoring, permission/AP-10, ordering/version and acceptance requirements unless current code proves a conflict.
-
-Deliver a final implementation-ready technical plan / amendment with bounded delivery stages and done criteria, then STOP for Mira delivery-mode decision.
-
-Owner has separately allowed Leva to be used as an implementation agent for subsequent work now that limit conservation is unnecessary. That affects the later delivery assignment, not this planning gate.
-
-**STOP for Mira until Leva plan reconciliation.**
+**Лёва STOP после плана.** До назначения delivery/F1 код не начинать. #342 не merge; после Task6/docs только установленный маршрут к #320. #300/Stage6/general UI/UX/deploy не активированы.
 
 ## Baseline
 
-- Current main: `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`.
+- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - #354 corrective package merged and closed.
 - V-P1/V-P2/V-P3 — ранее приняты и не переоткрываются.
 - V-T1/V-T2 — technical fit PASS на current main.
