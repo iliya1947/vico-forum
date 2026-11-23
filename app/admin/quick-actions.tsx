@@ -17,6 +17,7 @@ import type {UiKey} from "../localization/catalog";
 import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";
 import {forumTopicPath} from "../forum/paths";
 import {VisibilityHideForm} from "./visibility-hide-form";
+import {TopicMoveControl} from "../forum/topic-move-control";
 
 export interface TopicQuickActionInput {
   topic:QuickTopic;
@@ -24,6 +25,7 @@ export interface TopicQuickActionInput {
   canManagePin:boolean;
   canManageClosure?:boolean;
   canManageVisibility?:boolean;
+  canMoveTopic?:boolean;
   actorId?:string|null;
   canManageAnySolution:boolean;
   canManageHelpDuplicate:boolean;
@@ -155,8 +157,11 @@ export function TopicQuickActions({locale,inline=false,...input}:TopicQuickActio
  const canHide = input.canManageVisibility && actorId && typeof topic.visibilityVersion==="number"
   && Number.isInteger(topic.visibilityVersion) && topic.visibilityVersion>=0
   && topic.visibilityVersion<=2_147_483_647;
- if(!actions.length&&!canHide)return null;
- return <QuickActions>{canHide?<VisibilityHideForm
+ const canMove=Boolean(input.canMoveTopic&&actorId&&topic.section.id!==HELP_SOLUTIONS_SERVICE_SECTION_ID);
+ if(!actions.length&&!canHide&&!canMove)return null;
+ return <QuickActions>{canMove?<TopicMoveControl
+   key={JSON.stringify([locale,topic.id,actorId])} locale={locale} topicId={topic.id} actorId={actorId!}/>:null}
+  {canHide?<VisibilityHideForm
    key={JSON.stringify([locale,topic.id,actorId,topic.visibilityVersion,topic.title.id])}
    locale={locale} topicId={topic.id} actorId={actorId!} revisionId={topic.title.id}
    visibilityVersion={topic.visibilityVersion!}/>:null}{actions.map(action=>

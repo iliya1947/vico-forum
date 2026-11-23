@@ -29,8 +29,13 @@ export async function loader({ request, params, context }: {
   }
   // This capability stays route-local; generic AdminAccess is not broadened.
   let canReadPostHistory: boolean;
+  let canMoveTopic: boolean;
   try {
-    canReadPostHistory=await authorizationForRequest(context).forUser(access.actorId!).has("forum.post.history.read");
+    const resolver=authorizationForRequest(context).forUser(access.actorId!);
+    [canReadPostHistory,canMoveTopic]=await Promise.all([
+      resolver.has("forum.post.history.read"),
+      resolver.has("forum.topic.move"),
+    ]);
   }catch{
     throw new Response("Unavailable",{status:503,headers:hiddenQueuePrivateHeaders});
   }
@@ -46,7 +51,8 @@ export async function loader({ request, params, context }: {
   });
   const revisions=includeRevisions&&target.kind==="post"
     ? await readHiddenPostRevisions(context,target,before):null;
-  return data({locale:params.locale??"en",access,canReadPostHistory,inspection,revisions},{
+  return data({locale:params.locale??"en",access,canReadPostHistory,
+    canMoveTopic: canMoveTopic && target.kind==="topic" && inspection.isHidden,inspection,revisions},{
     headers:hiddenQueuePrivateHeaders,
   });
 }
