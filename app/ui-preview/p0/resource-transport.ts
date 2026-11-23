@@ -198,7 +198,12 @@ export function installPreviewResourceTransport({
   }
 
   const wrapped: typeof fetch = async (input, init) => {
-    if (closed) return originalBoundFetch(input, init);
+    if (closed) {
+      // Module-level clients can retain this function across P1 remounts.
+      // A disposed preview must never fall through to real Pages/backend fetch.
+      if (resourceIds === undefined) throw new Error("P1 resource transport disposed");
+      return originalBoundFetch(input, init);
+    }
     const request = new Request(input, init);
     const suppliedOrigin = init?.headers ? new Headers(init.headers).get("Origin")
       : input instanceof Request ? input.headers.get("Origin") : null;

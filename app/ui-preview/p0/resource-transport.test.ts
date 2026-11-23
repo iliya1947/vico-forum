@@ -401,6 +401,84 @@ describe("generic P0 resource request dispatch", () => {
     }
   });
 
+  it("fails closed for a captured P1 fetch after dispose while a fresh remount owns requests", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/echo", file: "routes/echo.ts", path: "echo" },
+            { id: "routes/wait", file: "routes/wait.ts", path: "wait" },
+            { id: "routes/target", file: "routes/target.ts", path: "target" },
+          ],
+        },
+      ],
+    };
+    const originalFetch = vi.fn(async () => new Response("unexpected native fetch"));
+    const originalXhr = window.XMLHttpRequest;
+    window.fetch = originalFetch;
+    let release!: (response: Response) => void;
+    let entered!: () => void;
+    const ready = new Promise<void>((resolve) => { entered = resolve; });
+    let targetCalls = 0;
+    const originals = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/echo", { loader: () => new Response("first generation") }],
+      ["routes/wait", { loader: () => new Promise<Response>((resolve) => {
+        release = resolve;
+        entered();
+      }) }],
+      ["routes/target", { loader: () => { targetCalls++; return new Response("target"); } }],
+    ]);
+    const first = installPreviewResourceTransport({
+      manifest: all, createContext: () => new RouterContextProvider(), host: window,
+    });
+    let second: ReturnType<typeof installPreviewResourceTransport> | null = null;
+    try {
+      first.configure(createPreviewDataRoutes(all, originals), originals);
+      const staleFetch = window.fetch;
+      const oldXhr = window.XMLHttpRequest;
+      expect(await (await staleFetch(window.location.origin + "/en/echo")).text())
+        .toBe("first generation");
+
+      const pending = staleFetch(window.location.origin + "/en/wait");
+      await ready;
+      first.dispose();
+      await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+      expect(window.fetch).toBe(originalFetch);
+      expect(window.XMLHttpRequest).toBe(originalXhr);
+
+      const next = new Map(originals);
+      next.set("routes/echo", { loader: () => new Response("second generation") });
+      second = installPreviewResourceTransport({
+        manifest: all, createContext: () => new RouterContextProvider(), host: window,
+      });
+      second.configure(createPreviewDataRoutes(all, next), next);
+      expect(window.fetch).not.toBe(staleFetch);
+      expect(window.XMLHttpRequest).not.toBe(oldXhr);
+      expect(await (await window.fetch(window.location.origin + "/en/echo")).text())
+        .toBe("second generation");
+
+      // A client imported during the first mount still holds staleFetch.
+      // It must not reach Pages or dispatch into either generation.
+      await expect(staleFetch(window.location.origin + "/en/echo"))
+        .rejects.toThrow("P1 resource transport disposed");
+      await expect(staleFetch(window.location.origin + "/api/attachments"))
+        .rejects.toThrow("P1 resource transport disposed");
+
+      release(redirect("/en/target"));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(targetCalls).toBe(0);
+      expect(originalFetch).not.toHaveBeenCalled();
+    } finally {
+      second?.dispose();
+      first.dispose();
+    }
+    expect(window.fetch).toBe(originalFetch);
+    expect(window.XMLHttpRequest).toBe(originalXhr);
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);
