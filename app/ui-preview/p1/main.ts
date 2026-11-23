@@ -63,9 +63,9 @@ function dispose() {
   transport.dispose();
   for (const state of [...liveGenerations]) releaseGeneration(state);
   window.removeEventListener("pagehide", dispose);
-  mount.dataset.cleanup = "complete";
-  mount.dataset.revokedUrls = String(revokedUrls.size);
-  mount.dataset.liveGenerations = String(liveGenerations.size);
+  mount!.dataset.cleanup = "complete";
+  mount!.dataset.revokedUrls = String(revokedUrls.size);
+  mount!.dataset.liveGenerations = String(liveGenerations.size);
 }
 window.addEventListener("pagehide", dispose);
 // Framework imports can capture fetch once. Keep that function usable across reset.
