@@ -1,7 +1,19 @@
-# agents/lira.md — B9 final exact-head author self-check PASS; STOP before fold
+# agents/lira.md — B9 HOLD; pre-fold current-main sync only
 
-- Existing [Draft #376](https://github.com/iliya1947/vico-forum/pull/376) exact `108e0ba31ed34f891e8b46e411991b893b9da56b`; accepted B7 #371 branch/base still `f92778606f1c8ea4e64f53c1660910f34c48b84c`; `main` unchanged. B8-A/B/C independent coordinator PASS. Owner authorized **only B9**.
-- B9 author diff audit: **43 commits, 14 files (+3376/−23)** exclusively PostgreSQL tests, connected Chromium/local-R2/Worker smoke fixtures and existing SA04-K5/N CI invocations. No feature/runtime/schema/migration/dependency/production/Stage6/docs edits. No new B9 code commit.
-- Final **same exact-head 4/4 SUCCESS check-runs**, already run at B8-C3 (no re-run since implementation unchanged): [CI #45083893513](https://github.com/iliya1947/vico-forum/actions/runs/45083893513) lint, typecheck, unit **2951**, PG17 **1689**, build/preview, migration history+metadata/Drizzle/schema manifest, runtime privileges/provisioning and Worker Better Auth smokes; [SA04-N #45083893569](https://github.com/iliya1947/vico-forum/actions/runs/45083893569) connected C1/C2/C3 PASS markers; [SA04-K5 #45083893627](https://github.com/iliya1947/vico-forum/actions/runs/45083893627) R2/Chromium and B8-B2 positive bytes marker. B9 independently inspected check-run SHA, job steps/log markers, current branch state. Attempted label retrigger produced no fresh runs; removed leftover label. Do not claim new B9 run.
-- V1–V9/V8 ten-area evidence reconciliation and exact-head coverage boundaries are in `WORKFLOW.md`. No confirmed B8 current-scope blocker found. Author self-check PASS is not whole-feature review/final assembled B1.
-- **Лира STOP.** Stack fold into B1, intermediate PR closure, final assembled head author review, Mira/Leva whole-feature reviews, owner merge, docs or deployment blocked until a fresh owner continuation.
+## Confirmed blocker
+
+- Draft #376 exact `108e0ba31ed34f891e8b46e411991b893b9da56b` remains valid B8-C evidence, but the stacked feature merge-base is old main `6fa2a43...`.
+- Current main is `9cff976...`; the final head is ahead 314 / behind 5.
+- Missing main commits include #362/#363 manual PR test controls. Current main changes `ci.yml`, SA04-N and SA04-K5; B8 also changes SA04-N/K5. The final fold cannot be reviewed from the pre-sync head.
+
+## Current assignment — sync only
+
+1. Integrate current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` into the existing final B8 branch. Choose the technically clean integration method, but do not rewrite unrelated product scope.
+2. Reconcile overlapping workflow files so both contracts survive:
+   - current-main agent-triggered `run:ci` / `run:acceptance` and workflow_dispatch behavior;
+   - B8 SA04-N C1/C2/C3 Chromium invocations and SA04-K5 B8-B2 local-R2 invocation.
+3. Reconcile final diff against **current main**, not the old stack merge-base.
+4. Use the current main manual PR-test controls to run final CI and applicable connected acceptance on the resulting exact head.
+5. Record the new exact SHA, integration scope, same-head checks/workflows and any conflict resolution in #376/#342.
+
+**Mandatory STOP after the synced exact-head author self-check.** Do not fast-forward B1, close intermediate PRs, start Mira/Leva whole-feature review, merge, docs or deploy.
