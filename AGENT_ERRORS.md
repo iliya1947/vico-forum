@@ -115,3 +115,10 @@ there are only N.
 - **Что произошло:** Mira whole-feature review #355 дал PASS, но последующий independent review Лёвы подтвердил два P2 дефекта: protected own Help withdrawal был ошибочно заблокирован Hide, а ordinary Admin projection удалял tombstones и ломал permanent numbering/original identity.
 - **Почему это ошибка:** review проверил общие hidden-content gates и public-safe Admin boundary, но не сопоставил явное V6 protected-withdrawal exception с конкретным withdrawal helper и не проследил chronology от sanitized public tombstone через Admin projection до index-based presentation.
 - **Как предотвращать:** при whole-feature review отдельно проверять явные исключения плана против каждого затронутого writer/read projection; для sanitized DTO проходить цепочку storage/read model → projection → numbering/identity/candidates, а не останавливаться на отсутствии source leak.
+
+
+## 2026-11-23 — unnecessary Leva docs review
+
+- **Что произошло:** после PASS отдельного docs-only PR #378 Mira механически назначила Leva ещё один independent review.
+- **Почему это ошибка:** раздел `Проверка PR` текущего AGENTS.md требует независимый Codex gate для implementation PR/final assembled implementation; отдельный end-of-task documentation PR под это правило не подпадает. Дополнительный reviewer не следовал из регламента и расходовал Leva без пользы.
+- **Как предотвращать:** перед переносом review-маршрута между типами PR сначала проверить, к какому именно типу артефакта относится правило; docs-closeout не наследует implementation gates без явного требования.
