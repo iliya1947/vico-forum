@@ -11,13 +11,14 @@
 - F3 #381 accepted exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`.
 - F4 #382 accepted exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`, Draft/unmerged.
 
-## F5-А — внутренний microcheckpoint Лиры
+## F5-А/Б — внутренние microcheckpoints Лиры
 
-- [Draft PR #383](https://github.com/iliya1947/vico-forum/pull/383) открыт в stacked-ветке `feat/forum-structure-f5` от принятого F4 `18627a8c53a6db681a7f4f278b88fcdd55f579c1`; exact head `6d526f8520e78450b995be4561f996b09d11f610`, **не merged**, diff 11 файлов только F5-А.
-- End-to-end create-category Admin index: exact permission/session/Origin/field allowlist, valid actor/CAS/name, request-scoped existing F2 writer через WEB_HYPERDRIVE, private/no-store typed responses, EN/RU/HE inline form и targeted route/DOM regressions. No schema/migration/F4 reader change.
-- [CI #45274600503](https://github.com/iliya1947/vico-forum/actions/runs/45274600503) exact head: `checks` SUCCESS, `database` SUCCESS; lint/TypeScript/unit/build и PostgreSQL/Worker checks завершены. Девять новых manual translation fingerprints отдельно сверены с canonical English descriptors: 9/9.
-- **Лира STOP после F5-А.** Это **не** весь F5 и не Mira coordinator checkpoint. Следующий внутренний шаг после явного продолжения — F5-Б: остальные Admin category/section forms (rename/reorder/reparent/create section) с регрессиями; затем отдельно shared Move/action/editor lifetime и Owner projection, после завершения всего F5 — применимые проверки и Mira coordinator.
-- F6, merge и docs не активированы.
+- [Draft stacked #383](https://github.com/iliya1947/vico-forum/pull/383), base = accepted F4 `18627a8c53a6db681a7f4f278b88fcdd55f579c1`, **latest exact `d008cf3056af6848996f0ddc0f9ed62125992cd0`**, open/unmerged, diff 15 bounded files cumulatively. `main` unchanged.
+- F5-А: protected Admin category creation with F2 authoritative writer, session/origin/strict fields/CAS, no-store typed results, EN/RU/HE and tests. Earlier micro CI #45274600503 PASS.
+- **F5-Б author-check PASS**: Admin category rename/reorder/create-section; section rename/reorder/reparent; narrow per-route actions with exact capability, actor expectation, strict intent/field validation, target identity and bigint CAS; F4 protected destination picker (bounded literal search+page); localized forms and route/DOM test matrix. No public publication path, new schema, migration or F4 reader changes. UI name/search length now admits valid 200 astral Unicode code points; authoritative backend checks remain.
+- [Exact-head CI #45279134897](https://github.com/iliya1947/vico-forum/actions/runs/45279134897): `checks` SUCCESS (3120/3120 unit tests, lint, typecheck, builds), `database` SUCCESS (PG17 and Worker HTTP smokes), 0 failures. Author diff scope checked: 15 allowed files, no trailing whitespace. Earlier failed CI attempts were F5-Б test/lint corrections on superseded heads; do not transfer their verdict to the final head.
+- **Лира STOP after F5-Б.** This is not a full F5 author PASS and not a Mira checkpoint. Next after explicit developer continuation: **F5-C1 canonical `moveTopic` guarded POST dispatch** with negative mixed-intent/visibility/reply tests. Subsequent bounded steps: shared inline/direct Move control, editor/actor/target lifetime + uncertain-result/fresh verification/canonical links; Owner original `forum.structure` projection and F5 final checks. Then coordinator checkpoint Мира.
+- F6/merge/F7/Stage6/#300/deploy remain inactive.
 
 ## Текущее назначение — Лира: F5
 
