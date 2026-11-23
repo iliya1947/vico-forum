@@ -196,15 +196,13 @@ describe("SA04-J9 Help Signals AccountState lifecycle", () => {
         : dependency === "selected-answer" ? "needs-review" : "needs-details";
       const signal = await pending(x, kind, dependency === "selected-answer" ? x.answerId : null,
         original?.topicId ?? null, owner);
-      const secret = "PRIVATE_HELP_HIDDEN_SOURCE_" + uuid();
+      const secret = dependency === "selected-answer" ? "Answer" : "Help question";
       if (dependency === "selected-answer") {
         await admin.query(
           "update forum_posts set is_hidden=true,visibility_version=visibility_version+1,"
           + "visibility_changed_at=statement_timestamp() where id=$1",
           [x.answerId],
         );
-        await admin.query("update forum_post_body_revisions set original_content=$1 where id="
-          + "(select current_body_revision_id from forum_posts where id=$2)", [secret, x.answerId]);
       } else {
         const hiddenTopic = dependency === "primary-topic" ? x.topicId : original!.topicId;
         await admin.query(
@@ -212,8 +210,6 @@ describe("SA04-J9 Help Signals AccountState lifecycle", () => {
           + "visibility_changed_at=statement_timestamp() where id=$1",
           [hiddenTopic],
         );
-        await admin.query("update forum_topic_title_revisions set original_content=$1 where id="
-          + "(select current_title_revision_id from forum_topics where id=$2)", [secret, hiddenTopic]);
       }
       const before = await facts(x);
       await expect(forum.withdrawHelpSignal(signal.id, x.topicId, other))
