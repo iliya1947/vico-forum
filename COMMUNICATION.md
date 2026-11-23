@@ -18,15 +18,15 @@
 
 ## Текущий этап
 
-Moderation visibility is accepted through B6. Owner continuation activates B7, but the current implementation assignment is deliberately limited to **B7-A**: the canonical server Hide/Restore action contract only. Lira must open a new stacked B7 Draft on accepted B6 #370 exact `51a9ebe03f16c438faae5bec99a5856287630958`, expose the accepted topic/post visibility intents with strict payload/fresh authority/status semantics, add focused action tests, then STOP.
+Собранная moderation visibility feature #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751` против main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` прошла Mira whole-feature PASS. Независимый whole-feature review Лёвы завершён **HOLD**: VIS-FINAL-LEVA-01 (protected own Help withdrawal неправомерно blocked by Hide) и VIS-FINAL-LEVA-02 (ordinary Admin chronology/root identity после удаления tombstones).
 
-QuickActions, inspector/tombstone Restore controls, redirects and B7 UI state/i18n remain inactive until the next owner continuation. B8/B9 are also inactive.
+Evidence, конкретные ссылки и correction criteria — первый раздел `stages/moderation-visibility/REVIEW.md`. Три локальных reproductions второго finding FAIL; остальные 295 целевых unit/route/UI tests PASS. Hosted exact-head checks SUCCESS независимо сверены; это не отменяет findings.
 
-## Дальнейшие планы
+Следующая — Мира для reconciliation findings с coordinator PASS и подготовки bounded correction assignment. Code review не является назначением reviewer на исправление. До закрытия findings и fresh exact-head cycle #355 остаётся Draft/unmerged; docs/deploy/structure не активируются.
 
-- Moderation visibility: B1–B6 coordinator PASS; B7-A active; later B7 work and B8–B9 inactive.
-- Forum structure/topic move: S0–S10 plan принят Мирой; implementation не активен.
+## Дальнейший маршрут
 
+Correction → author checks → fresh whole-feature Mira review → independent reviewer на том же head → owner merge → отдельный docs closeout. Затем forum structure/topic move, потом #320. V-P1/V-P2/V-P3 приняты; повторное согласование не требуется.
 
 ## 2026-11-20 — stacked delivery adopted
 
