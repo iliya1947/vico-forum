@@ -7,7 +7,7 @@ describe("structure command transport validation", () => {
       expect(parseStructureCounter(value).toString()).toBe(value);
     }
   });
-  it.each([null, undefined, 0, 9007199254740992n, [], {}, "", "00", "01", "-1", "+1", " 1", "1 ", "1.0", "1e3", "١", "9223372036854775808", "9".repeat(500)])("rejects noncanonical counter %s", value => {
+  it.each([null, undefined, 0, 9007199254740992n, [], {}, "", "00", "01", "-1", "+1", " 1", "1 ", "1\n", "0\r\n", "1\u2028", "1\u2029", "1.0", "1e3", "١", "9223372036854775808", "9".repeat(500)])("rejects noncanonical counter %s", value => {
     expect(() => parseStructureCounter(value)).toThrow(StructureValidationError);
   });
   it("trims plain Unicode without normalizing identities, markup or duplicate names", () => {

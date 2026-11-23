@@ -249,6 +249,10 @@ describe("F3 authoritative move and retained state",()=>{
     await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values('owner','forum.topic.move','deny'),('owner','forum.content.visibility.manage','deny')");
     await measure("owner");await hide(true);await moves().moveTopic("owner","t",input());expect(await moveEvents()).toHaveLength(1);
   });
+  it.each(["expectedStructureVersion","expectedLocationVersion"] as const)("rejects a trailing line terminator in %s before any mutation",async field=>{
+    await expect(moves().moveTopic("mover","t",input({[field]:"0\n"}))).rejects.toBeInstanceOf(StructureValidationError);
+    expect((await state()).location_version).toBe("0");expect(await moveEvents()).toHaveLength(0);
+  });
   it("rejects fabricated request permission without native DB move authority",async()=>{
     const hints={forUser:()=>({has:async()=>true})} as unknown as AuthorizationCapability;
     const guarded=new PostgresTopicMoveWriter(pool,hints,"owner");
