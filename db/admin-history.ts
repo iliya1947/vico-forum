@@ -137,6 +137,21 @@ export async function appendRegistrationSettingsHistory(
   if (result.rowCount !== 1) throw new Error("History actor no longer exists");
 }
 
+/** Structural commands append last in the same transaction; never reads topic source. */
+export async function appendStructureHistory(
+  client: Pick<PoolClient, "query">, actorId: string, change: StructureHistoryChange,
+): Promise<void> {
+  const label = change.action === "topic.moved"
+    ? visibilityHistoryLabel("topic", change.targetId) : historyLabel(change.targetLabel);
+  await client.query(ADMIN_HISTORY_ORDER_LOCK_SQL);
+  const result = await client.query(`insert into admin_history
+    (id,actor_id,actor_label,action,target_type,target_id,target_label,context)
+    select $1,u.id,left(u.name,200),$3,$4,$5,$6,$7::jsonb from "user" u where u.id=$2`,
+    [crypto.randomUUID(), actorId, change.action, change.targetType, change.targetId,
+      label, JSON.stringify(change.context)]);
+  if (result.rowCount !== 1) throw new Error("History actor no longer exists");
+}
+
 export class PostgresAdminHistoryReader implements AdminHistoryReader {
   constructor(private readonly database: Pick<Pool, "query">) {}
   async read(cursor?: HistoryCursor, limit = 25): Promise<AdminHistoryPage> {
