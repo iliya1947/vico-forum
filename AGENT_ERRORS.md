@@ -101,3 +101,10 @@ there are only N.
 - **Что произошло:** B9 author self-check объявил финальный exact-head handoff готовым к fold на `108e0ba...`, сверив B8 diff только с accepted B7 и отметив current main как «unchanged», но не проверил merge-base всей stacked-цепочки против актуального `main`. Фактически стек всё ещё ответвлялся от `6fa2a43...` и был behind current main `9cff976...` на 5 commits; среди них #362/#363 меняют текущий PR-test contract и те же SA04-N/K5 workflow files, которые расширяет B8.
 - **Почему это ошибка:** из неизменности текущего main относительно последней service-проверки не следует, что feature head уже основан на этом main. Для final closeout требуется интеграционная готовность против актуального source-of-truth, особенно когда обе стороны меняют CI/acceptance seams.
 - **Предотвращение:** перед финальным closeout/fold stacked feature всегда проверять `merge-base`, ahead/behind относительно current main и overlap изменённых файлов; same-head green checks на старой базе не заменяют проверку интеграции с актуальным main.
+
+
+## 2026-11-23 — stack fold auto-merged intermediate PR metadata
+
+- **Что произошло:** B1 был сначала fast-forward'нут на финальный stacked head, после чего промежуточные PR #357/#359/#365/#367/#370/#371/#376 при закрытии GitHub записал как `merged` в B1, потому что их heads уже содержались в новой B1 base. `main` не изменился и merge action в main не выполнялся, но требуемая метаистория `closed-unmerged superseded` была потеряна.
+- **Почему это ошибка:** перед необратимым изменением base-ветки не была проверена семантика GitHub для stacked PR, чьи heads становятся ancestors новой base. Я скрыто предположила, что последующее обычное close сохранит unmerged status.
+- **Как предотвращать:** перед следующим fold отдельно проверить безопасную последовательность операций на GitHub, которая сохраняет требуемый PR state; не считать `move first → close later` метадата-нейтральным. Кодовый результат и main проверять отдельно от PR metadata.
