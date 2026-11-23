@@ -2,40 +2,41 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — Mira whole-feature review PART 3/4 PASS; STOP before PART 4.**
+**Moderation visibility assembled #355 — Mira whole-feature review PASS; Leva independent whole-feature review next.**
 
-Stable review target unchanged:
+Stable exact target:
 - Draft #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`;
 - current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
-- ahead 315 / behind 0, mergeable clean;
-- final author self-check / fresh #355→main CI+acceptance PASS remain valid.
+- PR open/Draft, ahead 315 / behind 0, mergeable clean;
+- final author self-check and fresh exact-head CI/connected acceptance PASS;
+- Mira whole-feature review Parts 1–4 PASS; confirmed current-feature blockers: none.
 
-### Whole-feature review decomposition
+### Mira whole-feature review
 
 1. **PART 1 — scope + schema/History/authority foundation: PASS.**
 2. **PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: PASS.**
 3. **PART 3 — assets/translations/personal state/inbox: PASS.**
-4. PART 4 — UI/races/connected acceptance + final whole-feature verdict: pending fresh owner continuation.
+4. **PART 4 — visibility UI/state machine + real PostgreSQL races + connected acceptance: PASS.**
 
-### PART 3 verified
+### PART 4 verified
 
-- Public attachment metadata/download requires exact published post membership plus visible post and visible topic before bucket access; hidden topic/post returns neutral 404 and does not call the public bucket path.
-- Private hidden-attachment access is a separate exact-membership route: fresh visibility capability + active actor, strict IDs/view, type-checked object only, `private, no-store`; generic Admin/history rights do not proxy access.
-- Shared attachment references, owner draft references and protected Complaint evidence survive Hide; visibility does not rewrite or garbage-collect retained objects.
-- The possible interval after a public request has already passed the DB visibility check but before object delivery is **not a current-stage blocker**: accepted V1–V9 requires 404/bucket-call-0 for requests evaluated after hidden state and explicitly leaves already delivered bytes outside scope; asset-stream linearization is not in the accepted race matrix.
-- Translation generation action first resolves the public topic snapshot; hidden topic and hidden post return not-found before source is handed to generation.
-- Topic-title and post-body planning recheck visibility under PostgreSQL row locks before budget/task mutation. A hidden target yields revision-not-current and rolls provisional planning state back.
-- Previously accepted translation work may finish and persist privately after Hide, including when Hide commits during the provider window. Public topic/post projection still withholds hidden source/translation.
-- Restore does not enqueue/backfill translation work: completed translation is reused as `translation-current`, with no new task/enqueue/provider call; pending pre-Hide task remains the same logical task.
-- Watch ON / Bookmark Add / Mute ON require a currently visible topic and serialize with Hide; own Unwatch/Remove/Unmute remain safe for hidden/absent target without exposing hidden metadata.
-- Retained Bookmark/Mute rows remain pageable and become metadata-free `unavailable` rows while hidden; Restore recovers current public presentation. Block state is retained, but blocked-author projection only considers visible posts in a visible topic.
-- Read-state/unread projection excludes hidden posts and hidden topics while retaining chronological anchors. Restore does not manufacture unread state or activity.
-- Mixed and legacy notification readers retain recipient-owned rows, unread-first order, `read_at`, badge counts and protected Complaint notices, while ordinary hidden reply/mention targets become neutral unavailable with topic/post/title/actor removed.
-- Mark-read remains recipient-owned under hidden content, updates the retained notice once and returns a neutral unavailable target; after Restore the same retained notice resolves again without changing its prior `read_at`.
-- Hide/Restore itself creates no notification fanout/backfill. Existing notification rows and `forum_post_notification_suppressions` are unchanged; suppression receipts continue preventing old-mention backfill.
-- No confirmed current-feature defect in PART 3.
+- Hide/Restore UI is snapshot-bound: synchronous duplicate-submit guard, no automatic replay after 409/401/403/503/unconfirmed result, explicit fresh revalidation before a deliberate retry, matching success receipt required.
+- Public tombstones never manufacture Restore payloads; Restore is available only from fresh guarded private inspection. Actor/viewer changes invalidate the old private lifetime.
+- EN/RU/HE controls and real Chromium flow are covered; HE narrow viewport is RTL and keyboard submission works.
+- Real PostgreSQL lock-order coverage uses `pg_blocking_pids()`, not JS scheduling, for Hide/Restore against solution moderation, duplicate confirmation/removal/appeal decisions, title/body planning, reply/direct reply, edit, changed Source Locale, protected Complaint submission, accepted translation execution and actor deactivation.
+- Exact-head database run passed the visibility suites, including 151 moderation-visibility command/race tests, accepted execution, private queue, History, Watch/Bookmarks and Mute/Block concurrency.
+- Exact-head connected Worker/Better Auth/PostgreSQL/Chromium acceptance passed pending, stale409, lost-response unknown state, revoked private access, sign-out/actor change, no-store public/private cache boundaries, real PostgreSQL outage recovery and unexpected History rollback.
+- Exact-head local-R2 connected acceptance passed public/private/draft/evidence visibility paths. The observed missing `forum_attachment_draft_refs` SQL errors are deliberate disposable-DB fault injection: the acceptance temporarily renames the table, requires protected framework500/no-store behavior, then restores it.
+- General UI/UX product-pass acceptance and Stage6/deployed runtime remain separate scopes and are not claimed by this feature review.
+- No confirmed current-feature defect in PART 4.
 
-**Mandatory STOP.** No PART 4, Leva review, merge, docs or deploy until fresh owner continuation.
+### Next assignment — Leva
+
+Perform the independent whole-feature review of assembled #355 on the **same exact head**
+`fdad1930fc68a854d52bee31922f923be5c1c751` against current main and accepted V1–V9.
+If the implementation head changes, this handoff is invalid and the coordinator cycle must be repeated.
+
+**Mandatory STOP for Mira.** No merge, docs closeout, deploy or next #342 product task before Leva's independent whole-feature verdict and the subsequent owner gate.
 
 ## Baseline
 
