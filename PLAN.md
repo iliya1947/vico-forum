@@ -21,21 +21,15 @@ Moderation visibility реализуется stacked-лестницей B1→B9.
 
 B1–B9 собраны в #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`. После correction fresh Mira whole-feature PASS и Leva independent whole-feature PASS относятся к одному head. VIS-FINAL-LEVA-01/02 CLOSED; полный итог — `stages/moderation-visibility/REVIEW.md`, текущий маршрут — WORKFLOW.md. Следующее действие — owner merge после снятия Draft, затем отдельное назначение docs closeout. Implementation пока не merged.
 
-## 4. Последний продуктовый этап — forum structure/topic move
+## 4. Текущий продуктовый этап — forum structure/topic move
 
-План S0–S10 принят Мирой; компактный перенос: `stages/forum-structure/PLAN.md`.
+Принятый S0–S10 scope сохранён в `stages/forum-structure/PLAN.md`. После merge moderation visibility и docs Mira сверила его с current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-Перед implementation только сверить план с фактическим main после corrections и visibility. Если нет нового конфликта, повторное проектирование не требуется.
+Полного перепроектирования не требуется. Подтверждены как всё ещё необходимые: ordering/version foundation, новые permissions и AP-10/Admin admission, authoritative structural writers + History, current-location publication receipt replay, Owner `forum.structure` projection и connected PG/browser acceptance.
 
-Маршрут:
-1. отдельный implementation PR;
-2. schema/catalog/ACL/order/version foundation;
-3. atomic structural commands + History;
-4. public/admin hierarchy readers, ordering/picker;
-5. shared UI/canonical actions + receipt/editor integrations;
-6. real PG/browser acceptance и применимые checks;
-7. Mira whole-PR → Leva independent review → owner merge;
-8. отдельный docs closeout при необходимости.
+Один post-visibility seam требует явного уточнения Лёвой до implementation: ordinary Admin/public topic reader не раскрывает hidden topic source, поэтому move скрытой ordinary topic (если она остаётся movable по принятому scope) должен проходить через защищённую boundary без расширения public-safe reader и с сохранением hidden state.
+
+Следующий gate: Лёва делает узкую current-main reconciliation принятого плана и возвращает implementation-ready stages/done criteria; затем Мира определяет delivery mode и исполнителя с учётом нового owner decision, разрешающего использовать Лёву для реализации последующих задач.
 
 ## 5. Завершение
 
