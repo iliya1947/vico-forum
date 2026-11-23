@@ -49,11 +49,11 @@ it("returns request-matched source-free typed inline data instead of unmounting 
     const allowed=environment();
     const success=await loader(args(allowed.context,query));
     expect(success.init?.headers).toEqual({"Cache-Control":"private, no-store"});
-    expect(success.data.readId).toBe("13");
+    expect("readId" in success.data && success.data.readId).toBe("13");
     expect(success.data).not.toHaveProperty("operation");
     expect(JSON.stringify(success.data)).not.toMatch(/originalContent|authorName|reason|revisionId/);
     const guest=environment([],false);
-    const denied=await loader(args(guest.context,query+" & ".trim()));
+    const denied=await loader(args(guest.context,query));
     expect(denied.init?.status).toBe(401);
     expect(denied.data).toEqual({operation:"structureInlineRead",error:"unauthenticated",readId:"13"});
     expect(guest.readMoveContext).not.toHaveBeenCalled();

@@ -18,7 +18,7 @@ export default function TopicMoveRoute(){
   const viewer=useHeaderAuthUser()?.id??null;
   const lifetime=useRef({snapshot:context,invalidated:false});
   if(lifetime.current.snapshot!==context)lifetime.current={snapshot:context,invalidated:false};
-  if(viewer!==context.actorId)lifetime.current.invalidated=true;
+  if("operation" in context || viewer!==context.actorId)lifetime.current.invalidated=true;
   if(lifetime.current.invalidated || "operation" in context)return null;
   return <ForumShell locale={locale} variant="admin">
     <section className="admin-forum topic-move-private">
