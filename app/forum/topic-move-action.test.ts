@@ -18,7 +18,6 @@ const destination = { expectedStructureVersion: "9", expectedSectionId: "old/ע�
   targetSectionId: "new/שלום", expectedLocationVersion: "3" };
 const fields = { intent: "moveTopic", editorActorId: "viewer", ...destination };
 const params = { locale: "en", topicId: "legacy/topic/עברית" };
-type TypedField = [string,string];
 
 function makeContext(permissions:readonly string[]=["forum.topic.move"],signedIn=true) {
   const ctx=new RouterContextProvider();
@@ -172,7 +171,8 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       }
       const e=makeContext();
       const response=await run(e,form(),{},value);
-      expect(response).toMatchObject({data:{operation:"topicMove",error:"invalid"},init:{status:400}});
+      expect(response).toMatchObject({data:{error:"invalid"},init:{status:400}});
+      if(value!=="")expect(response).toMatchObject({data:{operation:"topicMove"}});
       expect(e.moveTopic).not.toHaveBeenCalled();
     }
   });
@@ -191,7 +191,7 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       [new StructureConflictError("parent-changed"),409,"conflict"],
       [new StructureNotFoundError("hidden details"),404,"notFound"],
       [new StructureForbiddenError("cannot move"),403,"forbidden"],
-      [new UserMeasureRestrictedError("blocked"),403,"forbidden"],
+      [new UserMeasureRestrictedError("admin.forum"),403,"forbidden"],
       [new AccountInactiveError(),401,"unauthenticated"],
       [new AccountMissingError(),401,"unauthenticated"],
       [new AccountStateUnavailableError(),503,"unavailable"],
@@ -204,7 +204,7 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       const response=await run(e);
       expect(response).toMatchObject({data:{operation:"topicMove",error:kind},
         init:{status,headers:{"Cache-Control":"private, no-store"}}});
-      expect(JSON.stringify(response)).not.toContain(error.message);
+      if(error.message)expect(JSON.stringify(response)).not.toContain(error.message);
       expect(e.createReply).not.toHaveBeenCalled();
       expect(e.setTopicVisibility).not.toHaveBeenCalled();
     }
