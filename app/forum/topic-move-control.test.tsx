@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, data, RouterProvider } from "react-router";
@@ -6,7 +7,7 @@ import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { TopicMoveContext, DestinationPage } from "../../db/forum-structure-reader";
-import { TopicMoveControl, TopicMoveForm } from "./topic-move-control";
+import { TopicMoveForm } from "./topic-move-control";
 import { TopicQuickActions } from "../admin/quick-actions";
 import type { ForumTopicPage } from "../../db/forum-repository";
 
@@ -39,7 +40,7 @@ const topic:ForumTopicPage={
 };
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();dispose=()=>{};});
-function fixture(element:React.ReactNode,options:{actor?:string;hidden?:boolean}={}){
+function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean}={}){
   const actor=options.actor??"actor";
   const context={...move,isHidden:options.hidden??false};
   const moveLoader=vi.fn(async()=>data(context, {headers:{"Cache-Control":"private, no-store"}}));
