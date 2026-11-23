@@ -37,6 +37,16 @@ with sync_playwright() as playwright:
     assert status == "complete", {"status": status, "failure": failure, "logs": logs[-10:]}
     assert count > 0, count
     assert any(line == "P1_ALL_MODULES_IMPORTED " + str(count) for line in logs), logs[-10:]
+    # Importing 78 modules alone is not a Data Router gate. Render the real
+    # topic in the complete generated route tree using the original loader/UI.
+    topic = page.locator("#p1-full-router-screen main.topic-shell")
+    topic.wait_for(timeout=30000)
+    text = topic.inner_text()
+    assert "P0 shared forum topic" in text
+    assert "P0 message rendered by the real forum TopicView" in text
+    assert page.locator("#p1-full-router-screen form.topic-reply-form").count() == 1
+    assert "P1_FULL_ROUTER_MOUNTED root,routes/locale-boundary,routes/topic" in logs, logs[-20:]
+    assert page.locator("#root").get_attribute("data-status") == "complete"
     assert "P1_RESOURCE_DISPATCH_404 404" in logs, logs[-10:]
     assert any(line.startswith("P1_XHR_FILE_DISPATCH_404 404 ") for line in logs), logs[-10:]
     assert any(line.startswith("P1_ATTACHMENT_UPLOAD_201 201 ") for line in logs), logs[-10:]

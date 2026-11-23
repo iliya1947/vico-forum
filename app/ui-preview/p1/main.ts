@@ -1,8 +1,11 @@
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { createMemoryRouter, RouterProvider } from "react-router";
 import { createP1AttachmentFixture } from "./attachment-fixture";
 import { P0_TOPIC_ID } from "../p0/fixture";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64 } from "../p0/attachment-fixture";
 import { createPreviewAttachmentUrls, type PreviewAttachmentAsset } from "../p0/attachment-urls";
-import { publishedAttachmentReference } from "../../forum/attachment-url";
+import { AttachmentUrlProvider, publishedAttachmentReference } from "../../forum/attachment-url";
 import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "../p0/route-adapter";
 import { installPreviewResourceTransport } from "../p0/resource-transport";
@@ -59,7 +62,13 @@ const transport = installPreviewResourceTransport({
   manifest: routeManifest,
   createContext: () => generation.fixture.createContext(),
 });
+let activeRouter: ReturnType<typeof createMemoryRouter> | null = null;
+let activeRoot: ReturnType<typeof createRoot> | null = null;
+let unsubscribeRouter: (() => void) | null = null;
 function dispose() {
+  unsubscribeRouter?.();
+  activeRouter?.dispose();
+  activeRoot?.unmount();
   transport.dispose();
   for (const state of [...liveGenerations]) releaseGeneration(state);
   window.removeEventListener("pagehide", dispose);
@@ -383,6 +392,29 @@ void (async () => {
   mount.dataset.routes = String(modules.size);
   mount.textContent = "Imported original modules: " + modules.size;
   mount.appendChild(downloadLink);
+  // Full generated route graph must render the original product screen, not
+  // merely accept import() and resource handler lookups.
+  const screen = document.createElement("div");
+  screen.id = "p1-full-router-screen";
+  mount.appendChild(screen);
+  const fullRouter = createMemoryRouter(routes, {
+    initialEntries: ["/en/topics/" + P0_TOPIC_ID],
+    getContext: () => generation.fixture.createContext(),
+  });
+  if (fullRouter.state.matches.at(-1)?.route.id !== "routes/topic") {
+    throw new Error("P1 generated Data Router did not match the original topic route");
+  }
+  activeRouter = fullRouter;
+  unsubscribeRouter = fullRouter.subscribe((state) => {
+    if (state.errors && Object.keys(state.errors).length) {
+      mount!.dataset.status = "route-error";
+      console.error("P1_FULL_ROUTER_ERRORS", state.errors);
+    }
+  });
+  activeRoot = createRoot(screen);
+  activeRoot.render(createElement(AttachmentUrlProvider, { resolve: generation.urls.resolve },
+    createElement(RouterProvider, { router: fullRouter })));
+  console.info("P1_FULL_ROUTER_MOUNTED", fullRouter.state.matches.map((match) => match.route.id).join(","));
   console.info("P1_ALL_MODULES_IMPORTED", modules.size);
 })().catch((error: unknown) => {
   dispose();
