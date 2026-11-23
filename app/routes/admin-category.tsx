@@ -3,6 +3,7 @@ import {requireAdminForumAccess,adminBrowseQuery,adminObjectId,readAdminForum,ad
 import {AdminCategoryView} from "../admin/forum";
 import {AdminForumBrowseError} from "../admin/forum";
 export {headers,meta} from "./admin";
+export {adminCategoryAction as action} from "../admin/structure-actions.server";
 export async function loader({request,params,context}:{request:Request;params:{locale?:string;categoryId?:string};context:RouterContextProvider}) {
   const access=await requireAdminForumAccess(context);
   const id=adminObjectId(params.categoryId);const query=adminBrowseQuery(request.url,true);
