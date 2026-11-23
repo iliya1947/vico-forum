@@ -110,6 +110,58 @@ void (async () => {
     throw new Error("P1 real attachment upload mismatch: " + JSON.stringify(uploadedAttachment));
   }
   console.info("P1_ATTACHMENT_UPLOAD_201", uploadedAttachment.status, uploadedAttachment.progress);
+  // Restore the just-uploaded selection through the original attachment list loader.
+  const draftHeaders = new Headers({
+    "X-Vico-Editor-Context": encodeURIComponent("topic:" + P0_TOPIC_ID + ":reply"),
+    "X-Vico-Operation-Id": operationId,
+  });
+  const listDrafts = (headers: Headers) => fetch(new URL("/api/attachments", window.location.origin), {
+    method: "GET", headers,
+  });
+  const selected = await listDrafts(draftHeaders);
+  const selectedText = await selected.text();
+  const selectedJson = JSON.parse(selectedText) as {
+    attachments?: Array<{
+      id?: string; fileName?: string; detectedType?: string; responseMime?: string;
+      byteSize?: number; verificationStatus?: string;
+    }>;
+  };
+  if (selected.status !== 200
+    || selected.headers.get("Cache-Control") !== "no-store"
+    || selected.headers.get("X-Content-Type-Options") !== "nosniff"
+    || selectedJson.attachments?.length !== 1
+    || selectedJson.attachments[0].id !== attachmentId
+    || selectedJson.attachments[0].fileName !== file.name
+    || selectedJson.attachments[0].detectedType !== "text"
+    || selectedJson.attachments[0].responseMime !== "text/plain; charset=utf-8"
+    || selectedJson.attachments[0].byteSize !== file.size
+    || selectedJson.attachments[0].verificationStatus !== "type-checked"
+    || selectedText.includes("objectKey") || selectedText.includes("private/")) {
+    throw new Error("P1 draft attachment list mismatch: " + selectedText);
+  }
+  const otherOperationHeaders = new Headers(draftHeaders);
+  otherOperationHeaders.set("X-Vico-Operation-Id", crypto.randomUUID());
+  const otherOperation = await listDrafts(otherOperationHeaders);
+  if (otherOperation.status !== 200
+    || JSON.stringify(await otherOperation.json()) !== '{"attachments":[]}') {
+    throw new Error("P1 draft list leaked into another operation");
+  }
+  const otherContextHeaders = new Headers(draftHeaders);
+  otherContextHeaders.set("X-Vico-Editor-Context", encodeURIComponent("topic:other:reply"));
+  const otherContext = await listDrafts(otherContextHeaders);
+  if (otherContext.status !== 404
+    || (await otherContext.json() as { error?: string }).error !== "notFound") {
+    throw new Error("P1 draft list accepted a nonexistent editor context");
+  }
+  const invalidOperationHeaders = new Headers(draftHeaders);
+  invalidOperationHeaders.set("X-Vico-Operation-Id", "not-a-uuid");
+  const badOperation = await listDrafts(invalidOperationHeaders);
+  if (badOperation.status !== 400
+    || (await badOperation.json() as { error?: string }).error !== "invalid") {
+    throw new Error("P1 draft list accepted invalid operation");
+  }
+  console.info("P1_ATTACHMENT_DRAFT_LIST_200", selected.status,
+    otherOperation.status, otherContext.status, badOperation.status);
   // The exact uploaded bytes are read through the original private attachment loader.
   const draftDownloadUrl = new URL("/api/attachments/file/" + attachmentId, window.location.origin);
   draftDownloadUrl.searchParams.set("operation", operationId);

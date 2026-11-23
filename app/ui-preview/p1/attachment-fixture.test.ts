@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { expect, it } from "vitest";
-import { action as upload } from "../../routes/attachment-upload";
+import { action as upload, loader as listDrafts } from "../../routes/attachment-upload";
 import { loader as download } from "../../routes/attachment-download";
 import { authSessionContext } from "../../auth/request-context";
+import { authorizationContext } from "../../authorization/request-context";
 import { createP1AttachmentFixture } from "./attachment-fixture";
 import { P0_TOPIC_ID } from "../p0/fixture";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64, P0_ATTACHMENT_BYTE_SIZE } from "../p0/attachment-fixture";
@@ -104,6 +105,84 @@ it("routes real upload action through original admission, streaming validation a
     });
     expect(denied.status).toBe(403);
     expect(await denied.json()).toMatchObject({ error: "origin" });
+  } finally {
+    environment.dispose();
+  }
+});
+
+it("restores only the current owner/context/operation through the original draft-list loader", async () => {
+  const environment = createP1AttachmentFixture();
+  try {
+    const editorContext = "topic:" + P0_TOPIC_ID + ":reply";
+    const headers = new Headers({
+      "X-Vico-Editor-Context": encodeURIComponent(editorContext),
+      "X-Vico-Operation-Id": operationId,
+    });
+    const list = (requestHeaders = headers, context = environment.createContext()) =>
+      listDrafts({
+        request: new Request("http://localhost/api/attachments", {
+          method: "GET", headers: requestHeaders,
+        }),
+        context,
+      });
+    const initial = await list();
+    expect(initial.status).toBe(200);
+    expect(await initial.json()).toEqual({ attachments: [] });
+    expect((await upload({ request: request(), context: environment.createContext() })).status).toBe(201);
+    const restored = await list();
+    expect(restored.status).toBe(200);
+    expect(restored.headers.get("Cache-Control")).toBe("no-store");
+    expect(restored.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const payload = await restored.text();
+    expect(JSON.parse(payload)).toEqual({
+      attachments: [{
+        id: attachmentId, fileName: "notes.txt", detectedType: "text",
+        responseMime: "text/plain; charset=utf-8", byteSize: 13,
+        verificationStatus: "type-checked",
+      }],
+    });
+    expect(payload).not.toContain("private/");
+    expect(payload).not.toContain("objectKey");
+    expect(payload).not.toContain(operationId);
+    expect(payload).not.toContain(editorContext);
+    expect((await (await list()).json()).attachments).toHaveLength(1);
+
+    const otherOperation = new Headers(headers);
+    otherOperation.set("X-Vico-Operation-Id", "33333333-3333-4333-8333-333333333333");
+    const separate = await list(otherOperation);
+    expect(separate.status).toBe(200);
+    expect(await separate.json()).toEqual({ attachments: [] });
+
+    const otherContext = new Headers(headers);
+    otherContext.set("X-Vico-Editor-Context", encodeURIComponent("topic:other:reply"));
+    const unavailable = await list(otherContext);
+    expect(unavailable.status).toBe(404);
+    expect(await unavailable.json()).toEqual({ error: "notFound" });
+
+    const invalid = new Headers(headers);
+    invalid.set("X-Vico-Operation-Id", "not-a-uuid");
+    const badOperation = await list(invalid);
+    expect(badOperation.status).toBe(400);
+    expect(await badOperation.json()).toEqual({ error: "invalid" });
+
+    const guest = environment.createContext();
+    guest.set(authSessionContext, null);
+    const rejected = await list(headers, guest);
+    expect(rejected.status).toBe(401);
+    expect(await rejected.json()).toEqual({ error: "unauthenticated" });
+
+    // Permit a second synthetic account to pass the original permission gate,
+    // then verify that the store still filters out the first account's selection.
+    const foreign = environment.createContext();
+    const session = foreign.get(authSessionContext);
+    if (!session) throw new Error("P0 test actor session missing");
+    foreign.set(authSessionContext, { ...session, user: { ...session.user, id: "other-actor" } });
+    foreign.set(authorizationContext, {
+      forUser: () => ({ has: async () => true }),
+    } as never);
+    const foreignResult = await list(headers, foreign);
+    expect(foreignResult.status).toBe(200);
+    expect(await foreignResult.json()).toEqual({ attachments: [] });
   } finally {
     environment.dispose();
   }

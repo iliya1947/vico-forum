@@ -101,6 +101,14 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       if (ownerId !== P0_ACTOR_ID) return null;
       return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
     },
+    async listDraftAttachments(ownerId: string, contextKey: string, draftId: string) {
+      if (ownerId !== P0_ACTOR_ID) return [];
+      return [...drafts.values()]
+        .filter((record) => record.ownerId === ownerId
+          && record.contextKey === contextKey && record.draftId === draftId)
+        .sort((a, b) => a.attachment.createdAt.localeCompare(b.attachment.createdAt))
+        .map((record) => record.attachment);
+    },
     async recordUploadObject(actorId: string, objectKey: string) {
       if (actorId !== P0_ACTOR_ID || !isFencedAttachmentKey(objectKey) || journal.has(objectKey)) {
         throw new Error("P1 upload reservation not permitted");
@@ -138,7 +146,8 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
       return attachment;
     },
   } satisfies Pick<ForumAttachmentStore,
-    "readPublishedAttachment" | "admitUpload" | "readDraftAttachment" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
+    "readPublishedAttachment" | "admitUpload" | "readDraftAttachment" | "listDraftAttachments"
+    | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
 
   const store = new Proxy(implemented, {
     get(target, name, receiver) {
