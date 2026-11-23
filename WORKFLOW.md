@@ -2,7 +2,7 @@
 
 ## Активный этап
 
-**Task 6 — forum structure/topic move: F1 реализован Лёвой в Draft #379; финальные exact-head checks выполняются.**
+**Task 6 — forum structure/topic move: F1 author self-check + exact-head CI/acceptance PASS; следующая Мира — bounded F1 coordinator checkpoint.**
 
 - Проверенный current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Task 5 полностью закрыта: #355 implementation и #378 docs merged.
@@ -10,8 +10,10 @@
 - S-P1–S-P4 и S-T1/S-T2 остаются принятыми; продуктовый scope не переоткрывается.
 - F1 Draft PR: [#379](https://github.com/iliya1947/vico-forum/pull/379), branch `feat/forum-structure-f1`.
 - Stable implementation head: `8227db6003f5a23a369e11b645194da229315f7a`.
-- Авторские локальные проверки PASS; первый CI выявил устаревшие test schema subsets, исправлены (178 tests PASS). Все 14 acceptance-наборов первого head PASS.
-- Финальные CI [45205128204](https://github.com/iliya1947/vico-forum/actions/runs/45205128204) и 14 applicable acceptance на новом head в работе; Лёва ещё не передал gate Мире.
+- Авторская самопроверка и evidence: [stages/forum-structure/F1_REPORT.md](stages/forum-structure/F1_REPORT.md).
+- Финальный [CI45205128204](https://github.com/iliya1947/vico-forum/actions/runs/45205128204) PASS: unit2973 / PG17 tests1707, manifest/ACL/provisioning/credentials/Worker smoke, build/UI-preview build, migration metadata/schema parity. Все14 applicable acceptance на том же head PASS.
+- Первый CI выявил устаревшие test schema subsets/ceiling expectations — исправлено. Однократный сбой прежнего Settings unit в первой попытке final-head checks не повторился: повторена только failed job, без изменения head; детали в отчёте.
+- Лёва STOP. F2+ не начинались; F1 не merge отдельно.
 
 ## Mira planning review — PASS
 
@@ -51,9 +53,9 @@ Task 6 поставляется одной stacked vertical feature:
 
 Почему независимый merge F1 запрещён: F1 добавляет `forum.structure.manage` / `forum.topic.move` в permission catalog и initial grants до появления соответствующих реальных operations. Текущий AUTHORIZATION contract определяет catalog как code-backed capabilities, поэтому такой промежуточный state не должен попадать в `main`. Stack сохраняет F1 bounded diff без публикации неполной capability.
 
-## Текущая работа — Лёва: завершить проверки F1
+## Следующая работа — Мира: F1 coordinator checkpoint
 
-Лёве назначен **только F1 — schema/catalog/runtime foundation** из S8 PLAN.
+Лёва реализовал **только F1 — schema/catalog/runtime foundation** из S8 PLAN. Мира проверяет его scope и взаимодействие с принятым основанием на exact head #379, пользуясь PLAN и F1_REPORT. Её PASS разрешает только назначение следующей ступени stack; независимый Codex-review и merge здесь не выполняются.
 
 Результат F1:
 - forward migration от актуального main (кандидат 0072 только если ceiling не сдвинулся);
