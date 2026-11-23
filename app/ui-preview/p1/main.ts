@@ -2,7 +2,10 @@ import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { createP1AttachmentFixture } from "./attachment-fixture";
-import { P0_TOPIC_ID } from "../p0/fixture";
+import { P0_ACTOR_ID, P0_TOPIC_ID } from "../p0/fixture";
+import { createPagesAddressCodec } from "../p0/pages-address";
+import { installPagesLocationAdapter } from "../p0/pages-location";
+import { createPreviewDocumentAdapter } from "../p0/document";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64 } from "../p0/attachment-fixture";
 import { createPreviewAttachmentUrls, type PreviewAttachmentAsset } from "../p0/attachment-urls";
 import { AttachmentUrlProvider, publishedAttachmentReference } from "../../forum/attachment-url";
@@ -65,10 +68,14 @@ const transport = installPreviewResourceTransport({
 let activeRouter: ReturnType<typeof createMemoryRouter> | null = null;
 let activeRoot: ReturnType<typeof createRoot> | null = null;
 let unsubscribeRouter: (() => void) | null = null;
+let activePagesAdapter: ReturnType<typeof installPagesLocationAdapter> | null = null;
+let activeDocumentAdapter: ReturnType<typeof createPreviewDocumentAdapter> | null = null;
 function dispose() {
   unsubscribeRouter?.();
+  activePagesAdapter?.dispose();
   activeRouter?.dispose();
   activeRoot?.unmount();
+  activeDocumentAdapter?.dispose();
   transport.dispose();
   for (const state of [...liveGenerations]) releaseGeneration(state);
   window.removeEventListener("pagehide", dispose);
@@ -397,14 +404,30 @@ void (async () => {
   const screen = document.createElement("div");
   screen.id = "p1-full-router-screen";
   mount.appendChild(screen);
+  const codec = createPagesAddressCodec(new URL(window.location.href), {
+    actor: P0_ACTOR_ID, scenario: "default", initialPath: "/en/topics/" + P0_TOPIC_ID,
+  });
+  const initialEntry = codec.fromUrl(new URL(window.location.href));
   const fullRouter = createMemoryRouter(routes, {
-    initialEntries: ["/en/topics/" + P0_TOPIC_ID],
+    initialEntries: [initialEntry],
     getContext: () => generation.fixture.createContext(),
   });
   if (fullRouter.state.matches.at(-1)?.route.id !== "routes/topic") {
     throw new Error("P1 generated Data Router did not match the original topic route");
   }
   activeRouter = fullRouter;
+  activePagesAdapter = installPagesLocationAdapter(fullRouter, { codec });
+  const documentAdapter = createPreviewDocumentAdapter(modules);
+  activeDocumentAdapter = documentAdapter;
+  const refreshDocument = () => {
+    try {
+      documentAdapter.sync(fullRouter.state);
+    } catch (error) {
+      mount!.dataset.status = "document-error";
+      console.error("P1_FULL_DOCUMENT_FAILURE", error);
+      throw error;
+    }
+  };
   unsubscribeRouter = fullRouter.subscribe((state) => {
     if (state.errors && Object.keys(state.errors).length) {
       mount!.dataset.status = "route-error";
@@ -413,7 +436,9 @@ void (async () => {
     if (state.navigation.state === "idle" && state.location.hash) {
       console.info("P1_FULL_ROUTER_REDIRECTED", state.location.pathname + state.location.hash);
     }
+    refreshDocument();
   });
+  refreshDocument();
   activeRoot = createRoot(screen);
   activeRoot.render(createElement(AttachmentUrlProvider, { resolve: generation.urls.resolve },
     createElement(RouterProvider, { router: fullRouter })));

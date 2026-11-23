@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin, urlencode, parse_qs
 from playwright.sync_api import sync_playwright
 
 parser = argparse.ArgumentParser()
@@ -26,7 +26,12 @@ with sync_playwright() as playwright:
     page.on("console", lambda message: logs.append(message.text))
     page.on("request", lambda request: unexpected_network.append(request.url)
             if "/api/" in urlparse(request.url).path else None)
-    response = page.goto(base + "/", wait_until="domcontentloaded")
+    initial_path = "/en/topics/p0-preview-topic?source=pages#post-p0-first-post"
+    initial_url = base + "/?" + urlencode({
+        "embed": "1", "path": initial_path,
+        "actor": "p0-preview-user", "scenario": "default",
+    })
+    response = page.goto(initial_url, wait_until="domcontentloaded")
     assert response and response.status == 200
     page.wait_for_function("""() => ["complete", "failed"].includes(
       document.querySelector("#root")?.dataset.status
@@ -47,6 +52,15 @@ with sync_playwright() as playwright:
     assert page.locator("#p1-full-router-screen form.topic-reply-form").count() == 1
     assert "P1_FULL_ROUTER_MOUNTED root,routes/locale-boundary,routes/topic" in logs, logs[-20:]
     assert page.locator("#root").get_attribute("data-status") == "complete"
+    assert parse_qs(urlparse(page.url).query)["path"] == [initial_path]
+    assert page.evaluate("document.documentElement.lang") == "en"
+    assert page.evaluate("document.documentElement.dir") == "ltr"
+    # Refresh must recover the virtual path/query/hash inside Pages bootstrap.
+    page.reload(wait_until="domcontentloaded")
+    page.locator("#p1-full-router-screen main.topic-shell").wait_for(timeout=30000)
+    assert page.locator("#root").get_attribute("data-status") == "complete"
+    assert parse_qs(urlparse(page.url).query)["path"] == [initial_path]
+    assert page.evaluate("document.documentElement.lang") == "en"
     # Submit the original TopicView/MarkdownEditor Form through the COMPLETE
     # generated router, not P0's selected-route subset or a synthetic action.
     reply_form = page.locator("#p1-full-router-screen form.topic-reply-form")
@@ -62,6 +76,33 @@ with sync_playwright() as playwright:
     assert "P0_ACTION_CHAIN_SERVER routes/topic" in logs, logs[-25:]
     assert "P0_FIXTURE_REPLY_COMMITTED p0-reply-1" in logs, logs[-25:]
     assert "P1_FULL_ROUTER_REDIRECTED /en/topics/p0-preview-topic#post-p0-reply-1" in logs, logs[-25:]
+    reply_path = "/en/topics/p0-preview-topic#post-p0-reply-1"
+    assert parse_qs(urlparse(page.url).query)["path"] == [reply_path], page.url
+    assert urlparse(page.url).path == urlparse(base).path + "/"
+    # Original product Link exposes Pages bootstrap for copy/new-tab but
+    # router actions and form targets remain virtual.
+    profile_link = page.locator("#p1-full-router-screen a.topic-message-profile-link").first
+    profile_href = profile_link.get_attribute("href")
+    assert profile_href
+    target = urlparse(urljoin(base + "/", profile_href))
+    assert target.path == urlparse(base).path + "/"
+    assert parse_qs(target.query) == {
+        "embed": ["1"], "path": ["/en/users/sample-author"],
+        "actor": ["p0-preview-user"], "scenario": ["default"],
+    }, profile_href
+    with context.expect_page() as new_tab_event:
+        profile_link.click(button="middle")
+    new_tab = new_tab_event.value
+    new_tab.wait_for_load_state("domcontentloaded")
+    assert parse_qs(urlparse(new_tab.url).query)["path"] == ["/en/users/sample-author"]
+    new_tab.close()
+    page.evaluate("window.history.back()")
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", arg=initial_path)
+    page.locator("#p1-full-router-screen main.topic-shell").wait_for(timeout=30000)
+    page.evaluate("window.history.forward()")
+    page.wait_for_function("(expected) => new URLSearchParams(location.search).get('path') === expected", arg=reply_path)
+    page.locator("#p1-full-router-screen li#post-p0-reply-1").wait_for(timeout=30000)
+    assert any(line.startswith("P0_PAGES_POP ") for line in logs), logs[-40:]
     assert page.locator("#root").get_attribute("data-status") == "complete"
     assert "P1_RESOURCE_DISPATCH_404 404" in logs, logs[-10:]
     assert any(line.startswith("P1_XHR_FILE_DISPATCH_404 404 ") for line in logs), logs[-10:]
