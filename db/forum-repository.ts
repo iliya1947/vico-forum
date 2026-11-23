@@ -4029,6 +4029,7 @@ export class DrizzleForumRepository {
     tx: Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0],
     identity: { topicId: string; proposedOriginalTopicId: string | null; targetPostId: string | null },
     message: string,
+    requireVisible = true,
   ): Promise<void> {
     const topicIds = [...new Set([
       identity.topicId,
@@ -4037,7 +4038,7 @@ export class DrizzleForumRepository {
     const topics = await tx.select({ id: forumTopics.id, isHidden: forumTopics.isHidden })
       .from(forumTopics).where(inArray(forumTopics.id, topicIds))
       .orderBy(asc(forumTopics.id)).for("no key update");
-    if (topics.length !== topicIds.length || topics.some(row => row.isHidden))
+    if (topics.length !== topicIds.length || (requireVisible && topics.some(row => row.isHidden)))
       throw new ForumEntityNotFoundError(message);
     if (identity.targetPostId) {
       const [post] = await tx.select({ id: forumPosts.id, isHidden: forumPosts.isHidden })
@@ -4047,7 +4048,7 @@ export class DrizzleForumRepository {
           eq(forumPosts.topicId, identity.topicId),
         ))
         .for("no key update");
-      if (!post || post.isHidden) throw new ForumEntityNotFoundError(message);
+      if (!post || (requireVisible && post.isHidden)) throw new ForumEntityNotFoundError(message);
     }
   }
 
@@ -4061,7 +4062,9 @@ export class DrizzleForumRepository {
       }).from(forumHelpSignals).where(eq(forumHelpSignals.id, signalId));
       if (!identity || identity.topicId !== topicId)
         throw new ForumEntityNotFoundError("Help signal does not belong to topic");
-      await this.lockVisibleHelpSignalDependencies(tx, identity, "Help signal does not belong to topic");
+      // Own pending withdrawal is a protected lifecycle operation: retain the
+      // dependency locks/membership, but never require public visibility.
+      await this.lockVisibleHelpSignalDependencies(tx, identity, "Help signal does not belong to topic", false);
       const [signal] = await tx
         .select({
           id: forumHelpSignals.id,

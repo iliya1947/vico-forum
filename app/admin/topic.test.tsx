@@ -36,7 +36,7 @@ const presentation = (contentId: string, content: string, dir: "ltr" | "rtl") =>
 let dispose = () => {};
 afterEach(() => { cleanup(); dispose(); });
 
-function mount(longAuthorName?: string, closed = false) {
+function mount(longAuthorName?: string, closed = false, replacement?: AdminTopic) {
   const values = Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key, v]) => [key, v.source]));
   const common = Object.fromEntries(Object.entries(values).flatMap(([key, v]) =>
     typeof v === "string" ? [[key, v]] : Object.entries(v as Record<string, string>).map(([kind, text]) => [`${key}_${kind}`, text])));
@@ -45,10 +45,10 @@ function mount(longAuthorName?: string, closed = false) {
       fallbackLocales: [], nativeName: "English", presentationMetadata: {} },
     fallbackLocales: [], resourcesByLocale: { en: { common } }, bundleVersions: { en: { common: "test" } }, staleKeys: {},
   });
-  const fixture = longAuthorName ? {
+  const fixture = replacement ?? (longAuthorName ? {
     ...topic, authorName: longAuthorName,
     posts: topic.posts.map((post) => ({ ...post, authorName: longAuthorName })),
-  } : { ...topic, isClosed: closed, closureVersion: closed ? 5 : 0 };
+  } : { ...topic, isClosed: closed, closureVersion: closed ? 5 : 0 });
   const element = <AdminTopicView locale="en" access={access} topic={fixture}
     titlePresentation={presentation(topic.id, "נושא", "rtl")}
     postPresentations={[
@@ -110,4 +110,45 @@ describe("AP-07 admin topic presentation", () => {
     expect(href).toBe("/api/attachments/file/123e4567-e89b-12d3-a456-426614174000?post=p1&view=inline");
     expect(node.querySelectorAll("script")).toHaveLength(0);
   });
+
+  it.each(["root", "middle", "best"] as const)(
+    "keeps stable hidden %s number, parent anchor, and solution actions without a source leak",
+    (position) => {
+      const hidden = (id: string, parentPostId: string | null) => ({
+        kind: "hidden" as const, id, parentPostId, createdAt: "2026-01-01T00:00:00.000Z",
+      });
+      const posts: AdminTopic["posts"] = position === "root"
+        ? [hidden("p1", null), topic.posts[1], topic.posts[2]]
+        : position === "middle"
+          ? [topic.posts[0], hidden("p2", "p1"), topic.posts[2]]
+          : [topic.posts[0], topic.posts[1], hidden("p3", "p1")];
+      const node = mount(undefined, false, { ...topic, posts });
+      const cards = [...node.querySelectorAll(".admin-topic .topic-message")];
+      expect(cards.map(card => card.id)).toEqual(["post-p1", "post-p3", "post-p2"]);
+      expect(cards.map(card => card.querySelector(".topic-message-anchor")?.textContent))
+        .toEqual(["Message #1", "Message #3", "Message #2"]);
+      const hiddenCard = node.querySelector("[data-moderation-hidden-post]");
+      expect(hiddenCard).not.toBeNull();
+      expect(hiddenCard?.textContent).toContain("hidden");
+      expect(hiddenCard?.querySelector(".topic-message-profile-link")).toBeNull();
+      expect(hiddenCard?.querySelector(".content-translation-body")).toBeNull();
+      expect(hiddenCard?.querySelector(".topic-message-attachments")).toBeNull();
+      expect(hiddenCard?.querySelector(".topic-admin-tools")).toBeNull();
+      expect(hiddenCard?.querySelector(".topic-message-anchor")?.getAttribute("href"))
+        .toContain("#post-p" + (position === "root" ? "1" : position === "middle" ? "2" : "3"));
+      if (position === "root") {
+        expect(hiddenCard?.classList.contains("original-question")).toBe(true);
+        expect(hiddenCard?.textContent).toContain("Original question");
+      }
+      if (position === "middle") {
+        expect(hiddenCard?.querySelector(".topic-message-parent-link")?.getAttribute("href")).toBe("#post-p1");
+        expect(node.querySelector("#post-p3 .topic-message-parent-link")?.getAttribute("href")).toBe("#post-p1");
+      }
+      if (position === "best") {
+        expect(hiddenCard?.classList.contains("best-answer")).toBe(true);
+        expect(hiddenCard?.textContent).toContain("Best answer");
+      }
+    },
+  );
+
 });
