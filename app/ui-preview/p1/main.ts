@@ -1,4 +1,5 @@
-import { RouterContextProvider } from "react-router";
+import { createP1AttachmentFixture } from "./attachment-fixture";
+import { P0_TOPIC_ID } from "../p0/fixture";
 import { importRoute, routeManifest } from "virtual:vico-ui-preview-routes";
 import { createPreviewDataRoutes } from "../p0/route-adapter";
 import { installPreviewResourceTransport } from "../p0/resource-transport";
@@ -15,9 +16,10 @@ function ids(route: typeof routeManifest): string[] {
 }
 
 const routeIds = ids(routeManifest);
+const attachmentFixture = createP1AttachmentFixture();
 const transport = installPreviewResourceTransport({
   manifest: routeManifest,
-  createContext: () => new RouterContextProvider(),
+  createContext: attachmentFixture.createContext,
 });
 
 void (async () => {
@@ -64,6 +66,39 @@ void (async () => {
     throw new Error("P1 XHR/File request contract mismatch: " + JSON.stringify(xhr));
   }
   console.info("P1_XHR_FILE_DISPATCH_404", xhr.status, xhr.progress);
+  // Use the real upload route, authorization checks, streaming validation and test bucket.
+  const attachmentId = crypto.randomUUID();
+  const operationId = crypto.randomUUID();
+  const file = new File(["hello preview"], "notes.txt", { type: "text/plain" });
+  const uploadedAttachment = await new Promise<{ status: number; text: string; progress: number }>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    let progress = 0;
+    request.upload.onprogress = (event) => { if (event.lengthComputable) progress = event.loaded; };
+    request.onload = () => resolve({
+      status: request.status, text: request.responseText, progress,
+    });
+    request.onerror = () => reject(new Error("P1 real attachment upload route failed"));
+    request.open("POST", "/api/attachments");
+    request.responseType = "text";
+    request.setRequestHeader("Content-Type", file.type);
+    request.setRequestHeader("X-Vico-Attachment-Id", attachmentId);
+    request.setRequestHeader("X-Vico-Attachment-Name", encodeURIComponent(file.name));
+    request.setRequestHeader("X-Vico-Attachment-Size", String(file.size));
+    request.setRequestHeader("X-Vico-Editor-Context", encodeURIComponent("topic:" + P0_TOPIC_ID + ":reply"));
+    request.setRequestHeader("X-Vico-Operation-Id", operationId);
+    request.send(file);
+  });
+  const stored = JSON.parse(uploadedAttachment.text) as {
+    outcome?: string; attachment?: { id?: string; byteSize?: number; verificationStatus?: string };
+  };
+  if (uploadedAttachment.status !== 201 || stored.outcome !== "stored"
+    || stored.attachment?.id !== attachmentId
+    || stored.attachment.byteSize !== file.size
+    || stored.attachment.verificationStatus !== "type-checked"
+    || uploadedAttachment.progress !== file.size) {
+    throw new Error("P1 real attachment upload mismatch: " + JSON.stringify(uploadedAttachment));
+  }
+  console.info("P1_ATTACHMENT_UPLOAD_201", uploadedAttachment.status, uploadedAttachment.progress);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }
@@ -73,6 +108,7 @@ void (async () => {
   console.info("P1_ALL_MODULES_IMPORTED", modules.size);
 })().catch((error: unknown) => {
   transport.dispose();
+  attachmentFixture.dispose();
   mount.dataset.status = "failed";
   mount.textContent = error instanceof Error ? error.stack ?? error.message : String(error);
   console.error("P1_IMPORT_FAILURE", error);
