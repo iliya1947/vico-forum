@@ -11,6 +11,7 @@ import {AdminShell} from "./shell";
 import type {AdminAccess} from "./access";
 import {adminForumPath,adminCategoryPath,adminSectionPath,adminTopicPath,adminBrowsePath} from "./forum-paths";
 import {hiddenQueuePath} from "./visibility-queue-path";
+import {StructureChangeForm} from "./structure-forms";
 
 function Counts({locale,category,section}:{locale:string;category?:AdminForumCategory;section?:AdminForumSection}) {
   const {t}=useTranslation("common");const number=new Intl.NumberFormat(locale);
@@ -103,7 +104,7 @@ export function AdminForumView({locale,access,page,query}:{locale:string;access:
     </section>
   </AdminShell>;
 }
-export function AdminCategoryView({locale,access,category,sections,query}:{locale:string;access:AdminAccess;category:AdminForumCategory;sections:AdminBrowsePage<AdminForumSection>;query:AdminBrowseQuery}) {
+export function AdminCategoryView({locale,access,category,sections,query,structureVersion}:{locale:string;access:AdminAccess;category:AdminForumCategory;sections:AdminBrowsePage<AdminForumSection>;query:AdminBrowseQuery;structureVersion:string}) {
   const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminCategoryPath(locale,category.id,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-category-heading">
@@ -112,13 +113,22 @@ export function AdminCategoryView({locale,access,category,sections,query}:{local
       {category.reserved?<p className="admin-forum-reserved">{t("adminForumReservedCategory")}</p>:null}
       <Counts locale={locale} category={category}/>
       <Link to={forumCategoryPath(locale,category.id)}>{t("adminForumPublicCategory")}</Link>
+      {access.canManageStructure&&access.actorId&&!category.reserved?<div className="admin-forum-structure-actions">
+        <StructureChangeForm key={access.actorId+category.id+"renameCategory"} locale={locale} path={path}
+          actorId={access.actorId} targetId={category.id} version={structureVersion}
+          initialName={category.name} operation="renameCategory"/>
+        <StructureChangeForm key={access.actorId+category.id+"reorderCategory"} locale={locale} path={path}
+          actorId={access.actorId} targetId={category.id} version={structureVersion} operation="reorderCategory"/>
+        <StructureChangeForm key={access.actorId+category.id+"createSection"} locale={locale} path={path}
+          actorId={access.actorId} targetId={category.id} version={structureVersion} operation="createSection"/>
+      </div>:null}
       <h3>{t("adminForumSections")}</h3><BrowseControls path={path} query={query} page={sections} locale={locale}/>
       {sections.items.length?<SectionRows locale={locale} items={sections.items}/>:<p>{t("adminForumEmpty")}</p>}
       <Paging path={path} query={query} next={sections.next}/>
     </section>
   </AdminShell>;
 }
-export function AdminSectionView({locale,access,section,topics,query}:{locale:string;access:AdminAccess;section:AdminForumSection;topics:AdminBrowsePage<AdminForumTopic>;query:AdminBrowseQuery}) {
+export function AdminSectionView({locale,access,section,topics,query,structureVersion}:{locale:string;access:AdminAccess;section:AdminForumSection;topics:AdminBrowsePage<AdminForumTopic>;query:AdminBrowseQuery;structureVersion:string}) {
   const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminSectionPath(locale,section.id,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-section-heading">
@@ -130,6 +140,16 @@ export function AdminSectionView({locale,access,section,topics,query}:{locale:st
       <h2 id="admin-section-heading"><bdi>{section.name}</bdi></h2>
       {section.service?<p className="admin-forum-reserved">{t("adminForumServiceSection")}</p>:null}
       <Counts locale={locale} section={section}/>
+      {access.canManageStructure&&access.actorId&&!section.service?<div className="admin-forum-structure-actions">
+        <StructureChangeForm key={access.actorId+section.id+"renameSection"} locale={locale} path={path}
+          actorId={access.actorId} targetId={section.id} version={structureVersion}
+          initialName={section.name} operation="renameSection"/>
+        <StructureChangeForm key={access.actorId+section.id+"reorderSection"} locale={locale} path={path}
+          actorId={access.actorId} targetId={section.id} version={structureVersion} operation="reorderSection"/>
+        <StructureChangeForm key={access.actorId+section.id+"moveSection"} locale={locale} path={path}
+          actorId={access.actorId} targetId={section.id} version={structureVersion}
+          currentCategoryId={section.category.id} operation="moveSection"/>
+      </div>:null}
       <Link to={section.service?forumCategoryPath(locale,HELP_SOLUTIONS_CATEGORY_ID):forumSectionPath(locale,section.id)}>
         {t(section.service?"adminForumPublicCategory":"adminForumPublicSection")}
       </Link>
