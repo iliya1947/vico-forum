@@ -13,7 +13,7 @@ const category={id:"c/slash עברית",name:"Category עברית",sectionCount:
 const section={id:"help-solutions-questions",name:"Internal Help",category,topicCount:1,postCount:1,service:true};
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();});
-async function mount(locale:string,kind:"index"|"category"|"section",empty=false){
+async function mount(locale:string,kind:"index"|"category"|"section",empty=false,structureManager=false){
   const resources=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([k,v])=>[k,v.source]));
   const flatten=(values:Record<string,unknown>):Record<string,string>=>Object.fromEntries(Object.entries(values).flatMap(([key,value])=>
     typeof value === "string" ? [[key,value]] : Object.entries(value as Record<string,string>).map(([branch,text])=>[`${key}_${branch}`,text])));
@@ -21,11 +21,26 @@ async function mount(locale:string,kind:"index"|"category"|"section",empty=false
   const i18n=createTranslationRuntime({locale:{translationLocale:locale,direction:locale==="he"?"rtl":"ltr",formatting:{locale,timeZone:"UTC"},fallbackLocales:locale==="en"?[]:["en"],nativeName:locale,presentationMetadata:{}},
     fallbackLocales:locale==="en"?[]:["en"],resourcesByLocale:{en:{common},[locale]:{common:flatten(resources)}},bundleVersions:{en:{common:"test"},[locale]:{common:"test"}},staleKeys:{}});
   const page={items:empty?[]:[category],total:empty?0:26,next:empty?null:"cursor/slash",structureVersion:"0"};const query={search:"%_ עברית",after:"previous"};
-  const element=kind==="index"?<AdminForumView locale={locale} access={access} page={page} query={query}/>:kind==="category"?<AdminCategoryView locale={locale} access={access} category={category} sections={{...page,items:empty?[]:[section]}} query={query}/>:<AdminSectionView locale={locale} access={access} section={section} topics={{items:empty?[]:[{id:"t/עברית",title:"נושא",sourceLocale:"he",postCount:1,isSolved:false}],total:empty?0:1,next:null}} query={query}/>;
+  const elevated=structureManager?{...adminAccess(new Set(["forum.structure.manage"])),actorId:"actor"}:access;
+  const element=kind==="index"?<AdminForumView locale={locale} access={elevated} page={page} query={query}/>:kind==="category"?<AdminCategoryView locale={locale} access={access} category={category} sections={{...page,items:empty?[]:[section]}} query={query}/>:<AdminSectionView locale={locale} access={access} section={section} topics={{items:empty?[]:[{id:"t/עברית",title:"נושא",sourceLocale:"he",postCount:1,isSolved:false}],total:empty?0:1,next:null}} query={query}/>;
   const router=createMemoryRouter([{path:"*",element}],{initialEntries:[`/${locale}/admin/forum`]});dispose=()=>router.dispose();
   return render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>).container;
 }
 describe("localized protected browsing presentation",()=>{
+ it.each(["en","ru","he"])("shows a localized category create form only to exact structure managers in %s",async locale=>{
+  const ordinary=await mount(locale,"index");
+  expect(ordinary.querySelector('form[method="post"]')).toBeNull();
+  cleanup();dispose();
+  const node=await mount(locale,"index",false,true);
+  const form=node.querySelector('form[method="post"]');
+  expect(form).toBeTruthy();
+  expect(form?.querySelector('[name="intent"]')?.getAttribute("value")).toBe("createCategory");
+  expect(form?.querySelector('[name="editorActorId"]')?.getAttribute("value")).toBe("actor");
+  expect(form?.querySelector('[name="expectedStructureVersion"]')?.getAttribute("value")).toBe("0");
+  expect(form?.querySelector('label')?.textContent).not.toContain("structureCategoryName");
+  expect(form?.querySelector('button')?.textContent).not.toContain("structureCreateCategory");
+ });
+
  it.each(["en","ru","he"])("shares shell, hierarchy and usable links in %s",async locale=>{
   const node=await mount(locale,"index");expect(node.querySelectorAll("main")).toHaveLength(1);expect(node.querySelectorAll("h1")).toHaveLength(1);
   expect(node.querySelector('.admin-panel-nav [aria-current="page"]')?.getAttribute("href")).toBe(`/${locale}/admin/forum`);

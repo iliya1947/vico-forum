@@ -50,7 +50,7 @@ describe("Admin structure create-category POST",()=>{
       expect(e.createCategory).not.toHaveBeenCalled();
     }
   });
-  it.each([
+  it.each(([
     [["intent","createCategory"],["intent","createCategory"]],
     [["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","0"],["name","A"],["name","B"]],
     [["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","0"],["name","A"],["targetSectionId","s"]],
@@ -58,7 +58,7 @@ describe("Admin structure create-category POST",()=>{
     [["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","01"],["name","A"]],
     [["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","0"],["name",""]],
     [["intent","createCategory"],["editorActorId","actor"],["expectedStructureVersion","0"],["name","A\nB"]],
-  ] as [string,string][][])("refuses malformed/mixed fields without writing: %j",async entries=>{
+  ] as [string,string][][]).map(fields=>[fields]))("refuses malformed/mixed fields without writing: %j",async entries=>{
     const e=fixture();
     const result=await call(e.context,request(entries));
     expect(result.init?.status).toBe(400);
