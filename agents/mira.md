@@ -17,8 +17,3 @@
 3. Новые улучшения интеллектуальной работы и логики отложены на вторую задачу; материал сохранён в `research/behavior-error-classes-reset.md`.
 4. Старые drafts, `52/52`, PASS/readiness и transfer package — не база новой работы.
 5. Реальные instruction sources не менять без отдельной команды разработчика.
-
-
-## Финальный independent recheck
-
-Exact Task 1 drafts independently rechecked. User PASS; Project HOLD on two lost unconditional guards (goal-before-conclusion/action and mandatory pre-answer context/interpretation check); AGENTS has no confirmed blocker. Previous whole-system PASS invalid. Details: `research/final-drafts-independent-review.md` once recorded; WORKFLOW contains authoritative current HOLD.
