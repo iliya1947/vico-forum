@@ -2,23 +2,17 @@
 
 ## Активный этап
 
-**Moderation visibility B9 pre-fold current-main sync — MIRA COORDINATOR PASS; STOP before stack fold.**
+**Moderation visibility stack fold completed; repository state assembled in #355. STOP before final assembled-head author self-check.**
 
-- Independently reviewed Draft #376 exact `fdad1930fc68a854d52bee31922f923be5c1c751`.
-- Merge commit parents are exactly old accepted B8/B9 head `108e0ba31ed34f891e8b46e411991b893b9da56b` + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Comparison against current main: **ahead 315 / behind 0**. The prior stale-base blocker is closed.
-- Delta from old B8 head to synced head is exactly the 22 paths introduced by the five missing main commits plus the merge commit. Non-overlapping policy/docs/workflow files are current-main content.
-- The only overlapping files, SA04-N and SA04-K5, preserve current-main `pull_request: labeled`, `workflow_dispatch`, `run:acceptance` guards and event-sensitive `IMPLEMENTATION_SHA`. Relative to current main, their only added behavior is the accepted B8 C1/C2/C3 Chromium calls and B8-B2 local-R2 call.
-- Exact-head evidence independently verified:
-  - **48/48 check-runs completed:** 24 SUCCESS + 24 expected SKIPPED, 0 failures;
-  - **38/38 workflow runs completed:** 20 SUCCESS + 18 expected SKIPPED, 0 failures;
-  - CI #45088550855 SUCCESS;
-  - SA04-N #45088550926 SUCCESS;
-  - SA04-K5 #45088550961 SUCCESS;
-  - all runs are on exact `fdad1930...`.
-- No confirmed current-stage regression or unauthorized scope introduced by the main sync.
-- **Coordinator PASS.** The pre-fold integration blocker is closed.
-- **Mandatory STOP before fold.** Do not move B1, close B2–B8, start assembled-head author self-check / Mira whole-feature review / Leva review, merge, docs closeout or deploy until fresh owner continuation.
+- Owner-authorized fold executed by fast-forwarding B1 branch `feature/moderation-visibility-b1-foundation` from original B1 `704d5a46d59841538524424296ac28eaa39aa5e6` to final integrated exact `fdad1930fc68a854d52bee31922f923be5c1c751`.
+- Assembled Draft #355 now targets current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`, is **ahead 315 / behind 0**, mergeable/clean, and contains the whole moderation-visibility feature: 132 files, +24351/−492.
+- `main` is unchanged at `9cff976...`; no merge action into `main` occurred.
+- Intermediate #357/#359/#365/#367/#370/#371/#376 are no longer active and are superseded by #355.
+- **GitHub metadata deviation:** after B1 was fast-forwarded over the stacked heads, GitHub recognized each intermediate head as contained in B1 and recorded those PRs as `merged` into B1 while closing them; their head refs were then auto-deleted. This happened without a merge action into `main`. The intended end-state “closed-unmerged superseded PRs” was therefore not preserved in PR metadata.
+- Their PR descriptions were corrected to state the factual outcome: superseded by #355, no merge into `main`, GitHub recorded containment as merged into B1.
+- This metadata deviation does **not** change assembled code or current-main safety, but it violates the intended PR-history presentation and is recorded as a process error.
+- Final assembled-head author self-check has **not** started. It must run in #355 context because its base is now `main`; prior exact-SHA evidence from #376 had a different PR base context.
+- **Mandatory STOP.** Next pending step, only after fresh owner continuation/acceptance of the metadata deviation: Лира performs final assembled-head author self-check on #355 exact `fdad1930...`, including fresh applicable CI/acceptance in the #355→main PR context. Mira whole-feature review, Leva independent review, owner merge, docs closeout and deploy remain blocked.
 
 ## Baseline
 
