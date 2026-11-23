@@ -67,3 +67,16 @@ Schema должна добавить persistent display ordering/version foundat
 - Connected Worker+Better Auth+PG17+Chromium + RTL/narrow/keyboard + mounted-editor preservation.
 
 Перед implementation сверить actual main после corrections + moderation visibility; без нового конфликта повторное проектирование не требуется.
+
+
+## Current-main reconciliation — 2026-11-23
+
+Baseline: `a3dae5815e26d158c566a27c552127b4b1ab29aa` after moderation visibility + docs.
+
+- Accepted product scope and core S0–S10 architecture remain valid; no full redesign.
+- Current schema/catalog/History still lack the planned structure ordering/version/location permissions/events, confirming these remain Task-6 work.
+- Current create-topic receipt replay still projects the submitted old section; the accepted current-persisted-location replay requirement remains necessary.
+- Existing Owner `forum.structure` monitor exists, while new structural Admin History actions still need association with it as planned.
+- **Reconciliation required before implementation:** visibility now makes hidden ordinary topics unavailable to ordinary/public-safe topic readers. The final technical plan must resolve any hidden-topic move entrypoint without widening those readers or leaking hidden source; preserve hidden state and forbid ordinary↔Help conversion. Revalidate move×hide lock/race ordering on the actual current writers.
+
+Leva should amend/restate only what this current-main seam requires and keep the rest of the accepted plan stable.
