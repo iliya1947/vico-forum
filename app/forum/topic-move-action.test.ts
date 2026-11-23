@@ -92,10 +92,10 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       expect(e.setTopicVisibility).not.toHaveBeenCalled();
     }
   });
-  it.each([
+  it.each(([
     [] as string[],["forum.reply.create"],["forum.content.visibility.manage"],
     ["forum.structure.manage"],["admin.history.read"],
-  ])("requires exact move capability even on hidden source and unrelated grants: %j",async permissions=>{
+  ]).map(permissions=>[permissions]))("requires exact move capability even on hidden source and unrelated grants: %j",async permissions=>{
     const e=makeContext(permissions);
     const response=await run(e);
     expect(response).toMatchObject({data:{operation:"topicMove",error:"forbidden"},init:{status:403}});
