@@ -8,25 +8,27 @@
 
 ## Актуальные продуктовые факты
 
-- Edit own title, Watch, Bookmarks и Mute/Block уже merged и задокументированы в main.
-- Repository migration ceiling в текущем product state: 0070; external accepted evidence остаётся только через 0020.
+- Edit own title, Watch, Bookmarks, Mute/Block и moderation visibility уже merged и задокументированы в main.
+- Repository migration ceiling в текущем product state: 0071; external accepted evidence остаётся только через 0020.
 - Stage 6 paused и не связан с текущим corrective/product route.
 
 ## Consolidated correction #354
 
 #354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-## Текущий этап
+## Текущий этап — Task6
 
-Собранная moderation visibility #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` против current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` получила fresh Mira whole-feature PASS и Leva independent whole-feature re-review PASS.
+Moderation visibility #355 и separate docs #378 merged; current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task5 findings/docs debt закрыты.
 
-**VIS-FINAL-LEVA-01/02 CLOSED**, текущих блокирующих findings нет. Проверены protected own Help withdrawal и ordinary Admin tombstone chronology/root/best/candidates, весь 8-file correction delta и взаимодействия с canonical action/translation/shared controls. Main и остальная feature implementation не изменились.
+Лёва завершил current-main reconciliation полного accepted S0–S10. Канонический план — `stages/forum-structure/PLAN.md`: восстановлены исходные требования, сохранены принятые scope/global mutex/location CAS/receipt/History/permission/state contracts; конкретизирован hidden move context/authority/lock boundary после visibility.
 
-Канонический report — `stages/moderation-visibility/REVIEW.md`. Локально 17 files/304 tests PASS, включая 3 прежних reproductions. Fresh exact-head CI/browser/local-R2 SUCCESS независимо API-checked; full hosted suites локально не повторялись. Старый HOLD на fdad1930 superseded.
+Hidden ordinary topic move требует move+visibility rights уже по принятому исходному S2.6. Source-free protected context и canonical action не расширяют public/ordinary Admin readers. Move не Restore и не source edit. Inline shared form сохраняет Editor lifetime; publication receipt replay возвращает persisted location; topic.moved History нейтральна и проецируется original source в Owner forum.structure.
 
-## Дальнейший маршрут
+## Следующий gate
 
-#355 остаётся Draft/unmerged и готов к owner merge после снятия Draft на проверенном head. При новом implementation head нужен новый применимый review cycle. После фактического merge — отдельное назначение docs closeout; затем forum structure/topic move по #342. Reviewer не merge, не начинает docs/structure и не запускает deployment. V-P1/V-P2/V-P3 уже приняты.
+Мира проверяет scope/fit reconciliation и определяет delivery mode/исполнителя/bounded F1. Стадии F1–F7 и done criteria — S8 плана. Owner разрешил использовать Лёву как последующего implementation agent; пока code не назначен. При его участии independent reviewer не должен участвовать в implementation.
+
+Это planning self-check, не runtime PASS. Code/schema/dependencies/implementation PR/CI/deployment не менялись. Повторного принятия S-P/S-T нет. #342 не merge; #300/general UI/UX/Stage6 не активированы.
 
 ## 2026-11-20 — stacked delivery adopted
 
