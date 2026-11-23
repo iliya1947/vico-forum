@@ -3,7 +3,7 @@ import {describe,it,expect,vi} from "vitest";
 import {authSessionContext} from "../auth/request-context";
 import {authorizationContext} from "../authorization/request-context";
 import {forumStructureReaderContext} from "../admin/structure.server";
-import {StructureForbiddenError,StructureValidationError} from "../../db/forum-structure";
+import {StructureForbiddenError,StructureValidationError,StructureInvariantError} from "../../db/forum-structure";
 import {AccountInactiveError} from "../../db/account-state";
 import {AuthorizationUnavailableError} from "../../db/authorization-service";
 import {StructureReadUnavailableError} from "../../db/hyperdrive-forum-structure-reader";
@@ -31,8 +31,8 @@ for(const [name,loader] of [["move",move],["destinations",destinations]] as cons
   const e=environment();(name==="move"?e.readMoveContext:e.listDestinations).mockRejectedValueOnce(error);
   try{await loader(args(e.context));throw Error("Expected denial");}catch(result){expect(result).toBeInstanceOf(Response);const response=result as Response;expect(response.status).toBe(status);expect(response.headers.get("Cache-Control")).toBe("private, no-store");expect(await response.text()).not.toMatch(/raw|SQL/);}
  });
- it("does not disguise unexpected programming failures as storage outages",async()=>{
-  const e=environment(),error=new Error("invariant");(name==="move"?e.readMoveContext:e.listDestinations).mockRejectedValueOnce(error);await expect(loader(args(e.context))).rejects.toBe(error);
+ it.each([new Error("invariant"),new StructureInvariantError("Structure singleton missing")])("does not disguise unexpected programming failures as storage outages",async error=>{
+  const e=environment();(name==="move"?e.readMoveContext:e.listDestinations).mockRejectedValueOnce(error);await expect(loader(args(e.context))).rejects.toBe(error);
  });
  it("classifies authorization outage before data read",async()=>{const e=environment();e.has.mockRejectedValueOnce(new AuthorizationUnavailableError());await expect(loader(args(e.context))).rejects.toMatchObject({status:503});expect(e.readMoveContext).not.toHaveBeenCalled();expect(e.listDestinations).not.toHaveBeenCalled();});
 });

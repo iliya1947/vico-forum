@@ -4,7 +4,7 @@ import {drizzle} from "drizzle-orm/node-postgres";
 import {beforeAll,afterAll,beforeEach,describe,it,expect} from "vitest";
 import {PostgresForumStructureReader} from "../../db/forum-structure-reader";
 import {PostgresAdminForumReader} from "../../db/admin-forum";
-import {PostgresStructureWriter,StructureForbiddenError,StructureValidationError} from "../../db/forum-structure";
+import {PostgresStructureWriter,StructureForbiddenError,StructureValidationError,StructureInvariantError} from "../../db/forum-structure";
 import {PostgresTopicMoveWriter} from "../../db/topic-move";
 import {createAuthorizationCapability} from "../../db/authorization-service";
 import {PostgresAuthorizationRepository} from "../../db/authorization-repository";
@@ -167,6 +167,48 @@ describe("guarded source-free structure reads",()=>{
  });
 });
 
+
+// Fixture-only corruption. Web capability has no singleton DELETE/INSERT permission.
+async function withoutStructureSingleton(operation:()=>Promise<void>) {
+ await client.query("delete from forum_structure_state where id=1");
+ try {await operation();}
+ finally {await client.query("insert into forum_structure_state(id,version)values(1,0)");}
+}
+describe("F4-01 mandatory structure singleton",()=>{
+ it.each(["visible","hidden","absent","service"])("does not confuse missing singleton with %s move target",async kind=>{
+  if(kind==="hidden")await forum().setTopicVisibility({topicId:"t",actorId:"dual",hidden:true,expectedVisibilityVersion:0,expectedRevisionId:"tr",reason:"Private fixture"});
+  if(kind==="service")await client.query("update forum_topics set section_id='help-solutions-questions' where id='t'");
+  const id=kind==="absent"?"absent":"t";
+  await withoutStructureSingleton(async()=>{
+   for(const actor of ["mover","owner"])await expect(reader().readMoveContext(actor,id)).rejects.toBeInstanceOf(StructureInvariantError);
+   await expect(reader().readMoveContext("history",id)).rejects.toBeInstanceOf(StructureForbiddenError);
+  });
+  // Restoration recovers the real target/permission result; rollback did not poison pooled clients.
+  if(kind==="absent"||kind==="service")expect(await reader().readMoveContext("owner",id)).toBeUndefined();
+  else expect(await reader().readMoveContext("owner",id)).toMatchObject({structureVersion:"0",topicId:"t",isHidden:kind==="hidden"});
+ });
+ it.each([
+  ["category list",()=>admin.listCategories({search:""})],
+  ["empty filtered category list",()=>admin.listCategories({search:"absent"})],
+  ["category",()=>admin.readCategory("z",{search:""})],
+  ["absent category",()=>admin.readCategory("absent",{search:""})],
+  ["section",()=>admin.readSection("s000")],
+  ["absent section",()=>admin.readSection("absent")],
+  ["section topics",()=>admin.readSectionTopics("s000",{search:""})],
+  ["absent section topics",()=>admin.readSectionTopics("absent",{search:""})],
+ ] as const)("rejects %s instead of returning null version or false absence",async(name,read)=>{
+  await withoutStructureSingleton(async()=>{await expect(read()).rejects.toBeInstanceOf(StructureInvariantError);});
+  const restored=await read();
+  if(name.startsWith("absent "))expect(restored).toBeUndefined();
+  else expect(restored).toMatchObject({structureVersion:"0"});
+ });
+ it.each(["categories","sections"] as const)("retains picker %s invariant, including empty matching sets",async kind=>{
+  await withoutStructureSingleton(async()=>{
+   for(const search of ["","absent"])await expect(reader().listDestinations("mover",{kind,search})).rejects.toBeInstanceOf(StructureInvariantError);
+  });
+  expect((await reader().listDestinations("mover",{kind,search:""})).structureVersion).toBe("0");
+ });
+});
 
 describe("real PostgreSQL hierarchy snapshot races",()=>{
  it("homepage keeps old parent, count and children together across committed reparent",async()=>{

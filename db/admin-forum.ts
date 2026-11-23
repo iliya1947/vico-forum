@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { StructureInvariantError } from "./forum-structure";
 import { decodeStructureCursor, encodeStructureCursor, literalPattern, type StructureBrowseScope } from "./structure-browse";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
@@ -22,6 +23,10 @@ export interface AdminForumReader {
 }
 const pageSize = 25;
 const pattern = literalPattern;
+function requireStructureVersion(value:string|null|undefined):string {
+  if(value===null||value===undefined)throw new StructureInvariantError("Structure singleton missing");
+  return value;
+}
 function page<T extends {id:string}>(items:T[], total:number):AdminBrowsePage<T> {
   return {items:items.slice(0,pageSize),total,next:items.length>pageSize?items[pageSize-1].id:null};
 }
@@ -42,7 +47,7 @@ export class PostgresAdminForumReader implements AdminForumReader {
   async listCategories(query:AdminBrowseQuery) {
     const scope:StructureBrowseScope={kind:"admin-categories",parent:null,search:query.search};
     const after=decodeStructureCursor(scope,query.after);
-    const result=await this.database.query<{items:(AdminForumCategory & {position:string;rank:string})[];total:number;structureVersion:string}>(`
+    const result=await this.database.query<{items:(AdminForumCategory & {position:string;rank:string})[];total:number;structureVersion:string|null}>(`
       with matching as (select id from forum_categories where $1='' or name ilike $2 escape '\\' or id ilike $2 escape '\\'),
       paged as (select ${categoryProjection}, c.sort_position::text as position, (case when c.id=$4 then 0 else 1 end)::text as rank
         from forum_categories c join matching m on m.id=c.id
@@ -51,14 +56,14 @@ export class PostgresAdminForumReader implements AdminForumReader {
       select coalesce((select json_agg(p order by p.rank,p.position::bigint,p.id collate "C") from paged p),'[]') as items,
         (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion"`,
       [query.search,pattern(query.search),after?.[0]??null,HELP_SOLUTIONS_CATEGORY_ID,after?.[1]??null,after?.[2]??null]);
-    const row=result.rows[0],last=row.items[pageSize-1];
+    const row=result.rows[0],structureVersion=requireStructureVersion(row?.structureVersion),last=row.items[pageSize-1];
     return {items:row.items.slice(0,pageSize).map(item=>({id:item.id,name:item.name,sectionCount:item.sectionCount,topicCount:item.topicCount,postCount:item.postCount,reserved:item.reserved})),total:row.total,
-      next:row.items.length>pageSize?encodeStructureCursor(scope,[last.rank,last.position,last.id]):null,structureVersion:row.structureVersion};
+      next:row.items.length>pageSize?encodeStructureCursor(scope,[last.rank,last.position,last.id]):null,structureVersion};
   }
   async readCategory(id:string,query:AdminBrowseQuery) {
     const scope:StructureBrowseScope={kind:"admin-sections",parent:id,search:query.search};
     const after=decodeStructureCursor(scope,query.after);
-    const result=await this.database.query<{category:AdminForumCategory;items:(AdminForumSection & {position:string})[];total:number;structureVersion:string}>(`
+    const result=await this.database.query<{category:AdminForumCategory|null;items:(AdminForumSection & {position:string})[];total:number;structureVersion:string|null}>(`
       with root as (select ${categoryProjection} from forum_categories c where c.id=$5),
       matching as (select s.id from forum_sections s where s.category_id=$5 and ($1='' or s.name ilike $2 escape '\\' or s.id ilike $2 escape '\\')),
       paged as (select ${sectionProjection.replace('(s.id=$4)','(s.id=$6)')},s.sort_position::text as position from forum_sections s
@@ -67,16 +72,16 @@ export class PostgresAdminForumReader implements AdminForumReader {
         order by s.sort_position,s.id collate "C" limit 26)
       select (select row_to_json(r) from root r) as category,
         coalesce((select json_agg(p order by p.position::bigint,p.id collate "C") from paged p),'[]') as items,
-        (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion" from root`,
+        (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion"`,
       [query.search,pattern(query.search),after?.[0]??null,HELP_SOLUTIONS_CATEGORY_ID,id,HELP_SOLUTIONS_SERVICE_SECTION_ID,after?.[1]??null]);
-    const row=result.rows[0];if(!row)return undefined;
+    const row=result.rows[0],structureVersion=requireStructureVersion(row?.structureVersion);if(!row.category)return undefined;
     const last=row.items[pageSize-1];
-    return {category:row.category,structureVersion:row.structureVersion,sections:{items:row.items.slice(0,pageSize).map(item=>({id:item.id,name:item.name,category:item.category,topicCount:item.topicCount,postCount:item.postCount,service:item.service})),total:row.total,
+    return {category:row.category,structureVersion,sections:{items:row.items.slice(0,pageSize).map(item=>({id:item.id,name:item.name,category:item.category,topicCount:item.topicCount,postCount:item.postCount,service:item.service})),total:row.total,
       next:row.items.length>pageSize?encodeStructureCursor(scope,[last.position,last.id]):null}};
   }
 
   async readSectionTopics(id:string,query:AdminBrowseQuery) {
-    const result=await this.database.query<{section:AdminForumSection;items:AdminForumTopic[];total:number;structureVersion:string}>(`
+    const result=await this.database.query<{section:AdminForumSection|null;items:AdminForumTopic[];total:number;structureVersion:string|null}>(`
       with root as (select ${sectionProjection} from forum_sections s
         join forum_categories c on c.id=s.category_id where s.id=$5),
       matching as (select t.id from forum_topics t
@@ -92,15 +97,19 @@ export class PostgresAdminForumReader implements AdminForumReader {
         order by t.id collate "C" limit 26)
       select (select row_to_json(r) from root r) as section,
         coalesce((select json_agg(p order by p.id collate "C") from paged p),'[]') as items,
-        (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion" from root`,
+        (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion"`,
     [query.search,pattern(query.search),query.after??null,HELP_SOLUTIONS_SERVICE_SECTION_ID,id]);
-    const row=result.rows[0];return row?{structureVersion:row.structureVersion,section:row.section,topics:page(row.items,row.total)}:undefined;
+    const row=result.rows[0],structureVersion=requireStructureVersion(row?.structureVersion);
+    return row.section?{structureVersion,section:row.section,topics:page(row.items,row.total)}:undefined;
   }
   async readSection(id:string) {
-    const result=await this.database.query<AdminForumSection & {structureVersion:string}>(`select ${sectionProjection.replace("$4","$2")},
-      (select version::text from forum_structure_state where id=1) as "structureVersion"
-      from forum_sections s join forum_categories c on c.id=s.category_id where s.id=$1`,
-    [id,HELP_SOLUTIONS_SERVICE_SECTION_ID]);
-    return result.rows[0];
+    const result=await this.database.query<{section:AdminForumSection|null;structureVersion:string|null}>(`
+      with root as (select ${sectionProjection.replace("$4","$2")}
+        from forum_sections s join forum_categories c on c.id=s.category_id where s.id=$1)
+      select (select row_to_json(r) from root r) as section,
+        (select version::text from forum_structure_state where id=1) as "structureVersion"`,
+      [id,HELP_SOLUTIONS_SERVICE_SECTION_ID]);
+    const row=result.rows[0],structureVersion=requireStructureVersion(row?.structureVersion);
+    return row.section?{...row.section,structureVersion}:undefined;
   }
 }

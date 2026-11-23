@@ -41,15 +41,18 @@ export class PostgresForumStructureReader implements ForumStructureReader {
   async readMoveContext(actorId:string,topicId:string) {
     structureIdentity(topicId);
     return this.snapshot(actorId,true,async client=>{
-      const result=await client.query<Omit<TopicMoveContext,"actorId">>(`select t.id as "topicId",t.location_version::text as "locationVersion",
-        v.version::text as "structureVersion",t.is_hidden as "isHidden",
-        json_build_object('id',s.id,'name',s.name,'category',json_build_object('id',c.id,'name',c.name)) as "currentSection"
-        from forum_topics t join forum_sections s on s.id=t.section_id join forum_categories c on c.id=s.category_id
-        cross join forum_structure_state v where v.id=1 and t.id=$1 and s.id<>$2 and c.id<>$3`,
+      const result=await client.query<{topic:Omit<TopicMoveContext,"actorId"|"structureVersion">|null;structureVersion:string|null}>(`
+        with target as (select t.id as "topicId",t.location_version::text as "locationVersion",t.is_hidden as "isHidden",
+          json_build_object('id',s.id,'name',s.name,'category',json_build_object('id',c.id,'name',c.name)) as "currentSection"
+          from forum_topics t join forum_sections s on s.id=t.section_id join forum_categories c on c.id=s.category_id
+          where t.id=$1 and s.id<>$2 and c.id<>$3)
+        select (select row_to_json(r) from target r) as topic,
+          (select version::text from forum_structure_state where id=1) as "structureVersion"`,
         [topicId,HELP_SOLUTIONS_SERVICE_SECTION_ID,HELP_SOLUTIONS_CATEGORY_ID]);
-      const row=result.rows[0];
-      if (!row || (row.isHidden && !await effectivePermission(client,actorId,"forum.content.visibility.manage",this.ownerUserId))) return undefined;
-      return {actorId,...row};
+      const {topic,structureVersion}=result.rows[0];
+      if(structureVersion===null)throw new StructureInvariantError("Structure singleton missing");
+      if (!topic || (topic.isHidden && !await effectivePermission(client,actorId,"forum.content.visibility.manage",this.ownerUserId))) return undefined;
+      return {actorId,...topic,structureVersion};
     });
   }
   async listDestinations(actorId:string,query:DestinationQuery) {
@@ -75,7 +78,7 @@ export class PostgresForumStructureReader implements ForumStructureReader {
           order by ${section?'m."categoryPosition"::bigint,m."categoryId" collate "C",':''}m.position::bigint,m.id collate "C" limit 26)
         select coalesce((select json_agg(p order by ${section?'p."categoryPosition"::bigint,p."categoryId" collate "C",':''}p.position::bigint,p.id collate "C") from paged p),'[]') as items,
           (select count(*)::int from matching) as total,(select version::text from forum_structure_state where id=1) as "structureVersion"`;
-      const result=await client.query<{items:Item[];total:number;structureVersion:string}>(sql,
+      const result=await client.query<{items:Item[];total:number;structureVersion:string|null}>(sql,
         [HELP_SOLUTIONS_CATEGORY_ID,HELP_SOLUTIONS_SERVICE_SECTION_ID,scope.parent,scope.search,literalPattern(scope.search),
           after?.[0]??null,after?.[1]??null,after?.[2]??null,after?.[3]??null]);
       const row=result.rows[0];
