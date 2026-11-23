@@ -2,19 +2,36 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — final exact-head author self-check PASS; Лира STOP → Мира whole-feature review.**
+**Moderation visibility assembled #355 — Mira whole-feature review PART 1/4 PASS; STOP before PART 2.**
 
-- Single consolidated [Draft #355](https://github.com/iliya1947/vico-forum/pull/355) `feature/moderation-visibility-b1-foundation`, **exact head `fdad1930fc68a854d52bee31922f923be5c1c751`**, targets unchanged current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; ahead 315 / behind 0, mergeable clean. Code/tree identical to accepted pre-fold integrated B8 head, now verified through fresh **#355→main PR-context runs**. PR remains Draft/unmerged.
-- **Whole-feature scope reconciled:** 132 files (+24351/−492) vs current main: B1 schema/history/capability; B2 transactional visibility CAS/writer gates/PG races; B3 public DTO/SQL discovery; B4 assets/translations; B5 personal state/notifications; B6 guarded private reader/queue/inspector; B7 canonical actions/EN-RU-HE UI; B8 actual Worker/PG17/Chromium/local-R2 acceptance. No unrelated Stage6/deployed changes, dependency/provider/config rewrite, or implementation docs. V1–V9 and V8 ten-area acceptance reconciled with accepted B1–B8 stages; no newly confirmed current-feature defect. Unchanged main/test-control semantics retained in assembled head.
-- **Fresh author CI and connected acceptance on #355 exact `fdad1930`, not old #376 PR-context evidence:** triggered one-shot `run:ci` + `run:acceptance`, both labels consumed. **38/38 workflows complete: 20 SUCCESS + 18 expected SKIPPED; 48/48 #355 check-runs: 24 SUCCESS + 24 expected SKIPPED; 0 FAIL, 0 pending.**
-  - [CI #45149489505](https://github.com/iliya1947/vico-forum/actions/runs/45149489505) SUCCESS: 2951/2951 unit, 1689/1689 real PostgreSQL17, lint/typecheck/build/preview, migration history/metadata/schema parity, privileges/provisioning/credential probes, Worker+Better Auth B8-B1/B8-B3 protected/fault smoke PASS.
-  - [SA04-N #45149490457](https://github.com/iliya1947/vico-forum/actions/runs/45149490457) SUCCESS: real Chromium/Worker/Better Auth/PG17, all C1 (5), C2 (7), C3 (6) acceptance markers PASS; EN/RU/HE RTL, denial, 409, cache/outage/rollback.
-  - [SA04-K5 #45149490210](https://github.com/iliya1947/vico-forum/actions/runs/45149490210) SUCCESS: 33 K5 R2/Chromium checks plus B8-B2 published/private/draft/Complaint positive local-R2 PASS.
-  - All other applicable connected browser acceptance workflows SUCCESS, including AP-10, Owner/Admin, Watch/Bookmark/Mute, SA07/SA08. Exact head/main/PR base and labels verified at closeout.
-- **Known fold PR-metadata deviation retained:** contained intermediate stacked #357/#359/#365/#367/#370/#371/#376 were marked merged into B1 by GitHub on fast-forward (auto-deleted branches), not closed-unmerged superseded; **no merge into main**. Already recorded in `AGENT_ERRORS.md`; do not misrepresent as owner acceptance or forget at whole-feature review.
-- Assembled #355 title/body now describe actual whole feature and include final exact-head evidence and metadata deviation. Prior intermediate coordinator PASS remains prior-stage evidence, **not** independent whole-feature PASS.
-- **Next actor: Мира (ChatGPT-5.6 Sol)** independent **whole-feature review #355** on stable exact `fdad1930...`. Review without production edits; if finding, return to author for bounded correction/recheck. Only after Mira PASS next Leva independent whole-feature review on same head; no unilateral Leva/merge/docs/deploy. **Лира mandatory STOP.**
+Stable review target:
+- Draft #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`;
+- current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`;
+- ahead 315 / behind 0, mergeable clean, 132 files (+24351/−492);
+- final author self-check and fresh #355→main CI/acceptance already PASS on same exact head.
 
+### Whole-feature review decomposition
+
+1. **PART 1 — scope + schema/History/authority foundation: PASS.**
+2. PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: pending fresh owner continuation.
+3. PART 3 — assets/translations/personal state/inbox: blocked until PART 2.
+4. PART 4 — UI/races/connected acceptance + final whole-feature verdict: blocked until PART 3.
+
+### PART 1 verified
+
+- Scope matches accepted moderation-visibility V1–V9; no Stage6/deploy/provider/dependency expansion in assembled diff.
+- Migration ceiling is correctly extended `0070 → 0071_moderation_visibility_foundation`; journal order is correct.
+- Topic/post visibility foundation matches V3: `is_hidden`, nonnegative `visibility_version`, ms-precision `visibility_changed_at`, version-0 visible/null invariant, hidden queue partial indexes `changed_at DESC,id DESC`.
+- Permission `forum.content.visibility.manage` is independent, initial grants only moderator/admin, custom grant remains possible; ordinary user baseline unchanged.
+- AP-10 mapping places visibility management in `admin.forum`; request-scoped restriction path remains fresh and Owner exemption remains existing policy.
+- Existing Admin History action/target constraints are preserved and extended only with topic/post Hide/Restore; visibility reasons are required/nonblank/≤2000, while prior action reason semantics remain unchanged.
+- Visibility History uses neutral ID-only labels, retains observed revision/version context, appends under the existing shared History ordering lock, and rolls back with the caller transaction.
+- Owner history/monitor classification includes visibility actions in existing `forum.content` / `forum.state` areas; no new monitoring subsystem.
+- Production schema manifest contains the new checks/index predicates; PG17 migration tests compare live definitions against manifest hashes.
+- Fresh final CI on #355 exact head already proves clean migration, Drizzle parity, manifest, privileges/provisioning and database suite. Green CI was used as evidence only after source review, not as substitute for it.
+- No confirmed current-feature defect in PART 1.
+
+**Mandatory STOP.** No PART 2, Leva review, merge, docs or deploy until fresh owner continuation.
 
 ## Baseline
 
