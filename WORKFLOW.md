@@ -2,27 +2,25 @@
 
 ## Активный этап
 
-**Moderation visibility documentation closeout — Mira docs review PASS; owner merge gate.**
+**Task 5 — moderation visibility: COMPLETE. Task 6 not yet activated.**
 
-Stable docs PR:
-- Draft #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a`;
-- base/current main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
-- exactly 7 documentation files, mergeable clean;
-- Lira author-check PASS;
-- Mira independent bounded docs review PASS;
-- no runtime/schema/test/workflow files and no confirmed docs blocker.
+Factual closeout:
+- implementation #355 merged into main at `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`;
+- final implementation exact head `66b1bb7ec0f4a1f5bed17583398d5acc041da143`;
+- final Mira whole-feature PASS + Leva independent whole-feature PASS on that same head;
+- VIS-FINAL-LEVA-01/02 closed before merge;
+- docs-only #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a` passed Lira author-check + Mira docs review and was merged by owner;
+- current main after docs merge: `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
+- permanent contracts/current state/history and Mira logic-error row are now in main;
+- no open task-5 current-feature finding or docs debt remains.
 
-### Process correction
+### Next bounded task
 
-The previous handoff to Leva for an independent docs review was incorrect and is cancelled.
-Current `AGENTS.md` requires the full Mira → independent Codex review cycle for implementation PRs / final assembled implementation, but does **not** require a Leva gate for the separate end-of-task documentation PR.
-Using Leva here would add no required assurance and would waste the technical lead/reviewer capacity the owner explicitly wants available for subsequent implementation work.
+Task 6 from `TASK.md`: **forum structure management — categories, sections, structure and topic moves.**
 
-### Next gate
+It is **not activated in this checkpoint**. A fresh owner continuation starts scope analysis for task 6 on current main. The owner's newer decision allows Leva to be used as implementer in subsequent implementation work; that decision should be applied when task-6 delivery mode is chosen, not retroactively to completed task 5.
 
-#378 goes directly to **owner merge**. After actual docs merge, moderation-visibility task 5 is fully closed and task 6 may be activated separately.
-
-**STOP for Mira.** No task 6 implementation and no deployment before owner merge of #378.
+**STOP after task-5 closeout.**
 
 ## Baseline
 
