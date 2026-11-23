@@ -90,7 +90,12 @@ export function createP1AttachmentFixture(publishedAssets: readonly PreviewAttac
     },
     async delete(objectKey) { physical.delete(objectKey); },
     async listReservations({ limit, cursor }) {
-      const keys = [...physical.keys()].sort().filter((item) => !cursor || item > cursor);
+      // R2 lists only still-reserved markers, not committed payloads. Registered
+      // draft/published bytes must never enter the orphan-reservation sweep.
+      const keys = [...physical.entries()]
+        .filter(([objectKey, entry]) => isFencedAttachmentKey(objectKey) && entry.bytes === null)
+        .map(([objectKey]) => objectKey).sort()
+        .filter((item) => !cursor || item > cursor);
       return {
         keys: keys.slice(0, limit),
         ...(keys.length > limit ? { cursor: keys[limit - 1] } : {}),

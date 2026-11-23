@@ -9,6 +9,8 @@ import { P0_TOPIC_ID } from "../p0/fixture";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_PNG_BASE64, P0_ATTACHMENT_BYTE_SIZE } from "../p0/attachment-fixture";
 import { createPreviewAttachmentUrls, type PreviewAttachmentAsset } from "../p0/attachment-urls";
 import { publishedAttachmentReference } from "../../forum/attachment-url";
+import { attachmentBucketForRequest, attachmentStoreForRequest } from "../../forum/attachment-request-context";
+import { P0_ACTOR_ID } from "../p0/fixture";
 
 const operationId = "11111111-1111-4111-8111-111111111111";
 const attachmentId = "22222222-2222-4222-8222-222222222222";
@@ -360,4 +362,87 @@ it("publishes baseline image bytes through the original public loader and shared
     environment.dispose();
   }
   expect(revoked).toEqual(["blob:preview-public-1", "blob:preview-public-2"]);
+});
+
+it("sweeps only orphan reservation markers while retaining committed, cancelled and published bytes", async () => {
+  const pngBytes = Uint8Array.from(atob(P0_ATTACHMENT_PNG_BASE64), (character) => character.charCodeAt(0));
+  const postId = "p0-first-post";
+  const assets: PreviewAttachmentAsset[] = [{
+    reference: publishedAttachmentReference(postId, P0_ATTACHMENT_ID),
+    fileName: P0_ATTACHMENT_NAME, detectedType: "png", bytes: pngBytes,
+  }];
+  const environment = createP1AttachmentFixture(assets);
+  try {
+    const context = environment.createContext();
+    const store = attachmentStoreForRequest(context);
+    const bucket = attachmentBucketForRequest(context);
+    const draftContext = "topic:" + P0_TOPIC_ID + ":reply";
+    expect((await upload({ request: request(), context })).status).toBe(201);
+    const draft = await store.readDraftAttachment(P0_ACTOR_ID, draftContext, operationId, attachmentId);
+    const published = await store.readPublishedAttachment(postId, P0_ATTACHMENT_ID);
+    if (!draft || !published) throw new Error("P1 seeded attachments are missing");
+
+    const content = async (objectKey: string, size: number) => {
+      const object = await bucket.get(objectKey, { range: { offset: 0, length: size } });
+      if (!object?.body) throw new Error("P1 retained object missing from test bucket");
+      return new Uint8Array(await new Response(object.body).arrayBuffer());
+    };
+    expect([...await content(draft.objectKey, draft.byteSize)])
+      .toEqual([...new TextEncoder().encode("hello preview")]);
+    expect([...await content(published.objectKey, published.byteSize)]).toEqual([...pngBytes]);
+
+    // Neither a fully uploaded file nor a published asset is an orphan reservation.
+    expect(await bucket.listReservations({ limit: 10 })).toEqual({ keys: [] });
+    const cancelled = await upload({
+      request: new Request("http://localhost/api/attachments", {
+        method: "DELETE",
+        headers: {
+          Origin: "http://localhost",
+          "X-Vico-Editor-Context": encodeURIComponent(draftContext),
+          "X-Vico-Operation-Id": operationId,
+        },
+      }),
+      context: environment.createContext(),
+    });
+    expect(cancelled.status).toBe(200);
+    expect((await download({
+      request: new Request("http://localhost/api/attachments/file/" + attachmentId
+        + "?operation=" + operationId + "&context=" + encodeURIComponent(draftContext)),
+      params: { attachmentId }, context: environment.createContext(),
+    })).status).toBe(404);
+    // Cancellation retires the reference; cleanup itself remains a separate process.
+    expect([...await content(draft.objectKey, draft.byteSize)])
+      .toEqual([...new TextEncoder().encode("hello preview")]);
+    expect([...await content(published.objectKey, published.byteSize)]).toEqual([...pngBytes]);
+    expect(await bucket.listReservations({ limit: 10 })).toEqual({ keys: [] });
+
+    const prefix = "private/fenced-v1/";
+    const orphanA = prefix + "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const orphanB = prefix + "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    expect(await bucket.reserve(orphanB)).not.toBeNull();
+    expect(await bucket.reserve(orphanA)).not.toBeNull();
+    expect(await bucket.listReservations({ limit: 1 })).toEqual({
+      keys: [orphanA], cursor: orphanA,
+    });
+    expect(await bucket.listReservations({ limit: 1, cursor: orphanA })).toEqual({
+      keys: [orphanB],
+    });
+    // The caller may discard the known-unreferenced marker; it must never
+    // mistake a referenced payload for an orphan and remove it.
+    await bucket.delete(orphanA);
+    await bucket.delete(orphanB);
+    expect(await bucket.listReservations({ limit: 10 })).toEqual({ keys: [] });
+    expect([...await content(draft.objectKey, draft.byteSize)])
+      .toEqual([...new TextEncoder().encode("hello preview")]);
+    const publishedDownload = await download({
+      request: new Request("http://localhost/api/attachments/file/" + P0_ATTACHMENT_ID
+        + "?post=" + encodeURIComponent(postId)),
+      params: { attachmentId: P0_ATTACHMENT_ID },
+      context: environment.createContext(),
+    });
+    expect(publishedDownload.status).toBe(200);
+    expect([...new Uint8Array(await publishedDownload.arrayBuffer())]).toEqual([...pngBytes]);
+  } finally {
+    environment.dispose();
+  }
 });
