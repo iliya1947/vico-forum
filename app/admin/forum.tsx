@@ -1,8 +1,10 @@
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import {Form,Link,isRouteErrorResponse,useRouteError,useLocation,useParams} from "react-router";
+import {Form,Link,useFetcher,useRevalidator,isRouteErrorResponse,useRouteError,useLocation,useParams} from "react-router";
+import {useEffect,useRef,useState} from "react";
+import type {CategoryCreateResult} from "./structure-actions.server";
 import {ForumRouteError} from "../forum/ui";
 import {useTranslation} from "react-i18next";
-import type {AdminBrowseQuery,AdminBrowsePage,AdminForumCategory,AdminForumSection,AdminForumTopic} from "../../db/admin-forum";
+import type {AdminBrowseQuery,AdminBrowsePage,AdminStructurePage,AdminForumCategory,AdminForumSection,AdminForumTopic} from "../../db/admin-forum";
 import {HELP_SOLUTIONS_CATEGORY_ID} from "../../db/forum-identifiers";
 import {forumCategoryPath,forumSectionPath} from "../forum/paths";
 import {AdminShell} from "./shell";
@@ -44,14 +46,54 @@ function SectionRows({locale,items}:{locale:string;items:AdminForumSection[]}) {
     <Counts locale={locale} section={section}/>
   </li>)}</ul>;
 }
-export function AdminForumView({locale,access,page,query}:{locale:string;access:AdminAccess;page:AdminBrowsePage<AdminForumCategory>;query:AdminBrowseQuery}) {
+function CreateCategoryForm({actorId,version,path}:{actorId:string;version:string;path:string}){
+  const {t}=useTranslation("common");
+  const fetcher=useFetcher<CategoryCreateResult>();
+  const revalidator=useRevalidator();
+  const [name,setName]=useState("");
+  const acknowledged=useRef<unknown>(null);
+  const response=fetcher.state==="idle"&&fetcher.data?.operation==="createCategory"?fetcher.data:null;
+  useEffect(()=>{
+    if(!response||acknowledged.current===response)return;
+    acknowledged.current=response;
+    if("ok" in response&&response.ok&&response.actorId===actorId)setName("");
+  },[response,actorId]);
+  const blocked=response&&"error" in response&&["conflict","unavailable","unauthenticated","forbidden"].includes(response.error);
+  const busy=fetcher.state!=="idle"||revalidator.state!=="idle";
+  const error=response&&"error" in response?response.error:null;
+  const errorKey=error==="conflict"?"structureActionConflict"
+    :error==="forbidden"||error==="unauthenticated"?"structureActionDenied"
+    :error==="unavailable"?"structureActionUnconfirmed":"structureActionInvalid";
+  return <div className="admin-forum-search">
+    <fetcher.Form method="post" action={path} aria-busy={busy}>
+      <input type="hidden" name="intent" value="createCategory"/>
+      <input type="hidden" name="editorActorId" value={actorId}/>
+      <input type="hidden" name="expectedStructureVersion" value={version}/>
+      <label>{t("structureCategoryName")}
+        <input name="name" autoComplete="off" required maxLength={200} value={name}
+          onChange={event=>setName(event.currentTarget.value)} dir="auto"/>
+      </label>
+      <button type="submit" disabled={busy||!!blocked||!name.trim()}>{t(busy?"structureActionPending":"structureCreateCategory")}</button>
+    </fetcher.Form>
+    {response&&"ok" in response&&response.ok&&response.actorId===actorId
+      ?<p role="status">{t("structureActionSaved")}</p>:null}
+    {error?<p role="alert">{t(errorKey)}</p>:null}
+    {blocked?<button type="button" disabled={busy} onClick={()=>{
+      fetcher.reset();
+      void revalidator.revalidate();
+    }}>{t("structureActionReload")}</button>:null}
+  </div>;
+}
+export function AdminForumView({locale,access,page,query}:{locale:string;access:AdminAccess;page:AdminStructurePage<AdminForumCategory>;query:AdminBrowseQuery}) {
   const {t}=useTranslation("common");const routing = useAdministrativeRouting();const path=adminForumPath(locale,routing);
   return <AdminShell locale={locale} access={access} current="forum">
     <section className="admin-forum" aria-labelledby="admin-forum-heading"><h2 id="admin-forum-heading">{t("adminForum")}</h2>
       {access.canManageVisibility
         ? <p><Link to={hiddenQueuePath(locale,"topic",undefined,routing)}>{t("adminHiddenQueueTitle")}</Link></p>
         : null}
-      <h3>{t("adminForumCategories")}</h3><BrowseControls path={path} query={query} page={page} locale={locale}/>
+      <h3>{t("adminForumCategories")}</h3>
+      {access.canManageStructure&&access.actorId?<CreateCategoryForm key={access.actorId} actorId={access.actorId} version={page.structureVersion} path={path}/>:null}
+      <BrowseControls path={path} query={query} page={page} locale={locale}/>
       {page.items.length?<ul className="admin-forum-objects">{page.items.map(category=><li key={category.id}>
         <h4><Link to={adminCategoryPath(locale,category.id,routing)}><bdi>{category.name}</bdi></Link></h4>
         {category.reserved?<span className="admin-forum-reserved">{t("adminForumReservedCategory")}</span>:null}
