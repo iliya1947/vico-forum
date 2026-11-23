@@ -2,7 +2,7 @@
 
 ## Активный этап
 
-**Moderation visibility assembled #355 — Mira whole-feature review PART 2/4 PASS; STOP before PART 3.**
+**Moderation visibility assembled #355 — Mira whole-feature review PART 3/4 PASS; STOP before PART 4.**
 
 Stable review target unchanged:
 - Draft #355 exact `fdad1930fc68a854d52bee31922f923be5c1c751`;
@@ -14,32 +14,28 @@ Stable review target unchanged:
 
 1. **PART 1 — scope + schema/History/authority foundation: PASS.**
 2. **PART 2 — public reads + Hide/Restore actions + guarded private moderation surface: PASS.**
-3. PART 3 — assets/translations/personal state/inbox: pending fresh owner continuation.
-4. PART 4 — UI/races/connected acceptance + final whole-feature verdict: blocked until PART 3.
+3. **PART 3 — assets/translations/personal state/inbox: PASS.**
+4. PART 4 — UI/races/connected acceptance + final whole-feature verdict: pending fresh owner continuation.
 
-### PART 2 verified
+### PART 3 verified
 
-- Public topic direct read returns neutral absence for hidden topic; thread read is REPEATABLE READ.
-- Hidden posts project as typed tombstones containing only stable id/topic/parent/time; no author identity, revision, body, translation, attachment metadata or visibility baseline is serialized.
-- Attachment metadata is joined only for visible post ids.
-- Public post location/history/edit-recovery seams require both visible post and visible parent topic.
-- Homepage/category/section, Popular, Unanswered, Tags/Tag, Search, Help/similar, profile counts, unread and generic Admin forum browsing all apply visibility in SQL before public count/rank/LIMIT/pagination rather than filtering React-ready rows afterward.
-- Search joins only visible posts before body matching; visible title/tag search remains valid with zero visible bodies.
-- Unanswered uses the persisted chronological root but counts only visible non-root replies, matching V5.
-- Hidden duplicate-original public presentation becomes an unavailable empty stub; hidden original id/title are not returned in the public reference.
-- Hide/Restore canonical POST branch runs before ordinary public availability gates, allowing Restore without public-source reads.
-- Payload is scalar/allowlisted, exact intent, session actor-bound, same-origin, canonical version/revision/member id; reason is NUL/code-point bounded and trimmed before writer.
-- Writer locks topic → target post when applicable → active actor/AP-10 → dynamic RBAC; CAS precedes no-op; no-op still passes admission; real transition requires reason, guards integer exhaustion, updates state once and appends neutral History last in the same transaction.
-- Generic Admin/history/Complaint permissions do not grant private visibility inspection. Existing admin topic route remains public-safe and returns 404 for hidden topic.
-- Private hidden queue is isolated from public ForumReader, 25+1 keyset-paged, exposes only ids/state/effective-parent status; capability + active-account admission is performed on every read.
-- Inspector reads current state/revision id/current visibility event reason only. Missing matching History for nonzero visibility version is invariant failure/503, not a synthetic reason.
-- Raw prior post revisions require both `forum.content.visibility.manage` and existing `forum.post.history.read`; private route checks the extra grant before parsing history cursor.
-- Queue/inspection document/data responses are `private, no-store`; auth/storage/unexpected failures fail closed without private SQL/source text.
-- Public visibility action error responses are neutral and `private, no-store`; stale/unknown outcomes do not auto-retry or fetch hidden source.
-- Existing ordinary topic actions were checked for dispatch overlap; visibility detection cannot fall through from a malformed mixed payload to another writer.
-- No confirmed current-feature defect in PART 2.
+- Public attachment metadata/download requires exact published post membership plus visible post and visible topic before bucket access; hidden topic/post returns neutral 404 and does not call the public bucket path.
+- Private hidden-attachment access is a separate exact-membership route: fresh visibility capability + active actor, strict IDs/view, type-checked object only, `private, no-store`; generic Admin/history rights do not proxy access.
+- Shared attachment references, owner draft references and protected Complaint evidence survive Hide; visibility does not rewrite or garbage-collect retained objects.
+- The possible interval after a public request has already passed the DB visibility check but before object delivery is **not a current-stage blocker**: accepted V1–V9 requires 404/bucket-call-0 for requests evaluated after hidden state and explicitly leaves already delivered bytes outside scope; asset-stream linearization is not in the accepted race matrix.
+- Translation generation action first resolves the public topic snapshot; hidden topic and hidden post return not-found before source is handed to generation.
+- Topic-title and post-body planning recheck visibility under PostgreSQL row locks before budget/task mutation. A hidden target yields revision-not-current and rolls provisional planning state back.
+- Previously accepted translation work may finish and persist privately after Hide, including when Hide commits during the provider window. Public topic/post projection still withholds hidden source/translation.
+- Restore does not enqueue/backfill translation work: completed translation is reused as `translation-current`, with no new task/enqueue/provider call; pending pre-Hide task remains the same logical task.
+- Watch ON / Bookmark Add / Mute ON require a currently visible topic and serialize with Hide; own Unwatch/Remove/Unmute remain safe for hidden/absent target without exposing hidden metadata.
+- Retained Bookmark/Mute rows remain pageable and become metadata-free `unavailable` rows while hidden; Restore recovers current public presentation. Block state is retained, but blocked-author projection only considers visible posts in a visible topic.
+- Read-state/unread projection excludes hidden posts and hidden topics while retaining chronological anchors. Restore does not manufacture unread state or activity.
+- Mixed and legacy notification readers retain recipient-owned rows, unread-first order, `read_at`, badge counts and protected Complaint notices, while ordinary hidden reply/mention targets become neutral unavailable with topic/post/title/actor removed.
+- Mark-read remains recipient-owned under hidden content, updates the retained notice once and returns a neutral unavailable target; after Restore the same retained notice resolves again without changing its prior `read_at`.
+- Hide/Restore itself creates no notification fanout/backfill. Existing notification rows and `forum_post_notification_suppressions` are unchanged; suppression receipts continue preventing old-mention backfill.
+- No confirmed current-feature defect in PART 3.
 
-**Mandatory STOP.** No PART 3, Leva review, merge, docs or deploy until fresh owner continuation.
+**Mandatory STOP.** No PART 4, Leva review, merge, docs or deploy until fresh owner continuation.
 
 ## Baseline
 
