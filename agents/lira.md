@@ -1,9 +1,7 @@
-# agents/lira.md — pre-fold sync MIRA PASS; STOP before fold
+# agents/lira.md — assembled #355 pending owner continuation
 
-- Draft #376 exact `fdad1930fc68a854d52bee31922f923be5c1c751` independently reviewed by Мира.
-- Merge parents: old B8/B9 `108e0ba31ed34f891e8b46e411991b893b9da56b` + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
-- Current-main relation: ahead 315 / behind 0.
-- SA04-N/K5 reconciliation preserves current manual-label/dispatch semantics and only adds accepted B8 connected visibility calls.
-- Exact-head evidence: 48 checks = 24 SUCCESS + 24 expected SKIPPED; 38 workflows = 20 SUCCESS + 18 expected SKIPPED; zero failures. CI #45088550855, SA04-N #45088550926, SA04-K5 #45088550961 SUCCESS.
-- **Mira coordinator PASS. No current pre-fold blocker confirmed.**
-- **Лира STOP.** No B1 fold, intermediate PR closure, assembled-head self-check/reviews, merge, docs or deploy until fresh owner continuation.
+- Stack fold is complete. B1 branch / Draft #355 exact head is `fdad1930fc68a854d52bee31922f923be5c1c751`, targeting current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- #355 is ahead 315 / behind 0, mergeable clean, 132 files (+24351/−492), containing the full accepted B1–B9 result.
+- Intermediate #357/#359/#365/#367/#370/#371/#376 are superseded. GitHub recorded them as merged into B1 after B1 fast-forward made their heads contained; no merge action into main occurred and main is unchanged.
+- **STOP / not yet active:** final assembled-head author self-check requires fresh owner continuation. When authorized, run it in **#355→main context**, not by reusing #376 PR-context evidence. Obtain fresh applicable `run:ci` + `run:acceptance` evidence on exact #355 head, reconcile whole-feature diff against current main, then STOP for Mira whole-feature review.
+- Do not merge, start Mira/Leva whole-feature review, docs closeout or deploy.
