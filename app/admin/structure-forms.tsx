@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {useFetcher,useRevalidator} from "react-router";
 import {useTranslation} from "react-i18next";
 import {useAdministrativeRouting} from "../administrative-routing/provider";
@@ -25,18 +25,17 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
   const mode=useRef<"replace"|"append">("replace");
   const lastResponse=useRef<unknown>(null);
   const url=routing.admin.destinations(locale);
-  const load=(search:string,after?:string)=>{
+  const load=useCallback((search:string,after?:string)=>{
     const params=new URLSearchParams({kind:"categories"});
     if(search)params.set("q",search);
     if(after)params.set("after",after);
     fetcher.load(url+"?"+params.toString());
-  };
+  },[fetcher.load,url]);
   useEffect(()=>{
     mode.current="replace";
     load("");
-    // One read per mounted actor/form lifetime; never resolve private options from a previous actor.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[actorId,url]);
+    // One read per mounted actor/form lifetime, not for each fetched result.
+  },[actorId,load]);
   useEffect(()=>{
     const data=fetcher.data;
     if(fetcher.state!=="idle"||!data||data===lastResponse.current)return;
@@ -58,7 +57,7 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
       setActiveQuery(query);mode.current="replace";load(query);
     }}>{t("structureCategorySearchSubmit")}</button>
     <label>{t("structureDestinationCategory")}
-      <select name="targetCategoryId" value={selected} required onChange={event=>{
+      <select name="targetCategoryId" value={selected} dir="auto" required onChange={event=>{
         const id=event.currentTarget.value;
         setCurrentItem(items.find(item=>item.id===id)??null);
         onChange(id);
