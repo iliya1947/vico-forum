@@ -2,10 +2,30 @@
 
 ## Author gate
 
-**PASS на exact head `86aadfe49dfe175b7f42baeaa6fa78883631ebeb`**, Draft [#382](https://github.com/iliya1947/vico-forum/pull/382).
+**PASS на exact head `18627a8c53a6db681a7f4f278b88fcdd55f579c1`**, Draft [#382](https://github.com/iliya1947/vico-forum/pull/382).
 Это авторская самопроверка, не independent review. Следующая — Мира для bounded F4 coordinator checkpoint; Лёва STOP до нового назначения.
 
-Base: `feat/forum-structure-f3`, accepted exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`. Стек не merge. F4 diff: 28 files / +691 −71, два commits; schema/migrations/dependencies/grants не менялись. Проверенный main baseline `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+Base: `feat/forum-structure-f3`, accepted exact `ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78`. Стек не merge. F4 diff: 28 files / +750 −75, три commits; schema/migrations/dependencies/grants не менялись. Проверенный main baseline `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+
+## Correction F4-01 после Mira HOLD
+
+Мира проверила прежний head `86aadfe49dfe175b7f42baeaa6fa78883631ebeb` и подтвердила один current-F4 blocker: mandatory singleton absence смешивалась с отсутствием target или выходила как structureVersion:null.
+
+В correction commit `18627a8c53a6db681a7f4f278b88fcdd55f579c1` изменены только два production modules и три test files (+84 −29 относительно reviewed head):
+
+- Move context больше не зависит от CROSS JOIN singleton: один statement возвращает nullable target и независимую scalar structureVersion. Обязательная версия проверяется до target-not-found/hidden decision; источник и версия остаются в том же RR snapshot.
+- Admin listCategories/readCategory/readSection/readSectionTopics проверяют обязательную version через локальный guard. Single-statement envelope возвращается также при absent root/пустом filter result, поэтому отсутствие mandatory state не превращается в undefined/null DTO.
+- Database row types честно отражают nullable scalar version до invariant guard. Дополнительных запросов, locks, grants, migrations, fallback/default version или нового error mapping нет.
+- Existing picker invariant сохранён; denied actor/input validation по-прежнему выполняются до private reads. Нормальные absent/protected targets при существующем singleton сохраняют прежний neutral404.
+
+Новые regression cases:
+- 4 PG cases для visible/hidden/absent/Help move target: mover и Owner получают StructureInvariantError при singleton absence; неавторизованный History actor остаётся Forbidden. После восстановления singleton возвращается корректный context/absence.
+- 8 PG cases для всех Admin structureVersion projections, включая empty filtered list и absent category/section roots.
+- 2 PG cases для category/section picker, включая пустой matching set.
+- Private context/picker и Admin route tests проверяют, что StructureInvariantError не преобразуется в denial404, validation400 или availability503; он остаётся штатным private500 через существующий Worker boundary.
+- Локально:38 private-reader PG +7 existing Admin PG =45 PASS;119 route/Worker unit PASS; TypeScript/targeted ESLint/git diff check PASS. Тестовая loopback vico_f4_fix_test удалена, container возвращён в stopped, worktree clean.
+
+Correction не закрывает coordinator HOLD самостоятельно: после нового author gate следующая Мира повторно проверяет F4 на новом exact head. F5 не активирован.
 
 ## Реализованный контракт
 
@@ -31,39 +51,39 @@ Base: `feat/forum-structure-f3`, accepted exact `ecc15de9d7036bac13f4ecafcb6fc07
 
 | Область | Проверка |
 |---|---|
-| Новые private reads | 24 PG17 tests: move-only/visibility-only/dual/Owner/structure/history/author, current raw overrides, revoke обоих ключей, inactive/AP-10/Owner immunity, fake-capability denial, Help и hidden source-free/neutral404 |
+| Новые private reads | 38 PG17 tests (24 исходных + 14 F4-01): move-only/visibility-only/dual/Owner/structure/history/author, current raw overrides, revoke обоих ключей, inactive/AP-10/Owner immunity, fake-capability denial, Help и hidden source-free/neutral404 |
 | Order/page/filter | Более двух страниц, global/sibling order до LIMIT, exact matching totals, literal wildcards/Unicode/ID/category context, full-bigint seek/equal-position C ties, malformed/legacy/context-crossed cursor |
 | Committed projections | Настоящие authoritative reparent/move обновляют homepage/category/section/topic/Admin counts, parent/breadcrumbs/location; first-three sections следуют persisted order |
 | Snapshot races | Пять two-connection races: homepage×reparent; category count/latest×move; section breadcrumb/topics×reparent; private global/location/parent×reparent+move; picker labels/version×rename. Barrier после реально выполненного snapshot SELECT; writer завершён до следующего reader statement. Без mock rows/произвольного sleep |
 | Least privilege | Exact existing web capability/max1 pool: visible/hidden context, picker, Admin versions и public hierarchy snapshots без дополнительных grants |
-| Regression/unit | F2 commands36/F3 move48 PASS локально; final new24/Admin7/profile16 PASS. Targeted routes/cursors/named routing/private Worker headers159 + mounted error recovery7; TypeScript/lint PASS |
+| Regression/unit | F2 commands36/F3 move48 PASS локально; final new38/Admin7/profile16 PASS. Targeted routes/cursors/named routing/private Worker headers159 + mounted error recovery7; TypeScript/lint PASS |
 
 Первый полный [CI45260291770](https://github.com/iliya1947/vico-forum/actions/runs/45260291770) выявил ровно два test-integration несоответствия: exact route enumeration не содержала новые адреса; SA04-C2 profile fixture держала внешнюю transaction перед новым RR reader. Enumeration обновлена; fixture теперь фиксирует состояние между reads и восстанавливает account fields в finally. Production snapshot не получил обхода/nested-transaction fallback. Дополнительно закрыт First recovery; применён React checklist: обычная ссылка, стабильные hooks, без state/effects/data requests.
 
 ## Final exact-head checks
 
-[CI45261384641](https://github.com/iliya1947/vico-forum/actions/runs/45261384641) — PASS:
-- checks job137996739370: **237 files / 3070 unit tests**, lint/typecheck, production build/UI-preview build, migration guard0, metadata/Drizzle parity.
-- database job137996738279: **118 files / 1815 PostgreSQL tests**, manifest75, exact runtime privileges/row-lock probes, split-authority provisioning, credential diagnostic/recovery/bootstrap и все built Worker HTTP smokes.
+[CI45264492368](https://github.com/iliya1947/vico-forum/actions/runs/45264492368) — PASS на corrected head `18627a8c53a6db681a7f4f278b88fcdd55f579c1`:
+- checks job138007672044: **237 files / 3072 unit tests**, lint/typecheck, production/UI-preview builds, migration guard0, metadata/Drizzle parity.
+- database job138007671956: **118 files / 1829 PostgreSQL tests**, manifest75, runtime positive/negative privileges/row-lock probes, split-authority provisioning, credential diagnostic/recovery/bootstrap и все built Worker HTTP smokes.
 - Все **17 применимых acceptance workflows** на том же head — PASS с первой попытки этого head:
 
-- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396991)
-- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396402)
-- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396798)
-- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396500)
-- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396558)
-- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396983)
-- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396823)
-- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396504)
-- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396470)
-- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396952)
-- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396518)
-- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396865)
-- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261397101)
-- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396888)
-- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396439)
-- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396524)
-- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45261396814)
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510663)
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510669)
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511052)
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511156)
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510955)
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511421)
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510884)
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510520)
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511317)
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510696)
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510667)
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511083)
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510572)
+- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511057)
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511049)
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264510687)
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45264511127)
 
 Это existing connected regressions, не заявление о выполненном F6 whole-feature browser acceptance новых F5 forms.
 
