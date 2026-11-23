@@ -1,28 +1,8 @@
-# agents/lira.md — active correction assignment for assembled #355
+# agents/lira.md — VIS-FINAL-LEVA-01/02 author PASS; STOP → Мира whole-feature review
 
-## Goal
-
-Correct only the two confirmed final-review defects in existing Draft #355, then author-check and STOP.
-
-## Target
-
-- implementation PR: #355
-- branch: `feature/moderation-visibility-b1-foundation`
-- reviewed starting head: `fdad1930fc68a854d52bee31922f923be5c1c751`
-- base/current main at assignment: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`
-
-## Required corrections
-
-1. **VIS-FINAL-LEVA-01:** pending own Help signal withdrawal must remain available when its topic/proposed original/selected-answer dependency is hidden. Preserve exact signal/topic membership, author-only, pending-only, active-account and safe lock ordering; do not weaken create/review/content gates. Add real-PG coverage for hidden primary/original/answer plus foreign/nonpending/inactive negatives and no hidden-source disclosure.
-
-2. **VIS-FINAL-LEVA-02:** ordinary Admin topic must preserve sanitized hidden tombstone chronology so permanent post numbers, original-question identity, anchors/parent relations and best-answer candidates do not shift when root/middle content is hidden. Do not expose hidden source/revision/attachments and do not give ordinary Admin an includeHidden/private-reader bypass. Add focused model/route/render regressions for hidden root, hidden middle/parent and candidate behavior.
-
-## Done
-
-- bounded implementation and tests only;
-- author self-check of complete correction diff;
-- meaningful targeted/PG checks;
-- fresh applicable PR CI/acceptance if changed paths trigger them;
-- publish new exact head + evidence in service state and STOP for Mira.
-
-Do not merge #355, start docs/structure task or deploy.
+- Existing assembled Draft [#355](https://github.com/iliya1947/vico-forum/pull/355), final exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, current base main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`, Draft/unmerged. Previous whole-feature review exact `fdad1930...` expired on implementation change.
+- **Corrected both independently confirmed P2 findings as one bounded package** (8 files/5 commits; no schema/grants/Stage6/deployment): (1) own pending Help-signal withdrawal under hidden primary/proposed-original/answer with existing sorted dependency locks, identity/membership, author, active actor and pending checks retained; creation/review visibility unchanged. (2) ordinary Admin topic retains typed sanitized hidden tombstones and stable numbers/root/best/parent anchors, excludes author/source/revisions/attachments/actions and hidden best-answer candidates; no private read.
+- Real PostgreSQL17 additions/updated tests cover primary/original/answer hidden, foreign/resolved/inactive/wrong-topic, Review rejected/accepted still blocked, History unchanged; Admin loader/DOM/QuickActions tests cover root/middle/best and no hidden leakage.
+- Final **#355→main exact-head** [CI #45168532264](https://github.com/iliya1947/vico-forum/actions/runs/45168532264) SUCCESS (2958 unit, 1693 PG17, lint/typecheck/build/preview, manifest/privileges, Worker B8-B1/B3); [SA04-N #45168532275](https://github.com/iliya1947/vico-forum/actions/runs/45168532275) SUCCESS C1+C2+C3; [SA04-K5 #45168532028](https://github.com/iliya1947/vico-forum/actions/runs/45168532028) SUCCESS 33 existing cases and B8-B2 local R2. All 38 workflows complete: 20 success/18 expected skipped; 48 PR-specific check runs: 24 success/24 expected skipped. Zero final FAIL/pending, labels consumed.
+- Previous red attempts were test-expectation/describe edit errors; K5 one pre-existing browser operation ID assertion flaked, passed on same-head job rerun and later final SHA. Corrected before final pass. No other defect established in bounded author-check.
+- Full evidence and Mira handoff `WORKFLOW.md`, #355 description. **Лира STOP. Next Мира** new whole-feature independent review of `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, then Leva on same SHA only following Mira PASS. No merge/docs/next structure task/deploy.
