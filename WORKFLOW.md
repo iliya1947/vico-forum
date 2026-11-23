@@ -2,19 +2,23 @@
 
 ## Активный этап
 
-**Moderation visibility B9 pre-fold current-main sync author-check PASS — Лира STOP before stack fold.**
+**Moderation visibility B9 pre-fold current-main sync — MIRA COORDINATOR PASS; STOP before stack fold.**
 
-- Mira pre-fold HOLD on outdated merge-base closed at author level: exact accepted B8-C / initial B9 head `108e0ba31ed34f891e8b46e411991b893b9da56b` was ahead 314 / behind 5 vs current `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`. **New final Draft B8 #376 exact head `fdad1930fc68a854d52bee31922f923be5c1c751`**, true merge commit with first parent old B8 exact `108e0ba3`, second parent current main `9cff976a`, branch `feature/moderation-visibility-b8-acceptance`; **ahead 315 / behind 0** vs main.
-- Sync was **one merge commit, no feature code changes**. 22 current-main changed paths imported from 5 missing main commits. 20 files carried byte-identical main blobs (including current `AGENTS.md`, `PROJECT_STATE.md`, CI/manual test controls). Exactly two overlapping workflow files were combined: SA04-N and SA04-K5 preserve **all of current-main** `pull_request: labeled` / path filters / `workflow_dispatch` / `run:acceptance` job guards and event-dependent `IMPLEMENTATION_SHA`; retain **all B8 additions** invoking C1/C2/C3 real Worker/Chromium and B8-B2 local R2 smoke. No runtime/schema/permission/Stage6/release/docs changes introduced by sync.
-- **Final cumulative diff against current `main`**: 132 files, +24351/−492 lines, including accepted B1–B7 moderation-visibility code/schema/route/locale/permission changes and B8-only PostgreSQL/Worker/Chromium/local-R2 acceptance files. No `AGENTS.md`, `PROJECT_STATE.md`, test-control workflow or other unrelated main drift remains in this diff; all file paths are under expected app/db/drizzle/tests/scripts/workers/.github acceptance/manifest or `tsconfig.node.json`. Draft B8 PR remains stacked on B7 #371 unchanged exact `f92778606f1c8ea4e64f53c1660910f34c48b84c`. **Do not fold yet.**
-- **Final checks on new exact head `fdad1930...` via current main one-shot labels `run:ci` and `run:acceptance`:** all **38/38 workflow runs completed**: **20 SUCCESS** (including two manual-label consumption runs) + **18 expected SKIPPED** due the other label event; **0 FAILURE**. All **48/48 check-runs completed**: **24 SUCCESS + 24 expected SKIPPED**, zero failure. Both test labels consumed and removed.
-  - [CI #45088550855](https://github.com/iliya1947/vico-forum/actions/runs/45088550855) **SUCCESS**, `checks` 2951/2951 unit, lint/typecheck/build/UI preview, migration history/metadata/Drizzle; `database` 1689/1689 PostgreSQL17 plus schema manifest/runtime privilege/provisioning/credential recovery checks, Worker Better Auth and B8-B1/B8-B3 protected/fault smoke PASS.
-  - [SA04-N #45088550926](https://github.com/iliya1947/vico-forum/actions/runs/45088550926) **SUCCESS**, original Complaint connected plus explicit **all C1/C2/C3 Chromium PASS** markers, including no-store public/private, revoke, SQL outage 503 and History500 atomic rollback.
-  - [SA04-K5 #45088550961](https://github.com/iliya1947/vico-forum/actions/runs/45088550961) **SUCCESS**, original 33 R2/Chromium PASS + B8-B2 positive published/private/draft/Complaint local-R2 PASS.
-  - All other applicable connected browser/authority/Owner/notification/Watch/Bookmark/localization smoke workflows SUCCESS (among the 20 total). Current main, exact head and unchanged B7 base reconfirmed after CI completion.
-- B8-A/B/C coordinator PASS remain evidence for their prior accepted heads, while the new exact head's integration and CI have **author PASS only**. No confirmed current-stage regression after main-sync. Prior B9 author evidence supplemented by new synced-head checks, not misrepresented as an unchanged-head replay.
-- **Mandatory STOP.** Next actor **Мира** evaluates the now-synced B9 pre-fold author result and determines the next permitted fold route. Until fresh process continuation: **do not move B1, close B2–B8, start assembled-head author/whole-feature Mira/Leva review, merge, docs closeout or deploy**.
-
+- Independently reviewed Draft #376 exact `fdad1930fc68a854d52bee31922f923be5c1c751`.
+- Merge commit parents are exactly old accepted B8/B9 head `108e0ba31ed34f891e8b46e411991b893b9da56b` + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Comparison against current main: **ahead 315 / behind 0**. The prior stale-base blocker is closed.
+- Delta from old B8 head to synced head is exactly the 22 paths introduced by the five missing main commits plus the merge commit. Non-overlapping policy/docs/workflow files are current-main content.
+- The only overlapping files, SA04-N and SA04-K5, preserve current-main `pull_request: labeled`, `workflow_dispatch`, `run:acceptance` guards and event-sensitive `IMPLEMENTATION_SHA`. Relative to current main, their only added behavior is the accepted B8 C1/C2/C3 Chromium calls and B8-B2 local-R2 call.
+- Exact-head evidence independently verified:
+  - **48/48 check-runs completed:** 24 SUCCESS + 24 expected SKIPPED, 0 failures;
+  - **38/38 workflow runs completed:** 20 SUCCESS + 18 expected SKIPPED, 0 failures;
+  - CI #45088550855 SUCCESS;
+  - SA04-N #45088550926 SUCCESS;
+  - SA04-K5 #45088550961 SUCCESS;
+  - all runs are on exact `fdad1930...`.
+- No confirmed current-stage regression or unauthorized scope introduced by the main sync.
+- **Coordinator PASS.** The pre-fold integration blocker is closed.
+- **Mandatory STOP before fold.** Do not move B1, close B2–B8, start assembled-head author self-check / Mira whole-feature review / Leva review, merge, docs closeout or deploy until fresh owner continuation.
 
 ## Baseline
 
