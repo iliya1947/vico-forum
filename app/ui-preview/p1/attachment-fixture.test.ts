@@ -39,13 +39,13 @@ it("routes real upload action through original admission, streaming validation a
     });
     const replay = await upload({ request: request(), context: environment.createContext() });
     expect(replay.status).toBe(201);
-    expect((await replay.json()).attachment.id).toBe(attachmentId);
+    expect(await replay.json()).toMatchObject({ attachment: { id: attachmentId } });
 
     const denied = await upload({
       request: request("https://foreign.example.invalid"), context: environment.createContext(),
     });
     expect(denied.status).toBe(403);
-    expect((await denied.json()).error).toBe("origin");
+    expect(await denied.json()).toMatchObject({ error: "origin" });
   } finally {
     environment.dispose();
   }
