@@ -2,6 +2,7 @@ import {
   createStaticHandler, matchRoutes, type RouteObject, type RouterContextProvider,
 } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
+import { installPreviewXhrTransport } from "./xhr-transport";
 
 type ResourceModules = ReadonlyMap<string, Record<string, unknown>>;
 type ContextFactory = () => RouterContextProvider;
@@ -69,6 +70,7 @@ export function installPreviewResourceTransport({
   host?: Window & typeof globalThis;
 }) {
   const originalFetch = host.fetch;
+  const originalXhr = host.XMLHttpRequest;
   const originalBoundFetch = originalFetch.bind(host);
   const paths = [routePaths(manifest)];
   const ids = new Set(resourceIds ?? []);
@@ -80,6 +82,15 @@ export function installPreviewResourceTransport({
   const activeRequests = new Set<AbortController>();
   let ready: () => void = () => {};
   const initialized = new Promise<void>((resolve) => { ready = resolve; });
+
+  const hasConcreteMatch = (url: URL) =>
+    matchRoutes(paths, url.pathname)?.some(({ route }) =>
+      route.path?.split("/").some((part) => part !== "" && part !== "*"
+        && !part.startsWith(":"))) ?? false;
+  const nativeAsset = (url: URL, method: string) =>
+    resourceIds === undefined && url.origin === host.location.origin
+    && !hasConcreteMatch(url) && (method === "GET" || method === "HEAD")
+    && /\/[^/]+\.[^/.]+$/u.test(url.pathname);
 
   async function execute(request: Request, id: string, suppliedOrigin: string | null) {
     await initialized;
@@ -130,15 +141,10 @@ export function installPreviewResourceTransport({
     }
     const matches = matchRoutes(paths, url.pathname);
     const id = matches?.at(-1)?.route.id;
-    const concreteMatch = matches?.some(({ route }) =>
-      route.path?.split("/").some((part) => part !== "" && part !== "*"
-        && !part.startsWith(":"))
-    ) ?? false;
+    const concreteMatch = hasConcreteMatch(url);
     // A generated locale + "*" not-found route also matches native asset URLs.
     // Only GET/HEAD file URLs lacking a concrete application segment may pass.
-    if (resourceIds === undefined && !concreteMatch
-      && (request.method === "GET" || request.method === "HEAD")
-      && /\/[^/]+\.[^/.]+$/u.test(url.pathname)) {
+    if (nativeAsset(url, request.method)) {
       return nativeFetch();
     }
     if (!handler && resourceIds === undefined && concreteMatch) {
@@ -227,6 +233,9 @@ export function installPreviewResourceTransport({
     }
   };
   host.fetch = wrapped;
+  const xhr = resourceIds === undefined
+    ? installPreviewXhrTransport({ host, originalXhr, nativeAsset })
+    : null;
 
   return {
     configure(routes: RouteObject[], loaded: ResourceModules) {
@@ -260,6 +269,7 @@ export function installPreviewResourceTransport({
       }
       activeRequests.clear();
       ready();
+      xhr?.dispose();
       if (host.fetch === wrapped) host.fetch = originalFetch;
     },
   };
