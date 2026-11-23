@@ -1,10 +1,28 @@
-# agents/lira.md — assembled #355 final author PASS; STOP for Mira whole-feature review
+# agents/lira.md — active correction assignment for assembled #355
 
-- Final assembled [Draft #355](https://github.com/iliya1947/vico-forum/pull/355) exact **`fdad1930fc68a854d52bee31922f923be5c1c751`**, base unchanged `main` `9cff976a9621d9fe5dfef28ea5367e390ff435b1`, ahead 315/behind 0, mergeable clean, Draft/unmerged.
-- Full B1–B9 result in first stacked PR; **132 files (+24351/−492)** vs current main, all visibility domain/CI/acceptance. Code/tree unchanged from integrated accepted B8 pre-fold; PR context now #355→main. No unrelated current Stage6, deploy or docs scope.
-- **Fresh #355-context check**: `run:ci`+`run:acceptance` one-shot labels consumed. **38 workflows: 20 SUCCESS / 18 expected SKIPPED**, **48 check-runs: 24 SUCCESS / 24 expected SKIPPED**, 0 failures/pending.
-- [CI #45149489505](https://github.com/iliya1947/vico-forum/actions/runs/45149489505) SUCCESS: lint/typecheck/unit **2951**, real PG17 **1689**, build/preview, migration history/metadata/schema/privileges/provisioning, B8-B1/B8-B3 real Worker/Better Auth transport PASS.
-- [SA04-N #45149490457](https://github.com/iliya1947/vico-forum/actions/runs/45149490457) SUCCESS: actual Chromium C1 (5)/C2 (7)/C3 (6) PASS markers.
-- [SA04-K5 #45149490210](https://github.com/iliya1947/vico-forum/actions/runs/45149490210) SUCCESS: original 33 local-R2/Chromium + B8-B2 PASS. Other applicable connected suites all SUCCESS.
-- Whole-feature scope/acceptance mapping, precise evidence, and known stacked GitHub metadata deviation (intermediate PRs recorded merged **into B1**, not `main`) are in `WORKFLOW.md` and #355 description. PR title/body updated to actual final whole-feature content. No author-discovered current-stage blocker.
-- **Лира STOP. Next actor Мира** for independent **whole-feature review of assembled #355 exact head**. If Mira returns finding, accept only confirmed current-scope defect and rerun relevant evidence on corrected SHA; do not act without new assignment. Do not run Mira/Leva review for self, merge, documentation or deploy.
+## Goal
+
+Correct only the two confirmed final-review defects in existing Draft #355, then author-check and STOP.
+
+## Target
+
+- implementation PR: #355
+- branch: `feature/moderation-visibility-b1-foundation`
+- reviewed starting head: `fdad1930fc68a854d52bee31922f923be5c1c751`
+- base/current main at assignment: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`
+
+## Required corrections
+
+1. **VIS-FINAL-LEVA-01:** pending own Help signal withdrawal must remain available when its topic/proposed original/selected-answer dependency is hidden. Preserve exact signal/topic membership, author-only, pending-only, active-account and safe lock ordering; do not weaken create/review/content gates. Add real-PG coverage for hidden primary/original/answer plus foreign/nonpending/inactive negatives and no hidden-source disclosure.
+
+2. **VIS-FINAL-LEVA-02:** ordinary Admin topic must preserve sanitized hidden tombstone chronology so permanent post numbers, original-question identity, anchors/parent relations and best-answer candidates do not shift when root/middle content is hidden. Do not expose hidden source/revision/attachments and do not give ordinary Admin an includeHidden/private-reader bypass. Add focused model/route/render regressions for hidden root, hidden middle/parent and candidate behavior.
+
+## Done
+
+- bounded implementation and tests only;
+- author self-check of complete correction diff;
+- meaningful targeted/PG checks;
+- fresh applicable PR CI/acceptance if changed paths trigger them;
+- publish new exact head + evidence in service state and STOP for Mira.
+
+Do not merge #355, start docs/structure task or deploy.
