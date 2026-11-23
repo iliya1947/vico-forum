@@ -2,6 +2,8 @@ name: Own topic title connected acceptance
 
 on:
   pull_request:
+    types:
+      - labeled
     paths:
       - ".github/workflows/topic-title-browser.yml"
       - "tests/browser/topic-title/**"
@@ -14,11 +16,14 @@ on:
       - "db/hyperdrive-forum.ts"
       - "drizzle/**"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
 jobs:
   title_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
