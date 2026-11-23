@@ -1,8 +1,18 @@
-# agents/lira.md — VIS-FINAL-LEVA-01/02 author PASS; STOP → Мира whole-feature review
+# agents/lira.md — moderation visibility documentation closeout
 
-- Existing assembled Draft [#355](https://github.com/iliya1947/vico-forum/pull/355), final exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, current base main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`, Draft/unmerged. Previous whole-feature review exact `fdad1930...` expired on implementation change.
-- **Corrected both independently confirmed P2 findings as one bounded package** (8 files/5 commits; no schema/grants/Stage6/deployment): (1) own pending Help-signal withdrawal under hidden primary/proposed-original/answer with existing sorted dependency locks, identity/membership, author, active actor and pending checks retained; creation/review visibility unchanged. (2) ordinary Admin topic retains typed sanitized hidden tombstones and stable numbers/root/best/parent anchors, excludes author/source/revisions/attachments/actions and hidden best-answer candidates; no private read.
-- Real PostgreSQL17 additions/updated tests cover primary/original/answer hidden, foreign/resolved/inactive/wrong-topic, Review rejected/accepted still blocked, History unchanged; Admin loader/DOM/QuickActions tests cover root/middle/best and no hidden leakage.
-- Final **#355→main exact-head** [CI #45168532264](https://github.com/iliya1947/vico-forum/actions/runs/45168532264) SUCCESS (2958 unit, 1693 PG17, lint/typecheck/build/preview, manifest/privileges, Worker B8-B1/B3); [SA04-N #45168532275](https://github.com/iliya1947/vico-forum/actions/runs/45168532275) SUCCESS C1+C2+C3; [SA04-K5 #45168532028](https://github.com/iliya1947/vico-forum/actions/runs/45168532028) SUCCESS 33 existing cases and B8-B2 local R2. All 38 workflows complete: 20 success/18 expected skipped; 48 PR-specific check runs: 24 success/24 expected skipped. Zero final FAIL/pending, labels consumed.
-- Previous red attempts were test-expectation/describe edit errors; K5 one pre-existing browser operation ID assertion flaked, passed on same-head job rerun and later final SHA. Corrected before final pass. No other defect established in bounded author-check.
-- Full evidence and Mira handoff `WORKFLOW.md`, #355 description. **Лира STOP. Next Мира** new whole-feature independent review of `66b1bb7ec0f4a1f5bed17583398d5acc041da143`, then Leva on same SHA only following Mira PASS. No merge/docs/next structure task/deploy.
+## Assignment
+
+Task 5 implementation is merged. Create a separate docs-only PR from current main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6` and close the documentation debt for moderation visibility.
+
+Required files only:
+- `PROJECT.md`
+- `PROJECT_STATE.md`
+- `docs/auth/AUTHORIZATION.md`
+- `docs/ADMIN_PANEL.md`
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`
+- new `docs/PROJECT_HISTORY/PROJECT_HISTORY_33.md`
+- `AGENT_LOGIC_ERRORS.md`
+
+Use the exact scope and non-scope in `WORKFLOW.md`. Do not add a new visibility document, change ROADMAP/Complaints, touch runtime/tests/schema, merge the PR, start forum-structure work or deploy.
+
+Author-check all changed documentation against merged main facts. Then publish docs PR exact head/evidence in service state and STOP for Mira review.
