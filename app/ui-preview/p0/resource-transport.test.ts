@@ -131,6 +131,43 @@ describe("generic P0 resource request dispatch", () => {
     }
   });
 
+  it("fails closed on concrete P1 routes before configure, without blocking native assets", async () => {
+    const originalFetch = vi.fn(async () => new Response("asset", { status: 200 }));
+    window.fetch = originalFetch;
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/api", file: "routes/api.ts", path: "api/*" },
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/home", file: "routes/home.tsx", index: true },
+            { id: "routes/presence", file: "routes/presence.ts", path: "presence" },
+          ],
+        },
+      ],
+    };
+    const adapter = installPreviewResourceTransport({
+      manifest: all, createContext: () => new RouterContextProvider(), host: window,
+    });
+    try {
+      await expect(window.fetch(window.location.origin + "/en/presence", {
+        method: "POST", body: new URLSearchParams({ intent: "heartbeat" }),
+      })).rejects.toThrow(/application fetch before resource transport configured/);
+      await expect(window.fetch(window.location.origin + "/api/missing"))
+        .rejects.toThrow(/application fetch before resource transport configured/);
+      expect(originalFetch).not.toHaveBeenCalled();
+
+      const asset = await window.fetch(window.location.origin + "/asset.css");
+      expect(asset.status).toBe(200);
+      expect(await asset.text()).toBe("asset");
+      const nestedAsset = await window.fetch(window.location.origin + "/assets/app.js");
+      expect(nestedAsset.status).toBe(200);
+      expect(originalFetch).toHaveBeenCalledTimes(2);
+    } finally {
+      adapter.dispose();
+    }
+    expect(window.fetch).toBe(originalFetch);
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);
