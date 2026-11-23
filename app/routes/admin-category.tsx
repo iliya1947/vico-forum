@@ -1,7 +1,7 @@
 import {data,useLoaderData,type RouterContextProvider} from "react-router";
 import {requireAdminForumAccess,adminBrowseQuery,adminObjectId,readAdminForum,adminPrivateHeaders} from "../admin/forum.server";
 import {AdminCategoryView} from "../admin/forum";
-import {ForumRouteError} from "../forum/ui";
+import {AdminForumBrowseError} from "../admin/forum";
 export {headers,meta} from "./admin";
 export async function loader({request,params,context}:{request:Request;params:{locale?:string;categoryId?:string};context:RouterContextProvider}) {
   const access=await requireAdminForumAccess(context);
@@ -11,4 +11,4 @@ export async function loader({request,params,context}:{request:Request;params:{l
   return data({locale:params.locale??"en",access,...result,query},{headers:adminPrivateHeaders});
 }
 export default function AdminCategoryRoute(){return <AdminCategoryView {...useLoaderData<typeof loader>()}/>;}
-export const ErrorBoundary=ForumRouteError;
+export const ErrorBoundary=AdminForumBrowseError;

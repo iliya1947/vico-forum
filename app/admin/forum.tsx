@@ -1,5 +1,6 @@
 import { useAdministrativeRouting } from "../administrative-routing/provider";
-import {Form,Link} from "react-router";
+import {Form,Link,isRouteErrorResponse,useRouteError,useLocation,useParams} from "react-router";
+import {ForumRouteError} from "../forum/ui";
 import {useTranslation} from "react-i18next";
 import type {AdminBrowseQuery,AdminBrowsePage,AdminForumCategory,AdminForumSection,AdminForumTopic} from "../../db/admin-forum";
 import {HELP_SOLUTIONS_CATEGORY_ID} from "../../db/forum-identifiers";
@@ -99,4 +100,17 @@ export function AdminSectionView({locale,access,section,topics,query}:{locale:st
       <Paging path={path} query={query} next={topics.next}/>
     </section>
   </AdminShell>;
+}
+
+/** Old/malformed container cursors can be discarded without losing the literal filter. */
+export function AdminForumBrowseError() {
+  const error=useRouteError(),location=useLocation(),params=useParams();
+  const {t}=useTranslation("common"),routing=useAdministrativeRouting();
+  const query=new URLSearchParams(location.search),search=(query.get("q")??"").trim();
+  const locale=params.locale??"en";
+  const path=params.categoryId?adminCategoryPath(locale,params.categoryId,routing):adminForumPath(locale,routing);
+  const recovery=isRouteErrorResponse(error)&&error.status===400&&query.has("after")
+    ? <Link className="system-state-action" to={adminBrowsePath(path,{search:Array.from(search).length<=200&&!/[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(search)?search:""})}>{t("adminForumFirst")}</Link>
+    : undefined;
+  return <ForumRouteError recoveryAction={recovery}/>;
 }

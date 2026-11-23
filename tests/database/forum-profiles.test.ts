@@ -329,7 +329,7 @@ describe("SA04-C2 canonical category and section topic-list authors", () => {
         ('profile-c2-owner','profile-newcomer','2026-10-05T00:00:00Z'),
         ('profile-c2-helper','profile-newcomer','2026-10-06T00:00:00Z')
     `);
-    await client.query("begin");
+    // Hierarchy readers own their read-only snapshot; fixture edits are committed between reads.
     try {
       await client.query('update "user" set name=$2, image=$3 where id=$1', [
         "profile-owner", "SECRET_C2_OWNER_NAME", "https://images.example.test/SECRET_C2_OWNER_IMAGE.png",
@@ -408,7 +408,9 @@ describe("SA04-C2 canonical category and section topic-list authors", () => {
       expect(Object.keys(lists.latestTopics[1]!)).toEqual(["id", "title", "authorName", "authorIdentityKind", "activityAt"]);
       expect(Object.keys(section.topics[0]!)).not.toContain("authorDeactivatedAt");
     } finally {
-      await client.query("rollback");
+      await client.query('update "user" set name=id,image=$1,deactivated_at=null,' +
+        'deactivated_by_user_id=null,retain_at_least_until=null where id in ($2,$3)',
+        ["https://example.com/avatar.png", "profile-owner", "profile-helper"]);
     }
   });
 });
