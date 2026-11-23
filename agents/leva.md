@@ -1,19 +1,11 @@
-# agents/leva.md — independent whole-feature re-review assigned
+# agents/leva.md — текущая память по #342
 
-## Target
+2026-11-23: independent whole-feature re-review собранного #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143` против main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` — **PASS**.
 
-- Draft #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`
-- base/current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`
-- previous reviewed head `fdad1930...` is superseded.
+VIS-FINAL-LEVA-01/02 CLOSED. Весь correction delta проверен: 8 files/5 commits, production только repository withdrawal helper + Admin model/view; остальные feature files/main неизменны. Own withdrawal false visibility requirement private-only, ownership/pending/active/membership и locks сохранены. Admin DTO сохраняет whitelist tombstones, stable chronology/root/best/candidates, без source/translation bypass.
 
-## Assignment
+Локальные 17 files/304 tests PASS, включая 3 прежних reproductions; diff-check PASS, temporary repro удалён, worktree clean. Новые #355 exact-head CI/browser/R2 checks независимо API-checked: 24 success+24 skipped, без failures/pending. Full PG/browser/build локально не перезапускал; не выдавать hosted run за свой.
 
-Independently re-review the whole moderation-visibility feature on this exact head after Lira's bounded correction of:
-1. VIS-FINAL-LEVA-01 — protected own pending Help withdrawal under hidden dependencies;
-2. VIS-FINAL-LEVA-02 — ordinary Admin sanitized tombstone chronology/root/numbering/relations/candidates.
+Полный итог — stages/moderation-visibility/REVIEW.md; operative state — WORKFLOW.md. Mira PASS относится к тому же head, #355 готов к owner merge после снятия Draft. Сам merge/code/deploy не выполнял. После фактического merge требуется отдельное назначение docs closeout; structure/topic move до закрытия visibility/docs не активировать.
 
-Explicitly verify both corrections against accepted V5/V6 and check for regressions introduced by the 8-file delta. Continue review beyond those two points; first finding does not end the review.
-
-Fresh exact-head evidence already exists and Mira independently checked it, but do not treat green CI as proof of correctness.
-
-Do not modify implementation during review. Return PASS/HOLD on the same exact head and update service state. If the head changes, stop and invalidate the assignment.
+V-P1/V-P2/V-P3 приняты, повторно не спрашивать. #354 и process #362/#363 CLOSED; #342 единственный service channel. #300/Stage6/general UI/UX не открывать.
