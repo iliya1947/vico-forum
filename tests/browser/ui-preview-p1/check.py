@@ -18,6 +18,7 @@ logs = []
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="chrome", headless=True, args=["--no-sandbox"])
     context = browser.new_context(service_workers="block")
+    context.add_init_script("window.localStorage.setItem('vico-theme', 'dark')")
     context.route("**/*", lambda route: route.continue_()
                   if route.request.url.startswith(base + "/")
                   else (external.append(route.request.url), route.abort())[-1])
@@ -55,12 +56,17 @@ with sync_playwright() as playwright:
     assert parse_qs(urlparse(page.url).query)["path"] == [initial_path]
     assert page.evaluate("document.documentElement.lang") == "en"
     assert page.evaluate("document.documentElement.dir") == "ltr"
+    assert page.evaluate("document.documentElement.dataset.theme") == "dark"
+    assert page.locator("script[data-vico-preview-theme-bootstrap]").count() == 1
+    assert page.evaluate("document.styleSheets.length") > 0
     # Refresh must recover the virtual path/query/hash inside Pages bootstrap.
     page.reload(wait_until="domcontentloaded")
     page.locator("#p1-full-router-screen main.topic-shell").wait_for(timeout=30000)
     assert page.locator("#root").get_attribute("data-status") == "complete"
     assert parse_qs(urlparse(page.url).query)["path"] == [initial_path]
     assert page.evaluate("document.documentElement.lang") == "en"
+    assert page.evaluate("document.documentElement.dataset.theme") == "dark"
+    assert page.locator("script[data-vico-preview-theme-bootstrap]").count() == 1
     # Submit the original TopicView/MarkdownEditor Form through the COMPLETE
     # generated router, not P0's selected-route subset or a synthetic action.
     reply_form = page.locator("#p1-full-router-screen form.topic-reply-form")
