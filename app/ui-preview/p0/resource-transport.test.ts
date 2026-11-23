@@ -479,6 +479,107 @@ describe("generic P0 resource request dispatch", () => {
     expect(window.XMLHttpRequest).toBe(originalXhr);
   });
 
+  it("retains a module-captured fetch and XHR across P1 reset with isolated request contexts", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/identity", file: "routes/identity.ts", path: "identity" },
+            { id: "routes/wait", file: "routes/wait.ts", path: "wait" },
+            { id: "routes/target", file: "routes/target.ts", path: "target" },
+          ],
+        },
+      ],
+    };
+    const scope = createContext<string>();
+    const generationContext = (value: string) => () => {
+      const provider = new RouterContextProvider();
+      provider.set(scope, value);
+      return provider;
+    };
+    const held: Array<{
+      signal: AbortSignal;
+      resolve: (value: Response) => void;
+      generation: string;
+    }> = [];
+    let redirects = 0;
+    // Identical module exports survive the reset, just like cached Framework imports.
+    const loaded = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/identity", {
+        loader: ({ context }: { context: RouterContextProvider }) =>
+          Response.json({ generation: context.get(scope) }),
+      }],
+      ["routes/wait", {
+        loader: ({ request, context }: {
+          request: Request; context: RouterContextProvider;
+        }) => new Promise<Response>((resolve) => {
+          held.push({ signal: request.signal, generation: context.get(scope), resolve });
+        }),
+      }],
+      ["routes/target", {
+        loader: () => { redirects++; return new Response("redirect target"); },
+      }],
+    ]);
+    const nativeFetch = vi.fn(async () => new Response("unexpected native request"));
+    const nativeXhr = window.XMLHttpRequest;
+    window.fetch = nativeFetch;
+    const transport = installPreviewResourceTransport({
+      manifest: all, createContext: generationContext("first"), host: window,
+    });
+    try {
+      const routes = createPreviewDataRoutes(all, loaded);
+      transport.configure(routes, loaded);
+      const moduleCapturedFetch = window.fetch;
+      const moduleCapturedXhr = window.XMLHttpRequest;
+      const endpoint = window.location.origin + "/en/identity";
+      expect(await (await moduleCapturedFetch(endpoint)).json()).toEqual({ generation: "first" });
+
+      const inFlight = moduleCapturedFetch(window.location.origin + "/en/wait");
+      const xhrRequest = new moduleCapturedXhr();
+      const events: string[] = [];
+      xhrRequest.onabort = () => events.push("abort");
+      xhrRequest.onload = () => events.push("load");
+      xhrRequest.onerror = () => events.push("error");
+      xhrRequest.open("GET", "/en/wait");
+      xhrRequest.send();
+      await vi.waitFor(() => expect(held).toHaveLength(2));
+      expect(held.every((item) => item.generation === "first")).toBe(true);
+
+      transport.reset(routes, loaded, generationContext("second"));
+      await expect(inFlight).rejects.toMatchObject({ name: "AbortError" });
+      expect(held.every((item) => item.signal.aborted)).toBe(true);
+      expect(events).toEqual(["abort"]);
+      expect(xhrRequest.status).toBe(0);
+      expect(window.fetch).toBe(moduleCapturedFetch);
+      expect(window.XMLHttpRequest).toBe(moduleCapturedXhr);
+
+      // Simulates the real module-level client calling its captured fetch.
+      expect(await (await moduleCapturedFetch(endpoint)).json()).toEqual({ generation: "second" });
+      const freshXhr = new moduleCapturedXhr();
+      const completed = new Promise<void>((resolve, reject) => {
+        freshXhr.onload = () => resolve();
+        freshXhr.onerror = () => reject(new Error("XHR failed after reset"));
+      });
+      freshXhr.open("GET", "/en/identity");
+      freshXhr.send();
+      await completed;
+      expect(JSON.parse(freshXhr.responseText)).toEqual({ generation: "second" });
+
+      for (const pending of held) pending.resolve(redirect("/en/target"));
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(redirects).toBe(0);
+      expect(events).toEqual(["abort"]);
+      expect(nativeFetch).not.toHaveBeenCalled();
+    } finally {
+      transport.dispose();
+    }
+    expect(window.fetch).toBe(nativeFetch);
+    expect(window.XMLHttpRequest).toBe(nativeXhr);
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);

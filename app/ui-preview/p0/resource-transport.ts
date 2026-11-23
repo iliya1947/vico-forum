@@ -78,6 +78,8 @@ export function installPreviewResourceTransport({
 
   let handler: StaticHandler | null = null;
   let modules: ResourceModules | null = null;
+  let currentContext = createContext;
+  let generation = 0;
   let closed = false;
   const activeRequests = new Set<AbortController>();
   let ready: () => void = () => {};
@@ -92,16 +94,22 @@ export function installPreviewResourceTransport({
     && !hasConcreteMatch(url) && (method === "GET" || method === "HEAD")
     && /\/[^/]+\.[^/.]+$/u.test(url.pathname);
 
-  async function execute(request: Request, id: string, suppliedOrigin: string | null) {
+  async function execute(
+    request: Request, id: string, suppliedOrigin: string | null, requestGeneration: number,
+  ) {
     await initialized;
     if (closed || !handler || !modules) throw new Error("P0 resource transport disposed");
+    // A request queued before reset cannot start inside a replacement generation.
+    if (resourceIds === undefined && (requestGeneration !== generation || request.signal.aborted)) {
+      throw new DOMException("P1 resource request generation expired", "AbortError");
+    }
     const method = request.method;
     const normalized = localRequest(request, host.location.origin, suppliedOrigin);
     let result: Response;
     try {
       const value: unknown = await handler.queryRoute(normalized, {
         routeId: id,
-        requestContext: createContext(),
+        requestContext: currentContext(),
         async generateMiddlewareResponse(queryRoute) {
           try {
             return resourceResponse(await queryRoute(normalized));
@@ -132,8 +140,12 @@ export function installPreviewResourceTransport({
     suppliedOrigin: string | null,
     redirectCount: number,
     nativeFetch: () => Promise<Response>,
+    requestGeneration: number,
   ): Promise<Response> {
     if (closed) throw new Error("P1 resource transport disposed");
+    if (resourceIds === undefined && requestGeneration !== generation) {
+      throw new DOMException("P1 resource request generation expired", "AbortError");
+    }
     const url = new URL(request.url);
     // No external service may be called from the synthetic preview.
     if (url.origin !== host.location.origin) {
@@ -166,8 +178,13 @@ export function installPreviewResourceTransport({
     // Preserve P0's original response contract; P1 adds fetch redirect modes.
     const replay = resourceIds === undefined && request.redirect === "follow"
       && request.body !== null ? request.clone() : null;
-    const result = await execute(request, id, suppliedOrigin);
-    if (resourceIds === undefined) request.signal.throwIfAborted();
+    const result = await execute(request, id, suppliedOrigin, requestGeneration);
+    if (resourceIds === undefined) {
+      request.signal.throwIfAborted();
+      if (requestGeneration !== generation) {
+        throw new DOMException("P1 resource request generation expired", "AbortError");
+      }
+    }
     const location = result.headers.get("Location");
     if (resourceIds !== undefined || !location
       || ![301, 302, 303, 307, 308].includes(result.status)) return result;
@@ -194,7 +211,8 @@ export function installPreviewResourceTransport({
       redirect: request.redirect,
       duplex: "half",
     } as RequestInit);
-    return dispatch(next, suppliedOrigin, redirectCount + 1, () => originalBoundFetch(next));
+    return dispatch(next, suppliedOrigin, redirectCount + 1, () => originalBoundFetch(next),
+      requestGeneration);
   }
 
   const wrapped: typeof fetch = async (input, init) => {
@@ -208,7 +226,8 @@ export function installPreviewResourceTransport({
     const suppliedOrigin = init?.headers ? new Headers(init.headers).get("Origin")
       : input instanceof Request ? input.headers.get("Origin") : null;
     if (resourceIds !== undefined) {
-      return dispatch(request, suppliedOrigin, 0, () => originalBoundFetch(input, init));
+      return dispatch(request, suppliedOrigin, 0, () => originalBoundFetch(input, init),
+        generation);
     }
 
     // Each P1 request has an abortable lifetime owned by the transport.
@@ -228,7 +247,8 @@ export function installPreviewResourceTransport({
     try {
       const activeRequest = new Request(request, { signal: controller.signal });
       return await Promise.race([
-        dispatch(activeRequest, suppliedOrigin, 0, () => originalBoundFetch(input, init)),
+        dispatch(activeRequest, suppliedOrigin, 0, () => originalBoundFetch(input, init),
+          generation),
         cancelled,
       ]);
     } finally {
@@ -265,6 +285,40 @@ export function installPreviewResourceTransport({
       modules = loaded;
       handler = createStaticHandler(routes);
       ready();
+    },
+    reset(routes: RouteObject[], loaded: ResourceModules, nextContext: ContextFactory) {
+      if (resourceIds !== undefined || closed || !handler || !modules) {
+        throw new Error("P1 resource transport reset unavailable");
+      }
+      // Validate replacement before interrupting the working generation.
+      const nextIds = new Set<string>();
+      for (const [id, module] of loaded) {
+        if (typeof module.default !== "function"
+          && (typeof module.loader === "function" || typeof module.action === "function")) {
+          nextIds.add(id);
+        }
+      }
+      for (const id of nextIds) {
+        const module = loaded.get(id);
+        if (!module || typeof module.default === "function"
+          || (typeof module.loader !== "function" && typeof module.action !== "function")) {
+          throw new Error("P1 resource module is missing real handler: " + id);
+        }
+      }
+      const nextHandler = createStaticHandler(routes);
+      generation++;
+      // Preserve the same fetch/XHR function identities captured by imported
+      // modules; no nested transport is installed during an embedded reset.
+      xhr?.reset();
+      for (const controller of activeRequests) {
+        controller.abort(new DOMException("P1 preview reset", "AbortError"));
+      }
+      activeRequests.clear();
+      ids.clear();
+      for (const id of nextIds) ids.add(id);
+      modules = loaded;
+      handler = nextHandler;
+      currentContext = nextContext;
     },
     dispose() {
       if (closed) return;

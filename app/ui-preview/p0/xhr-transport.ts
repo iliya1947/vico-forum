@@ -176,6 +176,10 @@ export function installPreviewXhrTransport({
 
   host.XMLHttpRequest = PreviewXhr as unknown as typeof XMLHttpRequest;
   return {
+    reset() {
+      if (closed) throw new Error("P1 XMLHttpRequest transport disposed");
+      for (const request of Array.from(active)) request.abort();
+    },
     dispose() {
       if (closed) return;
       closed = true;

@@ -44,6 +44,7 @@ with sync_playwright() as playwright:
     assert "P1_ATTACHMENT_PRIVATE_READ_200 200 404" in logs, logs[-10:]
     assert "P1_ATTACHMENT_PUBLISHED_READ_200 200 200 404 2 2" in logs, logs[-10:]
     assert "P1_ATTACHMENT_CANCEL_200 200 200 410 404 200" in logs, logs[-10:]
+    assert "P1_RESET_RETAINED_FETCH_200 200 200" in logs, logs[-10:]
     download_link = page.locator("#p1-published-download")
     assert (download_link.get_attribute("href") or "").startswith("blob:")
     with page.expect_download() as event:

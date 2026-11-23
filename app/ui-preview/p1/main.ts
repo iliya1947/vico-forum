@@ -32,6 +32,8 @@ const transport = installPreviewResourceTransport({
   manifest: routeManifest,
   createContext: attachmentFixture.createContext,
 });
+// Framework imports can capture fetch once. Keep that function usable across reset.
+const moduleCapturedFetch = window.fetch;
 
 void (async () => {
   const modules = new Map<string, Record<string, unknown>>();
@@ -285,6 +287,31 @@ void (async () => {
   console.info("P1_ATTACHMENT_CANCEL_200", cancelResponse.status,
     cancelledAgain.status, retiredList.status, retiredDownload.status,
     nextOperationList.status);
+  // Reuse the same imported product handlers and installed transport with fresh
+  // request-scoped attachment state; the cancelled operation must not bleed into it.
+  const resetFixture = createP1AttachmentFixture(publishedAssets);
+  const installedXhr = window.XMLHttpRequest;
+  transport.reset(routes, modules, resetFixture.createContext);
+  if (window.fetch !== moduleCapturedFetch || window.XMLHttpRequest !== installedXhr) {
+    throw new Error("P1 reset replaced module-captured transport functions");
+  }
+  const afterReset = await moduleCapturedFetch(new URL("/api/attachments", window.location.origin), {
+    method: "GET", headers: draftHeaders,
+  });
+  if (afterReset.status !== 200
+    || JSON.stringify(await afterReset.json()) !== '{"attachments":[]}') {
+    throw new Error("P1 reset reused retired attachment state");
+  }
+  const baselineAfterReset = await moduleCapturedFetch(new URL(
+    "/api/attachments/file/" + P0_ATTACHMENT_ID + "?post=" + publishedPostId,
+    window.location.origin,
+  ));
+  if (baselineAfterReset.status !== 200
+    || (await baselineAfterReset.arrayBuffer()).byteLength !== publishedBytes.byteLength) {
+    throw new Error("P1 reset failed to use fresh published asset fixture");
+  }
+  attachmentFixture.dispose();
+  console.info("P1_RESET_RETAINED_FETCH_200", afterReset.status, baselineAfterReset.status);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }
