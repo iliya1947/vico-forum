@@ -1,19 +1,8 @@
-# agents/lira.md — B9 HOLD; pre-fold current-main sync only
+# agents/lira.md — B9 current-main sync author PASS; STOP before fold
 
-## Confirmed blocker
-
-- Draft #376 exact `108e0ba31ed34f891e8b46e411991b893b9da56b` remains valid B8-C evidence, but the stacked feature merge-base is old main `6fa2a43...`.
-- Current main is `9cff976...`; the final head is ahead 314 / behind 5.
-- Missing main commits include #362/#363 manual PR test controls. Current main changes `ci.yml`, SA04-N and SA04-K5; B8 also changes SA04-N/K5. The final fold cannot be reviewed from the pre-sync head.
-
-## Current assignment — sync only
-
-1. Integrate current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` into the existing final B8 branch. Choose the technically clean integration method, but do not rewrite unrelated product scope.
-2. Reconcile overlapping workflow files so both contracts survive:
-   - current-main agent-triggered `run:ci` / `run:acceptance` and workflow_dispatch behavior;
-   - B8 SA04-N C1/C2/C3 Chromium invocations and SA04-K5 B8-B2 local-R2 invocation.
-3. Reconcile final diff against **current main**, not the old stack merge-base.
-4. Use the current main manual PR-test controls to run final CI and applicable connected acceptance on the resulting exact head.
-5. Record the new exact SHA, integration scope, same-head checks/workflows and any conflict resolution in #376/#342.
-
-**Mandatory STOP after the synced exact-head author self-check.** Do not fast-forward B1, close intermediate PRs, start Mira/Leva whole-feature review, merge, docs or deploy.
+- Current Draft #376 / `feature/moderation-visibility-b8-acceptance` stable exact **`fdad1930fc68a854d52bee31922f923be5c1c751`**. Merge commit integrates accepted B8-C/B9 old `108e0ba31ed34f891e8b46e411991b893b9da56b` (first parent) + current main `9cff976a9621d9fe5dfef28ea5367e390ff435b1` (second parent). **Ahead 315 / behind 0** vs main; B7 stacked base remains `f92778606f1c8ea4e64f53c1660910f34c48b84c`.
+- Exactly one source merge: 20 non-overlapping current-main changed files imported verbatim, two overlapping SA04-N/K5 workflows combined current-main one-shot label/`workflow_dispatch` policy + all B8 C1/C2/C3 Chromium and local R2 calls. No B8 feature/runtime/schema change caused by sync.
+- Final cumulative exact diff **132 visibility implementation/test/manifest/CI paths vs current main**, no unrelated main policy drift. Full scope/integration and final V8 verification in `WORKFLOW.md`.
+- Fresh exact-head `run:ci` + `run:acceptance` finished: **38 workflows: 20 SUCCESS +18 expected SKIPPED**; **48 check-runs: 24 SUCCESS +24 expected SKIPPED**, no FAIL. [CI #45088550855](https://github.com/iliya1947/vico-forum/actions/runs/45088550855) 2951 unit, 1689 PG17, history/metadata/manifest, lint/typecheck/build/preview, Worker B8-B1/B3; [SA04-N #45088550926](https://github.com/iliya1947/vico-forum/actions/runs/45088550926) C1+C2+C3 all PASS; [SA04-K5 #45088550961](https://github.com/iliya1947/vico-forum/actions/runs/45088550961) 33 R2/Chromium and B8-B2 positive PASS. Other acceptance suites SUCCESS; both labels consumed.
+- **Лира author PASS, STOP.** Previous Mira HOLD (outdated main merge-base) has been corrected in branch and acceptance verified; this is not independent Mira coordinator PASS on new head and not whole-feature review.
+- **Next Мира** to independently verify the synchronized exact head and issue the next permitted fold assignment. No B1 move, intermediate PR closure, formal reviews, merge/docs/deploy without next authorization.
