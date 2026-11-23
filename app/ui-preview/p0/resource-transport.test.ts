@@ -168,6 +168,65 @@ describe("generic P0 resource request dispatch", () => {
     expect(window.fetch).toBe(originalFetch);
   });
 
+  it("routes post-config app HTTP 404/405 without leaking screens or swallowing assets", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/api", file: "routes/api.ts", path: "api/*" },
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/topic", file: "routes/topic.tsx", path: "topics/:topicId" },
+            { id: "routes/action-only", file: "routes/action-only.ts", path: "command" },
+            { id: "routes/not-found", file: "routes/not-found.ts", path: "*" },
+          ],
+        },
+      ],
+    };
+    const originals = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/api", actualApiRoute],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/topic", { default: () => null, loader: () => ({ topic: true }) }],
+      ["routes/action-only", { action: () => new Response(null, { status: 204 }) }],
+      ["routes/not-found", {
+        loader: () => { throw new Response("Not Found", { status: 404 }); },
+      }],
+    ]);
+    const nativeFetch = vi.fn(async () => new Response("native asset", { status: 200 }));
+    window.fetch = nativeFetch;
+    const adapter = installPreviewResourceTransport({
+      manifest: all, createContext: () => new RouterContextProvider(), host: window,
+    });
+    try {
+      adapter.configure(createPreviewDataRoutes(all, originals), originals);
+      const unknown = await window.fetch(window.location.origin + "/en/no-such-route");
+      expect(unknown.status).toBe(404);
+      const unknownApi = await window.fetch(window.location.origin + "/api/not-found.css");
+      expect(unknownApi.status).toBe(404);
+
+      const action = await window.fetch(window.location.origin + "/en/command", {
+        method: "POST",
+      });
+      expect(action.status).toBe(204);
+      const wrongMethod = await window.fetch(window.location.origin + "/en/command");
+      expect(wrongMethod.status).toBe(405);
+
+      await expect(window.fetch(window.location.origin + "/en/topics/real-topic"))
+        .rejects.toThrow(/P1 application fetch is not a resource route/);
+      await expect(window.fetch(window.location.origin + "/en/topics/report.js"))
+        .rejects.toThrow(/P1 application fetch is not a resource route/);
+
+      for (const path of ["/asset.css", "/assets/app.js", "/static/example.css"]) {
+        const asset = await window.fetch(window.location.origin + path);
+        expect(asset.status).toBe(200);
+        expect(await asset.text()).toBe("native asset");
+      }
+      expect(nativeFetch).toHaveBeenCalledTimes(3);
+    } finally {
+      adapter.dispose();
+    }
+    expect(window.fetch).toBe(nativeFetch);
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);

@@ -123,16 +123,24 @@ export function installPreviewResourceTransport({
     }
     const matches = matchRoutes(paths, url.pathname);
     const id = matches?.at(-1)?.route.id;
-    // Full P1 resource IDs are discovered at configure(). Before that, a
-    // concrete application route must never escape to Pages via native fetch.
-    // A plain dynamic locale/index match is not enough: it also matches assets.
-    if (!handler && resourceIds === undefined && matches?.some(({ route }) =>
+    const concreteMatch = matches?.some(({ route }) =>
       route.path?.split("/").some((part) => part !== "" && part !== "*"
         && !part.startsWith(":"))
-    )) {
+    ) ?? false;
+    // A generated locale + "*" not-found route also matches native asset URLs.
+    // Only GET/HEAD file URLs lacking a concrete application segment may pass.
+    if (resourceIds === undefined && !concreteMatch
+      && (request.method === "GET" || request.method === "HEAD")
+      && /\/[^/]+\.[^/.]+$/u.test(url.pathname)) {
+      return originalBoundFetch(input, init);
+    }
+    if (!handler && resourceIds === undefined && concreteMatch) {
       throw new Error("P1 application fetch before resource transport configured: " + url.pathname);
     }
     if (!id || !ids.has(id)) {
+      if (resourceIds === undefined) {
+        throw new Error("P1 application fetch is not a resource route: " + url.pathname);
+      }
       // Preview APIs that are not yet bundled must not fall through to
       // Pages or an actual server. Keep a loud boundary until their real
       // handler/capability is connected in a later P0/P1 slice.
