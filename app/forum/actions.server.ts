@@ -203,8 +203,10 @@ export async function topicAction({ request, params, context }: {
   const isVisibilitySubmission = request.method === "POST"
     && actionUrl.searchParams.get("visibilityAction") === "1";
   const isMoveSubmission = actionUrl.searchParams.get("moveAction") === "1";
-  if (request.method !== "POST")
-    return isMoveSubmission ? topicMoveFailure("invalid", 400) : mutationFailure("invalid", 400);
+  // Only the marked Move transport gets method preflight here; existing
+  // Bookmark/Visibility actions retain their own typed non-POST responses.
+  if (request.method !== "POST" && isMoveSubmission)
+    return topicMoveFailure("invalid", 400);
   const denied = forumMutationGuard(request, context);
   if (denied) {
     // The UI marks visibility POSTs in the action URL so preflight can return

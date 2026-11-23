@@ -147,7 +147,9 @@ describe("F5-C1 canonical topic move POST dispatch",()=>{
       form({...fields,reason:"publish"}),form({...fields,inlineQuickAction:"1"}));
     for(const f of variants){
       const e=makeContext();
-      const response=await run(e,f);
+      // A damaged multipart body may fail before FormData is returned; the
+      // same-origin Move marker provides a typed preflight failure in that case.
+      const response=await run(e,f,{marked:true});
       expect(response).toMatchObject({data:{operation:"topicMove",error:"invalid"},init:{status:400}});
       expect(e.moveTopic).not.toHaveBeenCalled();
     }
