@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { ADMIN_MONITOR_SCOPES_SQL,TASK_FACT_MONITOR_SCOPES_SQL } from "./owner-monitor-catalog";
+import { ADMIN_STRUCTURE_HISTORY_VALUES_SQL } from "./owner-structure-history";
 import { NATIVE_HISTORY_ORIGINS, nativeHistoryBranches, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
 import { ACCOUNT_HISTORY_SELECT_SQL } from "./owner-account-history";
 import type { OwnerHistoryEntry, OwnerHistoryMonitor, OwnerHistoryOrigin,
@@ -181,7 +182,7 @@ const LEGACY_PERSON_SQL = [
   " then left(a.context#>>'{before,version}',16) end,",
   " 'afterVersion',case when jsonb_typeof(a.context#>'{after,version}')='number'",
   " then left(a.context#>>'{after,version}',16) end",
-  " ) else '{}'::jsonb end",
+  " ) else '{}'::jsonb end ||"+ADMIN_STRUCTURE_HISTORY_VALUES_SQL,
   " from admin_history a where a.actor_id=$1",
   " or (a.target_type='user' and a.target_id=$1)",
   " or (a.target_type='user-measure' and exists (",

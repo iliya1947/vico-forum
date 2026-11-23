@@ -1,5 +1,6 @@
 import {TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS} from "../app/observability/operational-facts";
 import type { Pool } from "pg";
+import { STRUCTURE_ADMIN_ACTION_KINDS, ADMIN_STRUCTURE_HISTORY_VALUES_SQL } from "./owner-structure-history";
 import { SA02_FACT_MONITORS } from "./owner-sa02-catalog";
 import { OWNER_MONITORS, ADMIN_MONITOR_SCOPES_SQL, TASK_FACT_MONITOR_SCOPES_SQL,STORAGE_OBSERVATION_PREDICATE_SQL,STORAGE_OBSERVATION_SCOPES_SQL,SYSTEM_EVENT_MONITOR_SCOPES_SQL, type OwnerMonitorArea, type OwnerMonitorKey } from "./owner-monitor-catalog";
 import { nativeHistoryBranches, NATIVE_HISTORY_ORIGINS, NATIVE_ORIGIN_MONITORS, HISTORY_COLUMNS, readNativeHistoryCoverage, type NativeHistoryOrigin, type OwnerSourceCoverage } from "./owner-native-history";
@@ -25,7 +26,7 @@ const ADMIN_ACTION_KINDS = [
   "topic.bestAnswerChanged","help.solutionModerationChanged","help.duplicateConfirmed",
   "help.duplicateRemoved","help.duplicateAppealResolved","topic.sourceLocaleCorrected",
   "post.sourceLocaleCorrected","measure.created","measure.changed","measure.lifted",
-  "measure.appealResolved",
+  "measure.appealResolved", ...STRUCTURE_ADMIN_ACTION_KINDS,
 ] as const;
 const AREAS: readonly string[] = Object.keys(OWNER_MONITORS);
 const MONITORS: Record<OwnerHistoryArea,readonly string[]> = OWNER_MONITORS;
@@ -54,7 +55,7 @@ const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth","integrations.authentication"],
   "account-event": ["accounts.users"],
   "system-observation": Object.values(OWNER_MONITORS).flat(),
-  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","moderation.help","integrations.authentication"],
+  "admin-history": ["accounts.registration","administration.registration","administration.authorization","administration.measures","forum.content","localization.content","forum.state","forum.structure","moderation.help","integrations.authentication"],
   "attachment-evidence": ["security.attachments","files.assets"],
   "attempt-pattern": ["accounts.registration","security.auth","security.access","integrations.authentication"],
   "attempt-state": ["security.auth","security.access","integrations.authentication"],
@@ -94,7 +95,8 @@ function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boole
   if(origin==="operational-event"&&(TASK_TRANSITION_KINDS as readonly string[]).includes(kind))allowed=[...allowed,"integrations.translation"];
   if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies","data.compatibility","integrations.database"];
   if(origin==="admin-history"){
-    if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration","integrations.authentication"];
+    if((STRUCTURE_ADMIN_ACTION_KINDS as readonly string[]).includes(kind))allowed=["forum.structure"];
+    else if(kind==="settings.registrationChanged")allowed=["accounts.registration","administration.registration","integrations.authentication"];
     else if(kind.startsWith("role.")||kind==="user.roleAssigned"||kind==="user.overrideChanged")allowed=["administration.authorization"];
     else if(kind.startsWith("measure."))allowed=["administration.measures"];
     else if(kind==="topic.sourceLocaleCorrected"||kind==="post.sourceLocaleCorrected")allowed=["forum.content","localization.content"];
@@ -317,7 +319,7 @@ const LEGACY_SOURCE_SQL = [
   " then left(a.context#>>'{before,version}',16) end,",
   " 'afterVersion',case when jsonb_typeof(a.context#>'{after,version}')='number'",
   " then left(a.context#>>'{after,version}',16) end",
-  " ) else '{}'::jsonb end",
+  " ) else '{}'::jsonb end ||"+ADMIN_STRUCTURE_HISTORY_VALUES_SQL,
   " from admin_history a",
   "union all",
   "select 'attachment-evidence'::text,f.id::text,f.created_at,f.created_at,",
