@@ -65,6 +65,23 @@ describe("B6-B1 private current inspection resource",()=>{
     const doc=headers({parentHeaders:new Headers({"Cache-Control":"public, max-age=5"})} as never);
     expect(doc.get("Cache-Control")).toBe("private, no-store");
   });
+  it("exposes a hidden ordinary topic Move link only when visibility and move grants coexist",async()=>{
+    const visibilityOnly=env();
+    const first=await visibilityOnly.call();
+    expect(first.data.canMoveTopic).toBe(false);
+    expect(first.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    const dual=env(["forum.content.visibility.manage","forum.topic.move"]);
+    const both=await dual.call();
+    expect(both.data.canMoveTopic).toBe(true);
+    expect(dual.has).toHaveBeenCalledWith("forum.topic.move");
+    expect((await dual.call("?postId=hidden-message")).data.canMoveTopic).toBe(false);
+    dual.permitted.delete("forum.topic.move");
+    expect((await dual.call()).data.canMoveTopic).toBe(false);
+    expect(dual.inspect).toHaveBeenCalledTimes(3);
+    const moveOnly=env(["forum.topic.move"]);
+    await denied(()=>moveOnly.call(),403);
+    expect(moveOnly.inspect).not.toHaveBeenCalled();
+  });
   it("rechecks capability on every request and fail-closes on auth/reader failure",async()=>{
     const e=env();
     await e.call();
