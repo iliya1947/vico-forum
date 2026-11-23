@@ -90,6 +90,7 @@ it("routes real upload action through original admission, streaming validation a
     expect((await read("", guest)).status).toBe(401);
     const foreign = environment.createContext();
     const session = foreign.get(authSessionContext);
+    if (!session) throw new Error("P0 test actor session missing");
     foreign.set(authSessionContext, { ...session, user: { ...session.user, id: "other-actor" } });
     expect((await read("", foreign)).status).toBe(404);
     expect((await read("&view=inline")).status).toBe(404);
