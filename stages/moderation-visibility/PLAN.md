@@ -1,6 +1,6 @@
 # Moderation visibility — принятый план V1–V9, адаптация к main
 
-Статус исполнения: **B1–B9 собраны в #355, independent whole-feature review Лёвы — HOLD по двум P2** на exact `fdad1930fc68a854d52bee31922f923be5c1c751`. Requirements V1–V9 ниже сохраняются; это не текущие назначения ранних B-этапов. Findings/criteria — REVIEW.md; актуальный маршрут — ../../WORKFLOW.md. Feature не merged.
+Статус исполнения: **B1–B9 собраны в #355 exact `66b1bb7ec0f4a1f5bed17583398d5acc041da143`; fresh Mira whole-feature PASS + Leva independent whole-feature PASS. VIS-FINAL-LEVA-01/02 CLOSED.** Feature готова к owner merge после снятия Draft; пока не merged. Requirements V1–V9 ниже сохраняются и не являются текущими назначениями ранних B-этапов. Итог — REVIEW.md; актуальный маршрут — ../../WORKFLOW.md.
 
 Baseline: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после #354. Repository migration ceiling — **0070**, external evidence — только0020. V-P1/V-P2/V-P3 уже **ACCEPTED**; V-T1/V-T2 technical fit — **PASS**. Повторных продуктовых forks нет.
 
