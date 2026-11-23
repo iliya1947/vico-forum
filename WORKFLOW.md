@@ -114,3 +114,13 @@ STOP:
 ## Следующий переход
 
 **Мира — назначена владельцем по прямому указанию разработчика.** Проверить переданный G4c finding и определить дальнейший маршрут P1. Author gate pending; coordinator PASS не присвоен. Лира STOP до нового назначения. P0 remains frozen; P2/merge/deploy prohibited.
+
+
+## Coordinator correction — main drift is not a stack-sync trigger
+
+- Current main `a3dae5815e26d158c566a27c552127b4b1ab29aa` being ahead of the accepted P0 baseline does **not** by itself require rebasing/synchronizing the active P0→P1 stack.
+- Under AGENTS stacked workflow, mandatory upper-stack synchronization is triggered when the **lower stack step changes**. Accepted P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8` has not changed.
+- Do **not** modify/rebase P0 or P1 merely to chase parallel main merges. That would invalidate an already reviewed lower step and create a moving target without a confirmed P1 blocker.
+- New main routes/features are handled at final stack integration/whole-feature assembly, or earlier only if a concrete verified change makes the current P1 gate impossible or incorrect. No such blocker is currently established.
+- **Authorized next step only:** P1-G4c residual audit against the existing P1 gate on current stack. If clear, perform final P1 author self-check and hand the stable exact P1 head to Mira for coordinator checkpoint.
+- No P2, no merge/deploy, no stack sync before that checkpoint.
