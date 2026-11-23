@@ -335,6 +335,72 @@ describe("generic P0 resource request dispatch", () => {
     }
   });
 
+  it("aborts in-flight P1 resource fetch on signal and dispose without late redirect dispatch", async () => {
+    const all: PreviewRouteDescriptor = {
+      id: "root", file: "root.tsx", children: [
+        { id: "routes/locale-boundary", file: "routes/locale-boundary.tsx", path: ":locale",
+          children: [
+            { id: "routes/wait", file: "routes/wait.ts", path: "wait" },
+            { id: "routes/target", file: "routes/target.ts", path: "target" },
+          ],
+        },
+      ],
+    };
+    const held: Array<{ signal: AbortSignal; resolve: (response: Response) => void }> = [];
+    let targetCalls = 0;
+    const modules = new Map<string, Record<string, unknown>>([
+      ["root", { default: () => null }],
+      ["routes/locale-boundary", { default: () => null }],
+      ["routes/wait", {
+        loader: ({ request }: { request: Request }) =>
+          new Promise<Response>((resolve) => {
+            held.push({ signal: request.signal, resolve });
+          }),
+      }],
+      ["routes/target", {
+        loader: () => {
+          targetCalls += 1;
+          return new Response("target");
+        },
+      }],
+    ]);
+    const originalFetch = vi.fn(async () => new Response("native"));
+    window.fetch = originalFetch;
+    const transport = installPreviewResourceTransport({
+      manifest: all, createContext: () => new RouterContextProvider(), host: window,
+    });
+    try {
+      transport.configure(createPreviewDataRoutes(all, modules), modules);
+
+      const controller = new AbortController();
+      const aborted = window.fetch(window.location.origin + "/en/wait", {
+        signal: controller.signal,
+      });
+      await vi.waitFor(() => expect(held).toHaveLength(1));
+      controller.abort();
+      await expect(aborted).rejects.toMatchObject({ name: "AbortError" });
+      expect(held[0]!.signal.aborted).toBe(true);
+
+      // Even if an abort-ignorant handler resolves later, it cannot redirect.
+      held[0]!.resolve(redirect("/en/target"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(targetCalls).toBe(0);
+
+      const pendingDispose = window.fetch(window.location.origin + "/en/wait");
+      await vi.waitFor(() => expect(held).toHaveLength(2));
+      transport.dispose();
+      await expect(pendingDispose).rejects.toMatchObject({ name: "AbortError" });
+      expect(held[1]!.signal.aborted).toBe(true);
+      expect(window.fetch).toBe(originalFetch);
+      held[1]!.resolve(redirect("/en/target"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(targetCalls).toBe(0);
+      expect(originalFetch).not.toHaveBeenCalled();
+    } finally {
+      transport.dispose();
+    }
+  });
+
   it("retains responses and typed data status/headers without a fake 200", async () => {
     const response = new Response("error", { status: 418, headers: { "X-Reason": "teapot" } });
     expect(resourceResponse(response)).toBe(response);

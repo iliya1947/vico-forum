@@ -77,6 +77,7 @@ export function installPreviewResourceTransport({
   let handler: StaticHandler | null = null;
   let modules: ResourceModules | null = null;
   let closed = false;
+  const activeRequests = new Set<AbortController>();
   let ready: () => void = () => {};
   const initialized = new Promise<void>((resolve) => { ready = resolve; });
 
@@ -160,6 +161,7 @@ export function installPreviewResourceTransport({
     const replay = resourceIds === undefined && request.redirect === "follow"
       && request.body !== null ? request.clone() : null;
     const result = await execute(request, id, suppliedOrigin);
+    if (resourceIds === undefined) request.signal.throwIfAborted();
     const location = result.headers.get("Location");
     if (resourceIds !== undefined || !location
       || ![301, 302, 303, 307, 308].includes(result.status)) return result;
@@ -194,7 +196,35 @@ export function installPreviewResourceTransport({
     const request = new Request(input, init);
     const suppliedOrigin = init?.headers ? new Headers(init.headers).get("Origin")
       : input instanceof Request ? input.headers.get("Origin") : null;
-    return dispatch(request, suppliedOrigin, 0, () => originalBoundFetch(input, init));
+    if (resourceIds !== undefined) {
+      return dispatch(request, suppliedOrigin, 0, () => originalBoundFetch(input, init));
+    }
+
+    // Each P1 request has an abortable lifetime owned by the transport.
+    // A handler that ignores the signal must not resolve an already-aborted fetch.
+    const controller = new AbortController();
+    const abort = () => controller.abort(request.signal.reason);
+    if (request.signal.aborted) abort();
+    else request.signal.addEventListener("abort", abort, { once: true });
+    activeRequests.add(controller);
+    let rejectOnAbort: () => void = () => {};
+    const cancelled = new Promise<never>((_, reject) => {
+      rejectOnAbort = () => reject(controller.signal.reason
+        ?? new DOMException("Request aborted", "AbortError"));
+      if (controller.signal.aborted) rejectOnAbort();
+      else controller.signal.addEventListener("abort", rejectOnAbort, { once: true });
+    });
+    try {
+      const activeRequest = new Request(request, { signal: controller.signal });
+      return await Promise.race([
+        dispatch(activeRequest, suppliedOrigin, 0, () => originalBoundFetch(input, init)),
+        cancelled,
+      ]);
+    } finally {
+      request.signal.removeEventListener("abort", abort);
+      controller.signal.removeEventListener("abort", rejectOnAbort);
+      activeRequests.delete(controller);
+    }
   };
   host.fetch = wrapped;
 
@@ -225,6 +255,10 @@ export function installPreviewResourceTransport({
     dispose() {
       if (closed) return;
       closed = true;
+      for (const controller of activeRequests) {
+        controller.abort(new DOMException("P1 resource transport disposed", "AbortError"));
+      }
+      activeRequests.clear();
       ready();
       if (host.fetch === wrapped) host.fetch = originalFetch;
     },
