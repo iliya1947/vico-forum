@@ -1,7 +1,7 @@
 import { data,type RouterContextProvider } from "react-router";
 import { requireSuperAdmin,superAdminPrivateHeaders } from "./access.server";
 import { ownerNativeMonitoringForRequest } from "./request-context";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
+import { OwnerSystemUnavailableError } from "../../db/owner-system-error";
 import type { NativeMonitorArea } from "../../db/owner-monitor-catalog";
 
 export async function loadNativeCurrentArea(args:{request:Request;params:{locale?:string};context:RouterContextProvider},area:NativeMonitorArea){
