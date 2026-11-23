@@ -1,6 +1,7 @@
-# agents/mira.md — moderation visibility docs PASS; owner merge gate
+# agents/mira.md — task 5 complete; STOP before task 6
 
-- Docs PR #378 exact `862e93039286feb1dc1e7ab30ed1fb2e6342ac8a` vs main `9c6295593fb51a85cdb556c6fd928dc5d56de0f6`.
-- Lira author-check PASS; Mira bounded docs review PASS; no confirmed docs blocker.
-- Correction: my attempted handoff to Leva for another docs review was not required by AGENTS.md and is cancelled.
-- Next gate: owner merge #378. No task6/deploy before merge.
+- Moderation visibility implementation #355 and docs #378 are both merged.
+- Current main after docs closeout: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Task 5 has no open current-feature findings or docs debt.
+- Next task in #342 is task 6: forum structure management / topic moves.
+- Do not activate task 6 until fresh owner continuation. When activated, re-read current main/source-of-truth and choose delivery roles from the owner's latest decision, including permission to use Leva as implementer for subsequent implementation work.
