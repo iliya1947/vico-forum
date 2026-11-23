@@ -18,8 +18,8 @@ const readMessage=(error:StructureInlineError["error"])=>error==="unavailable"?"
 type Attempt={actorId:string;topicId:string;sectionId:string;structureVersion:string;locationVersion:string;targetId:string};
 
 /** One source-free Move form, used both inside an open topic and by the private direct route. */
-export function TopicMoveForm({locale,context,onRefresh}:{
-  locale:string;context:TopicMoveContext;onRefresh?:()=>void;
+export function TopicMoveForm({locale,context,onRefresh,suspended=false}:{
+  locale:string;context:TopicMoveContext;onRefresh?:()=>void;suspended?:boolean;
 }){
   const {t}=useTranslation("common");
   const routing=useAdministrativeRouting();
@@ -27,6 +27,7 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   const destinationFetcher=useFetcher<InlineRead<InlinePage>>();
   const moveFetcher=useFetcher<TopicMoveActionResult>();
   const revalidator=useRevalidator();
+  const revalidatedReceipt=useRef<unknown>(null);
   const [query,setQuery]=useState("");
   const [searched,setSearched]=useState("");
   const [selected,setSelected]=useState("");
@@ -88,6 +89,11 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   const success=Boolean(stillSame&&receipt&&"ok" in receipt&&receipt.ok
     &&receipt.actorId===attempt?.actorId&&receipt.topicId===attempt?.topicId
     &&receipt.currentSectionId===attempt?.targetId);
+  useEffect(()=>{
+    if(!success||!receipt||revalidatedReceipt.current===receipt)return;
+    revalidatedReceipt.current=receipt;
+    void revalidator.revalidate();
+  },[success,receipt,revalidator]);
   const failure=stillSame&&receipt&&"error" in receipt?receipt.error:null;
   const page=destinationFetcher.state==="idle"&&destinationFetcher.data?.readId===requestedRead
     ?destinationFetcher.data:null;
@@ -99,7 +105,7 @@ export function TopicMoveForm({locale,context,onRefresh}:{
   const conflict=failure==="conflict";
   const invalid=failure==="invalid";
   const matchingViewer=Boolean(viewer&&viewer===context.actorId);
-  const busy=destinationFetcher.state!=="idle"||moveFetcher.state!=="idle"||revalidator.state!=="idle";
+  const busy=suspended||destinationFetcher.state!=="idle"||moveFetcher.state!=="idle"||revalidator.state!=="idle";
   const valid=items.find(item=>item.id===selected)??null;
   // Retained labels are for display, not post-refresh authorization/selection.
   const shown=valid??(retained?.id===selected?retained:null);
@@ -189,6 +195,7 @@ export function TopicMoveControl({locale,topicId,actorId}:{locale:string;topicId
   const [opened,setOpened]=useState(false);
   const fetcher=useFetcher<InlineRead<InlineContext>>();
   const [readId,setReadId]=useState("");
+  const [accepted,setAccepted]=useState<{readId:string;context:InlineContext}|null>(null);
   const seq=useRef(0);
   const url=routing.admin.topicMove(locale,topicId);
   const refresh=()=>{
@@ -197,8 +204,16 @@ export function TopicMoveControl({locale,topicId,actorId}:{locale:string;topicId
     fetcher.load(url+"?"+new URLSearchParams({inlineMove:"1",readId:id}));
   };
   const result=fetcher.state==="idle"&&fetcher.data?.readId===readId?fetcher.data:null;
-  const valid=result&&!isReadError(result)&&result.actorId===actorId&&result.topicId===topicId?result:null;
   const error=result&&isReadError(result)?result.error:null;
+  useEffect(()=>{
+    if(!result)return;
+    if(isReadError(result)){setAccepted(null);return;}
+    if(result.actorId===actorId&&result.topicId===topicId)
+      setAccepted({readId,context:result});
+  },[result,readId,actorId,topicId]);
+  const valid=!error&&accepted?.context.actorId===actorId
+    &&accepted.context.topicId===topicId?accepted.context:null;
+  const pending=fetcher.state!=="idle"||accepted?.readId!==readId;
   if(lifetime.current.invalidated)return null;
   return <div className="topic-move-control">
     <button type="button" disabled={fetcher.state!=="idle"} aria-expanded={opened}
@@ -206,10 +221,12 @@ export function TopicMoveControl({locale,topicId,actorId}:{locale:string;topicId
         if(opened){setOpened(false);return;}
         setOpened(true);refresh();
       }}>{t("topicMoveTitle")}</button>
-    {opened?(valid?<TopicMoveForm key={JSON.stringify([actorId,topicId])}
-      locale={locale} context={valid} onRefresh={refresh}/>:<>
-        {error?<p role="alert">{t(readMessage(error))}</p>:<p role="status">{t("topicMoveLoading")}</p>}
-        {error?<button type="button" onClick={refresh}>{t("topicMoveRefresh")}</button>:null}
-      </>):null}
+    {opened?(valid?<><TopicMoveForm key={JSON.stringify([actorId,topicId])}
+      locale={locale} context={valid} suspended={pending} onRefresh={refresh}/>
+      {pending?<p role="status">{t("topicMoveLoading")}</p>:null}
+    </>:<>
+      {error?<p role="alert">{t(readMessage(error))}</p>:<p role="status">{t("topicMoveLoading")}</p>}
+      {error?<button type="button" onClick={refresh}>{t("topicMoveRefresh")}</button>:null}
+    </>):null}
   </div>;
 }
