@@ -47,6 +47,22 @@ with sync_playwright() as playwright:
     assert page.locator("#p1-full-router-screen form.topic-reply-form").count() == 1
     assert "P1_FULL_ROUTER_MOUNTED root,routes/locale-boundary,routes/topic" in logs, logs[-20:]
     assert page.locator("#root").get_attribute("data-status") == "complete"
+    # Submit the original TopicView/MarkdownEditor Form through the COMPLETE
+    # generated router, not P0's selected-route subset or a synthetic action.
+    reply_form = page.locator("#p1-full-router-screen form.topic-reply-form")
+    assert urlparse(reply_form.get_attribute("action") or "").path == "/en/topics/p0-preview-topic"
+    reply_form.get_by_role("button", name="Advanced", exact=True).click()
+    reply_text = "P1 reply through the complete generated route tree"
+    reply_form.locator("textarea#reply-body").fill(reply_text)
+    reply_form.get_by_role("button", name="Post reply", exact=True).click()
+    reply = page.locator("#p1-full-router-screen li#post-p0-reply-1")
+    reply.wait_for(timeout=30000)
+    assert reply_text in reply.inner_text()
+    assert "P0_ACTION_CHAIN_CLIENT routes/topic" in logs, logs[-25:]
+    assert "P0_ACTION_CHAIN_SERVER routes/topic" in logs, logs[-25:]
+    assert "P0_FIXTURE_REPLY_COMMITTED p0-reply-1" in logs, logs[-25:]
+    assert "P1_FULL_ROUTER_REDIRECTED /en/topics/p0-preview-topic#post-p0-reply-1" in logs, logs[-25:]
+    assert page.locator("#root").get_attribute("data-status") == "complete"
     assert "P1_RESOURCE_DISPATCH_404 404" in logs, logs[-10:]
     assert any(line.startswith("P1_XHR_FILE_DISPATCH_404 404 ") for line in logs), logs[-10:]
     assert any(line.startswith("P1_ATTACHMENT_UPLOAD_201 201 ") for line in logs), logs[-10:]

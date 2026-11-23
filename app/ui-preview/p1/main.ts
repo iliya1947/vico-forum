@@ -410,6 +410,9 @@ void (async () => {
       mount!.dataset.status = "route-error";
       console.error("P1_FULL_ROUTER_ERRORS", state.errors);
     }
+    if (state.navigation.state === "idle" && state.location.hash) {
+      console.info("P1_FULL_ROUTER_REDIRECTED", state.location.pathname + state.location.hash);
+    }
   });
   activeRoot = createRoot(screen);
   activeRoot.render(createElement(AttachmentUrlProvider, { resolve: generation.urls.resolve },
