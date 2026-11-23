@@ -99,6 +99,43 @@ void (async () => {
     throw new Error("P1 real attachment upload mismatch: " + JSON.stringify(uploadedAttachment));
   }
   console.info("P1_ATTACHMENT_UPLOAD_201", uploadedAttachment.status, uploadedAttachment.progress);
+  // The exact uploaded bytes are read through the original private attachment loader.
+  const draftDownloadUrl = new URL("/api/attachments/file/" + attachmentId, window.location.origin);
+  draftDownloadUrl.searchParams.set("operation", operationId);
+  draftDownloadUrl.searchParams.set("context", "topic:" + P0_TOPIC_ID + ":reply");
+  draftDownloadUrl.searchParams.set("view", "text");
+  const textResponse = await fetch(draftDownloadUrl);
+  const textBody = await textResponse.text();
+  if (textResponse.status !== 200
+    || textBody !== await file.text()
+    || textResponse.headers.get("Content-Type") !== "text/plain; charset=utf-8"
+    || textResponse.headers.get("Cache-Control") !== "private, no-store"
+    || textResponse.headers.get("Content-Disposition") !== "inline"
+    || textResponse.headers.get("Content-Security-Policy") !== "sandbox") {
+    throw new Error("P1 private attachment text view mismatch: " +
+      JSON.stringify({ status: textResponse.status, textBody }));
+  }
+
+  draftDownloadUrl.searchParams.delete("view");
+  const downloadResponse = await fetch(draftDownloadUrl);
+  const downloaded = new Uint8Array(await downloadResponse.arrayBuffer());
+  const originalBytes = new Uint8Array(await file.arrayBuffer());
+  if (downloadResponse.status !== 200
+    || downloadResponse.headers.get("Content-Type") !== "application/octet-stream"
+    || !downloadResponse.headers.get("Content-Disposition")?.includes("attachment;")
+    || !downloadResponse.headers.get("Content-Disposition")?.includes(file.name)
+    || downloaded.length !== file.size
+    || downloaded.some((byte, i) => byte !== originalBytes[i])) {
+    throw new Error("P1 private attachment download mismatch");
+  }
+  draftDownloadUrl.searchParams.set("context", "topic:other:reply");
+  const wrongContextResponse = await fetch(draftDownloadUrl);
+  if (wrongContextResponse.status !== 404
+    || wrongContextResponse.headers.get("Cache-Control") !== "private, no-store") {
+    throw new Error("P1 private attachment wrong-context disclosure");
+  }
+  console.info("P1_ATTACHMENT_PRIVATE_READ_200", downloadResponse.status,
+    wrongContextResponse.status);
   if (modules.size !== routeIds.length) {
     throw new Error("P1 import registry is missing modules");
   }

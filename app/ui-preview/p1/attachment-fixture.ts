@@ -47,7 +47,15 @@ export function createP1AttachmentFixture() {
       if (!entry?.bytes) return null;
       const full = entry.bytes;
       const bytes = full.slice(range.offset, range.offset + range.length);
-      return { size: full.byteLength, body: new Blob([bytes]).stream() };
+      return {
+        size: full.byteLength,
+        body: new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        }),
+      };
     },
     async delete(objectKey) { physical.delete(objectKey); },
     async listReservations({ limit, cursor }) {
@@ -62,6 +70,11 @@ export function createP1AttachmentFixture() {
   const implemented = {
     async admitUpload(ownerId: string, contextKey: string, draftId: string, attachmentId: string) {
       if (ownerId !== P0_ACTOR_ID) throw new Error("P1 upload actor not configured");
+      return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
+    },
+    async readDraftAttachment(ownerId: string, contextKey: string, draftId: string, attachmentId: string) {
+      // The synthetic P0 actor can read only that actor's matching active draft reference.
+      if (ownerId !== P0_ACTOR_ID) return null;
       return drafts.get(key(ownerId, contextKey, draftId, attachmentId))?.attachment ?? null;
     },
     async recordUploadObject(actorId: string, objectKey: string) {
@@ -101,7 +114,7 @@ export function createP1AttachmentFixture() {
       return attachment;
     },
   } satisfies Pick<ForumAttachmentStore,
-    "admitUpload" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
+    "admitUpload" | "readDraftAttachment" | "recordUploadObject" | "activateUploadObject" | "createDraftAttachment">;
 
   const store = new Proxy(implemented, {
     get(target, name, receiver) {
