@@ -115,7 +115,7 @@ describe("F5-B category and section strict Admin POST actions",()=>{
     }
   });
   it("checks direction, expected parent and target IDs, and missing mandatory fields",async()=>{
-    const invalid=[
+    const invalid: {v:(typeof variants)[number];fields:Entry[]}[]=[
       {v:variants[1],fields:[["direction","left"]]},
       {v:variants[4],fields:[["direction","sideways"]]},
       {v:variants[5],fields:[["expectedCategoryId","a\nb"],["targetCategoryId","c"]]},
