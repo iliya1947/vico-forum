@@ -176,6 +176,7 @@ describe("generic P0 resource request dispatch", () => {
           children: [
             { id: "routes/topic", file: "routes/topic.tsx", path: "topics/:topicId" },
             { id: "routes/action-only", file: "routes/action-only.ts", path: "command" },
+            { id: "routes/presence", file: "routes/presence.ts", path: "presence" },
             { id: "routes/not-found", file: "routes/not-found.ts", path: "*" },
           ],
         },
@@ -187,6 +188,7 @@ describe("generic P0 resource request dispatch", () => {
       ["routes/locale-boundary", { default: () => null }],
       ["routes/topic", { default: () => null, loader: () => ({ topic: true }) }],
       ["routes/action-only", { action: () => new Response(null, { status: 204 }) }],
+      ["routes/presence", actualPresenceRoute],
       ["routes/not-found", {
         loader: () => { throw new Response("Not Found", { status: 404 }); },
       }],
@@ -207,8 +209,13 @@ describe("generic P0 resource request dispatch", () => {
         method: "POST",
       });
       expect(action.status).toBe(204);
-      const wrongMethod = await window.fetch(window.location.origin + "/en/command");
+      // A missing loader yields Router-generated 400, not 405. Verify a real
+      // production method guard instead of altering the Framework contract.
+      const wrongMethod = await window.fetch(window.location.origin + "/en/presence", {
+        method: "PUT",
+      });
       expect(wrongMethod.status).toBe(405);
+      expect(wrongMethod.headers.get("Allow")).toBe("POST");
 
       await expect(window.fetch(window.location.origin + "/en/topics/real-topic"))
         .rejects.toThrow(/P1 application fetch is not a resource route/);
