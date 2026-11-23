@@ -33,25 +33,18 @@
 
 ## Текущий этап
 
-Этап 13 — финальный whole-system recheck current-based Task 1 drafts завершён.
+Независимая проверка exact финальных Task 1 drafts: **HOLD**.
 
-Evidence: `research/task1-final-whole-system-recheck.md`.
+Проверены exact blobs:
+- User `a6f16c64a68ebf372a4a6bb3ff146112463e7d68` — PASS;
+- Project `8cdf099aa3ecd0c1bbd295cbbba1353cca327995` — HOLD;
+- AGENTS `3505f50d275e7e938575fa366bd6f00d1e4c9972` — без подтверждённого blocker.
 
-Exact drafts:
-- User `a6f16c64a68ebf372a4a6bb3ff146112463e7d68`;
-- Project `8cdf099aa3ecd0c1bbd295cbbba1353cca327995`;
-- AGENTS `3505f50d275e7e938575fa366bd6f00d1e4c9972`.
+Подтверждены 2 semantic regression в Project draft:
+1. удалён unconditional goal guard «Всегда рассуждай от цели…»; AGENTS replacement действует только перед существенным выводом/самостоятельно выбранным действием и уже по trigger/scope;
+2. удалён обязательный pre-answer check «не упустила ли ты что-то очевидное… / не отвечай по первой трактовке»; AGENTS Logic/Principle не устанавливают эквивалентный checkpoint перед каждым ответом.
 
-Итог от current baseline:
-- chars: 22363 → 18945 (**-15.28%**);
-- words: 2837 → 2412 (**-14.98%**);
-- numbered rules: 97 → 97;
-- новых требований: 0;
-- confirmed semantic regressions: 0;
-- новых cross-layer conflicts: 0;
-- confirmed remaining delete-safe duplicates: 0 under current layer architecture.
+Предыдущий Task 1 whole-system PASS недействителен. `97 → 97 numbered rules` не защищает самостоятельные ненумерованные требования.
 
-Task 1 compression/fix-pass завершён на уровне exact drafts.
-Реальные User/Project Instructions и `main:AGENTS.md` не изменены.
+Следующий bounded-этап: локально исправить только эти подтверждённые Project regressions и повторить semantic recheck. User/AGENTS без нового finding не менять.
 
-Следующий bounded-этап: показать разработчику exact финальные drafts для решения; Task 2 с новыми интеллектуально-логическими улучшениями остаётся отложенной.
