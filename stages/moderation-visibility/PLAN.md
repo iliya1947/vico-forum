@@ -1,6 +1,6 @@
 # Moderation visibility — принятый план V1–V9, адаптация к main
 
-Статус: **адаптация плана завершена; STOP для checkpoint Миры**. Implementation не начат.
+Статус исполнения: **B1–B9 собраны в #355, independent whole-feature review Лёвы — HOLD по двум P2** на exact `fdad1930fc68a854d52bee31922f923be5c1c751`. Requirements V1–V9 ниже сохраняются; это не текущие назначения ранних B-этапов. Findings/criteria — REVIEW.md; актуальный маршрут — ../../WORKFLOW.md. Feature не merged.
 
 Baseline: `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после #354. Repository migration ceiling — **0070**, external evidence — только0020. V-P1/V-P2/V-P3 уже **ACCEPTED**; V-T1/V-T2 technical fit — **PASS**. Повторных продуктовых forks нет.
 
