@@ -65,7 +65,7 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
       }}>
         <option value="">{t("structureDestinationCategory")}</option>
         {valid&&!items.some(item=>item.id===valid.id)
-          ?<option value={valid.id}><bdi>{valid.name}</bdi> ({valid.id})</option>:null}
+          ?<option value={valid.id}>{valid.name} ({valid.id})</option>:null}
         {items.map(item=><option value={item.id} key={item.id}>{item.name} ({item.id})</option>)}
       </select>
     </label>
