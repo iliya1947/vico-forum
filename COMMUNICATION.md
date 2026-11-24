@@ -16,21 +16,23 @@
 
 #354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-## Текущий этап — Task6: F6 author gate PASS, whole-feature review
+## Текущий этап — Task6: WF-01 author gate PASS → Mira re-review
 
-Current main остаётся `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task5 findings/docs debt закрыты. Task6 code ещё не merged.
+Current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task6 ещё не merged. F1–F5 bounded coordinator PASS и исходная F6 matrix/assembly сохранены.
 
-F1–F5 bounded coordinator PASS; F6 acceptance/final assembly завершены автором. Итоговый Draft **#379 exact bf3e97d6c52b224d1a77bd14f96597b446405472**, base main. Intermediate #380/#381/#382/#383/#386 закрыты superseded без merge до fast-forward первой ветки; GitHub metadata перепроверена.
+Final Draft **#379 exact f601e91dcab19ee1992012564e9a0b557c2ea596**, base main. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false, без merge. #342 — only service/never merge.
 
-Канонический accepted S0–S10: stages/forum-structure/PLAN.md. Полная применимая S9/post-visibility evidence и provenance: **stages/forum-structure/F6_REPORT.md**. Final CI3151unit/1831PG и все18 applicable acceptance PASS на exact head. Dedicated real Worker/BetterAuth/PG17/local-R2/Chromium13groups: SHA match/no page errors/no external requests.
+Mira whole-feature HOLD на bf3e97d подтвердил единственный blocker WF-01: category create COMMIT + потерянный typed acknowledgement позволяли повторный create после тихой revalidation. Лёва выполнил bounded correction: attempted/unknown fence, сохранение имени, native per-submission revalidation opt-out; новая команда только после explicit Refresh structure; confirmed success/typed errors сохранены. Backend/schema/API не менялись.
 
-F6-01 (automatic expectation refresh after a lost Move acknowledgement) подтверждён браузером и минимально исправлен в общей форме. Unknown outcome требует осознанного refresh; automatic POST replay не добавлен.
+Author gate PASS на новом exact: CI45314820622 —3158unit/1831PG плюс все build/schema/runtime/credential checks; все18 applicable acceptance SUCCESS. Whole-feature Chromium/local-R2 run45314830099/artifact14885421479 downloaded/checked: SHA match,14groups,no page errors/external. Новый реальный commit/lost204 case сохраняет ровно один category/History/POST и имя, блокирует click/submit до fresh verification и не replay'ит POST при refresh.
+
+Test-only f601e91 синхронизирует DB assertions с фактическим intercepted response; первый CI run выявил race нового теста. K5 SUCCESS на attempt2 после раннего чтения client-initialized operation ID старым harness; только failed job повторён без code changes. Полная provenance/S9/post-visibility evidence: **stages/forum-structure/F6_REPORT.md**. Canonical accepted scope: stages/forum-structure/PLAN.md.
 
 ## Следующий gate
 
-**Мира whole-feature coordinator review #379 main→bf3e97d** → независимый **Марк** при code independence → owner merge. Лёва автор implementation/assembly и после author gate STOP.
+**Мира whole-feature coordinator re-review #379 main→f601e91**, все108 files и WF-01. Автор не закрывает прежний HOLD своим PASS. Лёва author STOP; Марк inactive до coordinator PASS, затем независимый whole-feature review при code independence → owner merge.
 
-F7 separate docs только после фактического merge. Не объявлять Task6 состоянием main заранее. #342 never merge; #300/general UI/UX/Stage6/deploy не активированы.
+F7 separate docs только после фактического merge. #300/general UI/UX/Stage6/deploy не активированы. Оперативный источник — WORKFLOW.md.
 
 ## 2026-11-20 — stacked delivery adopted
 
