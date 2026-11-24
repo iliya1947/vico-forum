@@ -1,0 +1,51 @@
+# A3.1 — аутентификация, сессии и идентификация
+
+Baseline a3dae5815e26d158c566a27c552127b4b1ab29aa. Static review; новых CI/browser/runtime запусков нет. Полностью прочитаны docs/auth/AUTHORIZATION.md (501 lines), docs/SETTINGS.md (393 lines), app/auth/auth.server.ts (629 lines), app/auth/registration-admission.ts, app/auth/session-write-guard.ts, app/auth/credential-path.ts, app/routes/settings-account.tsx. Связанные Worker/session-context/auth-api/credential routes уже прочитаны в A2 на том же main. #320 AUTHENTICATION_IMPLEMENTATION_PLAN.md прочитан до конца, #315 SECURITY_BLOCK_B_AUTH_SESSIONS.md — scope и findings/SA-02 delta. #315/#320 старого формата, без RULES.md, поэтому не изменялись. Проверена официальная точная версия Better Auth v1.7.7 commit db02f233918ad1233bf0753e437e1c0da353273d; Drizzle ORM 0.45.2 commit 273c78071d4841b497f5144734b38294df7ec64b. 
+
+## Новый независимый finding
+
+### LENA-AUTH-01 — Low/P3 (предварительный приоритет), raw auth database errors выходят в console
+
+Current Stage defect, подтверждён статической цепочкой; внешний лог и конкретная утечка в production не проверены. Не дубликат AUTH-SESSION-01 (ложный успех logout) и AUTH-SESSION-02 (HTTP projection): здесь самостоятельная граница журналирования, даже если outcome запроса обработан корректно.
+
+1. Vico app/auth/auth.server.ts: betterAuthOptions (примерно 145–202) не задаёт logger; createAuth передаёт options в betterAuth. useAuth передаёт сырой adapter error без удаления параметров, а session-write-guard.ts намеренно rethrows original adapter failure после rollback. AuthSessionUnavailableError и safe reportRouteError действуют позднее, не контролируют вызовы logger внутри Better Auth.
+2. Better Auth v1.7.7: packages/better-auth/src/api/routes/sign-out.ts 81–100 получает проверенный signed-cookie token и вызывает internalAdapter.deleteSession(token), при отказе пишет исходный error. packages/better-auth/src/db/internal-adapter.ts 849–909 передаёт token в deleteWithHooks; db/with-hooks.ts 254–310 вызывает adapter.delete при найденной session. packages/drizzle-adapter/src/drizzle-adapter.ts 1065–1070 выполняет db.delete(table).where(...clause). Это также согласуется с exact native DELETE SQL в observeAuthNativeMutations (auth.server.ts).
+3. Drizzle ORM 0.45.2 drizzle-orm/src/node-postgres/session.ts 148–162 передаёт query+params в queryWithCache; pg-core/session.ts 64–74 оборачивает отказ в DrizzleQueryError; errors.ts 13–24 включает SQL и params в message и свойства объекта. Следовательно при успешных предварительных reads/locks и отказе actual DELETE ошибка содержит значение session token. Не нужно предполагать отказ всей БД или доступ к production.
+4. Better Auth packages/core/src/env/logger.ts 98–140 default level warn, error enabled; передаёт formatted message и исходные args в console.error. create-context.ts 134–136 использует options.logger. Обычное redaction query string не удаляет параметры из произвольного error message.
+5. Отдельное подтверждение общей опасности: session.ts 431 логирует исходный error при getSession; revokeSession 733–746 аналогично. packages/core/src/db/adapter/factory.ts 826–833 содержит отдельный raw console.error(error) в fallback join. Его достижимость отдельно не утверждается: не сводить remediation к одному logger option без проверки прямых console sinks.
+6. В main wrangler.jsonc observability enabled, redact_query_string не заменяет санацию application errors. Raw session token не является самостоятельным credential без signed cookie (AUTH-SESSION-02); takeover, signed cookie leakage, password/hash/OAuth secret leakage и фактические production log records не доказаны. Минимальный установленный эффект — SQL и внутренний private session handle могут попасть в console при конкретном storage failure. Не запрашивать живые секреты.
+7. #315 Block H lines 162,167–168 проверил sanitized React Router logger, не доказал raw exception leak; remediation plan не содержит этого отдельного finding. #320 требует secret-safe auth lifecycle, но не описывает этот конкретный путь. В дальнейшем сверить с A10 monitoring/logging, не дублировать.
+8. Reproduction criterion для future isolated test: synthetic active session, успешные preflight/lock, inject failure только в native DELETE, capture console; утверждать отсутствие synthetic token/SQL params при сохранении корректного failure outcome. Это предлагаемая проверка, не выполненный тест.
+
+Official source references:
+- https://github.com/better-auth/better-auth/blob/db02f233918ad1233bf0753e437e1c0da353273d/packages/better-auth/src/api/routes/sign-out.ts#L81-L100
+- https://github.com/better-auth/better-auth/blob/db02f233918ad1233bf0753e437e1c0da353273d/packages/core/src/env/logger.ts#L98-L140
+- https://github.com/drizzle-team/drizzle-orm/blob/273c78071d4841b497f5144734b38294df7ec64b/drizzle-orm/src/errors.ts#L13-L24
+
+## Existing #315 findings — current main cross-check
+
+| ID | Current assessment / evidence |
+|---|---|
+| AUTH-LINK-01 | Residual. Vico validates initiating actor in /link-social, upstream account.ts 425–430 state holds userId/email, callback.ts 257–275 and oauth2/link-account.ts 67–155 use stored identity and same-email/provider constraints without revalidating initiating session; Vico active-account lock is not session revocation check. |
+| AUTH-SESSION-01 | Residual. sign-out.ts catches deletion failure and returns success; Vico HTTP handle does not preserve all adapter failures, only admission/actor-state error channels; native ordinary DELETE error can be swallowed. |
+| AUTH-SESSION-02 | Residual. upstream session.ts 620–665 parseSessionOutput, db/schema.ts 115–121 and core/db/get-tables.ts 140 token not marked returned:false; direct auth-api passthrough; own Settings DTO correctly ID-only. Raw token is not proven standalone auth credential. |
+| AUTH-SESSION-03 | Residual. upstream revoke endpoints sensitiveSessionMiddleware versus listSessions freshSessionMiddleware; exact default freshAge 24h (create-context.ts 317–320). Vico Settings invokes listSessions, direct HTTP before-hook verifies active actor but no freshness. |
+| AUTH-ENUM-01 | Residual. requireEmailVerification:false, default autoSignIn; upstream sign-up.ts 226–229, 296–323 generic duplicate response not selected. #320 AUTH-02/03/06 addresses lifecycle/enum; not a new finding. |
+| AUTH-OAUTH-01 | Residual. callback.ts 145–155 copies provider error_description into redirect URL; Vico credential page renders safe category, not raw text; actual secret leakage not established. |
+| AUTH-CACHE-01 | Existing residual at route level: list-sessions/list-accounts handlers lack explicit cache headers; Vico auth-api.ts direct passthrough, Worker only merges cookie headers; existing #315 finding. No fresh HTTP capture or shared-cache replay proof. |
+| AUTH-REG-01 | **Contract conflict, not newly confirmed current defect.** #315 demands commit/close serialization; docs/SETTINGS.md explicitly says once creation admitted, later flag change does not retroactively remove account or session. Current admission SELECT is fresh at create-user, not locked; in-flight completion is consistent with documented policy. Determine desired close semantics with Owner before classifying as defect/implementation requirement. Existing #315 R04 retains it; do not independently edit plan or choose product policy. |
+
+Thus 7 previous auth findings have matching current static paths; one needs resolution of product-contract conflict. Count separately from new independent findings. No runtime exploit replay performed. A2 previously confirmed READSTATE-CACHE-01 residual, separate.
+
+## Current defenses / scope
+
+- Single identity source Better Auth; active AccountState after session lookup; protected HTTP/direct API hooks; session/account/user writes lock persisted target using native request connection. Inactive account allowed only narrow signed own sign-out cleanup. Distinguish session freshness from active user. Domain-wide AccountState/authorization races review A3.2.
+- Registration flags checked at actual create-user, not login/link or OAuth start; no missing-singleton open fallback. Implicit linking disabled; exact identity expectation checked before link-social; same-email and provider binding upstream checks. No required email verification in current main, intentionally under #320. Password recovery/set-password/email change UI/mail/Turnstile external gate are not independent new defects merely because absent.
+- Settings Account uses current user/session expectations, same-origin, allowlisted form fields, bounds, safe DTO, HTTP password change path for canonical rate limit, fresh list before own-other revocations. No password change revocation by contract. Credential return guard normalizes URL and restricts origin/locale.
+- Current app exposes canonical Better Auth API, including routes not represented in UI; existence alone is not a defect (e.g. unlink tested by existing SA04). Direct route behavior that violates current contract is tracked above.
+- Existing tests identified (test declarations reviewed, not all assertions): tests/database/auth-runtime.test.ts, auth-link-identity.test.ts, auth-rate-limit-concurrency.test.ts, registration-auth-admission.test.ts, sa04-session-atomic.test.ts and app/routes/settings-account.test.tsx. Relevant connected suites and CI existing evidence A2; not a new execution. Review native auth evidence collectors under A5/A10; full UI state, cross-origin, rate-limit concurrency, cookie transport, and dependency advisory coverage still require A3.3/A8/A9/A10 as applicable. Live Google OAuth, mail delivery and actual edge trust topology remain Stage 6.
+- Module edges inspected: browser auth-client uses better-auth/react, credential path pure, route calls server runtime in loader/action; type-only interfaces for account security; full emitted bundle evidence A9.
+
+## Result
+
+A3.1 static auth/session review complete within above coverage; one new independent current defect, seven matching prior findings, one unresolved contract conflict. No implementation changes. Next A3.2 authorization/Owner/AccountState and permission resolution, followed by A3.3 privacy, origin/CSRF, rate-limit/abuse and remaining security cross-domain checks. No claim of complete A3 or full dynamic acceptance.
