@@ -1,35 +1,55 @@
-# WORKFLOW.md — Task6 / Mira whole-feature review after corrective package
+# WORKFLOW.md — Task6 / Lena independent re-review
 
 ## Активный gate
 
-**Мира: whole-feature coordinator review нового final exact #379 после six-item correction.**
+**Mira whole-feature coordinator PASS → Lena independent re-review.**
 
-- Stable exact: `28064dfe51c2c62811dd5674387825a5f0289fd0`.
-- Base/actual main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- Reviewed baseline Lena HOLD: f601e91. Прежний independent HOLD автором не закрыт; требуется новый review cycle.
-- #379 Draft/open/unmerged; #380/#381/#382/#383/#386 closed/superseded/merged=false. No merge; main unchanged.
+Final implementation:
+- Draft #379, branch `feat/forum-structure-f1`;
+- stable exact `28064dfe51c2c62811dd5674387825a5f0289fd0`;
+- base/current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
+- Draft/open/unmerged; main unchanged.
+- The corrective delta is one commit on parent `f601e91dcab19ee1992012564e9a0b557c2ea596`, 21 files/+505−60.
 
-## Six-item corrective package / author evidence
+## Mira whole-feature re-review
 
-- R2a-01: admitted ordinary topic → reserved/Help destination409 после authority checks; absent/protected/hidden-without-authority/Help-source404 сохранены.
-- R3b-01: coherent private inspection ordinary discriminator; hidden Help не предлагает Move.
-- R4a-01: все6 shared structural forms принимают generic typed early failures, сохраняют draft/destination, controlled recovery без retry.
-- R4a-02: CategoryPicker existing typed inline/readId errors400/503 остаются local; query/selection сохранены; q≤200 Unicode code points.
-- R4a-03: background successful revalidation не заменяет accepted Move context; inline/direct используют общий explicit-read hook. Fresh denial закрывает private context. Только matching receipt/explicit Refresh запрашивают новую verification; no POST replay.
-- R4b-01: ordinary full/recent History отображает closed stored before/after/versions/neighbor и target navigation всех8 actions; EN/RU/HE, no source reconstruction.
+The six-item package after Lena HOLD was independently checked against canonical PLAN/current project contracts and the previous reviewed baseline.
 
-**Leva author self-check/acceptance PASS**:
--12 baseline regressions воспроизводимо падают до correction; fixed169 related unit/63PG, lint/typecheck/build PASS.
-- CI45392525193 SUCCESS:245files/3195unit;118files/1833PG; migration/schema/manifest75/runtime/credential и built Worker HTTP smokes.
-- Все18 applicable acceptance SUCCESS. Whole-feature run45392540116/job138439735327/artifact14919557003: downloaded ZIP digest/integrity PASS, implementationSha=checkoutSha=28064df,18groups, pageErrors/external=[].
-- Real connected assertions: Watch после Move COMMIT/lost204 не снимает fence; Help create/Hide/inspection без Move; early generic403 сохраняет drafts/selection; ordinary full/recent History всех8 original producers. WF-01/F6-01/editor/attachment/privacy assertions сохранены.
-- K5 и CI database потребовали по одному targeted retry на том же head из-за старых harness races. Источники не менялись; точные причины/job evidence прозрачно записаны в отчёте.
-- Local infrastructure очищена, production config восстановлен, worktree clean.
+Confirmed corrections:
+1. R2a-01: admitted ordinary topic → reserved/Help destination is controlled 409; absent/protected/hidden/non-movable Help-source remain neutral 404.
+2. R3b-01: hidden Help-domain inspection no longer advertises Move; private inspector DTO adds only a source-free ordinary-domain boolean.
+3. R4a-01: all six structural forms consume early generic typed failures and preserve state/recovery without replay.
+4. R4a-02: CategoryPicker uses typed private inline errors, keeps local form state and bounds query to ≤200 Unicode code points.
+5. R4a-03: Move accepts one context per deliberate readId; unrelated successful revalidation cannot replace frozen expectations or clear stale/unconfirmed state; fresh denial still closes private data; explicit refresh/matching receipt remain the release paths.
+6. R4b-01: ordinary Admin full/recent History renders a closed typed projection of all eight structural before/after facts and target links without arbitrary context/source reconstruction.
 
-Полная causal/effect matrix, source paths/regressions, exact run/job/artifact и retries: **stages/forum-structure/CORRECTIVE_REPORT.md**. Canonical scope: stages/forum-structure/PLAN.md; baseline whole-feature S9/post-visibility/assembly: F6_REPORT.md; original independent evidence: LENA_REVIEW.md.
+No confirmed new current-Task6 blocker was found in the corrective delta or its adjacent seams.
 
-## Следующий шаг / STOP
+Independent evidence:
+- exact CI `45392525193` final attempt SUCCESS;
+- all 18 applicable acceptance workflows SUCCESS on exact head;
+- whole-feature connected run `45392540116`, artifact `14919557003`;
+- artifact downloaded independently: SHA256 matches GitHub digest, ZIP integrity PASS, implementationSha=checkoutSha=exact head, fullFeature=true, 18 groups, pageErrors=[], external=[];
+- screenshots independently checked for hidden Help inspection and ordinary structural History.
 
-**Мира whole-feature main→28064df, все118 files**, включая весь six-item package и existing contracts. При finding — возврат автору; после Mira PASS — **Lena independent re-review того же stable exact** → owner merge только после PASS.
+Retry classification:
+- SA04-K5 attempt1 failed at unchanged legacy attachment harness `editorOperationId` initialization; same exact retry succeeded; no corrective source path involved.
+- CI database attempt1 had 1832/1833 PASS; sole failure was unchanged SA05 owner lifecycle lock-cleanup test with PostgreSQL 55P03; same exact retry succeeded 1833/1833. This is unrelated to Task6 correction and does not expand current scope.
 
-**Лёва author STOP**: участвовал в implementation, независимый review своей работы не выполняет. F7 separate docs после owner merge. #342 only service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive.
+**Coordinator verdict: PASS on exact `28064dfe51c2c62811dd5674387825a5f0289fd0`.**
+
+## Следующий gate — Lena
+
+Lena is code-independent and must independently re-review **the same stable exact head** after the six corrections. Prior HOLD is evidence/history, not a verdict on the changed head.
+
+Required scope: whole Task6 against canonical `stages/forum-structure/PLAN.md`, with focused verification that all six prior findings are actually closed and that the correction introduced no current-Task6 regression. Use actual exact-head code/evidence; coordinator/author conclusions are not proof.
+
+Any implementation-head change invalidates this review and requires a fresh coordinator cycle before independent review.
+
+After Lena PASS → owner merge #379. Agents do not merge.
+
+## Границы
+
+- F7 docs inactive until actual owner merge #379.
+- #342 only service channel and never merge.
+- #300/#320/Stage6/general UI/UX/deploy inactive.
