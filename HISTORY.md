@@ -28,3 +28,5 @@
 2026-11-24 — A5.1a: Admin Overview/browse/History static review; LENA-OVERVIEW-01 new, HISTORY-PRIV-01 known residual; PUBLIC-PROJECTION-01 scope extension. Evidence stages/A5/ADMIN_HISTORY.md.
 
 2026-11-24 — A5.1b: static pin/closure/visibility/private inspection review; no additional independent findings. Evidence stages/A5/VISIBILITY.md.
+
+2026-11-24 — A5.2a: complaint submission/queue/triage static review; no additional confirmed finding. Evidence stages/A5/COMPLAINT_SUBMISSION_QUEUE.md.
