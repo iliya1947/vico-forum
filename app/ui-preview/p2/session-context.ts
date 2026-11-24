@@ -70,7 +70,8 @@ function sessionForActor(baseline: PreviewRawBaseline, actor: PreviewActor): Aut
 export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
   const selected = sessionForActor(baseline, actor);
   return {
-    async getSession(_headers: Headers): Promise<AuthSessionResolution> {
+    async getSession(headers: Headers): Promise<AuthSessionResolution> {
+      void headers; // Session authority is selected by the preview controller, never by request headers.
       // Deliberately do not trust an incoming Cookie or return Set-Cookie.
       return { session: selected, headers: new Headers() };
     },
