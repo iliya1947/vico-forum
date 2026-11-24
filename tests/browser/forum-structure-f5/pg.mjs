@@ -1,4 +1,6 @@
 /** Disposable F5 connected-browser fixture. No production connection or generated secrets. */
+import process from "node:process";
+import { URL } from "node:url";
 import readline from "node:readline";
 import crypto from "node:crypto";
 import pg from "pg";
