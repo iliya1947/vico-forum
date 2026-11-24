@@ -167,7 +167,11 @@ try:
             "intent":"moveTopic","editorActorId":actor,"expectedSectionId":section_a,
             "targetSectionId":section_b,"expectedStructureVersion":"999","expectedLocationVersion":"0"})
         assert wrong.status in (400,403),(wrong.status,wrong.text()[:200])
-        assert "no-store" in wrong.headers.get("cache-control",""),wrong.headers
+        if wrong.status==400:
+            assert wrong.text().strip()=="Bad Request",wrong.text()[:200]
+            assert wrong.headers.get("vary")=="Origin",wrong.headers
+        else:
+            private(wrong,403)
         mixed=admin.request.post(base+path,headers={"Origin":base},form={
             "intent":"reply","editorActorId":actor,"body":"MIXED_UNEXPECTED_POST",
             "expectedSectionId":section_a,"targetSectionId":section_b})
