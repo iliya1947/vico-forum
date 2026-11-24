@@ -24,7 +24,8 @@ A5.4d2: stages/A5/OWNER_FILES_STORAGE.md; Files native metrics, 13 retained R2 s
 A5.4d3: stages/A5/OWNER_DATA_CURRENT.md; three Data monitors, complete named counts, fixed compatibility subset and retention semantics reviewed; no additional independent finding. A7 full schema parity remains.
 A5.4d4: stages/A5/OWNER_INTEGRATIONS_CURRENT.md; LENA-OWNER-AUTH-GROUPS-01 (retained auth group count always zero due to wrong pool predicate), four Integration monitors reviewed; SA07 current static scope complete.
 A5.4e: stages/A5/OWNER_OVERVIEW.md; LENA-OWNER-OVERVIEW-ROLLBACK-01 (storage retained count survives rejected web snapshot); LENA-OWNER-HELP-01 extends to Overview through same reader. All 13 Overview areas and sampling composition reviewed.
+A5.4f1: stages/A5/OWNER_HISTORY_SOURCES.md; original global/scoped source projection, association, terminal provenance and display checked; no additional independent finding. Filters/cursors and target attribution remain.
 Суммарно: 12 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A5.4f1: global/scoped History source projections and identity; then filters/pagination and target profile History. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+Следующий bounded-блок A5.4f2: History filters/compatibility, cursor/pagination and route/UI round-trip; then A5.4f3 target profile History. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A5.4f1.
+Следующий переход: команда разработчика продолжить → A5.4f2.
