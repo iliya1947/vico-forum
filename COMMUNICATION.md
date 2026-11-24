@@ -16,23 +16,21 @@
 
 #354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-## Текущий этап — Task6: WF-01 author gate PASS → Mira re-review
+## Текущий этап — Task6: corrective author PASS → Mira whole-feature review
 
-Current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task6 ещё не merged. F1–F5 bounded coordinator PASS и исходная F6 matrix/assembly сохранены.
+Main `a3dae5815e26d158c566a27c552127b4b1ab29aa`, Task6 не merged. Final Draft **#379 exact 28064dfe51c2c62811dd5674387825a5f0289fd0**. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false; metadata/main повторно проверены, no merge.
 
-Final Draft **#379 exact f601e91dcab19ee1992012564e9a0b557c2ea596**, base main. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false, без merge. #342 — only service/never merge.
+После завершённого Lena R0–R5 HOLD и независимой Mira reconciliation Лёва реализовал назначенный six-item package: narrow ordinary-topic→Help409/neutral protected404; hidden Help no Move; structural generic errors; category picker local400/503/q200; Move explicit-read fence through unrelated Watch/revalidation; ordinary Admin full/recent structural before/after/target navigation всех8 actions.
 
-Mira whole-feature HOLD на bf3e97d подтвердил единственный blocker WF-01: category create COMMIT + потерянный typed acknowledgement позволяли повторный create после тихой revalidation. Лёва выполнил bounded correction: attempted/unknown fence, сохранение имени, native per-submission revalidation opt-out; новая команда только после explicit Refresh structure; confirmed success/typed errors сохранены. Backend/schema/API не менялись.
+**Author self-check/acceptance PASS** нового exact: CI45392525193 —3195unit/1833PG плюс все migration/schema/manifest75/runtime/credential/Worker checks; все18 applicable acceptance SUCCESS. Whole-feature run45392540116/artifact14919557003 скачан: digest/integrity и implementationSha=checkoutSha=28064df,18groups,pageErrors/external=[].
 
-Author gate PASS на новом exact: CI45314820622 —3158unit/1831PG плюс все build/schema/runtime/credential checks; все18 applicable acceptance SUCCESS. Whole-feature Chromium/local-R2 run45314830099/artifact14885421479 downloaded/checked: SHA match,14groups,no page errors/external. Новый реальный commit/lost204 case сохраняет ровно один category/History/POST и имя, блокирует click/submit до fresh verification и не replay'ит POST при refresh.
-
-Test-only f601e91 синхронизирует DB assertions с фактическим intercepted response; первый CI run выявил race нового теста. K5 SUCCESS на attempt2 после раннего чтения client-initialized operation ID старым harness; только failed job повторён без code changes. Полная provenance/S9/post-visibility evidence: **stages/forum-structure/F6_REPORT.md**. Canonical accepted scope: stages/forum-structure/PLAN.md.
+12 targeted baseline regressions воспроизводят замечания; fixed169 related unit/63PG и18 connected groups local PASS. Два старых harness races (K5 editor initialization и Owner lifecycle NOWAIT после discarded socket) потребовали по одному targeted retry на unchanged exact; source не менялся. Полная causal/effect matrix, exact jobs/attempts и доказательства: **stages/forum-structure/CORRECTIVE_REPORT.md**. Original LENA_REVIEW.md не менялся; F6_REPORT.md хранит baseline S9/assembly и ссылается на новый corrective report. Schema/dependencies/production config не менялись, WF-01/F6-01/editor/authority/privacy/no-replay preserved.
 
 ## Следующий gate
 
-**Мира whole-feature coordinator re-review #379 main→f601e91**, все108 files и WF-01. Автор не закрывает прежний HOLD своим PASS. Лёва author STOP; Марк inactive до coordinator PASS, затем независимый whole-feature review при code independence → owner merge.
+**Мира whole-feature review #379 main→28064df (все118files)** → после Mira PASS **Lena independent re-review того же exact** → owner merge только после PASS. Старый independent HOLD автором не закрывается. Лёва author STOP, собственный independent review не выполняет.
 
-F7 separate docs только после фактического merge. #300/general UI/UX/Stage6/deploy не активированы. Оперативный источник — WORKFLOW.md.
+F7 separate docs после фактического merge. #342 only service/never merge; #300/#320/general UI/UX/Stage6/deploy inactive. WORKFLOW.md — оперативный источник.
 
 ## 2026-11-20 — stacked delivery adopted
 
