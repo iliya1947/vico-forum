@@ -6,8 +6,9 @@ import { authorizationForRequest, authorizationOwnerContext } from "../../author
 import { authSessionForRequest } from "../../auth/request-context";
 import { requireAdminAccess } from "../../admin/access.server";
 import { loader as settingsAdministratorLoader } from "../../routes/settings-administrator";
-import { InvalidAuthorizationInputError } from "../../../db/authorization-error";
-import { AuthorizationNotFoundError } from "../../../db/authorization-repository";
+import {
+  InvalidAuthorizationInputError, AuthorizationNotFoundError,
+} from "../../../db/authorization-error";
 import { createP2RawBaseline } from "./raw-baseline";
 import { createP2AuthSessionFlow } from "./session-context";
 import {
