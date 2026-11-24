@@ -1,6 +1,8 @@
-# agents/lira.md — Task 6 / F5 final author PASS; STOP → Мира
+# agents/lira.md — Task 6 / F5 accepted, STOP
 
-- `main` `a3dae5815e26d158c566a27c552127b4b1ab29aa`; F1–F4 coordinator PASS, accepted F4 Draft #382 exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`. Stacked F5 [Draft #383](https://github.com/iliya1947/vico-forum/pull/383) stable exact **`b5efc4d4ea0db1563b5036057518f3ec2b54e656`**, 48 bounded F5 files, no migration/merge.
-- A/B/C1/C2/C3/D author-check PASS and **final F5 author-check PASS**. Final connected [F5 Chromium #45301253066](https://github.com/iliya1947/vico-forum/actions/runs/45301253066) SUCCESS: real Worker/Better Auth/PG17/Admin structure forms, canonical Move, denied/mixed intent and two-tab409, same title/reply/post Editor 2.0 DOM/drafts/undo and pending XHR, EN/RU/HE 320/390/RTL/keyboard, original Owner History source and no hidden topic content. Pending attachment XHR is not real R2 acceptance. Browser head `4026f300…` differs from final only by two test-file changes.
-- [Exact-head CI #45302582719](https://github.com/iliya1947/vico-forum/actions/runs/45302582719) **SUCCESS**: checks lint/TypeScript/build + 3151/3151 unit (242 files), database PG17/Worker smokes. Superseded failures: early F5 browser assertion mismatches corrected; F5 320px overflow identified/fixed and accepted; picker test read-order stabilized; one transient inherited Bookmarks unhandled error did not recur on final exact head, no Bookmarks changes.
-- **Лира STOP.** Next assigned agent **Мира for bounded F5 coordinator checkpoint** on #383 exact stable head via #342. Only confirmed findings returned to Лире; otherwise Mira PASS allows F6 assignment **Лёва**, not automatic merge or unilateral F6 implementation. Final independent reviewer **Марк** if code-independent. All details/source links in service `WORKFLOW.md`. F6/merge/F7/docs/#300/Stage6/deploy inactive pending Mira checkpoint.
+- F5 #383 coordinator PASS on exact `b5efc4d4ea0db1563b5036057518f3ec2b54e656`, base accepted F4 unchanged.
+- Mira found no confirmed current-F5 blocker.
+- F1–F5 remain stacked Draft/unmerged pending F6 final assembly.
+- Lira STOP; do not start F6.
+- Next owner-assigned implementer: Leva for F6.
+- Final independent whole-feature reviewer remains Mark if code-independent.
