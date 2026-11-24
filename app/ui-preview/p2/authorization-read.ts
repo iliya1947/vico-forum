@@ -3,10 +3,12 @@ import {
 } from "../../authorization/catalog";
 import { ownerAwareEffectivePermissions, isBoundOwner } from "../../authorization/owner";
 import {
-  InvalidAuthorizationInputError, type AuthorizationCapability,
-  type AuthorizationManagementCapability, type PermissionResolver,
+  InvalidAuthorizationInputError, AuthorizationNotFoundError,
+} from "../../../db/authorization-error";
+import type {
+  AuthorizationCapability, AuthorizationManagementCapability, PermissionResolver,
 } from "../../../db/authorization-service";
-import { AuthorizationNotFoundError, type UserAuthorization } from "../../../db/authorization-repository";
+import type { UserAuthorization } from "../../../db/authorization-repository";
 import type { PreviewRawBaseline, PreviewRoleId } from "./raw-baseline";
 
 const builtInRoles = {
