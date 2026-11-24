@@ -123,7 +123,7 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
   const resolvedCaseId = "preview-case-resolved";
   const openCaseId = "preview-case-open";
   const decisionId = "preview-decision-one";
-  const measureId = "preview-measure-one";
+  const measureId = "ba0869ee-a2a4-4f6a-b133-197e5ae62f3a";
   const ownerBinding = core.ownerUserId;
 
   const facts: PreviewRawDomainFacts = {
@@ -172,7 +172,7 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
         createdAt: at(-5 * day), expiresAt: at(2 * day), liftedAt: null, reason: "Synthetic temporary restriction" },
     ],
     measureAppeals: [
-      { id: "preview-measure-appeal", measureId, appellantId: inactiveId,
+      { id: "7c7ad00b-3d59-4942-a3f8-0c856b065d04", measureId, appellantId: inactiveId,
         status: "pending", ordinal: 1, createdAt: at(-2 * day) },
     ],
     complaintCases: [
