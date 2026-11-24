@@ -26,6 +26,12 @@ adds the two block-management capabilities plus its measure persistence.
 приватную очередь и инспекцию. Это не общее edit-any или расширение
 публичного/Admin reader; подробный постоянный контракт приведён ниже.
 
+После AP-11 также merged Task 6: guarded управление обычными
+категориями/разделами, перенос обычных тем, новые
+`forum.structure.manage` / `forum.topic.move` и исходные события
+структуры в Admin/Owner History. Это самостоятельная функциональность,
+а не переопределение read-only объёма AP-06.
+
 Other routes and capabilities described below as delivery targets become available only
 through their respective bounded implementation PRs. Settings is a separate sequence outside
 the completed AP-01–AP-11 delivery scope. SET-01–SET-02 now provide a real protected
@@ -92,9 +98,10 @@ The legacy `/:locale/admin/users/:userId` entry remains only a guarded compatibi
 Messages are administered inside topic context and through Quick actions; they do not get a
 separate administrative page.
 
-An object page does not authorize unspecified create, rename, move, delete, bulk or edit-any
-operations. Each new operation needs concrete behavior, an authoritative backend contract,
-its applicable permission, state validation, reason rule and tests before implementation.
+An object page alone does not authorize structural mutations, deletion, bulk or edit-any
+operations. Implemented structure and topic Move commands require their exact
+capabilities, authoritative validation and CAS; all other operations remain
+unauthorized unless separately implemented.
 Topic closure/reopening follows the approved AP-08 boundary below; отдельный реализованный Hide/Restore следует контракту moderation visibility ниже.
 
 Three boundaries remain distinct:
@@ -161,11 +168,103 @@ opens the public Help category; no public service-section URL is introduced. Pub
 Overview public aggregates and Help discovery `section: null` remain unchanged. No topic or
 message body, revision, user email, Cases or History payload is included in the admin DTO.
 
-This slice is read-only. Section detail provides counts and a public-view link; administrative
+The AP-06 browsing slice was read-only. Task 6 subsequently added separately
+authorized structural actions to these same Admin object pages. Section
+detail provides counts and a public-view link; administrative
 topic navigation/message actions belong to AP-07. Structural create/rename/move/delete,
 closure, Users and blocking are outside AP-06. There is no speculative Quick actions menu
 without an approved category/section operation. EN/RU/HE, shared AdminShell, logical CSS,
 keyboard search/navigation and responsive/RTL behavior apply to these pages.
+
+## Управление структурой и перенос тем (Task 6)
+
+В `main` реализовано управление **обычными** контейнерами. По
+`forum.structure.manage` защищённые формы позволяют создавать категории
+(`/:locale/admin/forum`), переименовывать/поднимать/опускать категории
+и создавать в них разделы (`/:locale/admin/forum/categories/:categoryId`),
+переименовывать/поднимать/опускать раздел и переносить его в другую
+обычную категорию (`/:locale/admin/forum/sections/:sectionId`).
+Up/Down меняет соседей в полном sibling-порядке, а не только в
+отфильтрованных 25 результатах. Раздел сохраняет ID и все темы;
+категории не вкладываются друг в друга. Reserved Help category/service
+section не участвуют в записи и destination picker.
+
+Имена обычных контейнеров — trimmed plain Unicode, 1–200 code points
+и не более 800 UTF-8 bytes, без управляющих символов/перевода строки.
+Совпадающие имена допустимы, поэтому выбор назначения показывает
+ID и контекст родительской категории. Публичные списки показывают
+актуальный ручной порядок, Help по-прежнему первый, внутренний
+service section не становится публичным. Новых slug/description/color,
+delete/archive/merge/bulk или самостоятельных переводов имён нет.
+
+`forum.topic.move` отдельно допускает перенос existing ordinary topic
+в ordinary section той же или другой ordinary category. Авторство
+темы, `forum.structure.manage`, право публикации и generic Admin
+admission сами по себе Move не разрешают. Общий inline Move control
+на видимых public/Admin topic pages использует защищённый контекст
+и picker, без смены публичного маршрута и размонтирования редакторов.
+Прямой `/:locale/admin/forum/topics/:topicId/move` открывает private
+Move form; для скрытой ordinary topic вход доступен из существующего
+guarded visibility inspector только при **двух** current permissions:
+`forum.topic.move` и `forum.content.visibility.manage`.
+Move-only actor не получает hidden source. Обычная Admin topic page,
+public reader и History не расширены до private hidden-reader.
+
+Защищённый `/:locale/admin/forum/destinations` даёт только bounded
+ordinary category/section metadata для holder `forum.structure.manage`
+или `forum.topic.move`. Поиск/курсор учитывают тип, родителя
+и строку запроса; page25 + lookahead, без тем, авторов, содержимого,
+Case или History. Private move-context возвращает только topic ID,
+текущее section/category, структуру и версии, без title/body/author.
+Скрытая недоступная и отсутствующая тема дают нейтральный 404 после
+соответствующих permission guards.
+
+Topic Move POST выполняется через единственный canonical
+`/:locale/topics/:topicId` intent `moveTopic`, не отдельный Admin writer.
+Категории и разделы используют action своих Admin routes. Для всех
+команд обязательны authenticated active actor, same-origin, актуальное
+точное permission, AP-10 `admin.forum`, строгий набор полей и
+stale-account expectation. Глобальная `structureVersion` защищает
+изменения контейнеров, а Topic Move дополнительно сверяет исходный
+section ID и `locationVersion`; все bigint — десятичные строки.
+Только фактическое изменение увеличивает соответствующую версию
+и создаёт одно atomic History event. Устаревший CAS → private 409;
+запрещённый Help transition не выполняется. После 409/неопределённого
+transport outcome UI перечитывает состояние и требует явного повтора,
+не переигрывает POST и не создаёт optimistic объект. Protected
+document/data/action/error responses используют `private, no-store`.
+
+Move обновляет только раздел темы и её location version.
+Постоянные topic/post IDs, ссылки/якоря, ревизии, закрепление,
+closed/solved/best answer, visibility, published/draft/evidence assets,
+переводы, Watch/Bookmarks/Mute/Block, inbox/read-state и pending
+редакторы с текстом/undo/вложениями сохраняются. Не требуется
+причина, автор не получает новое уведомление, topic не публикуется
+повторно. Подтверждённый create-topic receipt остаётся прежним,
+а replay читает фактический текущий раздел. При reparent раздела
+темы следуют за тем же section ID без индивидуальных Move events.
+
+### Structural History
+
+`admin_history` сохраняет восемь исходных типов:
+`category.created`, `category.renamed`, `category.reordered`;
+`section.created`, `section.renamed`, `section.moved`,
+`section.reordered`; `topic.moved`. Один реальный reorder
+создаёт одно событие, без синтетического события на соседа.
+Source labels, bounded before/after, actual actor и версии
+сохраняются атомарно с действием; no-op, отказ или rollback
+не создают event. Для `topic.moved` target label только
+`topic:<id>`, а контекст содержит структурные source/destination
+IDs/labels — без заголовка/текста/автора/hidden reason.
+Обычная History требует отдельно `admin.history.read`.
+Exact Owner `forum.structure` в scoped/global/person History
+проецирует **тот же original `admin_history` event**, не
+дополнительную запись. Legacy seed не получает выдуманный backfill.
+
+Эта функциональность проверена в repository/local-CI через
+PostgreSQL 17, Worker/Better Auth и Chromium. Здесь нет
+утверждения о production deployment, внешней миграции `0072`
+или реальной Owner credential/binding acceptance.
 
 ## Topic detail and message actions (AP-07)
 
@@ -236,7 +335,7 @@ grant global admission either. Each section and action independently checks its 
 | Surface | Admission/read boundary | Action boundary |
 | --- | --- | --- |
 | Overview / shell | Authenticated actor with at least one applicable implemented section capability | Navigation is not mutation authority; only public aggregate statistics and permitted destinations are exposed |
-| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close`, `forum.content.visibility.manage` | Exact operation permission and authoritative object/resource conditions, as below |
+| Forum / category, section, topic pages | At least one of `forum.topic.pin`, `forum.solution.manageAny`, `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`, `forum.post.history.read`, `forum.topic.close`, `forum.content.visibility.manage`, `forum.structure.manage`, `forum.topic.move` | Exact operation permission and authoritative object/resource conditions, as below |
 | Roles & permissions | `access.authorization.manage` for protected reads | Exact server-bound Owner only for all role/grant/user authorization mutations; existing validation, shared mutex and fresh permission/admission checks |
 | Users / canonical profile / measures | Public canonical profile baseline; `admin.users.read` only for the Users index and guarded legacy detail redirect; `access.authorization.manage` for the targeted authorization section; `admin.users.blocks.manage` for exact target/measures lookup under AP-10; exact bound Owner for the private account/session/history section | Authorization assignment/override writes require exact bound Owner (non-Owner read-only); measure create/change/lift and appeal review retain fresh `admin.users.blocks.manage` plus target/issuer hierarchy (and `admin.users.blocks.managePrivileged` for privileged targets) |
 | History / Overview recent actions | `admin.history.read` | History-read does not authorize recorded operations; actors do not need history-read merely to perform an otherwise permitted operation |
@@ -276,6 +375,8 @@ reused without creating a second identity store.
 | Correct topic-title or post-body source locale | `forum.sourceLocale.correctAny`, or `forum.sourceLocale.correctOwn` with authoritative ownership | Existing current-revision CAS, canonical non-`und` source-locale validation; no general content-edit right |
 | Read message revision history | `forum.post.history.read` | Post belongs to target topic; read independently before loading revision bodies |
 | Close/reopen topic | `forum.topic.close` for both commands | Existing ordinary/Help topic, authoritative closure-version CAS and state transition; no author/role bypass or required reason |
+| Create/rename/reorder category or section; reparent ordinary section | `forum.structure.manage` | Only ordinary containers, unchanged IDs, validated name/destination, fresh structure-version CAS, current actor and AP-10 `admin.forum`; no delete/bulk/Help mutation |
+| Move existing ordinary topic between ordinary sections | `forum.topic.move`; additionally `forum.content.visibility.manage` when the topic is hidden | No implicit author permission; fresh exact permissions, actor, origin, source section/location/global structure CAS; preserve existing content/state and prevent ordinary↔Help conversion |
 | Hide/Restore published topic or post; inspect hidden targets | `forum.content.visibility.manage` | Fresh effective authority and AP-10 `admin.forum`, target membership, visibility-version/current-revision CAS and bounded reason on each real transition; separate protected inspection, with additional `forum.post.history.read` for older post-revision text |
 | Create/change/lift measure; review measure appeal | `admin.users.blocks.manage` plus privileged-target capability when needed | Exact target/measure, no self/owner target, raw issuer/target hierarchy, current effective permission, active lifecycle and expected measure version |
 | Other category/section/topic/message mutations | Not authorized by page visibility | Define concrete behavior and capability in a separately bounded package first |
@@ -473,6 +574,8 @@ current operation contract; it does not introduce a new reason form or persisten
 | Review Help signal | Actual persisted review outcome and applicable effect | No new mandatory reviewer reason; existing kind-specific submission explanations remain unchanged |
 | Administrative source-locale correction | Actual new revision/source-metadata change | Not required by current contract |
 | Close/reopen topic | Actual closed-state transition, recording before/after and previous/new closure versions | Not required by the approved AP-08 contract |
+| Create/rename/reorder category/section or reparent section | One committed `category.created/renamed/reordered` or `section.created/renamed/moved/reordered` event with bounded before/after and version | Not required; only successful change emits one event |
+| Move ordinary topic | One committed `topic.moved` neutral target event with source/destination structure and location version; no title/body | Not required; no automatic notification |
 | Hide/Restore topic/post | Committed `topic.hidden`/`topic.restored`/`post.hidden`/`post.restored`, neutral target identity, before/after visibility and version context | Nonblank validated reason is mandatory for every real transition; admitted no-op creates no event |
 | Create/change/lift temporary or permanent measure; decide its appeal | Committed `measure.created`, `measure.changed`, `measure.lifted` or `measure.appealResolved` with exact measure ID and bounded state context | Nonblank reasons for create/change/explicit lift, and reviewer explanation for appeal decision; expiry creates no synthetic event |
 
@@ -722,7 +825,7 @@ Four administrative restrictions suppress exactly these permissions on the curre
 action/read request; they never modify raw role grants or user overrides:
 
 - `admin.forum`: `forum.topic.pin`, `forum.topic.close`, `forum.content.visibility.manage`,
-  `forum.solution.manageAny`, `forum.helpNeedsDetails.manage`,
+  `forum.structure.manage`, `forum.topic.move`, `forum.solution.manageAny`, `forum.helpNeedsDetails.manage`,
   `forum.helpDuplicate.manage`, `forum.sourceLocale.correctAny`,
   `forum.post.history.read`.
 - `admin.complaints`: `forum.complaint.review`,

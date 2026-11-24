@@ -90,6 +90,8 @@ Permission key означает существующую capability прилож
 - `forum.topic.pin`;
 - `forum.topic.close`;
 - `forum.content.visibility.manage`;
+- `forum.structure.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -162,6 +164,32 @@ personal overrides остаются динамическими. Само permiss
 публично-безопасной проекцией с обезличенными заглушками.
 Подробный контракт — в [ADMIN_PANEL.md](../ADMIN_PANEL.md).
 
+`forum.structure.manage` разрешает создание/переименование обычных
+категорий и разделов, изменение их sibling-порядка и перенос обычного
+раздела между обычными категориями. `forum.topic.move` отдельно разрешает
+перенос существующей обычной темы между обычными разделами. Эти
+capabilities не заменяют друг друга, не предоставляют автору темы
+неявного Move и не разрешают изменение зарезервированных Help
+category/service section или преобразование ordinary ↔ Help.
+Ни одно из них не даёт права на произвольное редактирование/удаление
+содержимого, просмотр прежних ревизий, приватную History или
+hidden-source чтение.
+
+Оба ключа независимо допускают ordinary Admin Forum admission, но
+каждый writer повторно требует точное effective permission, активный
+аккаунт, same-origin и применимые ограничения AP-10 `admin.forum`.
+Для переноса **скрытой** ordinary-темы требуются одновременно
+`forum.topic.move` и `forum.content.visibility.manage`, включая
+защищённое чтение контекста и серверную транзакцию. Move-only actor
+работает только с видимыми ordinary-темами; generic Admin/History,
+`forum.structure.manage` и авторство не раскрывают скрытую тему.
+При недоступном hidden target его приватный контекст нейтрален.
+Категории/разделы используют общую структуру с version-CAS,
+а темы — дополнительно исходный section ID и отдельный
+location-version CAS. Изменяемые grants/overrides и catalog-wide
+effective Owner projection действуют как для остальных permissions.
+Постоянный UI/History и error contract — в [ADMIN_PANEL.md](../ADMIN_PANEL.md).
+
 Complaint permissions protect the server-only domain capabilities documented in
 [`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits
 authenticated Complaint submission. `forum.complaint.review` independently permits
@@ -214,6 +242,7 @@ retain their own permissions and do not follow from complaint review.
 - `forum.topic.pin`;
 - `forum.topic.close`;
 - `forum.content.visibility.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -238,6 +267,8 @@ retain their own permissions and do not follow from complaint review.
 - `forum.topic.pin`;
 - `forum.topic.close`;
 - `forum.content.visibility.manage`;
+- `forum.structure.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -256,7 +287,7 @@ retain their own permissions and do not follow from complaint review.
 В текущем выпуске все role/grant/assignment/override writes выполняет только
 exact server-bound Owner. Для каждого запроса сервер повторно проверяет fresh effective
 permission и Owner policy внутри serialized transaction; obsolete manager-count/last-manager
-veto остаётся удалённым. Начальные grants роли `admin` не меняются.
+veto остаётся удалённым. Начальные grants `admin` включают также `forum.structure.manage` и `forum.topic.move` по миграции `0072`; конкретные effective permissions по-прежнему определяются текущими role grants и per-user overrides.
 
 `admin.history.read` independently admits ordinary admin History and Overview recent actions.
 AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
