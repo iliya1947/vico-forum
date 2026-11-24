@@ -27,7 +27,8 @@ A5.4e: stages/A5/OWNER_OVERVIEW.md; LENA-OWNER-OVERVIEW-ROLLBACK-01 (storage ret
 A5.4f1: stages/A5/OWNER_HISTORY_SOURCES.md; original global/scoped source projection, association, terminal provenance and display checked; no additional independent finding. Filters/cursors and target attribution remain.
 A5.4f2: stages/A5/OWNER_HISTORY_FILTERS.md; LENA-OWNER-OVERVIEW-CURSOR-01 (Overview size5 v2 cursor rejected by Event log size25), global/scoped filters and pagination reviewed.
 A5.4f3: stages/A5/OWNER_PROFILE_HISTORY.md; LENA-OWNER-PROFILE-COVERAGE-01 (target profile hides known terminal-time coverage gaps); target attribution/paging/admission/presentation reviewed. A5 static scope complete.
-Суммарно: 14 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A6.1: editor/revision and Markdown safety/validation lifecycle; then attachments and translation/jobs under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+A6.1a: stages/A6/MARKDOWN_RENDERING.md; LENA-MARKDOWN-TABLE-PIPE-01 (escaped terminal pipe loses last cell, source rewritten on visual structure edit); renderer/technical segmentation static scope reviewed. A6.1 subdivided due to editor size.
+Суммарно: 15 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A6.1b: clipboard conversion, source model and visual/advanced editing preservation/undo/redo; then A6.1c mounted editor operation and revision consumers, attachments and translation/jobs under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A6.1.
+Следующий переход: команда разработчика продолжить → A6.1b.
