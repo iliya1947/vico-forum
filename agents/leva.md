@@ -11,3 +11,13 @@
 - Рекомендация поставки: AUTH-01 допускает independent, AUTH-02–06 единая vertical stack, AUTH-07 на final head; решение Миры, не моё implementation назначение.
 - Q-01: владелец опрошен о mandatory verification для legacy unverified accounts/sessions; ответа пока нет. Обе ветви и blocker на AUTH-02 cutover записаны в PLAN. Не выбирать grandfathering/cutover вместо владельца.
 - Review plan и результаты implementation/gate — разные состояния. Product-scope revalidation PASS не принимает техническую реализацию. Stage 6 отдельно заблокирована; служебный #320 не merge.
+
+
+## Coordinator review result
+
+**HOLD.** Не исправлять план до owner decision Q-01.
+
+После решения владельца одним correction pass:
+1. зафиксировать выбранную cutover policy Q-01;
+2. убрать Turnstile как обязательный выбранный pre-Stage-6 adapter и сделать AUTH-05 provider-neutral; конкретный provider допускается только как отдельно утверждённый Stage-6 choice/candidate;
+3. остальную архитектуру не перерабатывать без нового подтверждённого finding.
