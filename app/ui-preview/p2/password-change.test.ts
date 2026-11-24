@@ -403,16 +403,16 @@ describe("P2-B7b1 password change via original protected Settings action and Aut
     expect(seed.users.some((u) => u.identity.email === "new-change-password@preview.invalid")).toBe(false);
   });
 
-  it("keeps future session revocation actions unavailable and cannot change another user's login", async () => {
+  it("rejects foreign session revocation while keeping own session and another user's login", async () => {
     const seed = baseline();
     const flow = createP2AuthSessionFlow(seed, "member");
     const own = (await flow.runtime.getSession(new Headers())).session!;
     await expect(flow.runtime.security!.revokeOneOther(new Headers(), {
       userId: own.user.id, sessionId: own.session.id,
-    }, "preview-session-moderator")).rejects.toThrow("P2 AccountSecurity write not configured");
+    }, "preview-session-moderator")).rejects.toMatchObject({ code: "session-not-found" });
     await expect(flow.runtime.security!.revokeAllOthers(new Headers(), {
       userId: own.user.id, sessionId: own.session.id,
-    })).rejects.toThrow("P2 AccountSecurity write not configured");
+    })).resolves.toBeUndefined();
     expect((await settingsAction(flow, changeRequest(seed.actorIds.member, own.session.id,
       "Preview-Member-2026!", changed))).data).toEqual({ saved: "change-password" });
     const moderator = createP2AuthSessionFlow(seed, "moderator");
