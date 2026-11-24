@@ -93,6 +93,8 @@ export function createP2AuthRuntime(
   // Both the original Settings action and canonical Auth HTTP read this same overlay.
   const changedPasswords = new Map<string, string>();
   const passwordChangeAttempts: number[] = [];
+  // Revoke only from this preview controller; raw fixture sessions stay immutable.
+  const revokedSessionIds = new Set<string>();
   const current = () => activeSession;
   const transientGoogle = new Map<string, PreviewRawBaseline["users"][number]>();
   const google = createP2GoogleSocialAdapter(baseline, actor, googleScenario, (session) => {
@@ -127,7 +129,7 @@ export function createP2AuthRuntime(
       }
       passwordChangeAttempts.push(now);
     },
-  });
+  }, revokedSessionIds);
 
   return {
     security,
