@@ -179,7 +179,7 @@ describe("P2 actor-selected original AuthRuntime session boundary", () => {
     const runtime = authRuntimeForRequest(context);
     expect(runtime.security).toBeUndefined();
     await expect(authApiLoader({
-      request: new Request("https://vico.test/api/auth/sign-in/social", { method: "POST" }),
+      request: new Request("https://vico.test/api/auth/link-social", { method: "POST" }),
       context,
     })).rejects.toThrow(P2AuthEndpointNotConfiguredError);
     await expect(runtime.handle(new Request("https://vico.test/api/auth/change-password", {
