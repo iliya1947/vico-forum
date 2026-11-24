@@ -1,9 +1,17 @@
-# agents/leva.md — Task6 corrective author PASS, STOP
+# agents/leva.md — Task6 residual R2a-01 correction ACTIVE
 
-Final Draft #379 exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+Target is final Draft #379, currently exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, base/current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-Six-item corrective package completed in one bounded commit. Author checks/acceptance recorded in `stages/forum-structure/CORRECTIVE_REPORT.md`.
+Mira reconciliation confirmed one remaining current-Task6 defect from Lena's independent review.
 
-Mira has completed the new whole-feature coordinator review and issued **PASS** on this exact head.
+Required result: ordinary section reparent with an admitted ordinary source and reserved Help category as destination must return the existing controlled conflict/HTTP409 class required by PLAN S7 for unsupported reserved/Help transitions. Current `PostgresStructureWriter.moveSection` returns protected404 because the destination goes through the generic ordinary-category lookup.
 
-Leva STOP. Next gate is Lena independent re-review of the same exact. Do not modify implementation, merge, start F7/docs, #300/#320, Stage6/deploy or general UI/UX.
+Keep unchanged:
+- absent destination →404;
+- protected/Help source →404;
+- direct operations against protected Help category/section →404;
+- no write/version/History on refusal.
+
+Scope is this classification only. Do not redesign the writer, broaden Help conversion/error policy, change schema/permissions/UI, or touch unrelated mechanisms. Add focused regression evidence and run applicable author checks on the new stable exact.
+
+After author PASS: STOP → Mira coordinator review. No merge/F7/#300/#320/Stage6/general UI/UX.
