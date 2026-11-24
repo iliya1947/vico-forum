@@ -1,31 +1,35 @@
-# WORKFLOW.md — Task6 / corrective author checks
+# WORKFLOW.md — Task6 / Mira whole-feature review after corrective package
 
-## Активный шаг
+## Активный gate
 
-**Лёва: six-item corrective package реализован; exact-head CI/acceptance выполняются.**
+**Мира: whole-feature coordinator review нового final exact #379 после six-item correction.**
 
-Final Draft #379 stable exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Correction основана на Lena HOLD/Mira reconciliation для f601e91; прежний independent HOLD автором не закрывается. No merge.
+- Stable exact: `28064dfe51c2c62811dd5674387825a5f0289fd0`.
+- Base/actual main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Reviewed baseline Lena HOLD: f601e91. Прежний independent HOLD автором не закрыт; требуется новый review cycle.
+- #379 Draft/open/unmerged; #380/#381/#382/#383/#386 closed/superseded/merged=false. No merge; main unchanged.
 
-## Пакет
+## Six-item corrective package / author evidence
 
-- R2a-01: admitted ordinary topic → reserved/Help destination controlled409 после authority checks; absent/protected/hidden-without-authority/Help-source neutral404 сохранены.
-- R3b-01: inspector получает из coherent SQL узкий ordinary discriminator; hidden Help не рекламирует Move, ordinary dual-authority entry сохраняется.
-- R4a-01: все6 общих structural forms принимают generic typed operation:structure failures; сохраняют draft/selection, показывают recovery, блокируют повторную submit event при blocked outcome.
-- R4a-02: CategoryPicker переиспользует существующий typed inline read/readId contract, содержит400/503 локально, сохраняет выбор/query, ограничивает search200 Unicode code points.
-- R4a-03: один accepted context на deliberate readId, background successes его не заменяют; fresh denials закрывают private context. Inline/direct используют тот же узкий read hook. Matching success и explicit Refresh запрашивают новый context; no replay.
-- R4b-01: ordinary full/recent History отображает закрытый набор stored before/after fields/versions/neighbor и ссылки на исходные targets всех8 действий; EN/RU/HE labels переиспользованы без source reconstruction.
+- R2a-01: admitted ordinary topic → reserved/Help destination409 после authority checks; absent/protected/hidden-without-authority/Help-source404 сохранены.
+- R3b-01: coherent private inspection ordinary discriminator; hidden Help не предлагает Move.
+- R4a-01: все6 shared structural forms принимают generic typed early failures, сохраняют draft/destination, controlled recovery без retry.
+- R4a-02: CategoryPicker existing typed inline/readId errors400/503 остаются local; query/selection сохранены; q≤200 Unicode code points.
+- R4a-03: background successful revalidation не заменяет accepted Move context; inline/direct используют общий explicit-read hook. Fresh denial закрывает private context. Только matching receipt/explicit Refresh запрашивают новую verification; no POST replay.
+- R4b-01: ordinary full/recent History отображает closed stored before/after/versions/neighbor и target navigation всех8 actions; EN/RU/HE, no source reconstruction.
 
-## Author evidence
+**Leva author self-check/acceptance PASS**:
+-12 baseline regressions воспроизводимо падают до correction; fixed169 related unit/63PG, lint/typecheck/build PASS.
+- CI45392525193 SUCCESS:245files/3195unit;118files/1833PG; migration/schema/manifest75/runtime/credential и built Worker HTTP smokes.
+- Все18 applicable acceptance SUCCESS. Whole-feature run45392540116/job138439735327/artifact14919557003: downloaded ZIP digest/integrity PASS, implementationSha=checkoutSha=28064df,18groups, pageErrors/external=[].
+- Real connected assertions: Watch после Move COMMIT/lost204 не снимает fence; Help create/Hide/inspection без Move; early generic403 сохраняет drafts/selection; ordinary full/recent History всех8 original producers. WF-01/F6-01/editor/attachment/privacy assertions сохранены.
+- K5 и CI database потребовали по одному targeted retry на том же head из-за старых harness races. Источники не менялись; точные причины/job evidence прозрачно записаны в отчёте.
+- Local infrastructure очищена, production config восстановлен, worktree clean.
 
-- Причины независимо проверены в коде против PLAN/Lena report/Mira bounded assignment.
-- На исходной реализации12 focused regressions воспроизводимо падают (6 UI/History/inspector,4 picker,2 PG); fixed source восстановлен после диагностических запусков.
-- Исправленный вариант:169 related unit tests и63 PostgreSQL tests PASS; lint/typecheck/build PASS.
-- Полный local real Worker/Better Auth/PG17/local-R2/Chromium:18 groups PASS, pageErrors/external пустые. Реальные Watch revalidation, Help create/Hide/inspection, generic structural403 и ordinary full/recent History включены. WF-01/editor/attachment/privacy assertions сохранены.
-- Local DBs удалены, preview остановлен, original wrangler восстановлен, synthetic vars/symlink удалены, own worktree clean.
-- Одноразовые run:ci/run:acceptance запущены на новом stable exact; pending, author final gate ещё не объявлен.
+Полная causal/effect matrix, source paths/regressions, exact run/job/artifact и retries: **stages/forum-structure/CORRECTIVE_REPORT.md**. Canonical scope: stages/forum-structure/PLAN.md; baseline whole-feature S9/post-visibility/assembly: F6_REPORT.md; original independent evidence: LENA_REVIEW.md.
 
-## Следующий gate
+## Следующий шаг / STOP
 
-Лёва дожидается применимых exact-head checks и independently checks artifact provenance → **author STOP → Mira whole-feature coordinator review** нового exact. После Mira PASS → **Lena independent re-review того же exact** → owner merge при PASS.
+**Мира whole-feature main→28064df, все118 files**, включая весь six-item package и existing contracts. При finding — возврат автору; после Mira PASS — **Lena independent re-review того же stable exact** → owner merge только после PASS.
 
-Не расширять пакет. #379 Draft/open/unmerged; intermediate PR closed/superseded/merged=false; main unchanged. F7/docs после owner merge. #342 only service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive.
+**Лёва author STOP**: участвовал в implementation, независимый review своей работы не выполняет. F7 separate docs после owner merge. #342 only service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive.
