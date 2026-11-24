@@ -139,9 +139,11 @@ describe("F5-D Owner original structural History presentation",()=>{
     expect(container.textContent).not.toMatch(/secret title|secret body|revision|private reason/i);
     const choices=historyFilterCatalog({area:"forum",monitorKey:"forum.structure"})
       .scopes["monitor:forum.structure"];
-    expect(choices).toHaveLength(1);
-    expect(choices[0].kinds).toHaveLength(8);
-    expect(choices[0].kinds).toContain("topic.moved");
+    const original=choices.find(choice=>choice.origin==="admin-history");
+    expect(original?.kinds).toHaveLength(8);
+    expect(original?.kinds).toContain("topic.moved");
+    expect(choices.find(choice=>choice.origin==="system-observation")?.kinds)
+      .toContain("monitor.observed");
   });
 });
 describe("SA02-D3.1 source-aware original History route presentation",()=>{
