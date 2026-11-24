@@ -1,27 +1,32 @@
-# WORKFLOW.md — Task6 / WF-01 author checks
+# WORKFLOW.md — Task6 / Mira whole-feature re-review
 
-## Активный шаг
+## Активный gate
 
-**Лёва: bounded WF-01 correction реализована; exact-head CI/acceptance выполняются.**
+**Мира: повторное whole-feature coordinator review final Draft #379** после bounded WF-01 correction.
 
-- Final Draft #379 exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- Mira whole-feature HOLD на предыдущем `bf3e97d6c52b224d1a77bd14f96597b446405472` пока не закрыт; новый head требует её повторного whole-feature review.
-- #379 остаётся Draft/open/unmerged. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false. Main не изменён.
+- Stable exact: `f601e91dcab19ee1992012564e9a0b557c2ea596`.
+- Base main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- F1–F5 bounded coordinator PASS и исходная F6 acceptance/assembly сохранены.
+- Предыдущий Mira HOLD на bf3e97d содержит один finding WF-01; автор не объявляет его закрытым и не подменяет новое coordinator решение.
+- #379 Draft/open/unmerged; intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false. Main unchanged.
 
-## WF-01 — bounded correction
+## WF-01 correction / author gate
 
-Create Category теперь удерживает attempted/unknown состояние при отсутствии подтверждённого ответа; сохраняет имя и блокирует повторную команду до explicit Refresh structure. Штатный per-submission `defaultShouldRevalidate={false}` предотвращает тихую post-action замену версии. Только совпадающий typed success очищает имя и запускает explicit revalidation. Typed errors сохраняют прежнюю политику.
+Create Category сохраняет attempted/unknown fence при отсутствии matching typed acknowledgement: имя остаётся, повторный create до explicit Refresh structure блокируется даже после независимого loader read. Штатный per-submission defaultShouldRevalidate=false исключает тихое post-action обновление expectations. Confirmed matching success очищает имя и явно revalidate'ит; typed invalid/conflict/unavailable/unauthenticated/forbidden сохранены. Automatic POST replay отсутствует. Backend/schema/API и остальные controls не менялись.
 
-Author checks:
-- Regression на исходной реализации падает; после correction проходит.
-- 19 focused unit tests PASS; lint/typecheck PASS.
-- Real Worker/Better Auth/PG17/local-R2/Chromium whole-feature локально: 14 groups PASS, pageErrors/external пустые.
-- Новый browser case: actual category COMMIT → lost204 → ровно один category/History event, имя сохранено, disabled click и submit event не отправляют POST; explicit refresh читает новую version, POST count остаётся1.
-- Local test infrastructure очищена, production config восстановлен, worktree clean.
-- Первый CI browser run выявил race в новом тесте: UI assertion предшествовал окончанию перехваченного POST. В test-only commit добавлено ожидание именно lost204 response после route.fetch/commit. Product code не изменился. На новом stable exact head повторно запущены одноразовые run:ci/run:acceptance; итог ещё не объявлен.
+Correction: 7ee7d06; test-only synchronization: f601e91. Delta к bf3e97d:3 files/+144−8. Regression на исходном коде падает; fixed focused19 unit/lint/typecheck PASS. Первый CI browser run выявил race теста до окончания перехваченного POST; теперь assertions ждут фактический lost204 response после route.fetch/COMMIT.
 
-## Следующий шаг
+**Leva author self-check/acceptance PASS** на stable exact:
+- CI45314820622 SUCCESS:243 files/3158 unit,118 files/1831PG; lint/type/build/UI-preview, migration0072/history/schema/manifest75/runtime/credential/built Worker smokes.
+- Все18 applicable acceptance SUCCESS. K5 attempt2 после раннего чтения старым тестом client-initialized editorOperationId; повторён только failed job, source не менялся.
+- Whole-feature Chromium/local-R2 run45314830099 SUCCESS; downloaded artifact14885421479: implementationSha=checkoutSha=f601e91, fullFeature=true,14groups, pageErrors/external пустые.
+- Новый реальный category COMMIT→lost204: ровно один category и original History event; имя сохранено; disabled click/submit event не создают POST; explicit refresh читает committed version, POST остаётся1.
+- Local infrastructure очищена; production config восстановлен; worktree clean.
 
-Лёва дожидается применимых exact-head checks и проверяет artifact provenance, затем author STOP → **Мира whole-feature re-review #379**. Mark не активировать до Mira PASS. Author gate не является independent review.
+Полная S9/post-visibility matrix, точные run/job/artifact ссылки и correction provenance: **stages/forum-structure/F6_REPORT.md**. Canonical scope: stages/forum-structure/PLAN.md S0–S10.
 
-Не расширять correction за WF-01. Не merge #379. F7/docs только после owner merge; #342 never merge; #300/Stage6/general UI/UX/deploy не активированы.
+## Следующий шаг / STOP
+
+**Мира whole-feature re-review main→f601e91**, все108 files, отдельно WF-01 и regression. При current-scope findings — возврат автору; после coordinator PASS — независимый Марк при code independence, затем owner merge.
+
+**Лёва STOP**: автор implementation/acceptance/assembly, independent review собственной работы не выполняет. Mark inactive до Mira PASS. F7 separate docs только после owner merge. Не merge #379/#342; #300/Stage6/general UI/UX/deploy не активированы.
