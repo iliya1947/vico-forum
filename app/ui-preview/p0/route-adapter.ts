@@ -1,8 +1,8 @@
 import { createElement, type ComponentType } from "react";
 import { useActionData, useMatches, useParams, useRouteError, useRouteLoaderData } from "react-router";
-import type { RouteObject } from "react-router";
+import type { ActionFunctionArgs, RouteObject } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
-import { previewAction } from "./action-bridge";
+import { normalizePreviewActionRequest, previewAction } from "./action-bridge";
 
 /** Framework Mode gives route components props; Data Mode does not. */
 function withFrameworkComponentProps(id: string, Component: ComponentType<Record<string, unknown>>): ComponentType {
@@ -37,6 +37,7 @@ function withFrameworkErrorBoundaryProps(
 export function createPreviewDataRoutes(
   manifest: PreviewRouteDescriptor,
   modules: ReadonlyMap<string, Record<string, unknown>>,
+  normalizeScreenActions = false,
 ): RouteObject[] {
   const used = new Set<string>();
 
@@ -72,6 +73,14 @@ export function createPreviewDataRoutes(
       throw new Error("UI preview route has invalid middleware: " + descriptor.id);
     }
 
+    const serverAction = module.action;
+    const screenAction = typeof serverAction === "function" && normalizeScreenActions && hasComponent
+      ? (args: ActionFunctionArgs) => {
+        const request = normalizePreviewActionRequest(args.request, window.location.origin);
+        return serverAction({ ...args, request, url: new URL(request.url) });
+      }
+      : serverAction;
+
     const route = {
       id: descriptor.id,
       ...(descriptor.path === undefined ? {} : { path: descriptor.path }),
@@ -83,7 +92,7 @@ export function createPreviewDataRoutes(
       ...(typeof module.loader === "function" ? { loader: module.loader } : {}),
       ...(typeof module.clientAction === "function"
         ? { action: previewAction(descriptor.id, module) }
-        : typeof module.action === "function" ? { action: module.action } : {}),
+        : typeof screenAction === "function" ? { action: screenAction } : {}),
       ...(module.middleware ? { middleware: module.middleware } : {}),
       ...(typeof module.ErrorBoundary === "function"
         ? {
