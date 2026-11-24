@@ -73,3 +73,5 @@
 - После owner activation Лёва восстановил полный accepted S0–S10 из `8181645:USER_ACTIONS_SERVICE_PLAN.md` вместо сокращённой записи и сверил с main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Конкретизирован уже принятый hidden-topic dual-authority move seam, source-free context, move×Hide/Restore ordering, receipt/History integrations; определены bounded F1–F7/done criteria без нового product redesign.
 - Planning завершён, implementation не начиналась. Следующий gate — Мира для scope/fit reconciliation и delivery assignment.
+
+2026-11-24 — Owner reassigned Mark's Task6 final independent whole-feature review to Lena; R0 entry and assembly metadata verified; next R1. #384 audit paused at A5.4c.

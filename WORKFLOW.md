@@ -2,7 +2,7 @@
 
 ## Активный gate
 
-**Mira whole-feature coordinator PASS → Mark independent whole-feature review.**
+**Mira whole-feature coordinator PASS → Lena (GPT-6.2) independent whole-feature review (owner reassignment from Mark).**
 
 Final implementation:
 - Draft #379, branch `feat/forum-structure-f1`;
@@ -39,15 +39,19 @@ Independent artifact check:
 
 No confirmed current-Task6 blocker remains at coordinator level. **Mira whole-feature PASS.**
 
-## Следующий gate — Mark
+## Активный gate — Lena
 
-Mark is code-independent for Task6 and is assigned the final independent whole-feature review of **the same exact head** `f601e91dcab19ee1992012564e9a0b557c2ea596`.
+Lena replaces Mark by direct owner assignment, is code-independent for Task6, and conducts the final independent whole-feature review of **the same exact head** `f601e91dcab19ee1992012564e9a0b557c2ea596`.
 
 Review independently against the canonical PLAN/current project contracts and actual exact-head evidence. Do not rely on author/coordinator conclusions as proof. Review the whole feature, not only WF-01, and classify any finding as current Task6 / unrelated current Stage / future-only.
 
 If exact implementation head changes, this independent review is invalid and must restart on the new stable exact.
 
-After Mark PASS → owner merge #379. No agent merges implementation.
+After Lena PASS → owner merge #379. No agent merges implementation.
+
+## Independent review progress
+
+R0 entry/assembly/evidence inventory completed; no entry blocker, not final PASS. Detailed route and evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R1 foundation. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
 
 ## Границы
 
