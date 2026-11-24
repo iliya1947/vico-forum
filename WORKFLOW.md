@@ -4,7 +4,7 @@
 
 **Лёва: bounded WF-01 correction реализована; exact-head CI/acceptance выполняются.**
 
-- Final Draft #379 exact `7ee7d06b182c4295ddb4ce1b05b45254c21d9b80`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+- Final Draft #379 exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 - Mira whole-feature HOLD на предыдущем `bf3e97d6c52b224d1a77bd14f96597b446405472` пока не закрыт; новый head требует её повторного whole-feature review.
 - #379 остаётся Draft/open/unmerged. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false. Main не изменён.
 
@@ -18,7 +18,7 @@ Author checks:
 - Real Worker/Better Auth/PG17/local-R2/Chromium whole-feature локально: 14 groups PASS, pageErrors/external пустые.
 - Новый browser case: actual category COMMIT → lost204 → ровно один category/History event, имя сохранено, disabled click и submit event не отправляют POST; explicit refresh читает новую version, POST count остаётся1.
 - Local test infrastructure очищена, production config восстановлен, worktree clean.
-- На stable exact head запущены одноразовые run:ci/run:acceptance; итог ещё не объявлен.
+- Первый CI browser run выявил race в новом тесте: UI assertion предшествовал окончанию перехваченного POST. В test-only commit добавлено ожидание именно lost204 response после route.fetch/commit. Product code не изменился. На новом stable exact head повторно запущены одноразовые run:ci/run:acceptance; итог ещё не объявлен.
 
 ## Следующий шаг
 
