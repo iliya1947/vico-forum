@@ -1,0 +1,138 @@
+# Baseline transition — Task 6 merge #379
+
+Old audit baseline: a3dae5815e26d158c566a27c552127b4b1ab29aa
+New current main: 59e2fd9092bb1884392221eb856c2b989cc87ade
+AGENTS read fully. GitHub compare confirms one squash commit ahead, zero behind; complete recursive trees independently compared (neither truncated): 1152 → 1194 blobs; exactly 118 changes, 42 added, 76 modified, 0 removed. AGENTS.md, PROJECT.md, PROJECT_STATE.md, ROADMAP.md, CONTENT_TRANSLATION.md unchanged. Documentation update for implementation is separate by project workflow; no new contradiction counted from merge timing alone.
+
+## Impact triage (not completed delta audit)
+
+- A6.3c1 remains next planned content-generation admission/planning slice, using new main. All app/localization implementation files unchanged except catalog/manual-fingerprints/manual-values additions, no db translation/locale modules changed. Topic loader adds Move permission and presentation, topicAction adds early Move dispatch and malformed intent separation; review new dispatch interaction when continuing A6.3c1. Recovery body/footer code unchanged; no reason to retire recorded translation-recovery finding. Markdown protection implementation unchanged.
+- A2 runtime: workers/app.ts now installs 3 structure/move capabilities and protects additional private read paths; locale-boundary adds 2 permission reads; private-failure-response.ts changed. Review request-scoped initialization, cache/error response and new endpoints, including effects on READSTATE-CACHE-01. Do not silently reuse prior full runtime verdict.
+- A3: authorization catalog and exported effectivePermission, admin access/measure authority, new fresh-grant transactional seams. Review current active account/measure/permission, strict admission, source-free protected reads and own/any boundaries. Prior findings must be rechecked only when impacted.
+- A4: structure read/commands, topic move, Help reservation, stable ordering and coherent repeatable-read home/category/section. Existing publication receipt replay now projects persisted section. Review changes to locking, FK/ID membership, move interaction with topic/post/attachments and read scopes, prior read-cost findings; no assumption they are solved by snapshot transactions. ReadTopicPage itself unchanged in diff.
+- A5: Admin actions, protected destination picker and hidden inspector dual grant, Admin History/Owner structure source, global/scoped/profile History scope/labels/filter/cursor. Review delta and previously recorded affected findings. Existing Owner cursor/profile coverage root causes not changed by added history kind alone; verify dependent paths in delta.
+- A6: preserve unchanged editor/attachment/translation reports; review new Move revalidation interaction with mounted editor and attachments, stable identities and publication receipt location. New catalogue keys/fingerprints/values in A9.
+- A7: new 0072 migration, schema and privilege/manifest changes and locks; included in schema reconciliation, not prior baseline evidence. A8: new structure UI/connected browser acceptance, current route and permission/actor-scope checks. A9: changed native/browser fixtures, opt-in workflow, catalogue and exact CI evidence. A10: updated privilege probes and production manifest; external deployment not authorized. A11: reconcile changed/new files and all counts against latest stable main.
+
+## Transition decision
+Record old reports as exact historical baseline evidence; unchanged code retains evidence. Aggregate 24 new,24 known,1 contract conflict (49 total) is accumulated audit registry, not a certified recount on new baseline until delta reviewed. No new findings established in transition itself. Continue A6.3c1 and remaining A6.3 bounded slices on new main; then dedicated A6.D structure/move delta review in bounded subblocks before A7, with A7–A10 covering allocated pending schema/UI/CI/operations aspects and A11 final reconciliation. Prior CI #355 evidence is historical only, not exact new implementation tree evidence. No project tests run, no implementation changes. Do not claim #379 independent review complete from compare.
+
+## Exact changed-file inventory (Git compare; independently verified total)
+- modified: .github/production-schema-manifest.json
+- modified: .github/scripts/runtime-privileges.mjs
+- modified: .github/scripts/runtime-privileges.test.mjs
+- modified: .github/scripts/verify-runtime-privilege-probes.mjs
+- added: .github/workflows/forum-structure-f5-browser.yml
+- modified: app/admin/access.ts
+- added: app/admin/category-create-uncertain.test.tsx
+- added: app/admin/forum-cursor-error.test.tsx
+- modified: app/admin/forum.server.ts
+- modified: app/admin/forum.test.tsx
+- modified: app/admin/forum.tsx
+- modified: app/admin/history-labels.ts
+- modified: app/admin/history.tsx
+- modified: app/admin/quick-actions.tsx
+- added: app/admin/structure-access.test.ts
+- added: app/admin/structure-actions.server.ts
+- added: app/admin/structure-forms.tsx
+- added: app/admin/structure-history.test.tsx
+- added: app/admin/structure-history.tsx
+- added: app/admin/structure-inline.server.ts
+- added: app/admin/structure-recovery.test.tsx
+- added: app/admin/structure.server.ts
+- modified: app/admin/topic.tsx
+- modified: app/admin/user-measure-restrictions.test.ts
+- modified: app/admin/user-measure-restrictions.ts
+- modified: app/admin/visibility-denial.test.tsx
+- modified: app/admin/visibility-inspector.tsx
+- modified: app/admin/visibility-late-response.test.tsx
+- modified: app/admin/visibility-restore-form.test.tsx
+- modified: app/admin/visibility-restore-revalidation.test.tsx
+- modified: app/administrative-routing/addresses.test.ts
+- modified: app/administrative-routing/addresses.ts
+- modified: app/authorization/catalog.ts
+- modified: app/forum/actions.server.ts
+- added: app/forum/topic-move-action.test.ts
+- added: app/forum/topic-move-control.test.tsx
+- added: app/forum/topic-move-control.tsx
+- added: app/forum/topic-move-direct.tsx
+- added: app/forum/topic-move.server.ts
+- modified: app/forum/ui.tsx
+- modified: app/forum/views.tsx
+- modified: app/localization/catalog.ts
+- modified: app/localization/manual-fingerprints.ts
+- modified: app/localization/manual-values.ts
+- modified: app/routes.ts
+- modified: app/routes/admin-category.tsx
+- added: app/routes/admin-forum-create.test.ts
+- added: app/routes/admin-forum-destinations.ts
+- modified: app/routes/admin-forum-inspect.test.ts
+- modified: app/routes/admin-forum-inspect.ts
+- modified: app/routes/admin-forum.test.ts
+- modified: app/routes/admin-forum.tsx
+- modified: app/routes/admin-section.tsx
+- added: app/routes/admin-structure-actions.test.ts
+- added: app/routes/admin-structure.test.ts
+- added: app/routes/admin-topic-move.ts
+- modified: app/routes/admin-topic.tsx
+- modified: app/routes/locale-boundary.test.ts
+- modified: app/routes/locale-boundary.tsx
+- modified: app/routes/not-found.test.ts
+- modified: app/routes/super-admin-history-view.test.tsx
+- added: app/routes/topic-move-editor-revalidation.test.tsx
+- modified: app/routes/topic.tsx
+- modified: app/styles.css
+- modified: app/super-admin/history-entry.tsx
+- modified: db/admin-forum.ts
+- modified: db/admin-history.ts
+- modified: db/authorization-repository.ts
+- modified: db/forum-repository.ts
+- added: db/forum-structure-reader.ts
+- added: db/forum-structure.test.ts
+- added: db/forum-structure.ts
+- added: db/hyperdrive-forum-structure-reader.ts
+- added: db/hyperdrive-forum-structure-writer.ts
+- added: db/hyperdrive-topic-move.ts
+- modified: db/owner-monitor-catalog.ts
+- modified: db/owner-native-history.ts
+- modified: db/owner-sa02-history.ts
+- added: db/owner-structure-history.ts
+- modified: db/owner-user-history.ts
+- modified: db/private-visibility-queue.ts
+- modified: db/schema.ts
+- added: db/structure-browse.test.ts
+- added: db/structure-browse.ts
+- added: db/topic-move.ts
+- modified: db/user-measure-admin-forum.ts
+- modified: db/user-measure-authority.test.ts
+- added: drizzle/0072_forum_structure_foundation.sql
+- added: drizzle/meta/0072_snapshot.json
+- modified: drizzle/meta/_journal.json
+- modified: tests/browser/admin-forum/check.py
+- added: tests/browser/forum-structure-f5/check.py
+- added: tests/browser/forum-structure-f5/pg.mjs
+- added: tests/browser/forum-structure-f6/check.py
+- modified: tests/browser/sa04-account-state/check.py
+- modified: tests/browser/sa04-attachments/check.py
+- modified: tests/database/admin-forum.test.ts
+- modified: tests/database/complaints-foundation.test.ts
+- modified: tests/database/forum-attachments.test.ts
+- modified: tests/database/forum-help-attention.test.ts
+- modified: tests/database/forum-profiles.test.ts
+- added: tests/database/forum-structure-commands.test.ts
+- added: tests/database/forum-structure-foundation.test.ts
+- added: tests/database/forum-structure-read.test.ts
+- modified: tests/database/migrations.test.ts
+- modified: tests/database/owner-user-history.test.ts
+- added: tests/database/pg-row-lock-test-tools.ts
+- modified: tests/database/private-visibility-queue.test.ts
+- modified: tests/database/sa07-data-monitoring.test.ts
+- modified: tests/database/source-locale-correction.test.ts
+- modified: tests/database/stage4-core-e2e.test.ts
+- added: tests/database/topic-move.test.ts
+- modified: tests/database/user-measure-forum-enforcement.test.ts
+- modified: tsconfig.node.json
+- modified: workers/app.test.ts
+- modified: workers/app.ts
+- modified: workers/private-failure-response.test.ts
+- modified: workers/private-failure-response.ts
