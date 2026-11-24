@@ -25,3 +25,5 @@
 13. **2026-11-25:** Q-01 снят после повторной проверки: legacy-grandfathering оказался future-only усложнением без установленного реального пользовательского state. Лёве назначен correction pass: единый mandatory-verification target contract + provider-neutral AUTH-05.
 
 14. **2026-11-25:** Лёва выполнил назначенный correction pass: удалил из PLAN legacy/grandfathering ветвление, связанный owner gate и неподтверждённую data migration; AUTH-05 сделан provider-neutral без обязательного Turnstile adapter. Исправлена атрибуция E-04: ошибка возникла при исходном планировании Лёвы. Результат возвращён Мире на correction review; implementation/CI/external activation не выполнялись.
+
+15. **2026-11-25:** Мира приняла correction pass Лёвы: полный технический план получил coordinator PASS. Delivery mode установлен stacked AUTH-01→AUTH-06 с AUTH-07 final gate; AUTH-01 передан Лире как первая ступень, без intermediate merge в main.
