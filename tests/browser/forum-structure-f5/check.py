@@ -83,6 +83,25 @@ def create_section(page,category_id,name):
     write(page,"createSection","name",name)
     return object_id("forum_sections",name)
 
+def assert_no_overflow(page,context):
+    result=page.evaluate("""() => {
+      const width=innerWidth;
+      return {
+        width,scrollWidth:document.documentElement.scrollWidth,
+        offenders:[...document.querySelectorAll('*')]
+          .filter(node=>{
+            const r=node.getBoundingClientRect();
+            return r.width>0 && (r.right>width+1 || r.left < -1);
+          }).slice(0,20).map(node=>({
+            tag:node.tagName,cls:String(node.className).slice(0,110),
+            left:Math.round(node.getBoundingClientRect().left),
+            right:Math.round(node.getBoundingClientRect().right),
+            scrollWidth:node.scrollWidth,clientWidth:node.clientWidth,
+          }))
+      };
+    }""")
+    assert result["scrollWidth"]<=result["width"]+1,(context,json.dumps(result))
+
 def payload(form):
     return form.locator("input[name=editorActorId]").input_value()
 
@@ -250,15 +269,15 @@ try:
                 visit(p,"/"+locale+"/admin/forum")
                 expect(p.locator('form:has(input[name="intent"][value="createCategory"])')).to_be_visible()
                 assert p.locator("html").get_attribute("dir")==direction
-                assert p.evaluate("document.documentElement.scrollWidth<=innerWidth+1"),(locale,width,"admin")
+                assert_no_overflow(p,(locale,width,"admin"))
                 visit(p,"/"+locale+"/admin/forum/sections/"+quote(section_b,safe=""))
-                assert p.evaluate("document.documentElement.scrollWidth<=innerWidth+1"),(locale,width,"section")
+                assert_no_overflow(p,(locale,width,"section"))
                 visit(p,"/"+locale+"/topics/"+quote(topic_id,safe=""))
                 p.locator(".topic-admin-tools > summary").click()
                 p.locator(".topic-move-control > button").focus()
                 p.keyboard.press("Enter")
                 expect(p.locator(".topic-move-form")).to_be_visible()
-                assert p.evaluate("document.documentElement.scrollWidth<=innerWidth+1"),(locale,width,"move")
+                assert_no_overflow(p,(locale,width,"move"))
                 if width==320:p.screenshot(path=str(a.output/(locale+"-320.png")),full_page=True)
         record("EN/RU/HE narrow+RTL, keyboard-opened Move and structural forms")
 
