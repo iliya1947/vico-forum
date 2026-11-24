@@ -10,7 +10,7 @@ import type { PreviewRawBaseline, PreviewRawUser } from "./raw-baseline";
 /** Better Auth 1.7.7 default freshAge is 24 hours, in seconds. */
 const DEFAULT_FRESH_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** B7a deliberately has no write adapter. B7b will implement mutations separately. */
+/** Remaining session-revocation writes are intentionally separate B7b2 work. */
 export class P2AccountSecurityWriteNotConfiguredError extends Error {
   constructor(operation: string) {
     super("P2 AccountSecurity write not configured: " + operation);
@@ -18,19 +18,25 @@ export class P2AccountSecurityWriteNotConfiguredError extends Error {
   }
 }
 
+export interface P2CredentialMutation {
+  readonly passwordFor: (userId: string) => string | null;
+  readonly storePassword: (userId: string, value: string) => void;
+  /** Same bounded local attempt bucket for Settings and direct Auth HTTP. */
+  readonly admitAttempt: () => void;
+}
+
 /**
- * Read-only projection through the original production AccountSecurityRuntime.
- * The selected identity is resolved from the request's trusted AuthRuntime,
- * never from Cookie, User-Agent, role, Owner or form fields.
+ * Original typed AccountSecurityRuntime, with bounded B7b1 credential changes.
+ * Identity comes only from the controller-selected AuthSession. Headers/form
+ * values never select an account; origin/field admission belongs to routes.
  */
 export function createP2AccountSecurityRuntime(
   baseline: PreviewRawBaseline,
   selectedSession: () => AuthSession | null,
   transientAccount: (userId: string) => PreviewRawUser | undefined,
+  credentialMutation?: P2CredentialMutation,
 ): AccountSecurityRuntime {
-  return {
-    async read(headers: Headers, identity: AccountSecurityIdentity) {
-      void headers; // A preview request cannot override its controller-selected actor.
+  function verifyIdentity(identity: AccountSecurityIdentity): { selected: AuthSession; account: PreviewRawUser } {
       const selected = selectedSession();
       if (!selected) throw new AccountSecurityError("unauthenticated");
       if (identity.userId !== selected.user.id || identity.sessionId !== selected.session.id) {
@@ -44,7 +50,13 @@ export function createP2AccountSecurityRuntime(
       if (!account || account.state.userId !== identity.userId || account.state.status !== "active") {
         throw new AccountSecurityError("unauthenticated");
       }
+      return { selected, account };
+  }
 
+  return {
+    async read(headers: Headers, identity: AccountSecurityIdentity) {
+      void headers; // No request-supplied actor selection in P2.
+      const { selected, account } = verifyIdentity(identity);
       const now = baseline.referenceTime.getTime();
       const created = selected.session.createdAt.getTime();
       const expires = selected.session.expiresAt.getTime();
@@ -82,8 +94,25 @@ export function createP2AccountSecurityRuntime(
       sessions.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
       return { linkedMethods, hasPassword, sessionAccess: "ready" as const, sessions };
     },
-    async changePassword() {
-      throw new P2AccountSecurityWriteNotConfiguredError("changePassword");
+    async changePassword(headers, identity, currentPassword, newPassword) {
+      void headers; // The original Settings route independently checks same-Origin.
+      if (!credentialMutation) {
+        throw new P2AccountSecurityWriteNotConfiguredError("changePassword");
+      }
+      const { account } = verifyIdentity(identity);
+      if (!account.methods.includes("password") || account.credentialPassword === null) {
+        throw new AccountSecurityError("no-password");
+      }
+      if (currentPassword.length > 128 || newPassword.length < 8 || newPassword.length > 128) {
+        throw new AccountSecurityError("invalid-password");
+      }
+      // The preview's one controller-owned bucket cannot be reset using forged
+      // client IP/headers, and is used identically for Settings and direct API.
+      credentialMutation.admitAttempt();
+      if (credentialMutation.passwordFor(identity.userId) !== currentPassword) {
+        throw new AccountSecurityError("invalid-password");
+      }
+      credentialMutation.storePassword(identity.userId, newPassword);
     },
     async revokeOneOther() {
       throw new P2AccountSecurityWriteNotConfiguredError("revokeOneOther");
