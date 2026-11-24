@@ -1,14 +1,9 @@
-# agents/mira.md — Task6 final exact coordinator PASS
+# agents/mira.md — Task6 F7 docs closeout coordination
 
-Reviewed #379 exact `42efaaaabcae24fbb1fa74d042e18e850827b23d` against parent `28064dfe51c2c62811dd5674387825a5f0289fd0` and current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+Task6 implementation #379 merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade` after coordinator and independent PASS on exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`.
 
-Residual R2a-01 is correctly closed:
-- ordinary admitted section → Help destination = 409;
-- absent destination / protected or Help source / direct protected Help operations = 404;
-- no state/version/History effect on refusal.
+F7 is now active. Lira owns one separate docs-only closeout PR from current main, covering permanent product/Admin/authorization structure contracts, PROJECT_STATE factual state, and meaningful history/index.
 
-The change is one commit, four files, two product lines; no adjacent contract regression found. Exact CI/18 acceptance and downloaded whole-feature artifact were independently checked; artifact exact SHA matches, 19 groups, no page errors/external requests. The one database retry came from an unchanged Complaints async test race and is unrelated to this Task6 correction.
+After Lira author PASS, Mira reviews the docs PR for factual consistency and scope. Docs-only closeout does not require an independent Codex review under the current process. Owner merge follows Mira PASS.
 
-**Mira coordinator PASS.**
-
-Next: Lena independent re-review of the same exact head. No merge/F7 before her PASS.
+Only after actual docs merge can Task6/#342 be closed and the established #320 route checked. #342 never merges; #300/Stage6/general UI/UX/deploy remain inactive.
