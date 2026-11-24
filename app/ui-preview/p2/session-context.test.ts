@@ -177,7 +177,7 @@ describe("P2 actor-selected original AuthRuntime session boundary", () => {
   it("keeps unrelated Auth and account security endpoints unwired", async () => {
     const { context } = await createP2SessionReadContext(baseline(), "member", page());
     const runtime = authRuntimeForRequest(context);
-    expect(runtime.security).toBeUndefined();
+    expect(runtime.security?.read).toBeTypeOf("function");
     await expect(authApiLoader({
       request: new Request("https://vico.test/api/auth/link-social", { method: "POST" }),
       context,
