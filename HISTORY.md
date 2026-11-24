@@ -26,3 +26,5 @@
 2026-11-24 — A4.4: Help solutions/signals/duplicate static review; LENA-HELP-01 new queue affordance defect, HELP-SIGNAL-PRIV-01 prior residual. A4 core scope complete. Evidence stages/A4/HELP_SOLUTIONS.md.
 
 2026-11-24 — A5.1a: Admin Overview/browse/History static review; LENA-OVERVIEW-01 new, HISTORY-PRIV-01 known residual; PUBLIC-PROJECTION-01 scope extension. Evidence stages/A5/ADMIN_HISTORY.md.
+
+2026-11-24 — A5.1b: static pin/closure/visibility/private inspection review; no additional independent findings. Evidence stages/A5/VISIBILITY.md.
