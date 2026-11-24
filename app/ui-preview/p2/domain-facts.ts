@@ -128,10 +128,10 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
 
   const facts: PreviewRawDomainFacts = {
     sessions: [
-      { id: "preview-session-member", userId: memberId, issuedAt: at(-day), expiresAt: at(day) },
-      { id: "preview-session-moderator", userId: moderatorId, issuedAt: at(-day), expiresAt: at(day) },
-      { id: "preview-session-admin", userId: adminId, issuedAt: at(-day), expiresAt: at(day) },
-      { id: "preview-session-owner", userId: ownerBinding, issuedAt: at(-day), expiresAt: at(day) },
+      { id: "preview-session-member", userId: memberId, issuedAt: at(-6 * 60 * 60 * 1000), expiresAt: at(day) },
+      { id: "preview-session-moderator", userId: moderatorId, issuedAt: at(-6 * 60 * 60 * 1000), expiresAt: at(day) },
+      { id: "preview-session-admin", userId: adminId, issuedAt: at(-6 * 60 * 60 * 1000), expiresAt: at(day) },
+      { id: "preview-session-owner", userId: ownerBinding, issuedAt: at(-6 * 60 * 60 * 1000), expiresAt: at(day) },
       { id: "preview-session-inactive", userId: inactiveId, issuedAt: at(-2 * day), expiresAt: at(day) },
     ],
     revisions: [
