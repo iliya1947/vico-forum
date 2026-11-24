@@ -1,9 +1,11 @@
-# agents/mira.md — Task6 F7 docs closeout coordination
+# agents/mira.md — Task6 F7 docs review HOLD
 
-Task6 implementation #379 merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade` after coordinator and independent PASS on exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`.
+Reviewed Draft #387 exact `bcf6cc68ebe1eb692f8821f581903313b7685fae` against merged main and Task6 code/evidence.
 
-F7 is now active. Lira owns one separate docs-only closeout PR from current main, covering permanent product/Admin/authorization structure contracts, PROJECT_STATE factual state, and meaningful history/index.
+Confirmed only two current-F7 docs defects:
+- stale Authorization statement says admin initial grants do not change despite Task6 adding structure/move grants;
+- PROJECT_HISTORY_34 attributes the aggregate 18 successful applicable acceptance workflows to one linked whole-feature run.
 
-After Lira author PASS, Mira reviews the docs PR for factual consistency and scope. Docs-only closeout does not require an independent Codex review under the current process. Owner merge follows Mira PASS.
+Everything else in the six-file diff is aligned at review level with merged permissions/routes/AP-10/migration0072/structural History and repository-vs-production boundary.
 
-Only after actual docs merge can Task6/#342 be closed and the established #320 route checked. #342 never merges; #300/Stage6/general UI/UX/deploy remain inactive.
+Lira owns a minimal two-line-area docs correction. After new stable #387 exact, Mira re-reviews. No independent Codex review for this docs-only closeout.
