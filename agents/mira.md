@@ -2,13 +2,14 @@
 
 ## Текущий контекст
 
-1. Лена завершила product-scope revalidation AUTH-01–AUTH-07: PASS.
-2. Лёва подготовил полный технический план.
-3. Coordinator review: HOLD только на correction pass.
-4. Q-01 снят как моя ошибочная future-only постановка: pre-release проекту без публичного production release не нужен legacy grandfathering contract для гипотетических пользователей.
-5. Mandatory verification D-01 остаётся единым target contract; возможные реальные external accounts проверяются только перед Stage 6 как operational data/cutover case.
-6. Turnstile не выбран owner decision; AUTH-05 должен оставаться provider-neutral.
+1. Лена: product-scope revalidation AUTH-01–AUTH-07 — PASS.
+2. Лёва: полный технический план + correction pass завершены.
+3. Мира: correction review — **PASS**.
+4. Delivery mode: stacked AUTH-01→AUTH-06; AUTH-07 final gate.
+5. Активный stage: AUTH-01, исполнитель Лира.
+6. Legacy/Q-01 снят; mandatory verification — единый target contract.
+7. AUTH-05 provider-neutral; конкретный anti-bot provider не выбран.
 
-## Текущее назначение
+## Следующее назначение
 
-Ожидать correction pass Лёвы по двум пунктам: удалить Q-01/legacy branch и убрать обязательный Turnstile. После этого проверить только исправленные основания и определить delivery mode при PASS.
+После завершения Лирой AUTH-01 проверить stable exact head как coordinator checkpoint. Проверять только scope текущей ступени и реальные regressions/current-stage defects. При PASS разрешить следующую stacked-ступень без intermediate merge и без independent Codex review.
