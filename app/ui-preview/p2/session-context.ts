@@ -4,6 +4,7 @@ import type {
 } from "../../auth/request-context";
 import { initializeAuthContext } from "../../auth/session-context";
 import { createP2PublicReadContext } from "./public-read-context";
+import { createP2GoogleSocialAdapter, type P2GoogleScenario } from "./google-auth";
 import { previewActorId, type PreviewActor, type PreviewRawBaseline } from "./raw-baseline";
 
 /**
@@ -74,8 +75,10 @@ const authResponseHeaders = {
   Pragma: "no-cache",
 } as const;
 
-/** B4/B5: local fixture-only email authentication; no provider/real credentials. */
-export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
+/** Local fixture-only Auth endpoints; provider result is selected by trusted preview scenario. */
+export function createP2AuthRuntime(
+  baseline: PreviewRawBaseline, actor: PreviewActor, googleScenario: P2GoogleScenario = "existing",
+): AuthRuntime {
   let activeSession = sessionForActor(baseline, actor);
   // Registrations are transient to this preview flow; published seed users and
   // authorship never change, and another instance starts from the same baseline.
@@ -85,6 +88,9 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
   }>();
   let registrationSequence = 0;
   const current = () => activeSession;
+  const google = createP2GoogleSocialAdapter(baseline, actor, googleScenario, (session) => {
+    activeSession = session;
+  });
 
   return {
     async getSession(headers: Headers): Promise<AuthSessionResolution> {
@@ -92,6 +98,8 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
       return { session: current(), headers: new Headers() };
     },
     async handle(request: Request): Promise<Response> {
+      const googleResponse = await google.handle(request);
+      if (googleResponse) return googleResponse;
       const url = new URL(request.url);
       if (url.pathname === "/api/auth/get-session") {
         if (request.method !== "GET") {
@@ -374,8 +382,10 @@ export async function createP2SessionReadContext(
  * A controller-owned flow reuses the same AuthRuntime across fresh requests.
  * Sign-out persists as Guest within that flow; a new preview instance resets it.
  */
-export function createP2AuthSessionFlow(baseline: PreviewRawBaseline, actor: PreviewActor) {
-  const runtime = createP2AuthRuntime(baseline, actor);
+export function createP2AuthSessionFlow(
+  baseline: PreviewRawBaseline, actor: PreviewActor, googleScenario: P2GoogleScenario = "existing",
+) {
+  const runtime = createP2AuthRuntime(baseline, actor, googleScenario);
   return {
     runtime,
     async createRequestContext(request: Request): Promise<P2SessionReadContext> {
