@@ -18,6 +18,8 @@ export interface PreviewRawUser {
   readonly identity: AuthUser;
   readonly state: AccountState;
   readonly methods: readonly PreviewAuthMethod[];
+  /** Synthetic preview-only password, never a real credential or response field. */
+  readonly credentialPassword: string | null;
 }
 export interface PreviewRawTopic {
   readonly id: string;
@@ -99,12 +101,17 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
     image: null, locale, createdAt: at(-120 * day), updatedAt: at(-day),
   });
   const users: PreviewRawUser[] = [
-    { identity: identity(memberId, "Preview member"), state: { status: "active", userId: memberId }, methods: ["password"] },
-    { identity: identity(authorId, "Preview author"), state: { status: "active", userId: authorId }, methods: ["google"] },
-    { identity: identity(moderatorId, "Preview moderator", "ru"), state: { status: "active", userId: moderatorId }, methods: ["password"] },
-    { identity: identity(adminId, "Preview admin"), state: { status: "active", userId: adminId }, methods: ["google"] },
+    { identity: identity(memberId, "Preview member"), state: { status: "active", userId: memberId },
+      methods: ["password"], credentialPassword: "Preview-Member-2026!" },
+    { identity: identity(authorId, "Preview author"), state: { status: "active", userId: authorId },
+      methods: ["google"], credentialPassword: null },
+    { identity: identity(moderatorId, "Preview moderator", "ru"), state: { status: "active", userId: moderatorId },
+      methods: ["password"], credentialPassword: "Preview-Moderator-2026!" },
+    { identity: identity(adminId, "Preview admin"), state: { status: "active", userId: adminId },
+      methods: ["google"], credentialPassword: null },
     // The Owner's ordinary role deliberately remains "user": only the exact binding grants Owner authority.
-    { identity: identity(ownerId, "Preview owner"), state: { status: "active", userId: ownerId }, methods: ["google"] },
+    { identity: identity(ownerId, "Preview owner"), state: { status: "active", userId: ownerId },
+      methods: ["google"], credentialPassword: null },
     {
       identity: identity(inactiveId, "Inactive member"),
       state: {
@@ -112,7 +119,7 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
         deactivatedAt: at(-day), deactivatedByUserId: ownerId,
         retainAtLeastUntil: at(365 * day),
       },
-      methods: ["password"],
+      methods: ["password"], credentialPassword: "Preview-Inactive-2026!",
     },
   ];
   const core: Omit<PreviewRawBaseline, "domains"> = {
@@ -227,6 +234,11 @@ export function assertP2RawBaselineIntegrity(baseline: PreviewRawBaseline): void
   for (const id of Object.values(baseline.actorIds)) requireRef(users, id, "actor");
   for (const user of baseline.users) {
     if (user.state.userId !== user.identity.id) throw new Error("P2 mismatched account state user");
+    const credential = user.methods.includes("password");
+    if (credential !== (user.credentialPassword !== null)
+      || (user.credentialPassword !== null && (
+        user.credentialPassword.length < 8 || user.credentialPassword.length > 128
+      ))) throw new Error("P2 inconsistent synthetic credential methods");
     if (user.state.status === "deactivated") {
       requireRef(users, user.state.deactivatedByUserId, "deactivator");
       if (user.state.retainAtLeastUntil <= user.state.deactivatedAt) throw new Error("P2 invalid retention");
