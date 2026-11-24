@@ -53,3 +53,10 @@ export const P2_B1_CONFIGURED_CONTEXTS = [
   "forumReaderContext",
   "registryLoaderContext",
 ] as const satisfies readonly P2ProductionContextName[];
+
+/** B2 adds original AuthRuntime and AuthSession initialization; all others remain absent. */
+export const P2_B2_CONFIGURED_CONTEXTS = [
+  ...P2_B1_CONFIGURED_CONTEXTS,
+  "authRuntimeContext",
+  "authSessionContext",
+] as const satisfies readonly P2ProductionContextName[];
