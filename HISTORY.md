@@ -24,3 +24,5 @@
 2026-11-24 — A4.3: personal participation/read-state/notifications static review; LENA-READSTATE-01 new finding, MENTION-FANOUT-01 known residual. Evidence stages/A4/PERSONAL_PARTICIPATION.md.
 
 2026-11-24 — A4.4: Help solutions/signals/duplicate static review; LENA-HELP-01 new queue affordance defect, HELP-SIGNAL-PRIV-01 prior residual. A4 core scope complete. Evidence stages/A4/HELP_SOLUTIONS.md.
+
+2026-11-24 — A5.1a: Admin Overview/browse/History static review; LENA-OVERVIEW-01 new, HISTORY-PRIV-01 known residual; PUBLIC-PROJECTION-01 scope extension. Evidence stages/A5/ADMIN_HISTORY.md.
