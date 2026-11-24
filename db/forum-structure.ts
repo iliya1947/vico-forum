@@ -16,7 +16,7 @@ export class StructureForbiddenError extends Error {}
 export class StructureNotFoundError extends Error {}
 export class StructureInvariantError extends Error {}
 export class StructureConflictError extends Error {
-  constructor(readonly reason: "stale" | "parent-changed" | "version-exhausted" | "position-exhausted" | "order-invariant") {
+  constructor(readonly reason: "stale" | "parent-changed" | "version-exhausted" | "position-exhausted" | "order-invariant" | "reserved-destination") {
     super("Forum structure changed or cannot be changed");
   }
 }

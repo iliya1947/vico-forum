@@ -83,3 +83,17 @@ it("picker accepts structure-only and validates closed bounded query without aut
  }
  expect(moveHeaders()).toEqual(destinationHeaders());
 });
+it("R4a-02 category inline picker contains query and storage failures in typed private results",async()=>{
+ const query="?kind=categories&inlineMove=1&readId=21";
+ for(const input of ["x".repeat(201),"😀".repeat(201)]){
+  const e=environment(["forum.structure.manage"]);
+  const result=await destinations(args(e.context,query+"&q="+encodeURIComponent(input)));
+  expect(result).toMatchObject({data:{operation:"structureInlineRead",error:"invalid",readId:"21"},init:{status:400,headers:{"Cache-Control":"private, no-store"}}});
+  expect(e.listDestinations).not.toHaveBeenCalled();
+ }
+ const e=environment(["forum.structure.manage"]);
+ e.listDestinations.mockRejectedValueOnce(new StructureReadUnavailableError("private SQL"));
+ const result=await destinations(args(e.context,query));
+ expect(result).toMatchObject({data:{operation:"structureInlineRead",error:"unavailable",readId:"21"},init:{status:503}});
+ expect(JSON.stringify(result.data)).not.toContain("private SQL");
+});

@@ -325,12 +325,22 @@ describe("F3 authoritative move and retained state",()=>{
     expect((await state()).section_id).toBe("x");expect(await moveEvents()).toHaveLength(1);
   });
   it("rejects missing/reserved/forged Help source/destination and malformed versions",async()=>{
-    for(const target of ["absent","help-solutions-questions"]) await expect(moves().moveTopic("mover","t",input({targetSectionId:target}))).rejects.toBeInstanceOf(StructureNotFoundError);
+    await expect(moves().moveTopic("mover","t",input({targetSectionId:"absent"}))).rejects.toBeInstanceOf(StructureNotFoundError);
+    await expect(moves().moveTopic("mover","t",input({targetSectionId:"help-solutions-questions"}))).rejects.toMatchObject({reason:"reserved-destination"});
     await client.query("insert into forum_sections(id,category_id,name,sort_position) values('forged','help-solutions','Forged',1)");
-    await expect(moves().moveTopic("mover","t",input({targetSectionId:"forged"}))).rejects.toBeInstanceOf(StructureNotFoundError);
+    await expect(moves().moveTopic("mover","t",input({targetSectionId:"forged"}))).rejects.toBeInstanceOf(StructureConflictError);
     await client.query("update forum_topics set section_id='forged' where id='t'");
     await expect(moves().moveTopic("mover","t",input({expectedSectionId:"forged",targetSectionId:"forged"}))).rejects.toBeInstanceOf(StructureNotFoundError);
+    await expect(moves().moveTopic("mover","t",input({targetSectionId:"forged",expectedStructureVersion:"9"}))).rejects.toBeInstanceOf(StructureNotFoundError);
     await expect(moves().moveTopic("mover","t",input({expectedLocationVersion:"01"}))).rejects.toBeInstanceOf(StructureValidationError);
+    expect(await moveEvents()).toHaveLength(0);
+  });
+  it("keeps reserved destination errors neutral for an inaccessible hidden or absent topic",async()=>{
+    await hide(true);
+    for(const id of ["t","absent"]){
+      await expect(moves().moveTopic("mover",id,input({targetSectionId:"help-solutions-questions"})))
+        .rejects.toBeInstanceOf(StructureNotFoundError);
+    }
     expect(await moveEvents()).toHaveLength(0);
   });
   it("never converts the actual Help service topic, including same-section no-op",async()=>{

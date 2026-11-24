@@ -93,7 +93,8 @@ export function TopicMoveForm({locale,context,onRefresh,suspended=false}:{
     if(!success||!receipt||revalidatedReceipt.current===receipt)return;
     revalidatedReceipt.current=receipt;
     void revalidator.revalidate();
-  },[success,receipt,revalidator]);
+    onRefresh?.();
+  },[success,receipt,revalidator,onRefresh]);
   const failure=stillSame&&receipt&&"error" in receipt?receipt.error:null;
   const page=destinationFetcher.state==="idle"&&destinationFetcher.data?.readId===requestedRead
     ?destinationFetcher.data:null;
@@ -183,10 +184,52 @@ export function TopicMoveForm({locale,context,onRefresh,suspended=false}:{
   </div>;
 }
 
+/** Accept one snapshot per deliberate read, never its background revalidation.
+ * Fresh denials still invalidate private data immediately. */
+function useMoveContext(locale:string,topicId:string,actorId:string,initial?:TopicMoveContext){
+  const routing=useAdministrativeRouting();
+  const fetcher=useFetcher<InlineRead<InlineContext>>();
+  const [readId,setReadId]=useState("");
+  const [accepted,setAccepted]=useState<{readId:string;context:TopicMoveContext}|null>(
+    initial?{readId:"",context:initial}:null);
+  const [error,setError]=useState<StructureInlineError["error"]|null>(null);
+  const applied=useRef("");
+  const seq=useRef(0);
+  const url=routing.admin.topicMove(locale,topicId);
+  const refresh=useCallback(()=>{
+    const id=String(++seq.current);
+    setReadId(id);
+    void fetcher.load(url+"?"+new URLSearchParams({inlineMove:"1",readId:id}));
+  },[fetcher.load,url]);
+  const result=fetcher.state==="idle"&&fetcher.data?.readId===readId?fetcher.data:null;
+  useEffect(()=>{
+    if(!result)return;
+    if(isReadError(result)){
+      applied.current=readId;setError(result.error);setAccepted(null);return;
+    }
+    if(applied.current===readId)return;
+    applied.current=readId;
+    if(result.actorId===actorId&&result.topicId===topicId){
+      setError(null);setAccepted({readId,context:result});
+    }
+  },[result,readId,actorId,topicId]);
+  const valid=!error&&accepted?.context.actorId===actorId
+    &&accepted.context.topicId===topicId?accepted.context:null;
+  return {valid,error,refresh,pending:fetcher.state!=="idle"||accepted?.readId!==readId};
+}
+
+/** Direct entry keeps the same explicit-read fence as the inline control. */
+export function TopicMoveDirectForm({locale,context}:{locale:string;context:TopicMoveContext}){
+  const {t}=useTranslation("common");
+  const {valid,error,pending,refresh}=useMoveContext(locale,context.topicId,context.actorId,context);
+  return valid?<TopicMoveForm locale={locale} context={valid} suspended={pending} onRefresh={refresh}/>
+    :<><p role="alert">{t(error?readMessage(error):"topicMoveLoading")}</p>
+      <button type="button" disabled={pending&&!error} onClick={refresh}>{t("topicMoveRefresh")}</button></>;
+}
+
 /** Inline GET/POST fetchers do not navigate away from mounted editors. */
 export function TopicMoveControl({locale,topicId,actorId}:{locale:string;topicId:string;actorId:string;}){
   const {t}=useTranslation("common");
-  const routing=useAdministrativeRouting();
   const viewer=useHeaderAuthUser()?.id??null;
   const loaderSnapshot=useMatches().at(-1)?.loaderData;
   const lifetime=useRef({snapshot:loaderSnapshot,invalidated:false});
@@ -194,30 +237,10 @@ export function TopicMoveControl({locale,topicId,actorId}:{locale:string;topicId
     lifetime.current={snapshot:loaderSnapshot,invalidated:false};
   if(viewer!==actorId)lifetime.current.invalidated=true;
   const [opened,setOpened]=useState(false);
-  const fetcher=useFetcher<InlineRead<InlineContext>>();
-  const [readId,setReadId]=useState("");
-  const [accepted,setAccepted]=useState<{readId:string;context:InlineContext}|null>(null);
-  const seq=useRef(0);
-  const url=routing.admin.topicMove(locale,topicId);
-  const refresh=()=>{
-    const id=String(++seq.current);
-    setReadId(id);
-    fetcher.load(url+"?"+new URLSearchParams({inlineMove:"1",readId:id}));
-  };
-  const result=fetcher.state==="idle"&&fetcher.data?.readId===readId?fetcher.data:null;
-  const error=result&&isReadError(result)?result.error:null;
-  useEffect(()=>{
-    if(!result)return;
-    if(isReadError(result)){setAccepted(null);return;}
-    if(result.actorId===actorId&&result.topicId===topicId)
-      setAccepted({readId,context:result});
-  },[result,readId,actorId,topicId]);
-  const valid=!error&&accepted?.context.actorId===actorId
-    &&accepted.context.topicId===topicId?accepted.context:null;
-  const pending=fetcher.state!=="idle"||accepted?.readId!==readId;
+  const {valid,error,pending,refresh}=useMoveContext(locale,topicId,actorId);
   if(lifetime.current.invalidated)return null;
   return <div className="topic-move-control">
-    <button type="button" disabled={fetcher.state!=="idle"} aria-expanded={opened}
+    <button type="button" disabled={pending&&opened&&!error} aria-expanded={opened}
       onClick={()=>{
         if(opened){setOpened(false);return;}
         setOpened(true);refresh();

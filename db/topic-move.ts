@@ -69,13 +69,16 @@ export class PostgresTopicMoveWriter implements TopicMoveWriter {
       if (topic.is_hidden && (!await effectivePermission(client,actorId,TOPIC_MOVE_PERMISSION,this.ownerUserId)
         || !await effectivePermission(client,actorId,VISIBILITY_PERMISSION,this.ownerUserId))) throw missing();
       const locationVersion = counter(topic.location_version);
+      // Source eligibility stays neutral even for stale requests. A reserved
+      // destination is classified only after the ordinary topic is admitted.
+      if (topic.section_id === HELP_SOLUTIONS_SERVICE_SECTION_ID) throw missing();
+      const ids = [...new Set([topic.section_id, targetSectionId])];
+      const initial = await client.query<SectionRow>("select id,name,category_id from forum_sections where id=any($1::text[])",[ids]);
+      if (initial.rows.length !== ids.length
+        || initial.rows.find(r => r.id === topic.section_id)?.category_id === HELP_SOLUTIONS_CATEGORY_ID) throw missing();
       if (structureVersion !== expectedStructure || topic.section_id !== expectedSectionId || locationVersion !== expectedLocation) {
         throw new StructureConflictError("stale");
       }
-      const ids = [...new Set([topic.section_id, targetSectionId])];
-      if (ids.includes(HELP_SOLUTIONS_SERVICE_SECTION_ID)) throw missing();
-      const initial = await client.query<SectionRow>("select id,name,category_id from forum_sections where id=any($1::text[])",[ids]);
-      if (initial.rows.length !== ids.length || initial.rows.some(r => r.category_id === HELP_SOLUTIONS_CATEGORY_ID)) throw missing();
       const parents = [...new Set(initial.rows.map(r => r.category_id))];
       const categories = await client.query<{ id: string; name: string }>(`select id,name from forum_categories
         where id=any($1::text[]) order by id collate "C" for no key update`, [parents]);
@@ -86,7 +89,7 @@ export class PostgresTopicMoveWriter implements TopicMoveWriter {
       const categoryMap = new Map(categories.rows.map(r => [r.id,r.name]));
       const sectionMap = new Map(sections.rows.map(r => [r.id,r]));
       for (const r of sections.rows) {
-        if (r.category_id === HELP_SOLUTIONS_CATEGORY_ID) throw missing();
+        if (r.id === topic.section_id && r.category_id === HELP_SOLUTIONS_CATEGORY_ID) throw missing();
         if (r.category_id !== initial.rows.find(old => old.id === r.id)?.category_id) throw new StructureConflictError("parent-changed");
       }
       await assertActiveAccountForMutation(client,actorId);
@@ -96,6 +99,10 @@ export class PostgresTopicMoveWriter implements TopicMoveWriter {
         throw new StructureForbiddenError("Topic move permission required");
       }
       if (topic.is_hidden && !await effectivePermission(client,actorId,VISIBILITY_PERMISSION,this.ownerUserId)) throw missing();
+      if (targetSectionId === HELP_SOLUTIONS_SERVICE_SECTION_ID
+        || sectionMap.get(targetSectionId)!.category_id === HELP_SOLUTIONS_CATEGORY_ID) {
+        throw new StructureConflictError("reserved-destination");
+      }
       const response = { topicId, currentSectionId: targetSectionId, structureVersion, locationVersion, changed: false };
       if (topic.section_id === targetSectionId) {
         await client.query("commit"); return response;

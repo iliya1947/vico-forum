@@ -20,7 +20,7 @@ function env(grants:string[]=["forum.content.visibility.manage"],signedIn=true) 
   const has=vi.fn(async(key:string)=>permitted.has(key));
   context.set(authorizationContext,{forUser:()=>({has})} as never);
   const inspect=vi.fn(async()=>({kind:"topic",id:"hidden-topic",topicId:"hidden-topic",
-    isHidden:true,visibilityVersion:1,currentRevisionId:"private-revision",
+    isHidden:true,isOrdinary:true,visibilityVersion:1,currentRevisionId:"private-revision",
     visibilityChangedAt:"2026-11-21T00:00:00.000Z",
     lastEvent:{action:"topic.hidden",at:"2026-11-21T00:00:00.000Z",reason:"private reason"}}));
   const revisions=vi.fn(async()=>({items:[{id:"rev-1",createdAt:"2026-11-21T00:00:00.123456Z",
@@ -103,6 +103,12 @@ describe("B6-B1 private current inspection resource",()=>{
     const absent=env();
     absent.inspect.mockResolvedValueOnce(undefined as never);
     await denied(()=>absent.call(),404);
+  });
+  it("does not advertise Move for a hidden Help-domain topic even with both grants",async()=>{
+    const e=env(["forum.content.visibility.manage","forum.topic.move"]);
+    const ordinary=(await e.call()).data.inspection;
+    e.inspect.mockResolvedValueOnce({...ordinary,isOrdinary:false} as never);
+    expect((await e.call()).data.canMoveTopic).toBe(false);
   });
   it("validates object and query only after admission",async()=>{
     const bad=["?postId=","?postId=a&postId=b","?postId=%00","?postId=%20abc",

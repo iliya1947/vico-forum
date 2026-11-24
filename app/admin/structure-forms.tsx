@@ -4,6 +4,7 @@ import {useTranslation} from "react-i18next";
 import {useAdministrativeRouting} from "../administrative-routing/provider";
 import type {DestinationPage,StructureDestination} from "../../db/forum-structure-reader";
 import type {StructureChangeResult,StructureIntent} from "./structure-actions.server";
+import type {StructureInlineError} from "./structure-inline.server";
 
 type Intent=Exclude<StructureIntent,"createCategory">;
 interface FormProps {
@@ -15,7 +16,7 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
 }){
   const {t}=useTranslation("common");
   const routing=useAdministrativeRouting();
-  const fetcher=useFetcher<DestinationPage>();
+  const fetcher=useFetcher<(DestinationPage&{readId:string})|StructureInlineError>();
   const [query,setQuery]=useState("");
   const [activeQuery,setActiveQuery]=useState("");
   const [items,setItems]=useState<StructureDestination[]>([]);
@@ -24,9 +25,13 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
   const [currentItem,setCurrentItem]=useState<StructureDestination|null>(null);
   const mode=useRef<"replace"|"append">("replace");
   const lastResponse=useRef<unknown>(null);
+  const sequence=useRef(0);
+  const [readId,setReadId]=useState("");
   const url=routing.admin.destinations(locale);
   const load=useCallback((search:string,after?:string)=>{
-    const params=new URLSearchParams({kind:"categories"});
+    const id=String(++sequence.current);
+    setReadId(id);
+    const params=new URLSearchParams({kind:"categories",inlineMove:"1",readId:id});
     if(search)params.set("q",search);
     if(after)params.set("after",after);
     fetcher.load(url+"?"+params.toString());
@@ -38,20 +43,23 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
   },[actorId,load]);
   useEffect(()=>{
     const data=fetcher.data;
-    if(fetcher.state!=="idle"||!data||data===lastResponse.current)return;
+    if(fetcher.state!=="idle"||!data||data===lastResponse.current||data.readId!==readId)return;
     lastResponse.current=data;
+    if("error" in data)return;
     if(data.actorId!==actorId)return;
     const received=data.items.filter(item=>!item.category);
     setItems(previous=>mode.current==="append"
       ? Array.from(new Map([...previous,...received].map(item=>[item.id,item])).values()) : received);
     setNext(data.next);
     setTotal(data.total);
-  },[fetcher.state,fetcher.data,actorId]);
+  },[fetcher.state,fetcher.data,actorId,readId]);
+  const error=fetcher.state==="idle"&&fetcher.data?.readId===readId&&"error" in fetcher.data?fetcher.data.error:null;
   const valid=items.find(item=>item.id===selected)??(currentItem?.id===selected?currentItem:null);
   return <fieldset className="admin-forum-picker">
     <legend>{t("structureDestinationCategory")}</legend>
     <label>{t("structureCategorySearch")}
-      <input type="search" maxLength={400} value={query} onChange={event=>setQuery(event.currentTarget.value)} dir="auto"/>
+      <input type="search" maxLength={400} value={query}
+        onChange={event=>setQuery(Array.from(event.currentTarget.value).slice(0,200).join(""))} dir="auto"/>
     </label>
     <button type="button" disabled={fetcher.state!=="idle"} onClick={()=>{
       setActiveQuery(query);mode.current="replace";load(query);
@@ -69,6 +77,9 @@ function CategoryPicker({locale,actorId,selected,onChange}:{
       </select>
     </label>
     {total===0?<p>{t("structureNoDestinations")}</p>:null}
+    {error?<><p role="alert">{t(error==="invalid"?"structureActionInvalid"
+      :error==="unavailable"?"structureActionUnconfirmed":"structureActionDenied")}</p>
+      <button type="button" onClick={()=>{mode.current="replace";load(activeQuery);}}>{t("structureActionReload")}</button></>:null}
     {next?<button type="button" disabled={fetcher.state!=="idle"} onClick={()=>{
       mode.current="append";load(activeQuery,next);
     }}>{t("structureCategoryNext")}</button>:null}
@@ -85,7 +96,8 @@ export function StructureChangeForm({locale,path,actorId,version,targetId,operat
   const [unknown,setUnknown]=useState(false);
   const [attempted,setAttempted]=useState(false);
   const acknowledged=useRef<unknown>(null);
-  const result=fetcher.state==="idle"&&fetcher.data?.operation===operation?fetcher.data:null;
+  const result=fetcher.state==="idle"&&fetcher.data&&(fetcher.data.operation===operation
+    ||fetcher.data.operation==="structure"&&"error" in fetcher.data)?fetcher.data:null;
   useEffect(()=>{
     if(fetcher.state==="submitting")setAttempted(true);
     if(fetcher.state==="idle"&&attempted&&!fetcher.data)setUnknown(true);
@@ -116,7 +128,9 @@ export function StructureChangeForm({locale,path,actorId,version,targetId,operat
   const canSubmit=(!named||!!name.trim())&&(!moved||!!destination);
   return <div className="admin-forum-structure-form">
     <h3>{t(label)}</h3>
-    <fetcher.Form method="post" action={path} aria-busy={busy}>
+    <fetcher.Form method="post" action={path} aria-busy={busy} onSubmit={event=>{
+      if(busy||blocked||!canSubmit)event.preventDefault();
+    }}>
       <input type="hidden" name="intent" value={operation}/>
       <input type="hidden" name="editorActorId" value={actorId}/>
       <input type="hidden" name="expectedStructureVersion" value={version}/>

@@ -2,7 +2,7 @@ import { Link, useLoaderData, useParams } from "react-router";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "./ui";
-import { TopicMoveForm } from "./topic-move-control";
+import { TopicMoveDirectForm } from "./topic-move-control";
 import { useHeaderAuthUser } from "../auth/auth-controls";
 import { forumTopicPath } from "./paths";
 import { hiddenInspectionPath } from "../admin/visibility-queue-path";
@@ -26,7 +26,7 @@ export default function TopicMoveRoute(){
       <p><Link to={context.isHidden
         ?hiddenInspectionPath(locale,{kind:"topic",topicId:context.topicId},routing)
         :forumTopicPath(locale,context.topicId)}>{t("topicMoveCurrent")}</Link></p>
-      <TopicMoveForm key={JSON.stringify([context.actorId,context.topicId])}
+      <TopicMoveDirectForm key={JSON.stringify([context.actorId,context.topicId])}
         locale={locale} context={context}/>
     </section>
   </ForumShell>;

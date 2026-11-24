@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
-import { createMemoryRouter, data, RouterProvider } from "react-router";
+import { createMemoryRouter, data, RouterProvider, useFetcher } from "react-router";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
@@ -10,6 +10,7 @@ import type { TopicMoveContext, DestinationPage } from "../../db/forum-structure
 import { TopicMoveForm } from "./topic-move-control";
 import { TopicQuickActions } from "../admin/quick-actions";
 import type { ForumTopicPage } from "../../db/forum-repository";
+import TopicMoveRoute from "./topic-move-direct";
 
 const common:Record<string,string>={};
 for(const [key,value] of Object.entries(canonicalEnglishCatalog.common)){
@@ -40,11 +41,11 @@ const topic:ForumTopicPage={
 };
 let dispose=()=>{};
 afterEach(()=>{cleanup();dispose();dispose=()=>{};});
-function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean}={}){
+function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean;direct?:boolean}={}){
   const actor=options.actor??"actor";
   const behavior:{
     current:TopicMoveContext;list:DestinationPage;moveReadError:null|"forbidden"|"unavailable";
-    pickerError:null|"forbidden"|"unavailable";writeError:null|"conflict"|"unavailable";
+    pickerError:null|"forbidden"|"unavailable";writeError:null|"conflict"|"unavailable"|"lost";
     forcedPickerReadId:string|null;
   }={
     current:{...move,isHidden:options.hidden??false},list:destination,
@@ -66,7 +67,7 @@ function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean}={}){
   });
   const submitted=vi.fn(async({request}:{request:Request})=>{
     const form=await request.formData();
-    if(behavior.writeError)return data({operation:"topicMove",error:behavior.writeError},{
+    if(behavior.writeError&&behavior.writeError!=="lost")return data({operation:"topicMove",error:behavior.writeError},{
       status:behavior.writeError==="conflict"?409:503,
       headers:{"Cache-Control":"private, no-store"}});
     const target=String(form.get("targetSectionId"));
@@ -75,16 +76,18 @@ function fixture(element:ReactNode,options:{actor?:string;hidden?:boolean}={}){
       id:target,name:newSection?.name??target,
       category:newSection?.category??behavior.current.currentSection.category,
     },locationVersion:String(BigInt(behavior.current.locationVersion)+1n)};
+    if(behavior.writeError==="lost")return new Response(null,{status:204});
     return data({operation:"topicMove",ok:true,actorId:actor,topicId:behavior.current.topicId,
       currentSectionId:target,structureVersion:behavior.current.structureVersion,
       locationVersion:behavior.current.locationVersion,changed:true,received:[...form.entries()]},
       {headers:{"Cache-Control":"private, no-store"}});
   });
   const router=createMemoryRouter([
-    {path:"/en/test",element:<HeaderAuthProvider initialUser={{id:actor,name:"Moderator"}}>{element}</HeaderAuthProvider>},
+    {path:"/en/test",...(options.direct?{loader:()=>({...behavior.current})}:{}),element:<HeaderAuthProvider initialUser={{id:actor,name:"Moderator"}}>{element}</HeaderAuthProvider>},
     {path:"/en/admin/forum/topics/:topicId/move",loader:moveLoader,element:<p>Private move</p>},
     {path:"/en/admin/forum/destinations",loader:destinations,element:<p>Destinations</p>},
     {path:"/en/topics/:topicId",action:submitted,element:<p>Topic</p>},
+    {path:"/en/watch",action:()=>data({ok:true})},
   ],{initialEntries:["/en/test"]});
   dispose=()=>router.dispose();
   const view=render(<I18nextProvider i18n={i18n}><RouterProvider router={router}/></I18nextProvider>);
@@ -208,5 +211,39 @@ describe("F5-C2 shared visible/direct topic Move form",()=>{
       canManagePin={false} canManageAnySolution={false} canManageHelpDuplicate={false}
       canCorrectAnySourceLocale={false} canModerateHelpSolution={false} canMoveTopic/>);
     expect(v.container.querySelector(".topic-move-control")).toBeNull();
+  });
+});
+
+function WatchRefresh(){
+  const fetcher=useFetcher();
+  return <fetcher.Form method="post" action="/en/watch"><button type="submit">Change Watch</button></fetcher.Form>;
+}
+describe("R4a-03 explicit Move verification across unrelated revalidation",()=>{
+  for(const direct of [false,true])it.each(["lost","conflict"] as const)(
+    (direct?"direct":"inline")+" retains the %s fence and frozen expectations through Watch",async outcome=>{
+    const element=direct?<TopicMoveRoute/>:<TopicQuickActions locale="en" topic={topic} actorId="actor"
+      canManagePin={false} canManageAnySolution={false} canManageHelpDuplicate={false}
+      canCorrectAnySourceLocale={false} canModerateHelpSolution={false} canMoveTopic inline/>;
+    const f=fixture(<>{element}<WatchRefresh/></>,{direct});
+    if(!direct){await waitFor(()=>expect(f.queryByRole("button",{name:"Move topic"})).not.toBeNull());fireEvent.click(f.getByRole("button",{name:"Move topic"}));}
+    await waitFor(()=>expect(f.container.querySelector('select[name="targetSectionId"] option[value="target/שלום"]')).not.toBeNull());
+    const form=f.container.querySelector<HTMLFormElement>(".topic-move-form form")!;
+    const submit=form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    fireEvent.change(form.querySelector("select")!,{target:{value:"target/שלום"}});
+    f.behavior.writeError=outcome;fireEvent.submit(form);
+    await waitFor(()=>expect(f.container.textContent).toContain(outcome==="lost"?"Move not confirmed.":"Topic or structure changed."));
+    if(outcome==="conflict")f.behavior.current={...f.behavior.current,locationVersion:"8"};
+    const reads=f.moveLoader.mock.calls.length;
+    fireEvent.click(f.getByRole("button",{name:"Change Watch"}));
+    await act(async()=>{await f.router.revalidate();});
+    if(!direct)expect(f.moveLoader.mock.calls.length).toBeGreaterThan(reads);
+    expect(f.container.querySelector(".topic-move-form form")).toBe(form);
+    expect(form.querySelector<HTMLInputElement>('input[name="expectedLocationVersion"]')?.value).toBe("7");
+    expect((form.querySelector("select") as HTMLSelectElement|null)?.value).toBe("target/שלום");
+    expect(submit.disabled).toBe(true);fireEvent.submit(form);expect(f.submitted).toHaveBeenCalledTimes(1);
+    fireEvent.click(f.getByRole("button",{name:"Refresh move details"}));
+    await waitFor(()=>expect(form.querySelector<HTMLInputElement>('input[name="expectedLocationVersion"]')?.value).toBe("8"));
+    await waitFor(()=>expect(submit.disabled).toBe(false));
+    expect(f.submitted).toHaveBeenCalledTimes(1);expect(f.router.state.errors).toBeNull();
   });
 });

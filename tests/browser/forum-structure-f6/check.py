@@ -232,28 +232,46 @@ def run(*, base, admin, actor, mover, mover_id, owner, guest, account, sql,
     uncertain_form = uncertain.locator(".topic-move-form")
     expect(uncertain_form.locator('select[name="targetSectionId"] option[value="' + section_b + '"]')).to_have_count(1)
     uncertain_form.locator('select[name="targetSectionId"]').select_option(section_b)
+    frozen_section = uncertain_form.locator('input[name="expectedSectionId"]').input_value()
+    frozen_location = uncertain_form.locator('input[name="expectedLocationVersion"]').input_value()
     submitted = []
+    uncertain.on("request", lambda request: submitted.append(request.url)
+                 if request.method == "POST" and "moveAction" in request.url else None)
     def lose_ack(route):
         actual = route.fetch()
         assert actual.status == 200, (actual.status, actual.text()[:300])
-        submitted.append(route.request.url)
         route.fulfill(status=204, headers={"X-Remix-Response": "yes", "Cache-Control": "private, no-store"}, body="")
     transport = "**/topics/" + topic + ".data?*moveAction*"
     uncertain.route(transport, lose_ack)
-    uncertain_form.locator('button[type="submit"]').click()
+    with uncertain.expect_response(lambda response: response.request.method == "POST" and "moveAction" in response.url) as lost_move:
+        uncertain_form.locator('button[type="submit"]').click()
+    assert lost_move.value.status == 204
     expect(uncertain_form.locator('[role="alert"]').first).to_be_visible()
     expect(uncertain_form.locator('button[type="submit"]')).to_be_disabled()
     assert location()["section_id"] == section_b
     expect(draft_reply).to_have_value("F6 unsent draft through lost acknowledgement")
     assert len(submitted) == 1
-    uncertain.unroute(transport, lose_ack)
+    # R4a-03: real adjacent Watch revalidates already mounted private fetchers.
+    with uncertain.expect_response(lambda response: response.request.method == "GET" and "/move.data" in response.url):
+        with uncertain.expect_response(lambda response: response.request.method == "POST" and "moveAction" not in response.url) as watched:
+            uncertain.locator('.topic-watch-control button[type="submit"]').click()
+        private(watched.value)
+    uncertain.wait_for_load_state("networkidle")
+    expect(uncertain_form.locator('input[name="expectedSectionId"]')).to_have_value(frozen_section)
+    expect(uncertain_form.locator('input[name="expectedLocationVersion"]')).to_have_value(frozen_location)
+    expect(uncertain_form.locator('button[type="submit"]')).to_be_disabled()
+    expect(draft_reply).to_have_value("F6 unsent draft through lost acknowledgement")
+    assert len(sql("select * from forum_topic_watches where user_id=$1 and topic_id=$2", [actor, topic])) == 1
+    uncertain_form.locator("form").dispatch_event("submit")
+    assert len(submitted) == 1
     uncertain_form.get_by_role("button", name="Refresh move details", exact=True).click()
     expect(uncertain_form.locator('input[name="expectedSectionId"]')).to_have_value(section_b)
     expect(uncertain_form.locator('input[name="expectedLocationVersion"]')).to_have_value(location()["location_version"])
     assert len(submitted) == 1
     expect(draft_reply).to_have_value("F6 unsent draft through lost acknowledgement")
+    uncertain.unroute(transport, lose_ack)
     uncertain.close()
-    record("F6 real commit with lost acknowledgement requires explicit fresh read and never replays POST")
+    record("R4a-03 real Move commit/lost acknowledgement stays fenced through actual Watch revalidation until explicit fresh read; no replay")
 
     # WF-01: commit the real category command and lose only its typed receipt.
     # Observe every POST through explicit refresh, independently of interception.
@@ -310,3 +328,99 @@ def run(*, base, admin, actor, mover, mover_id, owner, guest, account, sql,
     category_page.unroute(category_transport, lose_category_ack)
     category_page.close()
     record("WF-01 real category commit/lost acknowledgement preserves name, fences retries and refreshes without POST replay")
+
+    # R2a-01: controlled unsupported transition only for an admitted ordinary topic.
+    unchanged = location()
+    events = sql("select id from admin_history where action='topic.moved' and target_id=$1", [topic])
+    private(post(admin, baseline(actor, "help-solutions-questions")), 409)
+    assert location() == unchanged
+    assert sql("select id from admin_history where action='topic.moved' and target_id=$1", [topic]) == events
+    missing = admin.request.post(base + "/en/topics/" + str(uuid4()) + ".data?moveAction=1",
+                                 headers={"Origin": base}, form=baseline(actor, "help-solutions-questions"))
+    private(missing, 404)
+    record("R2a-01 admitted ordinary to Help is 409; absent target stays private 404 without effects")
+
+    # R3b-01: create a genuine Help question, then Hide via its canonical action.
+    help_author, help_actor = account("r3b-help-author")
+    help_created = help_author.request.post(base + "/en/categories/help-solutions", headers={"Origin": base}, form={
+        "intent": "createHelpQuestion", "title": "R3b Help fixture " + str(uuid4()), "body": "Help inspection fixture",
+        "editorActorId": help_actor, "editorOperationId": str(uuid4()), "editorAttachmentIds": "[]"}, max_redirects=0)
+    assert help_created.status in (302, 303), (help_created.status, help_created.text()[:300])
+    help_path = help_created.headers["location"]
+    help_id = help_path.rsplit("/", 1)[-1]
+    help_revision = sql("select current_title_revision_id from forum_topics where id=$1", [help_id])[0]["current_title_revision_id"]
+    hidden_help = admin.request.post(base + help_path + ".data?visibilityAction=1", headers={"Origin": base}, form={
+        "intent": "setTopicVisibility", "editorActorId": actor, "hidden": "true", "expectedVisibilityVersion": "0",
+        "expectedRevisionId": help_revision, "reason": "R3b hidden Help inspection"})
+    private(hidden_help)
+    inspector = admin.new_page()
+    private(inspector.goto(base + "/en/admin/forum/topics/" + help_id + "/inspect", wait_until="networkidle"))
+    expect(inspector.get_by_role("heading", name="Visibility inspection", exact=True)).to_be_visible()
+    expect(inspector.get_by_role("link", name="Move topic", exact=True)).to_have_count(0)
+    inspector.screenshot(path=str(output / "r3b-hidden-help-inspection.png"), full_page=True)
+    private(admin.request.get(base + "/en/admin/forum/topics/" + help_id + "/move.data"), 404)
+    help_move = {**baseline(actor, section_a), "expectedSectionId": "help-solutions-questions", "expectedLocationVersion": "0"}
+    private(admin.request.post(base + help_path + ".data?moveAction=1", headers={"Origin": base}, form=help_move), 404)
+    public_help = guest.request.get(base + help_path)
+    assert public_help.status == 404
+    assert "no-store" in public_help.headers.get("cache-control", "")
+    assert "Help inspection fixture" not in public_help.text()
+    inspector.close()
+    record("R3b-01 actual Help create/Hide/inspection has no Move link; private context/write/public remain neutral 404")
+
+    # R4a-01: the real early authorization response is generic operation:structure.
+    structural = admin.new_page()
+    private(structural.goto(base + "/en/admin/forum/sections/" + quote(section_c, safe=""), wait_until="networkidle"))
+    rename = structural.locator('form:has(input[name="intent"][value="renameSection"])')
+    rename.locator('input[name="name"]').fill("R4a retained rename draft")
+    reparent = structural.locator('form:has(input[name="intent"][value="moveSection"])')
+    expect(reparent.locator('select[name="targetCategoryId"] option')).not_to_have_count(1)
+    selected_category = reparent.locator('select[name="targetCategoryId"] option').nth(1).get_attribute("value")
+    reparent.locator('select[name="targetCategoryId"]').select_option(selected_category)
+    old_name = sql("select name from forum_sections where id=$1", [section_c])[0]["name"]
+    override(actor, "forum.structure.manage", "deny")
+    try:
+        with structural.expect_response(lambda response: response.request.method == "POST" and "/admin/forum/sections/" in response.url) as denied:
+            rename.locator('button[type="submit"]').click()
+        private(denied.value, 403)
+        wrapper = structural.locator('.admin-forum-structure-form').filter(has=rename)
+        expect(wrapper.get_by_role("alert")).to_contain_text("You cannot change the forum structure.")
+        expect(rename.locator('input[name="name"]')).to_have_value("R4a retained rename draft")
+        expect(rename.locator('button[type="submit"]')).to_be_disabled()
+        expect(reparent.locator('select[name="targetCategoryId"]')).to_have_value(selected_category)
+        assert sql("select name from forum_sections where id=$1", [section_c])[0]["name"] == old_name
+    finally:
+        override(actor, "forum.structure.manage", "allow")
+    wrapper.get_by_role("button", name="Refresh structure", exact=True).click()
+    expect(rename.locator('button[type="submit"]')).to_be_enabled()
+    expect(rename.locator('input[name="name"]')).to_have_value("R4a retained rename draft")
+    structural.close()
+    record("R4a-01 real early generic 403 preserves structural drafts/selection and requires deliberate recovery")
+
+    # R4b-01: all eight actual original facts appear in ordinary full History.
+    history = admin.new_page()
+    private(history.goto(base + "/en/admin/history", wait_until="networkidle"))
+    expected_actions = {"Category created", "Category renamed", "Category order changed", "Section created",
+                        "Section renamed", "Section moved", "Section order changed", "Topic moved"}
+    observed = set()
+    for _ in range(8):
+        for row in history.locator('.admin-history-events > li').all():
+            label = row.locator("h3").inner_text()
+            if label in expected_actions:
+                expect(row.locator('.admin-structure-history-change')).to_be_visible()
+                expect(row.locator('.admin-structure-history-change dt').first).to_have_text("Version before")
+                assert "/en/admin/forum/" in row.locator("a").get_attribute("href")
+                assert title not in row.inner_text() and body not in row.inner_text()
+                observed.add(label)
+        if observed == expected_actions:
+            break
+        older = history.get_by_role("link", name="Older actions", exact=True)
+        assert older.count() == 1, observed
+        older.click()
+        history.wait_for_load_state("networkidle")
+    assert observed == expected_actions, observed
+    history.screenshot(path=str(output / "r4b-admin-structure-history.png"), full_page=True)
+    private(history.goto(base + "/en/admin", wait_until="networkidle"))
+    expect(history.locator('.admin-structure-history-change').first).to_be_visible()
+    history.close()
+    record("R4b-01 ordinary Admin full/recent History shows all eight bounded structural before/after facts and target links")

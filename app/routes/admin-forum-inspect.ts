@@ -52,7 +52,8 @@ export async function loader({ request, params, context }: {
   const revisions=includeRevisions&&target.kind==="post"
     ? await readHiddenPostRevisions(context,target,before):null;
   return data({locale:params.locale??"en",access,canReadPostHistory,
-    canMoveTopic: canMoveTopic && target.kind==="topic" && inspection.isHidden,inspection,revisions},{
+    canMoveTopic: canMoveTopic && inspection.kind==="topic" && target.kind==="topic"
+      && inspection.isHidden && inspection.isOrdinary,inspection,revisions},{
     headers:hiddenQueuePrivateHeaders,
   });
 }
