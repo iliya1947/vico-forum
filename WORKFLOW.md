@@ -116,3 +116,15 @@ STOP:
 ## Следующий переход
 
 **Мира — coordinator checkpoint P1** on stable Draft #375 exact `a0137ce3a67bf451b650395e7b9b883eaa01aa46`. Check bounded P1 against PLAN §6–9, §15–16 and the accepted P0 foundation; G4c normalized the ordinary screen action path. Record PASS or concrete current-stage blocking finding in this service PR. The accepted P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8` has **not** changed. Current `main` drift alone does **not** trigger stacked synchronization; reconcile new main routes later at final integration unless a concrete current P1 blocker requires earlier action. **Лира STOP** until an explicit corrective assignment. No P2, rebase, stack sync, merge, Pages publication or production deploy from this handoff.
+
+
+## P1 coordinator checkpoint — PASS
+
+- Coordinator review completed on Draft #375 stable exact a0137ce3a67bf451b650395e7b9b883eaa01aa46, stacked on accepted P0 exact e1f077c0c8c7f15d4600df0a64dd661982755bb8.
+- Result: PASS. No confirmed current-P1 blocker remains.
+- Exact-head CI 45300801211: checks/database SUCCESS; 231 files / 2811 tests PASS; lint/typecheck, production build, legacy preview build, P0 Chromium and full P1 Chromium all pass.
+- Full P1 browser evidence covers 78 generated real route modules, mounted generated Data Router, original screen loaders/actions/clientAction, resource handlers/middleware, fetch/XHR, redirects/status/headers/Origin/Abort, attachment upload/read/list/cancel/download, reset/remount/dispose, Pages deep-link/new-tab/history/theme, and zero external/application network requests.
+- G4c ordinary screen-action Origin defect is closed generically; explicit foreign Origin remains visible to the original production guard. P0 default behavior remains unchanged.
+- No duplicated product route/action layer, SQL/WASM runtime, external server/provider or P2 fixture universe was introduced.
+- Parallel main drift does not invalidate this checkpoint because accepted lower P0 did not change.
+- P2 is not started or authorized by this PASS. Next bounded step requires separate continuation/assignment.
