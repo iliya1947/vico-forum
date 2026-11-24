@@ -22,7 +22,8 @@ A5.4c: stages/A5/OWNER_NATIVE_CURRENT.md; LENA-OWNER-HELP-01 (queue-eligible agg
 A5.4d1: stages/A5/OWNER_BACKGROUND_LOCALIZATION.md; six SA07 Background/Localization current monitors reviewed, no additional defect; cleanup predicates and runtime flags verified, producer details remain A6/History.
 A5.4d2: stages/A5/OWNER_FILES_STORAGE.md; Files native metrics, 13 retained R2 slots, actual adapter capture and bounded recorder reviewed; no additional independent finding. Full attachment lifecycle A6.
 A5.4d3: stages/A5/OWNER_DATA_CURRENT.md; three Data monitors, complete named counts, fixed compatibility subset and retention semantics reviewed; no additional independent finding. A7 full schema parity remains.
-Суммарно: 10 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A5.4d4: SA07 Integrations current monitoring; then SA08 Overview and global/scoped/target History. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+A5.4d4: stages/A5/OWNER_INTEGRATIONS_CURRENT.md; LENA-OWNER-AUTH-GROUPS-01 (retained auth group count always zero due to wrong pool predicate), four Integration monitors reviewed; SA07 current static scope complete.
+Суммарно: 11 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A5.4e: SA08 Overview composition; then global/scoped/target History in bounded slices. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A5.4d4.
+Следующий переход: команда разработчика продолжить → A5.4e.
