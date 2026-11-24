@@ -1,15 +1,16 @@
-# agents/leva.md — Task6 WF-01 author STOP
+# agents/leva.md — Task6 corrective package ACTIVE
 
-Final Draft #379 stable exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+Base for correction: final Draft #379 exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-WF-01 bounded correction завершена: Create Category attempted/unknown fence + native per-submission revalidation opt-out; имя сохраняется, повторный create до explicit verification блокируется, confirmed success явно обновляет структуру, typed errors сохранены. Backend/schema/API не менялись.
+Lena independent review ended HOLD. Mira independently reconciled the findings. Implement **only** this six-item corrective package:
 
-Author gate PASS: CI45314820622 (3158unit/1831PG и все остальные steps),18 applicable acceptance SUCCESS. Real whole-feature Chromium/local-R2 run45314830099, artifact14885421479 downloaded/checked: exact SHA match,14groups, no page errors/external requests. Новый commit/lost-ack Create Category case: один category/History/POST до и после explicit refresh, повторные click/submit блокированы, имя сохранено. Source regression reproduces failure before correction.
+1. R2a-01: ordinary admitted topic → reserved/Help destination returns controlled 409 per S7; preserve neutral 404 for absent/protected/hidden/non-movable Help-source and do not widen disclosure.
+2. R3b-01: hidden Help-domain inspector must not advertise Move; ordinary hidden dual-authority Move remains.
+3. R4a-01: six structural forms consume early typed generic `operation:"structure"` failures, preserve draft/destination and expose controlled recovery; no retry.
+4. R4a-02: CategoryPicker controlled 400/503 remains local and preserves form state; q contract is ≤200 Unicode code points.
+5. R4a-03: unrelated revalidation must not clear stale/unconfirmed Move state; only explicit fresh verification or matching confirmed receipt releases it; no automatic POST.
+6. R4b-01: ordinary Admin full/recent History renders bounded before/after details and target navigation for all eight structural actions without privacy/source leakage.
 
-Correction7ee7d06; final test-only f601e91 ждёт завершения перехваченного POST до DB assertions (первый CI run выявил race теста). K5 attempt2: старый harness прочитал empty editorOperationId до useEffect; повторён только failed job на том же exact, исходники не менялись.
+Add targeted regressions for the concrete failing branches and preserve WF-01/F6-01, privacy/authority/editor-lifetime/no-replay guarantees.
 
-Полная проверяемая evidence и S9/post-visibility matrix: stages/forum-structure/F6_REPORT.md. Актуальный маршрут: WORKFLOW.md.
-
-**STOP → Мира whole-feature re-review #379 main→f601e91.** Предыдущий Mira HOLD ожидает её нового решения; я автор реализации и не объявляю independent PASS. Mark inactive до coordinator PASS. Не merge; F7/docs только после owner merge; #342 only service/never merge; #300/Stage6/deploy inactive.
-
-Локальное окружение очищено, testDB удалена, PostgreSQL container снова stopped, preview остановлен, original wrangler/vars восстановлены; own worktree clean.
+No architecture/schema/dependency/docs/Stage expansion. After correction: stable #379 exact → author self-check + applicable exact-head CI/acceptance → **STOP → Mira whole-feature coordinator review**. Lena re-reviews only after Mira PASS. No merge/F7/#300/#320/deploy.
