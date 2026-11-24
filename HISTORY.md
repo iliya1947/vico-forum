@@ -14,3 +14,5 @@
 2026-11-24 — A3.2b: AP-10 measures/appeals central static review, one new LENA-MEASURE-01 queue paging defect; no new independent authorization escalation or transaction integrity defect. Evidence stages/A3/MEASURES.md.
 
 2026-11-24 — A3.3a: common HTTP/Origin/rate-limit review; FORM-BODY-BOUNDS-01 and FORUM-EDIT-SPAM-01 residuals independently confirmed; no new independent findings. Evidence stages/A3/HTTP_ABUSE.md.
+
+2026-11-24 — A3.3b: common privacy/identity projection review; PUBLIC-PROJECTION-01 residual confirmed, no new independent defect. A3 common static scope complete; domain obligations remain. Evidence stages/A3/PRIVACY.md.
