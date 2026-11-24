@@ -21,6 +21,7 @@
 - [Exact-head CI #45291105902](https://github.com/iliya1947/vico-forum/actions/runs/45291105902) **SUCCESS**: `checks` lint/TypeScript/build and **3148/3148 unit tests in 242 files**, `database` PostgreSQL 17 and Worker HTTP smoke SUCCESS. Superseded C3 head had two failing newly introduced tests (form unmounted during refresh, link checked before revalidation), both corrected on final exact SHA.
 - **Лира STOP after F5-C3. Whole F5 not yet author PASS; Mira coordinator checkpoint not activated.** Next only after developer `...`: **F5-D Owner original `forum.structure` History projection** from S5/S7/S8 plan: existing admin_history producer only, eight structural action kinds, before/after original source, global/scoped/kind/person filters/coverage and regressions. Split D into bounded internal slices only if necessary, STOP after each. Then final F5 author acceptance including connected Chromium/editor/upload checks → Mira bounded F5 coordinator.
 - F6, merge, F7/docs, #300, Stage6/deploy inactive.
+- Owner route fixed: after whole F5 author gate → Mira F5 coordinator checkpoint; **only on PASS activate F6 for Leva**. Because Leva already participated in implementation, final independent whole-feature Codex review remains Mark if code-independent.
 
 ## Текущее назначение — Лира: F5
 
