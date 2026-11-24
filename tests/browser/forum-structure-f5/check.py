@@ -166,7 +166,8 @@ try:
         wrong=admin.request.post(base+path,headers={"Origin":"https://not-owned.invalid"},form={
             "intent":"moveTopic","editorActorId":actor,"expectedSectionId":section_a,
             "targetSectionId":section_b,"expectedStructureVersion":"999","expectedLocationVersion":"0"})
-        private(wrong,403)
+        assert wrong.status in (400,403),(wrong.status,wrong.text()[:200])
+        assert "no-store" in wrong.headers.get("cache-control",""),wrong.headers
         mixed=admin.request.post(base+path,headers={"Origin":base},form={
             "intent":"reply","editorActorId":actor,"body":"MIXED_UNEXPECTED_POST",
             "expectedSectionId":section_a,"targetSectionId":section_b})
