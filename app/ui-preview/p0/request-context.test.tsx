@@ -10,6 +10,8 @@ import type { PreviewRouteDescriptor } from "../build/route-manifest";
 import { createPreviewDataRoutes } from "./route-adapter";
 import { installPreviewResourceTransport } from "./resource-transport";
 import { editorClientAction } from "../../forum/editor-action";
+import { requireSameOrigin } from "../../forum/mutations.server";
+import { normalizePreviewActionRequest } from "./action-bridge";
 
 afterEach(cleanup);
 
@@ -26,6 +28,7 @@ const manifest: PreviewRouteDescriptor = {
 const Shell = () => createElement(Outlet);
 const Topic = () => createElement("main", null,
   createElement(Form, { method: "post" },
+    createElement("input", { type: "hidden", name: "marker", value: "reply" }),
     createElement("button", { type: "submit" }, "Reply"),
   ),
 );
@@ -63,7 +66,11 @@ describe("P1 shared request-context lifecycle across screen and resource routing
           screenLoads.push(requireMiddlewareScope(context));
           return { status: "loaded" };
         },
-        action: ({ context }: { context: RouterContextProvider }) => {
+        action: async ({ context, request }: { context: RouterContextProvider; request: Request }) => {
+          expect(requireSameOrigin(request)).toBe(true);
+          expect(request.headers.get("Origin")).toBe(window.location.origin);
+          expect(new URL(request.url).pathname).toBe("/en/topics/item-1");
+          expect((await request.formData()).get("marker")).toBe("reply");
           screenActions.push(requireMiddlewareScope(context));
           return { status: "accepted" };
         },
@@ -79,7 +86,7 @@ describe("P1 shared request-context lifecycle across screen and resource routing
         },
       }],
     ]);
-    const routes = createPreviewDataRoutes(manifest, modules);
+    const routes = createPreviewDataRoutes(manifest, modules, true);
     const nativeFetch = window.fetch;
     const ordinaryFetch = vi.fn(async () => { throw new Error("Unexpected network request"); });
     window.fetch = ordinaryFetch;
@@ -235,4 +242,16 @@ describe("P1 clientAction/serverAction and fetcher request-scope identity", () =
       window.fetch = nativeFetch;
     }
   });
+});
+
+ it("preserves explicit foreign Origin for the original same-origin guard", async () => {
+  const request = new Request("http://localhost/en/topics/item-1?mode=edit", {
+    method: "POST", headers: { Origin: "https://foreign.example" },
+    body: new URLSearchParams({ marker: "foreign" }),
+  });
+  const normalized = normalizePreviewActionRequest(request, window.location.origin);
+  expect(normalized.headers.get("Origin")).toBe("https://foreign.example");
+  expect(normalized.url).toBe(window.location.origin + "/en/topics/item-1?mode=edit");
+  expect(requireSameOrigin(normalized)).toBe(false);
+  expect((await normalized.formData()).get("marker")).toBe("foreign");
 });
