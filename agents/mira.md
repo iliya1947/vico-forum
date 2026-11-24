@@ -1,10 +1,12 @@
-# agents/mira.md — Task 6 / F5 coordinator PASS
+# agents/mira.md — Task6 whole-feature HOLD
 
-- Current main: `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- F1/F2/F3/F4/F5 coordinator PASS.
-- F5 #383 accepted exact `b5efc4d4ea0db1563b5036057518f3ec2b54e656`, base accepted F4 unchanged, Draft/unmerged.
-- Whole F5 diff reviewed against PLAN S5/S7/S7.1/S8; no confirmed current-F5 blocker remains.
-- Exact-head CI `45302582719` checks/database SUCCESS.
-- Scoped connected Chromium `45301253066` SUCCESS on implementation-identical `4026f300...`; later two commits touch test files only, no production/CSS.
-- Owner route now proceeds to F6 with Leva. After Leva author gate/final assembly: Mira whole-feature review on stable exact head.
-- Because Leva participated in implementation, final independent whole-feature Codex reviewer is Mark if code-independent.
+Final review target: #379 exact `bf3e97d6c52b224d1a77bd14f96597b446405472`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+
+Whole-feature review completed across accepted stack ancestry, S9/F6 evidence and cross-stage seams. One confirmed current-scope blocker:
+
+**WF-01 — Create Category uncertain outcome.**
+`CreateCategoryForm` has neither unknown-attempt blocking nor submission revalidation opt-out. A committed create with lost typed acknowledgement can be followed by React Router's default loader revalidation, silently advance `structureVersion`, retain the name and re-enable Submit. Because duplicate names are allowed and IDs are server-generated, a second explicit click can create a second category instead of forcing result verification.
+
+Required correction: preserve unconfirmed state/name; no new create until explicit fresh verification; no auto replay; regression with committed write + lost acknowledgement proves one category only. Keep scope bounded.
+
+No second current-scope blocker found in final review. Mark remains inactive until new exact author gate + Mira PASS.
