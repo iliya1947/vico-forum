@@ -1,7 +1,7 @@
 # Текущее оперативное состояние аудита
 
 Исполнитель: Лена (GPT-6.2), независимый аудит, без реализации.
-Baseline: a3dae5815e26d158c566a27c552127b4b1ab29aa.
+Baseline current: 59e2fd9092bb1884392221eb856c2b989cc87ade. Prior A0–A6.3b2 reports remain exact baseline a3dae5815e26d158c566a27c552127b4b1ab29aa; unchanged evidence reused, changed surfaces pending delta verification.
 A0–A1 завершены; research/INVENTORY.md и research/COVERAGE.md.
 A2 shared runtime review: stages/A2/REVIEW.md, CACHE_MODULES.md; READSTATE-CACHE-01 residual. Domain graph A3–A7, assets A9, reconciliation A11.
 A3 common static review: stages/A3/AUTH_SESSION.md, AUTHORIZATION_CORE.md, MEASURES.md, HTTP_ABUSE.md, PRIVACY.md. 3 new independent findings, 12 known residuals, AUTH-REG-01 conflict.
@@ -40,7 +40,8 @@ A6.3a1: stages/A6/LOCALE_REGISTRY_PREFERENCES.md; registry/resolution and own-ac
 A6.3a2: stages/A6/UI_TRANSLATION_BUNDLES.md; exact UI sources/validation/bundle identity, read fallback and atomic publication/reconciliation reviewed, no additional findings. A6.3a static scope complete.
 A6.3b1: stages/A6/CONTENT_TRANSLATION_PRESENTATION.md; LENA-TRANSLATION-RECOVERY-REVISION-01 (post edit recovery mixes current original with stale translation disclosure); source locale, exact revision read identity and presentation reviewed.
 A6.3b2: stages/A6/CONTENT_MARKDOWN_PROTECTION.md; LENA-TRANSLATION-TOKEN-RESTORE-01 (replacement-string metacharacters corrupt protected technical fragments); semantic Markdown protection/restore and source fingerprints reviewed.
-Суммарно: 24 новых independent findings, 24 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Baseline transition #379: research/BASELINE_DELTA_379.md; 118 changed files (42 added,76 modified,0 removed), independently verified full tree comparison. No new finding in transition. A6.D bounded structure/move delta after A6.3 before A7; schema/UI/CI/operations allocated A7–A10.
+Суммарно: 24 новых independent findings, 24 ранее известных residuals, 1 contract conflict (accumulated registry; new baseline recount pending delta). Static evidence, no production exploit/leak/load claim.
 Следующий bounded-блок A6.3c1: content generation request admission, current unit selection/status, title/body planning, deduplication and request budgets; then provider allowance/execution, durable tasks/reconciliation and publication fences under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
-Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
+Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success applies to prior baseline implementation only; #379/current baseline CI evidence pending A9.
 Следующий переход: команда разработчика продолжить → A6.3c1.
