@@ -22,11 +22,7 @@ export class P2AuthEndpointNotConfiguredError extends Error {
   }
 }
 
-function sessionForActor(baseline: PreviewRawBaseline, actor: PreviewActor): AuthSession | null {
-  if (!previewActors.includes(actor)) throw new Error("P2 unknown preview actor");
-  const actorId = previewActorId(baseline, actor);
-  if (actorId === null) return null;
-
+function sessionForUser(baseline: PreviewRawBaseline, actorId: string): AuthSession | null {
   const account = baseline.users.find((user) => user.identity.id === actorId);
   if (!account || account.state.userId !== actorId) {
     throw new Error("P2 selected account identity is missing or mismatched");
@@ -66,17 +62,22 @@ function sessionForActor(baseline: PreviewRawBaseline, actor: PreviewActor): Aut
   };
 }
 
+function sessionForActor(baseline: PreviewRawBaseline, actor: PreviewActor): AuthSession | null {
+  if (!previewActors.includes(actor)) throw new Error("P2 unknown preview actor");
+  const actorId = previewActorId(baseline, actor);
+  return actorId === null ? null : sessionForUser(baseline, actorId);
+}
+
 const authResponseHeaders = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "private, no-store",
   Pragma: "no-cache",
 } as const;
 
-/** Normal browser/Better Auth session endpoints; no provider or credential transport. */
+/** B4 supports fixture-only password admission; no provider/real credential transport. */
 export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
-  const selected = sessionForActor(baseline, actor);
-  let signedOut = false;
-  const current = () => signedOut ? null : selected;
+  let activeSession = sessionForActor(baseline, actor);
+  const current = () => activeSession;
 
   return {
     async getSession(headers: Headers): Promise<AuthSessionResolution> {
@@ -94,6 +95,97 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
         // Better Auth 1.7.7 exposes { session, user } or JSON null; no wrapper.
         const session = current();
         return new Response(JSON.stringify(session), { headers: authResponseHeaders });
+      }
+      if (url.pathname === "/api/auth/sign-in/email") {
+        if (request.method !== "POST") {
+          return new Response(JSON.stringify({ code: "METHOD_NOT_ALLOWED" }), {
+            status: 405, headers: { ...authResponseHeaders, Allow: "POST" },
+          });
+        }
+        const origin = request.headers.get("Origin");
+        if (origin) {
+          let valid = false;
+          try { valid = new URL(origin).origin === url.origin; } catch { /* invalid */ }
+          if (!valid) {
+            return new Response(JSON.stringify({ code: "INVALID_ORIGIN" }), {
+              status: 403, headers: authResponseHeaders,
+            });
+          }
+        }
+        // The pinned Better Auth client sends JSON; original endpoint also accepts
+        // URL-encoded form data. Never accept a client-provided actor/user ID.
+        const media = request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase();
+        let raw: unknown;
+        try {
+          if (media === "application/json") raw = await request.json();
+          else if (media === "application/x-www-form-urlencoded") {
+            const params = new URLSearchParams(await request.text());
+            raw = {
+              email: params.get("email"), password: params.get("password"),
+              ...(params.has("callbackURL") ? { callbackURL: params.get("callbackURL") } : {}),
+            };
+          } else {
+            return new Response(JSON.stringify({ code: "UNSUPPORTED_MEDIA_TYPE" }), {
+              status: 415, headers: authResponseHeaders,
+            });
+          }
+        } catch {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const body = raw as Record<string, unknown>;
+        if (typeof body.email !== "string" || typeof body.password !== "string"
+          || (body.callbackURL !== undefined && typeof body.callbackURL !== "string")
+          || (body.rememberMe !== undefined && typeof body.rememberMe !== "boolean")) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) {
+          return new Response(JSON.stringify({ code: "INVALID_EMAIL" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        // Only a local callback path may become an HTTP Location. Real provider,
+        // cross-origin and scheme-relative callbacks are deliberately out of B4.
+        if (body.callbackURL !== undefined && (!body.callbackURL.startsWith("/")
+          || body.callbackURL.startsWith("//") || body.callbackURL.includes("\\"))) {
+          return new Response(JSON.stringify({ code: "INVALID_CALLBACK_URL" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const account = baseline.users.find((user) =>
+          user.identity.email.toLowerCase() === body.email.toLowerCase());
+        if (!account || !account.methods.includes("password")
+          || account.credentialPassword !== body.password || account.state.status !== "active") {
+          return new Response(JSON.stringify({
+            code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password",
+          }), { status: 401, headers: authResponseHeaders });
+        }
+        const resolved = sessionForUser(baseline, account.identity.id);
+        if (!resolved) {
+          return new Response(JSON.stringify({ code: "FAILED_TO_CREATE_SESSION" }), {
+            status: 401, headers: authResponseHeaders,
+          });
+        }
+        activeSession = resolved;
+        const headers = new Headers(authResponseHeaders);
+        headers.append("Set-Cookie", "better-auth.session_token="
+          + encodeURIComponent(resolved.session.token) + "; Path=/; HttpOnly; SameSite=Lax"
+          + (url.protocol === "https:" ? "; Secure" : ""));
+        if (body.callbackURL) headers.set("Location", body.callbackURL);
+        return new Response(JSON.stringify({
+          redirect: Boolean(body.callbackURL),
+          token: resolved.session.token,
+          ...(body.callbackURL ? { url: body.callbackURL } : {}),
+          user: resolved.user,
+        }), { headers });
       }
       if (url.pathname === "/api/auth/sign-out") {
         if (request.method !== "POST") {
@@ -113,7 +205,7 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
             });
           }
         }
-        signedOut = true;
+        activeSession = null;
         // Match the pinned Better Auth core sign-out envelope and expired cookie
         // names. The preview does not issue or accept any authentication token.
         const headers = new Headers(authResponseHeaders);
