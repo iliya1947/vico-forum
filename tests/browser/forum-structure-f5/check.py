@@ -156,7 +156,9 @@ try:
         topic=rpc({"op":"topic","sectionId":section_a,"authorId":actor})
         topic_id=topic["topicId"]
         path="/en/topics/"+quote(topic_id,safe="")
-        expect(guest.new_page().goto(base+path,wait_until="networkidle")).not_to_be_none()
+        public=guest.new_page()
+        assert public.goto(base+path,wait_until="networkidle").status==200
+        public.close()
         denied=guest.request.post(base+path,headers={"Origin":base},form={
             "intent":"moveTopic","editorActorId":actor,"expectedSectionId":section_a,
             "targetSectionId":section_b,"expectedStructureVersion":"999","expectedLocationVersion":"0"})
