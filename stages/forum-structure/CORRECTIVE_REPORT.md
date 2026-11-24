@@ -1,12 +1,84 @@
-# Task6 — corrective author report after Lena HOLD
+# Task6 — corrective author report
 
-## Scope и provenance
+## Residual R2a-01 / section→Help classification
+
+**Author self-check/acceptance PASS** на новом exact; reviewer gate остаётся отдельным.
+
+Current final Draft #379 exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`, parent/reviewed baseline `28064dfe51c2c62811dd5674387825a5f0289fd0`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+
+Scope: единственный residual R2a-01 после Lena re-review и Mira reconciliation. Пять предыдущих implementation defects и topic-move часть закрыты review; это не новый technical-plan fork.
+
+Причина: moveSection использовал generic ordinary-category helper и для текущего parent, и для Help destination. Helper правильно сохраняет protected404 для прямых Help-object operations, но давал тот же404 для unsupported ordinary→Help transition.
+
+Минимальное исправление: **2 product lines** в db/forum-structure.ts после findSection/ordinary source validation: Help destination отклоняется существующим StructureConflictError(reserved-destination). Existing action mapper даёт private typed409. Allowed path не меняет queries/locks/admission/writes; generic404 helpers не изменены. Весь corrective delta:4 files/+50−1; остальные изменения — соответствующие regressions.
+
+Проверенная граница:
+- ordinary section→reserved Help destination:409;
+- missing destination:404;
+- actual Help service/Help-parent/missing source:404;
+- direct rename/reorder/createSection против protected Help objects:404;
+- refusal не меняет section/category/topic/post/revision/global version/History snapshots.
+
+### Author regression evidence
+
+Новый real-PG regression воспроизводимо падает на28064df: StructureNotFoundError вместо conflict. После fix full structure commands + topic Move suites: **87PG** PASS. Все **29 Admin action tests** PASS, включая operation:moveSection/private409 vs404. Lint/typecheck и Python syntax PASS.
+
+Whole-feature connected harness расширен реальными Worker POST: ordinary section→Help409; absent destination404; protected Help source404; direct createSection Help404. SQL только наблюдает unchanged section/version/History. Fixture не заменяет проверяемый command.
+
+UI/schema/permissions/dependencies/error policy вне этой branch и production config не менялись. Local disposable vico_r2a_residual_test удалена; originally stopped PostgreSQL container снова stopped; node_modules symlink удалён; own worktree clean.
+
+### Current exact-head connected artifact
+
+[Run45411775325](https://github.com/iliya1947/vico-forum/actions/runs/45411775325), job138507191628, artifact **14929216238 / forum-structure-whole-feature-connected**.
+
+ZIP downloaded; SHA256 совпал с GitHub digest `e7d3977101b0001eac07d9555b8ee722087d536364eff7008f1172ed44983af6`; integrity/path checks PASS. Полный results.json прочитан: implementationSha=checkoutSha=42efaaaabcae24fbb1fa74d042e18e850827b23d, fullFeature=true, **19groups**, pageErrors=[],external=[]. Earlier WF-01/F6-01 и six-item/editor/authority/privacy/retained-byte cases остаются в этом прогоне.
+
+### Current exact-head checks
+
+[CI45411761750](https://github.com/iliya1947/vico-forum/actions/runs/45411761750) SUCCESS:
+- 245 files/**3196 unit**, lint/typecheck/build/UI-preview; migration guard1 new0072/accepted history unchanged; Drizzle No schema changes. Successful original checks job138507146187; latest checks metadata138509977366 success.
+- 118 files/**1834PG** и manifest75/runtime privilege/provisioning/credential и built Worker HTTP smokes PASS, latest database job138509974425.
+- Все18 applicable acceptance SUCCESS с первой попытки на exact42efaaa, включая19-group whole-feature run/artifact выше:
+
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775484)
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775151)
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775745)
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775425)
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775177)
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411774938)
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775007)
+- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45411775325)
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775047)
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775161)
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775337)
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411774978)
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775031)
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775704)
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775561)
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775262)
+- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775750)
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45411775650)
+
+Database-only retry: initial job138507146785 завершил1834 tests PASS, но Vitest зафиксировал один Unhandled Rejection из старого sa04-complaints-n1.test.ts, locale-first Complaint versus source-locale correction. Expected ComplaintConflictError(reported revision changed) получил handler только после await correcting и двух SQL reads; сам assertion прошёл, но global unhandled error справедливо провалил job. Source Complaint/test не менялся этим commit; diff ограничен4 указанными files. Повторён только database job на том же exact без source changes; job138509974425 SUCCESS,1834 tests и все следующие runtime checks. Это не объявляется исправлением старого harness.
+
+### Handoff / STOP
+
+GitHub metadata readback: #379 Draft/open/unmerged; intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false. Actual origin/main=a3dae5815e26d158c566a27c552127b4b1ab29aa; no merge/force/deploy. Own worktree clean, test infrastructure restored/removed.
+
+**Leva author STOP → Mira coordinator review нового exact42efaaa → Lena independent re-review того же exact → owner merge только после PASS.** Предыдущие final gates не переносятся автоматически на изменённый implementation head. F7 docs после owner merge; #342 sole service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive.
+
+## Предыдущий six-item package — baseline28064df
+
+Ниже сохранены причины и evidence предыдущего пакета. Его topic-only часть R2a дополнена актуальной section-reparent correction выше.
+
+
+### Scope и provenance
 
 Final Draft [#379](https://github.com/iliya1947/vico-forum/pull/379), exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Parent/reviewed baseline `f601e91dcab19ee1992012564e9a0b557c2ea596`. Один correction commit; delta21 files/+505−60. Whole-feature diff118 files/+16094−424.
 
 Назначение — шесть current-Task6 items из WORKFLOW после независимого Lena R0–R5 HOLD и Mira reconciliation. **Author gate PASS на новом stable exact.** Это author self-check/acceptance, не независимый review и не закрытие HOLD решением автора. Canonical scope: stages/forum-structure/PLAN.md. Первичная evidence/вердикт: LENA_REVIEW.md. Полная baseline S9/post-visibility/assembly matrix сохранена в F6_REPORT.md; этот отчёт дополняет её актуальным corrective delta.
 
-## Corrections и проверяемые основания
+### Corrections и проверяемые основания
 
 | Finding | Причина → локальное исправление | Regression/effect |
 |---|---|---|
@@ -19,7 +91,7 @@ Final Draft [#379](https://github.com/iliya1947/vico-forum/pull/379), exact `280
 
 Schema/migration/dependencies/grants/public readers/production config не изменены. Strong private HiddenInspection topic DTO получил только ordinary discriminator; четыре существующих typed visibility fixtures выровнены с ним. Existing writer lock order сохранён; новых mutex/permissions/DB infrastructure нет.
 
-## Author regression/self-check
+### Author regression/self-check
 
 Причинные цепочки проверены самостоятельно по code/PLAN, а не приняты только по чужому verdict.
 
@@ -34,7 +106,7 @@ Schema/migration/dependencies/grants/public readers/production config не из�
 
 WF-01/F6-01 и existing Editor DOM/undo/in-flight upload, receipts, original Owner History, hidden authority/privacy и retained bytes assertions проходят в том же whole-feature harness. Новых POST retries, optimistic mutation или external service calls нет.
 
-## Exact-head connected artifact
+### Exact-head connected artifact
 
 [Whole-feature run45392540116](https://github.com/iliya1947/vico-forum/actions/runs/45392540116), job138439735327, artifact **14919557003 / forum-structure-whole-feature-connected**.
 
@@ -45,7 +117,7 @@ ZIP скачан; SHA256 совпал с GitHub digest `c806260da768253ff0883741
 
 Проверяемые effects выполняются production Worker через established CI-only wrapper, настоящие Better Auth sessions/PG17/local Miniflare R2 и Chromium. SQL задаёт fixtures/grants и наблюдает committed data; реальные Move/Watch/Help publication/Hide/403/History effects не подменены SQL. Remote R2/external DB/providers не используются.
 
-## Exact-head CI и applicable acceptance
+### Exact-head CI и applicable acceptance
 
 [CI45392525193](https://github.com/iliya1947/vico-forum/actions/runs/45392525193) SUCCESS:
 - Checks:245 files/**3195 unit**, lint/typecheck/build/UI-preview, migration guard1 new0072/accepted history unchanged; Drizzle No schema changes.
@@ -72,7 +144,7 @@ ZIP скачан; SHA256 совпал с GitHub digest `c806260da768253ff0883741
 - [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45392540106)
 - [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45392540085)
 
-### Прозрачность retry evidence
+#### Прозрачность retry evidence
 
 Два старых harnesses потребовали по одному точечному повтору на неизменном exact:
 1. SA04-K5 run45392540085: первый job138439734377 упал на check.py393, immediate len(editorOperationId)==36 до client useEffect initialization. Совпадает с уже установленной baseline f601e91 нестабильностью. Source пути не менялся в correction. Только failed job повторён; job138441852962 SUCCESS.
@@ -80,7 +152,7 @@ ZIP скачан; SHA256 совпал с GitHub digest `c806260da768253ff0883741
 
 Ни source changes, ни sleeps, ни изменения timeout/assertions этих harnesses не вносились; successful current-task regressions не заменялись retry. Их нестабильность не выдаётся за исправленную этим пакетом. Остальные workflows успешны с первой попытки.
 
-## Final self-check и передача
+### Final self-check и передача
 
 Final #379 exact28064df Draft/open/unmerged, base maina3dae58. GitHub metadata повторно проверена: intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false; actual origin/main=a3dae5815e26d158c566a27c552127b4b1ab29aa. Никакого merge/force/deploy не выполнено.
 
