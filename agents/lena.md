@@ -8,4 +8,4 @@
 
 Отдельно важно: native HTTP unlink уже существует и проверяется SA04-I4c, но own SET-05 unlink flow и last-usable-method invariant ещё требуют планирования/проверки; reset credential write защищён существующим AccountState adapter guard, но это не реализованный recovery lifecycle. Старые auto-session signup expectations подлежат изменению в AUTH-02. Не запускала CI, не меняла implementation/main, не активировала внешние ресурсы.
 
-Следующее назначение — full technical plan Лёвы; на этом моя revalidation завершена.
+Результат передан Мире; full technical plan — рекомендуемый следующий этап, но назначение других агентов не входит в полномочия Лены. На этом моя revalidation завершена.
