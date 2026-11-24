@@ -2,17 +2,17 @@
 
 ## Итог и reviewer route
 
-Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/379), exact `bf3e97d6c52b224d1a77bd14f96597b446405472`, branch `feat/forum-structure-f1`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
+Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/379), stable exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, branch `feat/forum-structure-f1`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-**Author gate PASS.** Это авторская acceptance/self-check реализации и assembly, не independent review. Следующая — **Мира whole-feature coordinator review** того же stable head; после её PASS — **Марк** при code independence, затем owner merge. F7 docs не активирован.
+**Author gate PASS после bounded WF-01 correction.** Это авторская self-check/acceptance, не independent review и не закрытие Mira HOLD автором. Следующая — **Мира whole-feature coordinator re-review** нового exact head; после её PASS — независимый **Марк** при code independence, затем owner merge. F7 docs не активирован.
 
-Полный diff main→final:107 files/+15502−413; одна forward migration0072. Собственный F6 delta к accepted F5:6 files/+344−19. Product correction — только shared Move Form revalidation; остальные F6 changes — connected/PG acceptance и workflow.
+Полный diff main→final:108 files/+15638−413; одна forward migration0072. Исходный F6 delta к accepted F5:6 files/+344−19 (Move correction и acceptance). WF-01 delta к bf3e97d:3 files/+144−8, два commits: form+regression и test-only synchronization.
 
 ## Assembly: проверенная GitHub metadata
 
 | PR | Исходный bounded head | Итог |
 |---|---|---|
-| #379 F1 | 8227db6003f5a23a369e11b645194da229315f7a | сохранён как final PR; head fast-forward до bf3e97d, base main, Draft/unmerged |
+| #379 F1 | 8227db6003f5a23a369e11b645194da229315f7a | сохранён как final PR; head fast-forward до f601e91, base main, Draft/unmerged |
 | #380 F2 | 11a2808f14a79efd69dbbb120f5b732bf2880d4f | closed/superseded, merged=false |
 | #381 F3 | ecc15de9d7036bac13f4ecafcb6fc0776ce7ea78 | closed/superseded, merged=false |
 | #382 F4 | 18627a8c53a6db681a7f4f278b88fcdd55f579c1 | closed/superseded, merged=false |
@@ -32,6 +32,23 @@ Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/37
 Исправление минимальное: `defaultShouldRevalidate={false}` на **общей** moveFetcher.Form. Existing confirmed-receipt effect по-прежнему вызывает useRevalidator; explicit refresh по-прежнему читает guarded context. Отдельных route hooks/state layers/permission caches/POST replay не добавлено. API сверена по official React Router route-module revalidation docs и установленному8.3.1.
 
 После correction full real-browser case проходит: actual commit, empty204, visible unconfirmed state/disabled submit, retained draft; явное Refresh читает committed current section/location version; число POST остаётся1. Общая форма применяется к public/Admin inline и private direct entry.
+
+## WF-01 — Create Category после Mira whole-feature HOLD
+
+Mira подтвердила один blocker на предыдущем final `bf3e97d`: create COMMIT + потерянный typed response позволяли Router автоматически обновить structureVersion, сохранив имя без uncertain fence. Duplicate display names разрешены, IDs серверные — повторный submit мог создать второй category.
+
+Bounded correction в `7ee7d06`, только private CreateCategoryForm:
+- attempted/unknown сохраняет неподтверждённую попытку даже при последующем независимом loader read;
+- имя сохраняется, повторные click/submit блокируются до explicit Refresh structure;
+- `defaultShouldRevalidate={false}` исключает тихую post-action revalidation;
+- matching typed success очищает имя и явно revalidate'ит структуру; typed invalid/conflict/unavailable/unauthenticated/forbidden сохраняют прежнюю политику;
+- automatic POST replay не добавлен; backend/schema/API/shared structural controls не менялись.
+
+7 новых router/component regressions: commit+lost204, independent background revalidation не снимает fence, deliberate duplicate name только после verification, confirmed success, все5 typed error cases. Focused suite19 PASS; lint/typecheck PASS. Главный lost-ack regression на исходном коде воспроизводимо падает.
+
+Новый реальный Chromium case использует production Create Category action через Worker/Better Auth/PG17. `route.fetch()` выполняет настоящий COMMIT; теряется только typed acknowledgement, подменённый204. SQL наблюдает ровно один category и original category.created event. Имя и старая expectation сохраняются, disabled click и submit event не отправляют второй POST. Explicit Refresh читает committed structureVersion; submit становится доступен, имя сохраняется, category/event/POST count остаются1. Listener наблюдает все POST до окончания explicit refresh независимо от interception.
+
+Первый CI run45314433677 на superseded `7ee7d06` выявил race самого нового теста: transient uncertain UI наблюдался до окончания перехваченного POST, SQL ещё не видел row. Test-only `f601e91` добавляет ожидание фактического lost204 response перед committed-state assertions. Без sleeps, polling SQL или ослабления assertions. Product correction не менялась; новый exact-head whole-feature run45314830099 PASS.
 
 ## S9 — полная применимая matrix
 
@@ -56,7 +73,7 @@ Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/37
 | Personal state/read/inbox and future notifications | F3 populated-table snapshot preservation; F6 PG bookmarks/mute/unread location projections; connected actual future reply delivers Watch and suppresses Mute after moves |
 | Hidden/posts/assets/Complaint/accepted task retention | F3 PG source/evidence/attachments/task preservation; connected real published/draft/Complaint byte positives and public negatives, independent hidden post survives Restore, local cleanup retains bytes |
 | Original Admin/Owner History global/scoped/kind/person/coverage | F5-D PG maps all8 actual producers to original ID across all views; localized renderer unit; exact Owner Chromium page shows original topic.moved ID without body/title |
-| Real Worker/BetterAuth/PG/Chromium controls and error behavior | Full connected13 cases: actual forms/POST/DOM, old/new breadcrumbs, same-session revoke/AP10, two tabs stale409, uncertain commit→empty204→explicit refresh/no replay |
+| Real Worker/BetterAuth/PG/Chromium controls and error behavior | Full connected14 cases: actual forms/POST/DOM, old/new breadcrumbs, same-session revoke/AP10, two tabs stale409, uncertain Move и category create commit→empty204→explicit refresh/no replay |
 | Editor buffers/undo/uploads/RTL/narrow/keyboard | Mounted title/reply/post Editor DOM identity/typed text/undo + in-flight XHR through actual Move; EN/RU/HE320/390, keyboard-open, measured no horizontal overflow; confirmed & uncertain flows retain draft |
 
 Дополнительный F6 PG case проверяет Search/Unanswered/Tags/Unread/Bookmarks/Mute после actual Move и section reparent, Popular membership, Help/Similar exclusion и hidden neutral projections. Tags допускает прежнее neutral absent facet при отсутствии видимых topics.
@@ -76,47 +93,50 @@ Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/37
 
 ## Connected artifact provenance / visual scope
 
-[Whole-feature Chromium/local-R2 run45310913957](https://github.com/iliya1947/vico-forum/actions/runs/45310913957), artifact **14883765442 / forum-structure-whole-feature-connected**.
+[Whole-feature Chromium/local-R2 run45314830099](https://github.com/iliya1947/vico-forum/actions/runs/45314830099), artifact **14885421479 / forum-structure-whole-feature-connected**.
 
-Downloaded artifact results.json independently checked:
-- implementationSha = checkoutSha = bf3e97d6c52b224d1a77bd14f96597b446405472;
-- fullFeature=true;13 case groups;pageErrors=[];external=[];
-- HTTP effects use actual production Worker delegated unchanged by established CI-only K5 wrapper, Better Auth sessions, PG17 and native local Miniflare ATTACHMENT_R2;
-- SQL supplies fixtures/grants/retained references and reads committed state; verified Move/publication/visibility/download/cleanup effects are real operations, not substituted SQL updates;
-- R2 configuration is temporary, remote:false; production wrangler.jsonc remains unchanged.
+Downloaded artifact results.json проверен отдельно:
+- implementationSha = checkoutSha = f601e91dcab19ee1992012564e9a0b557c2ea596;
+- fullFeature=true;14 case groups;pageErrors=[];external=[];
+- реальные production Worker operations, Better Auth, PG17 и native local Miniflare ATTACHMENT_R2; CI-only K5 wrapper делегирует форум unchanged;
+- SQL только для fixtures/grants/retained references и наблюдения committed state; verified effects выполняются реальными HTTP operations;
+- R2 configuration временная, remote:false; production wrangler.jsonc не менялся.
+- Новый wf01-category-unconfirmed.png просмотрен: имя и unconfirmed message видимы, Create category disabled, Refresh structure доступен. EN/RU/HE320/390 keyboard/layout assertions прошли. General UI/UX pass или owner visual sign-off не объявляется.
 
-CI artifact en/he320 and hidden direct screenshots inspected; RU/HE/EN320/390 keyboard/layout assertions run in Chromium. This is scoped feature verification, not general UI/UX pass or owner visual sign-off.
+Baseline artifact14883765442/run45310913957 на bf3e97d (13 groups) сохраняет исходную F6 provenance; прежние en/he320/hidden screenshots были просмотрены до WF-01. Новая correction не меняет CSS/layout.
 
 ## Exact-head final gate
 
-[CI45310905077](https://github.com/iliya1947/vico-forum/actions/runs/45310905077) — SUCCESS:
-- checks138166089451: **242 files /3151 unit**, lint/typecheck, build/UI-preview, migration guard **1 new0072** with accepted history unchanged, Drizzle/metadata parity.
-- database138166089885: **118 files /1831 PostgreSQL tests**, manifest75, runtime privilege positive/negative probes, split-authority provisioning, credential diagnostic/recovery/bootstrap, built Worker HTTP smokes.
-- Все **18 применимых acceptance workflows** SUCCESS на exact bf3e97d, включая новый whole-feature Chromium/local-R2:
+[CI45314820622](https://github.com/iliya1947/vico-forum/actions/runs/45314820622) — SUCCESS:
+- checks138179002641: **243 files /3158 unit**, lint/typecheck, build/UI-preview; migration guard1 new0072, accepted history unchanged; Drizzle: No schema changes.
+- database138179002849: **118 files /1831 PostgreSQL tests**, manifest75, runtime privilege probes, split-authority provisioning, credential diagnostic/recovery/bootstrap и built Worker HTTP smokes.
+- Все **18 применимых acceptance workflows SUCCESS** на exact f601e91dcab19ee1992012564e9a0b557c2ea596:
 
-- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310914279)
-- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310914037)
-- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913928)
-- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45310913957)
-- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913838)
-- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913760)
-- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310914074)
-- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913744)
-- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913728)
-- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913785)
-- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913766)
-- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913892)
-- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913833)
-- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310914165)
-- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913774)
-- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913946)
-- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913661)
-- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45310913934)
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830039)
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829886)
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829879)
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829884)
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830011)
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829977)
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830068)
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830063)
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830098)
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830158)
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830032)
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829910)
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830123)
+- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45314830099)
+- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314830130)
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829975)
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829999)
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45314829863)
 
-Все final-head checks прошли с первой попытки, код после их запуска не менялся. Artifact downloaded/checked separately, provenance exact as recorded above.
+SA04-K5 run45314830032 прошёл на attempt2: первый job138179032105 упал до upload при немедленном чтении ещё пустого editorOperationId (check.py393). Существующий editor генерирует ID в client useEffect; test читает input без ожидания. Этот путь не менялся WF-01. Повторён только упавший job138180132303 на том же exact head, без source changes. Остальные current-head gates прошли с первой попытки. Отдельная correction старого K5 harness не входит в WF-01.
+
+Предыдущая baseline CI45310905077 на bf3e97d:3151 unit/1831PG +18 acceptance PASS; она не подменяет current-head evidence. После запуска current exact checks source не менялся.
 
 ## Передача
 
-Мира: whole-feature review **#379 main→bf3e97d**, все107 files и канонические S0–S10/S9/post-visibility contracts, включая F6-01 и final metadata. Лёва является автором implementation/acceptance/assembly и не объявляет independent PASS. После Mira PASS — независимый Марк; merge выполняет owner.
+**Мира: whole-feature re-review #379 main→f601e91**, все108 files против canonical stages/forum-structure/PLAN.md S0–S10/S9/post-visibility; отдельно перепроверить WF-01 receipt fence и regression. Координаторский HOLD предыдущего head ожидает её решения на новом. Лёва автор implementation/acceptance/assembly, после author gate **STOP**, независимый PASS не объявляет. Mark остаётся inactive до Mira PASS.
 
-Локальная vico_f6_browser_test удалена; originally stopped vico-title-edit-pg restored stopped. Preview остановлен, original wrangler.jsonc восстановлен, synthetic .dev.vars/build vars и node_modules symlink/__pycache__ удалены; worktree clean. F7 documentation closeout только после фактического owner merge. #342 никогда не merge; #300/Stage6/deploy не активированы.
+Локальная vico_f6_browser_test удалена; originally stopped vico-title-edit-pg снова stopped. Preview остановлен; original wrangler.jsonc восстановлен; synthetic vars, node_modules symlink и __pycache__ удалены; worktree clean. #379 Draft/open/unmerged; intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false. Main unchanged. F7 docs только после owner merge; #342 never merge, #300/Stage6/deploy не активированы.
