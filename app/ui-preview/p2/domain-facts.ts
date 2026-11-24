@@ -299,6 +299,10 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
   }
   for (const revision of facts.revisions) {
     requireRef(revision.kind === "topic-title" ? topics : posts, revision.contentId, "revision content");
+    const sourceCreatedAt = revision.kind === "topic-title"
+      ? core.topics.find((row) => row.id === revision.contentId)!.createdAt
+      : core.posts.find((row) => row.id === revision.contentId)!.createdAt;
+    if (revision.createdAt < sourceCreatedAt) throw new Error("P2 domain revision predates content");
   }
   const tags = ids(facts.tags, (row) => row.key, "tag");
   for (const topic of core.topics) for (const tag of topic.tags) requireRef(tags, tag, "topic tag");
