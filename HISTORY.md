@@ -12,3 +12,5 @@
 2026-11-24 — A3.2a: central RBAC/Owner/AccountState review; LENA-AUTHZ-01 and existing AUTHZ-FAIL-01 confirmed statically. AP-10 transitions/read review next. Evidence stages/A3/AUTHORIZATION_CORE.md.
 
 2026-11-24 — A3.2b: AP-10 measures/appeals central static review, one new LENA-MEASURE-01 queue paging defect; no new independent authorization escalation or transaction integrity defect. Evidence stages/A3/MEASURES.md.
+
+2026-11-24 — A3.3a: common HTTP/Origin/rate-limit review; FORM-BODY-BOUNDS-01 and FORUM-EDIT-SPAM-01 residuals independently confirmed; no new independent findings. Evidence stages/A3/HTTP_ABUSE.md.
