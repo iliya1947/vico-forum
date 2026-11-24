@@ -13,3 +13,9 @@ Correction/evidence reference: `stages/forum-structure/CORRECTIVE_REPORT.md`; or
 If no current-Task6 blocker remains, record independent PASS on this exact head. If a blocker is confirmed, record HOLD/findings in #342 and STOP for coordinator routing.
 
 No implementation edits or merge. Any implementation-head change invalidates this review. F7/docs, #300/#320, Stage6/deploy/general UI/UX remain inactive. Primary full-forum audit #384 remains paused unless owner directs otherwise.
+
+## Re-review checkpoint R0 (2026-11-24)
+
+R0 PASS — independently verified PR #379 open/Draft, exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, current main identical to `a3dae5815e26d158c566a27c552127b4b1ab29aa`; GitHub compare parent `f601e91dcab19ee1992012564e9a0b557c2ea596`→exact confirms one commit, 21 changed files. Exact-head workflow listing confirms CI `45392525193` and 18 applicable acceptance workflows completed SUCCESS. Artifact contents and corrective code not independently reviewed yet. No new tests run.
+
+Next bounded review: backend authority, R2a-01 reserved-destination classification and adjacent regressions; then private readers/eligibility, forms/recovery/revalidation, History and final synthesis. Prior reviewed unchanged code may be reused where unaffected. No independent whole-feature PASS yet; merge/F7 remain blocked.
