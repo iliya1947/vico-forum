@@ -34,3 +34,5 @@
 2026-11-24 — A5.2b: Case review/notes/Decision/History static review; LENA-CASE-01 new, COMPLAINT-PRIV-01 existing residual independently confirmed. Evidence stages/A5/COMPLAINT_REVIEW_HISTORY.md.
 
 2026-11-24 — A5.2c: Appeal policy/review/resources/notifications static review; LENA-APPEAL-01 new, existing privacy finding extended, Complaints central static scope complete. Evidence stages/A5/COMPLAINT_APPEALS.md.
+
+2026-11-24 — A5.3: Attention/Security admission and attachment security evidence static review; no additional independent finding. Evidence stages/A5/ATTENTION_SECURITY.md.
