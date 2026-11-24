@@ -2210,6 +2210,7 @@ export function TopicView({
   canManagePin,
   canManageClosure = false,
   canManageVisibility = false,
+  canMoveTopic = false,
   canUseAdminPanel = false,
   topicReadState,
   actionData,
@@ -2251,6 +2252,7 @@ export function TopicView({
   canManagePin: boolean;
   canManageClosure?: boolean;
   canManageVisibility?: boolean;
+  canMoveTopic?: boolean;
   canUseAdminPanel?: boolean;
   topicReadState: ForumTopicReadState | null;
   actionData?: TopicViewActionData;
@@ -2664,7 +2666,7 @@ export function TopicView({
                 ]}
           />
 
-          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel || canManageVisibility) ? (
+          {(selectableBestAnswerPosts.length > 0 || canUseAdminPanel || canManageVisibility || canMoveTopic) ? (
             <div className="topic-breadcrumb-actions">
               {selectableBestAnswerPosts.length > 0 ? (
                 <details className="topic-best-answer-tools">
@@ -2682,10 +2684,10 @@ export function TopicView({
                 </details>
               ) : null}
 
-              {(canUseAdminPanel || canManageVisibility) ? (
+              {(canUseAdminPanel || canManageVisibility || canMoveTopic) ? (
                 <TopicQuickActions locale={locale} topic={topic} actorId={watchActorId}
                   canManagePin={canManagePin} canManageClosure={canManageClosure}
-                  canManageVisibility={canManageVisibility}
+                  canManageVisibility={canManageVisibility} canMoveTopic={canMoveTopic}
                   canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
                   canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
                   pendingDuplicateAppeal={pendingDuplicateAppeal}/>

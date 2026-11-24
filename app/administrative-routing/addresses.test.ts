@@ -119,3 +119,10 @@ describe("independent typed administrative destination families", () => {
       .toBe("https://forum.invalid/en/office/forum");
   });
 });
+
+
+it("resolves private structure resources through the named Admin family",()=>{
+ expect(defaultAdministrativeRouting.admin.topicMove("he","a/b")).toBe("/he/admin/forum/topics/a%2Fb/move");
+ expect(alternate.admin.topicMove("en","a/b")).toBe("https://forum.invalid/en/office/forum/topics/a%2Fb/move");
+ expect(alternate.admin.destinations("ru")).toBe("https://forum.invalid/ru/office/forum/destinations");
+});

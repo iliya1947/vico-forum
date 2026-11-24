@@ -5,6 +5,14 @@ import { useTranslation } from "react-i18next";
 import type { AdminHistoryEvent, AdminHistoryPage, AdminHistoryChange, UserMeasureHistoryChange, UserMeasureHistoryState } from "../../db/admin-history";
 
 import { actionLabels } from "./history-labels";
+import {StructureHistoryDetails} from "./structure-history";
+function StructuralTarget({change,locale}:{change:AdminHistoryChange;locale:string}){
+  const routing=useAdministrativeRouting();
+  const path=change.targetType==="category"?routing.admin.category(locale,change.targetId)
+    :change.targetType==="section"?routing.admin.section(locale,change.targetId)
+    :change.action==="topic.moved"?routing.admin.topic(locale,change.targetId):null;
+  return path?<Link to={path}><bdi>{change.targetLabel}</bdi></Link>:<bdi>{change.targetLabel}</bdi>;
+}
 function ModerationDetails({context}: {context:{postId:string;before:string|null;after:string|null}}) {
   const {t}=useTranslation("common");
   const status=(value:string|null)=>t(value==="outdated"?"helpSolutionOutdated":value==="needs-review"?"helpSolutionNeedsReview":"historyNoValue");
@@ -60,6 +68,9 @@ function MeasureHistoryDetails({change,locale}: {change:UserMeasureHistoryChange
 function ChangeDetails({change,locale}: {change: AdminHistoryChange;locale:string}) {
   const {t} = useTranslation("common");
   switch (change.action) {
+    case "category.created": case "category.renamed": case "category.reordered":
+    case "section.created": case "section.renamed": case "section.moved": case "section.reordered":
+    case "topic.moved": return <StructureHistoryDetails change={change}/>;
     case "settings.registrationChanged": {
       const { before, after } = change.context;
       const status = (enabled: boolean) => t(enabled ? "historyRegistrationEnabled" : "historyRegistrationDisabled");
@@ -115,7 +126,7 @@ export function HistoryEvents({events,locale}: {events: AdminHistoryEvent[]; loc
     <h3>{t(actionLabels[event.change.action])}</h3>
     <time dateTime={event.at}>{date.format(new Date(event.at))}</time>
     <p>{t("historyActor")}: <bdi>{event.actorLabel}</bdi> <code dir="ltr">{event.actorId}</code></p>
-    <p>{t("historyTarget")}: <bdi>{event.change.targetLabel}</bdi> <code dir="ltr">{event.change.targetId}</code></p>
+    <p>{t("historyTarget")}: <StructuralTarget change={event.change} locale={locale}/> <code dir="ltr">{event.change.targetId}</code></p>
     <ChangeDetails change={event.change} locale={locale} />
     {event.reason ? <p>{t("historyReason")}: <bdi>{event.reason}</bdi></p> : null}
   </li>)}</ol> : <p>{t("historyEmpty")}</p>;

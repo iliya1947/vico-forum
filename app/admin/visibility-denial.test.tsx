@@ -60,7 +60,7 @@ function privateInspection(kind:Kind):HiddenInspection {
     isHidden:true,visibilityVersion:3,currentRevisionId:revisionId,
     visibilityChangedAt:"2026-11-22T00:00:00.000Z",
   };
-  if(kind==="topic")return {...current,kind:"topic",id:topicId,topicId,
+  if(kind==="topic")return {...current,kind:"topic",id:topicId,topicId,isOrdinary:true,
     lastEvent:{action:"topic.hidden",at:"2026-11-22T00:00:00.000Z",reason:"Prior Hide"}};
   return {...current,kind:"post",id:postId,topicId,parentPostId:null,
     parentUnavailable:false,topicHidden:false,

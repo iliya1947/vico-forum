@@ -379,7 +379,7 @@ export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="empty-state">{children}</p>;
 }
 
-export function ForumRouteError() {
+export function ForumRouteError({ recoveryAction }: { recoveryAction?: ReactNode } = {}) {
   const error = useRouteError();
   const { t } = useTranslation("common");
   const params = useParams();
@@ -405,9 +405,9 @@ export function ForumRouteError() {
           <p className="eyebrow">{t("systemStateEyebrow")}</p>
           <h1>{copy.heading}</h1>
           <p>{copy.body}</p>
-          <Link className="system-state-action" to={forumIndexPath(locale)}>
+          {recoveryAction ?? <Link className="system-state-action" to={forumIndexPath(locale)}>
             {t("routeBackToForum")}
-          </Link>
+          </Link>}
         </div>
       </section>
     </ForumShell>

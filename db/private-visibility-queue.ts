@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import type { AuthorizationCapability } from "./authorization-service";
 import type { ForumAttachmentMetadata } from "./forum-attachments";
+import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
 /** Private moderation data. Never merge this reader into the public ForumReader. */
 export type HiddenQueueKind = "topic" | "post";
@@ -58,7 +59,7 @@ interface HiddenInspectionFields {
   lastEvent: HiddenVisibilityEvent | null;
 }
 export type HiddenInspection =
-  | (HiddenInspectionFields & { kind: "topic" })
+  | (HiddenInspectionFields & { kind: "topic"; isOrdinary: boolean })
   | (HiddenInspectionFields & {
     kind: "post"; parentPostId: string | null; parentUnavailable: boolean; topicHidden: boolean;
   });
@@ -163,13 +164,15 @@ export class PostgresHiddenQueueReader implements HiddenQueueReader {
   async inspect(actorId: string, target: HiddenInspectionTarget): Promise<HiddenInspection | undefined> {
     await this.admit(actorId);
     if (target.kind === "topic") {
-      const { rows } = await this.pool.query<InspectionRow>(`
+      const { rows } = await this.pool.query<InspectionRow & {isOrdinary:boolean}>(`
         select t.id,t.is_hidden as "isHidden",t.visibility_version as "visibilityVersion",
+          (t.section_id <> $2 and s.category_id <> $3) as "isOrdinary",
           t.current_title_revision_id as "currentRevisionId",
           to_char(t.visibility_changed_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "visibilityChangedAt",
           e.action as "eventAction",e.reason as "eventReason",
           to_char(e.occurred_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "eventAt"
         from forum_topics t
+        join forum_sections s on s.id=t.section_id
         left join lateral (
           select h.action,h.reason,h.occurred_at from admin_history h
           where h.target_type='topic' and h.target_id=t.id
@@ -178,11 +181,11 @@ export class PostgresHiddenQueueReader implements HiddenQueueReader {
             and h.context->>'version'=t.visibility_version::text
           order by h.position desc limit 1
         ) e on true
-        where t.id=$1`, [target.topicId]);
+        where t.id=$1`, [target.topicId,HELP_SOLUTIONS_SERVICE_SECTION_ID,HELP_SOLUTIONS_CATEGORY_ID]);
       const row = rows[0];
       if (!row) return undefined;
       return {
-        kind: "topic", id: row.id, topicId: row.id, isHidden: row.isHidden,
+        kind: "topic", id: row.id, topicId: row.id, isHidden: row.isHidden, isOrdinary: row.isOrdinary,
         visibilityVersion: row.visibilityVersion, visibilityChangedAt: row.visibilityChangedAt,
         currentRevisionId: row.currentRevisionId, lastEvent: lastVisibilityEvent(row, "topic"),
       };

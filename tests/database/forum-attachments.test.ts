@@ -1,7 +1,7 @@
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
 import { readComplaintEvidenceObject } from "../../db/complaint-review-read";
 import { AccountMissingError } from "../../db/account-state";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool, type DatabaseError } from "pg";
 import { RouterContextProvider } from "react-router";
@@ -37,39 +37,6 @@ if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith
 const schema = "forum_attachments_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
 const store = new DrizzleForumAttachments(drizzle(client), historicalForumMeasureAdmission);
-const migrations = [
-  "0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage",
-  "0003_gorgeous_donald_blake", "0004_forum_domain_foundation",
-  "0005_calm_proemial_gods", "0006_loving_sentinels",
-  "0021_forum_tags", "0022_forum_reply_relationships", "0024_forum_reply_notifications",
-  "0025_forum_topic_pins", "0026_best_answer_independent_from_solved",
-  "0027_help_solutions_foundation", "0028_help_solution_moderation",
-  "0029_help_question_needs_details", "0030_help_duplicate_workflow",
-  "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
-  "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
-  "0036_forum_attachment_security_events",
-  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
-  "0041_published_mentions",
-  "0042_attachment_edit_snapshots",
-  "0043_attachment_security_read_permission",
-  "0044_attachment_draft_conflict_boundaries",
-  "0046_attachment_upload_fences",
-  "0047_complaints_domain_foundation",
-  "0048_complaint_case_links",
-  "0049_admin_history",
-  "0050_complaint_submission",
-  "0051_forum_admin_history",
-  "0052_complaints_queue",
-  "0053_complaint_priority_settings",
-  "0054_complaint_history_notifications",
-  "0055_complaint_appeal_notifications",
-  "0056_topic_closure",
-  "0065_sa04_account_state_foundation",
-  "0068_topic_watch",
-  // This legacy fixture invokes the current publication writer, whose personal
-  // suppression policy requires the three 0070 tables.
-  "0070_personal_filters",
-];
 
 const ownerId = "attachment-owner";
 const otherId = "attachment-other";
@@ -148,18 +115,9 @@ async function queuedOperations<T, U>(
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
-  for (const tag of migrations) {
-    await client.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${schema}".`));
+  for (const tag of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
+    await client.query((await readFile(`drizzle/${tag}`, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
-  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
-  await client.query(`alter table forum_topics
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3);
-    alter table forum_posts
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3)`);
 
   for (const id of [ownerId, otherId]) {
     await client.query('insert into "user" (id, name, email) values ($1, $2, $3)', [

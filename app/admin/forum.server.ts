@@ -1,5 +1,7 @@
 import {createContext,type RouterContextProvider} from "react-router";
 import type {AdminBrowseQuery,AdminForumReader} from "../../db/admin-forum";
+import {StructureValidationError} from "../../db/forum-structure";
+import {STRUCTURE_CURSOR_LIMIT} from "../../db/structure-browse";
 import {AdminForumUnavailableError} from "../../db/hyperdrive-admin-forum";
 import {requireAdminAccess} from "./access.server";
 export const adminForumContext=createContext<AdminForumReader>();
@@ -9,11 +11,11 @@ export async function requireAdminForumAccess(context:RouterContextProvider) {
   if(!access.canReadForum)throw new Response("Forbidden",{status:403,headers:adminPrivateHeaders});
   return access;
 }
-export function adminBrowseQuery(url:string):AdminBrowseQuery {
+export function adminBrowseQuery(url:string,structured=false):AdminBrowseQuery {
   const params=new URL(url).searchParams;
   const search=(params.get("q")??"").trim();const after=params.get("after");
   if(params.getAll("q").length>1||params.getAll("after").length>1||Array.from(search).length>200||search.includes("\0")
-    ||(after!==null&&(!after||new TextEncoder().encode(after).length>2048||after.includes("\0"))))
+    ||(after!==null&&(!after||new TextEncoder().encode(after).length>(structured?STRUCTURE_CURSOR_LIMIT:2048)||after.includes("\0"))))
     throw new Response("Invalid query",{status:400,headers:adminPrivateHeaders});
   return {search,...(after!==null?{after}:{})};
 }
@@ -24,5 +26,5 @@ export function adminObjectId(id:unknown):string {
 }
 export async function readAdminForum<T>(context:RouterContextProvider,operation:(reader:AdminForumReader)=>Promise<T>):Promise<T> {
   try{return await operation(context.get(adminForumContext));}
-  catch(error){if(error instanceof AdminForumUnavailableError)throw new Response("Unavailable",{status:503,headers:adminPrivateHeaders});throw error;}
+  catch(error){if(error instanceof StructureValidationError)throw new Response("Invalid cursor; start from First",{status:400,headers:adminPrivateHeaders});if(error instanceof AdminForumUnavailableError)throw new Response("Unavailable",{status:503,headers:adminPrivateHeaders});throw error;}
 }

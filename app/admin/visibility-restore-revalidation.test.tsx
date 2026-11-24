@@ -53,7 +53,7 @@ function inspection(kind: "topic" | "post", restored: boolean): HiddenInspection
     },
   };
   if (kind==="topic") return {
-    ...commonState,kind:"topic",id:topicId,topicId,
+    ...commonState,kind:"topic",id:topicId,topicId,isOrdinary:true,
     lastEvent:{...commonState.lastEvent,
       action:(restored?"topic.restored":"topic.hidden") as "topic.restored"|"topic.hidden"},
   };

@@ -35,7 +35,7 @@ describe("native protected category/section projection",()=>{
  it("pages full matching sets by stable ID with exact totals independent of cursor",async()=>{
   const all:string[]=[];let after:string|undefined;
   do{const page=await reader.listCategories({search:"",after});expect(page.total).toBe(62);expect(page.items.length).toBeLessThanOrEqual(25);all.push(...page.items.map(x=>x.id));after=page.next??undefined;}while(after);
-  expect(new Set(all).size).toBe(62);expect(all).toEqual([...all].sort());
+  expect(new Set(all).size).toBe(62);expect(all).toEqual(["help-solutions",...all.filter(id=>id!=="help-solutions").sort()]);
   const sections:string[]=[];after=undefined;
   do{const result:{category:AdminForumCategory;sections:AdminBrowsePage<AdminForumSection>}=(await reader.readCategory("c-000",{search:"",after}))!;expect(result.category).toMatchObject({sectionCount:61,topicCount:53,postCount:53});expect(result.sections.total).toBe(61);sections.push(...result.sections.items.map(x=>x.id));after=result.sections.next??undefined;}while(after);
   expect(new Set(sections).size).toBe(61);expect(sections).toEqual([...sections].sort());
@@ -45,17 +45,17 @@ describe("native protected category/section projection",()=>{
    expect((await reader.listCategories({search})).items.map(x=>x.id)).toEqual(["c-060"]);
    expect((await reader.readCategory("c-000",{search}))!.sections.items.map(x=>x.id)).toEqual(["s/c-060"]);
   }
-  expect(await reader.listCategories({search:"missing"})).toEqual({items:[],total:0,next:null});
+  expect(await reader.listCategories({search:"missing"})).toEqual({items:[],total:0,next:null,structureVersion:"0"});
   const empty=(await reader.readCategory("c-001",{search:""}))!;expect(empty.category).toMatchObject({sectionCount:0,topicCount:0,postCount:0});expect(empty.sections).toEqual({items:[],total:0,next:null});
   const filtered=(await reader.readCategory("c-000",{search:"missing"}))!;expect(filtered.category.sectionCount).toBe(61);expect(filtered.sections.total).toBe(0);
   expect(await reader.readCategory("absent",{search:""})).toBeUndefined();expect(await reader.readSection("absent")).toBeUndefined();
-  expect(await reader.readSection("s/c-000")).toEqual({id:"s/c-000",name:"Section 0",category:{id:"c-000",name:"Category 0"},topicCount:53,postCount:53,service:false});
+  expect(await reader.readSection("s/c-000")).toEqual({id:"s/c-000",name:"Section 0",category:{id:"c-000",name:"Category 0"},topicCount:53,postCount:53,service:false,structureVersion:"0"});
  });
  it("exposes reserved storage context only in admin DTO and preserves public Help",async()=>{
   const help=(await reader.readCategory("help-solutions",{search:""}))!;
   expect(help.category).toMatchObject({reserved:true,sectionCount:1,topicCount:1,postCount:1});
   expect(help.sections.items[0]).toMatchObject({id:"help-solutions-questions",service:true,topicCount:1,postCount:1});
-  expect(await reader.readSection("help-solutions-questions")).toEqual(help.sections.items[0]);
+  expect(await reader.readSection("help-solutions-questions")).toEqual({...help.sections.items[0],structureVersion:"0"});
   expect(await publicReader.readSection("help-solutions-questions")).toBeUndefined();
   const categories=await publicReader.listCategories();expect(JSON.stringify(categories)).not.toContain("help-solutions-questions");
   const discovery=await publicReader.search("Help");expect(discovery.find(x=>x.id==="help-t")).toMatchObject({section:null});
@@ -108,7 +108,7 @@ describe("native protected category/section projection",()=>{
   }finally{await client.query("rollback");}
  });
  it("runs using only existing SELECT rights on forum relations including current title revision",async()=>{
-  const role="ap06_reader_probe";await client.query(`create role ${role} nologin;grant usage on schema ${schema} to ${role};grant select on forum_categories,forum_sections,forum_topics,forum_posts,forum_topic_title_revisions to ${role}`);
+  const role="ap06_reader_probe";await client.query(`create role ${role} nologin;grant usage on schema ${schema} to ${role};grant select on forum_categories,forum_sections,forum_topics,forum_posts,forum_topic_title_revisions,forum_structure_state to ${role}`);
   await client.query("begin");try{await client.query(`set local role ${role}`);expect((await reader.listCategories({search:""})).total).toBe(62);expect((await reader.readCategory("c-000",{search:""}))!.sections.total).toBe(61);expect((await reader.readSection("s/c-000"))!.postCount).toBe(53);expect((await reader.readSectionTopics("s/c-000",{search:""}))!.topics.total).toBe(53);}finally{await client.query("rollback");await client.query(`drop owned by ${role};drop role ${role}`);}
  });
 });

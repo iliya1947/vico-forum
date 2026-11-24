@@ -51,7 +51,7 @@ function snapshot(options:Options={}):HiddenInspection{
     parentPostId:"original-post",parentUnavailable:options.parentUnavailable??true,
     topicHidden:options.topicHidden??true,
   };
-  return {...core,kind:"topic",id:TOPIC_ID,topicId:TOPIC_ID};
+  return {...core,kind:"topic",id:TOPIC_ID,topicId:TOPIC_ID,isOrdinary:true};
 }
 function mount(options:Options={}){
   const inspection=snapshot(options);

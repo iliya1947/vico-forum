@@ -10,7 +10,6 @@ import { PostgresAuthorizationRepository } from "../../db/authorization-reposito
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
 import type { PermissionKey } from "../../app/authorization/catalog";
-import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { RouterContextProvider } from "react-router";
@@ -92,34 +91,21 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       for(const file of (await readdir("drizzle")).filter(x=>/^\d{4}_.+\.sql$/.test(x)&&x<"0055_").sort()){
         await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
       }
-      // This deliberately tests pre-0055 notification history, while fixture topics
-      // are created by the current Forum writer (AP-08 + SA04-J2 expectations).
-      await upgrade.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
-  // Historical migration subsets predate B1; the current Drizzle writer still emits these columns.
-  await upgrade.query(`alter table forum_topics
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3);
-    alter table forum_posts
-    add column is_hidden boolean not null default false,
-    add column visibility_version integer not null default 0,
-    add column visibility_changed_at timestamptz(3)`);
-
-      await upgrade.query(`alter table "user"
-        add column deactivated_at timestamptz,
-        add column deactivated_by_user_id text,
-        add column retain_at_least_until timestamptz`);
+      // Historical upgrade fixtures use the actual pre-0055 SQL shape, not the current writer.
       for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
         await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
-      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()},historicalForumMeasureAdmission);
-      await forumUpgrade.createCategory({id:"upgrade-category",name:"Upgrade"});
-      await forumUpgrade.createSection({id:"upgrade-section",categoryId:"upgrade-category",name:"Upgrade"});
-      await forumUpgrade.createTopicWithInitialPost({
-        id:"upgrade-topic",sectionId:"upgrade-section",authorId:"upgrade-author",
-        titleRevision:{id:"upgrade-title",originalContent:"Upgrade title",sourceLocale:"en"},
-        initialPost:{id:"upgrade-post",topicId:"upgrade-topic",authorId:"upgrade-author",
-          bodyRevision:{id:"upgrade-revision",originalContent:"Upgrade evidence",sourceLocale:"en"}}
-      });
+      await upgrade.query("begin");
+      await upgrade.query(`insert into forum_categories(id,name) values ('upgrade-category','Upgrade');
+        insert into forum_sections(id,category_id,name) values ('upgrade-section','upgrade-category','Upgrade');
+        insert into forum_topics(id,section_id,author_id,current_title_revision_id)
+          values ('upgrade-topic','upgrade-section','upgrade-author','upgrade-title');
+        insert into forum_topic_title_revisions(id,topic_id,author_id,original_content,source_locale)
+          values ('upgrade-title','upgrade-topic','upgrade-author','Upgrade title','en');
+        insert into forum_posts(id,topic_id,author_id,current_revision_id)
+          values ('upgrade-post','upgrade-topic','upgrade-author','upgrade-revision');
+        insert into forum_post_revisions(id,post_id,author_id,original_content,source_locale)
+          values ('upgrade-revision','upgrade-post','upgrade-author','Upgrade evidence','en')`);
+      await upgrade.query("commit");
       await upgrade.query(`insert into forum_complaint_targets
         (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
         values ('upgrade-target','post','upgrade-topic','upgrade-post','upgrade-revision','upgrade-author')`);

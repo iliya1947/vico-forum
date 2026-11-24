@@ -208,3 +208,13 @@ it("does not veto auth success when native fact storage fails and records a boun
     surface: "auth", count: 1,
   });
 });
+
+
+it.each(["/en/admin/forum/destinations.data","/he/admin/forum/topics/t/move","/ru/admin/forum/categories/c.data"])("protects Forum private framework/init failures %s",async path=>{
+ const req=new Request("https://forum.test"+path) as Parameters<typeof worker.fetch>[0];
+ runtime.router.mockResolvedValueOnce(new Response("framework failure",{status:500}));
+ expect((await worker.fetch(req,env as never)).headers.get("Cache-Control")).toBe("private, no-store");
+ runtime.router.mockRejectedValueOnce(new Error("PRIVATE_INVARIANT"));
+ const failed=await worker.fetch(req,env as never);expect(failed.status).toBe(500);expect(failed.headers.get("Cache-Control")).toBe("private, no-store");expect(await failed.text()).not.toContain("PRIVATE_INVARIANT");
+ const initialization=await worker.fetch(req,{} as never);expect(initialization.status).toBe(500);expect(initialization.headers.get("Cache-Control")).toBe("private, no-store");
+});

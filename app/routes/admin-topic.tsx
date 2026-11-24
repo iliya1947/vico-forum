@@ -24,15 +24,17 @@ export async function loader({ params, context }: {
   const session = authSessionForRequest(context)!;
   let canManagePin: boolean;
   let canManageClosure: boolean;
+  let canMoveTopic: boolean;
   let canManageAnySolution: boolean;
   let canManageHelpDuplicate: boolean;
   let canCorrectAnySourceLocale: boolean;
   let canReadPostHistory: boolean;
   try {
     const resolver = authorizationForRequest(context).forUser(session.user.id);
-    [canManagePin, canManageClosure, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale, canReadPostHistory] = await Promise.all([
+    [canManagePin, canManageClosure, canMoveTopic, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale, canReadPostHistory] = await Promise.all([
       resolver.has("forum.topic.pin"),
       resolver.has("forum.topic.close"),
+      resolver.has("forum.topic.move"),
       resolver.has("forum.solution.manageAny"),
       resolver.has("forum.helpDuplicate.manage"),
       resolver.has("forum.sourceLocale.correctAny"),
@@ -110,6 +112,7 @@ export async function loader({ params, context }: {
     postPresentations,
     canManagePin,
     canManageClosure,
+    canMoveTopic: canMoveTopic && loaded.section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID,
     canManageAnySolution,
     canManageHelpDuplicate: canManageHelp,
     canCorrectAnySourceLocale,

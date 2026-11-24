@@ -21,6 +21,7 @@ import {
 } from "./mutations.server";
 import { forumTopicPath } from "./paths";
 import { visibilityActionFailure, visibilityTopicAction } from "./visibility-actions.server";
+import { topicMoveAction, topicMoveFailure } from "./topic-move.server";
 import { isForumAttachmentUuid } from "../../db/forum-attachments";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
@@ -198,20 +199,33 @@ export async function topicAction({ request, params, context }: {
   const topicId = typeof params.topicId === "string" && params.topicId.trim() ? params.topicId : undefined;
   const locale = typeof params.locale === "string" && params.locale.trim() ? params.locale : undefined;
   if (!topicId || !locale) return mutationFailure("invalid", 400);
+  const actionUrl = new URL(request.url);
   const isVisibilitySubmission = request.method === "POST"
-    && new URL(request.url).searchParams.get("visibilityAction") === "1";
+    && actionUrl.searchParams.get("visibilityAction") === "1";
+  const isMoveSubmission = actionUrl.searchParams.get("moveAction") === "1";
+  // Only the marked Move transport gets method preflight here; existing
+  // Bookmark/Visibility actions retain their own typed non-POST responses.
+  if (request.method !== "POST" && isMoveSubmission)
+    return topicMoveFailure("invalid", 400);
   const denied = forumMutationGuard(request, context);
   if (denied) {
     // The UI marks visibility POSTs in the action URL so preflight can return
     // the typed 401/403 without reading the rejected request's body.
     // This hint grants no access and is not trusted for any accepted mutation.
-    return isVisibilitySubmission
-      ? visibilityActionFailure(denied.data.error, denied.init?.status ?? 403) : denied;
+    return isMoveSubmission
+      ? topicMoveFailure(denied.data.error, denied.init?.status ?? 403)
+      : isVisibilitySubmission
+        ? visibilityActionFailure(denied.data.error, denied.init?.status ?? 403) : denied;
   }
   let formData: FormData;
   try { formData = await request.formData(); } catch {
-    return isVisibilitySubmission ? visibilityActionFailure() : mutationFailure("invalid", 400);
+    return isMoveSubmission ? topicMoveFailure("invalid", 400)
+      : isVisibilitySubmission ? visibilityActionFailure() : mutationFailure("invalid", 400);
   }
+  // Move-only fields or a masked move intent never reach visibility, reply, or
+  // other public mutations, even if a second unrelated intent appears first.
+  const move = await topicMoveAction(request, context, topicId, formData, isMoveSubmission);
+  if (move) return move;
   const intent = requiredFormText(formData, "intent") ?? "reply";
   // Handle both visibility intents before any ordinary public-availability reader.
   // A malformed mixed-intent payload cannot fall through to an unrelated mutation.

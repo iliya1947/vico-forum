@@ -29,7 +29,7 @@ export const NATIVE_ORIGIN_MONITORS=Object.fromEntries(sources.map(s=>[s.origin,
 export const HISTORY_COLUMNS="origin,source_id,at,recorded_at,scopes,kind,source,quality,details";
 export function nativeHistoryCoverageSql(key:NativeMonitorKey):string {
   const native=sources.filter(s=>s.scopes.includes(key)).map(s=>`select min(${s.at}) at,false sampled from ${s.from} where ${s.where}`);
-  const admin=["forum.state","forum.content","administration.authorization","administration.measures","administration.registration","moderation.help"].includes(key)
+  const admin=["forum.structure","forum.state","forum.content","administration.authorization","administration.measures","administration.registration","moderation.help"].includes(key)
     ?` union all select min(a.occurred_at),false from admin_history a where $1=any(${ADMIN_MONITOR_SCOPES_SQL})`:"";
   return `select min(at) first,max(at) filter(where sampled) last from (
     select min(observed_at) at,true sampled from owner_monitor_observations where monitor_key=$1 and resource_scope='global'

@@ -20,7 +20,7 @@ function env(grants:string[]=["forum.content.visibility.manage"],signedIn=true) 
   const has=vi.fn(async(key:string)=>permitted.has(key));
   context.set(authorizationContext,{forUser:()=>({has})} as never);
   const inspect=vi.fn(async()=>({kind:"topic",id:"hidden-topic",topicId:"hidden-topic",
-    isHidden:true,visibilityVersion:1,currentRevisionId:"private-revision",
+    isHidden:true,isOrdinary:true,visibilityVersion:1,currentRevisionId:"private-revision",
     visibilityChangedAt:"2026-11-21T00:00:00.000Z",
     lastEvent:{action:"topic.hidden",at:"2026-11-21T00:00:00.000Z",reason:"private reason"}}));
   const revisions=vi.fn(async()=>({items:[{id:"rev-1",createdAt:"2026-11-21T00:00:00.123456Z",
@@ -65,6 +65,23 @@ describe("B6-B1 private current inspection resource",()=>{
     const doc=headers({parentHeaders:new Headers({"Cache-Control":"public, max-age=5"})} as never);
     expect(doc.get("Cache-Control")).toBe("private, no-store");
   });
+  it("exposes a hidden ordinary topic Move link only when visibility and move grants coexist",async()=>{
+    const visibilityOnly=env();
+    const first=await visibilityOnly.call();
+    expect(first.data.canMoveTopic).toBe(false);
+    expect(first.init?.headers).toEqual({"Cache-Control":"private, no-store"});
+    const dual=env(["forum.content.visibility.manage","forum.topic.move"]);
+    const both=await dual.call();
+    expect(both.data.canMoveTopic).toBe(true);
+    expect(dual.has).toHaveBeenCalledWith("forum.topic.move");
+    expect((await dual.call("?postId=hidden-message")).data.canMoveTopic).toBe(false);
+    dual.permitted.delete("forum.topic.move");
+    expect((await dual.call()).data.canMoveTopic).toBe(false);
+    expect(dual.inspect).toHaveBeenCalledTimes(3);
+    const moveOnly=env(["forum.topic.move"]);
+    await denied(()=>moveOnly.call(),403);
+    expect(moveOnly.inspect).not.toHaveBeenCalled();
+  });
   it("rechecks capability on every request and fail-closes on auth/reader failure",async()=>{
     const e=env();
     await e.call();
@@ -86,6 +103,12 @@ describe("B6-B1 private current inspection resource",()=>{
     const absent=env();
     absent.inspect.mockResolvedValueOnce(undefined as never);
     await denied(()=>absent.call(),404);
+  });
+  it("does not advertise Move for a hidden Help-domain topic even with both grants",async()=>{
+    const e=env(["forum.content.visibility.manage","forum.topic.move"]);
+    const ordinary=(await e.call()).data.inspection;
+    e.inspect.mockResolvedValueOnce({...ordinary,isOrdinary:false} as never);
+    expect((await e.call()).data.canMoveTopic).toBe(false);
   });
   it("validates object and query only after admission",async()=>{
     const bad=["?postId=","?postId=a&postId=b","?postId=%00","?postId=%20abc",

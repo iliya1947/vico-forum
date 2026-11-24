@@ -170,7 +170,7 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
 
   it("inspects only current target state, revision id and matching visibility event",async()=>{
     const topic=await reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"});
-    expect(topic).toMatchObject({kind:"topic",topicId:"hidden-topic-000",isHidden:true,
+    expect(topic).toMatchObject({kind:"topic",topicId:"hidden-topic-000",isHidden:true,isOrdinary:true,
       visibilityVersion:1,currentRevisionId:"hidden-topic-000-title",
       lastEvent:{action:"topic.hidden",reason:"Reason topic 000"}});
     expect(topic?.lastEvent?.at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -192,6 +192,19 @@ describe("B6-A private visibility queue PostgreSQL 17",()=>{
       "originalContent","sourceLocale","actorLabel","attachments","context"]){
       expect(output).not.toContain(forbidden);
     }
+  });
+  it("distinguishes actual Help-domain inspection without returning source or location",async()=>{
+    await client.query("begin");
+    try{
+      for(const section of ["help-solutions-questions","forged-help-section"]){
+        if(section==="forged-help-section")await client.query("insert into forum_sections(id,category_id,name) values($1,'help-solutions','Forged')",[section]);
+        await client.query("update forum_topics set section_id=$1 where id='hidden-topic-000'",[section]);
+        const result=await reader.inspect("queue-moderator",{kind:"topic",topicId:"hidden-topic-000"});
+        expect(result).toMatchObject({kind:"topic",isHidden:true,isOrdinary:false});
+        expect(result).not.toHaveProperty("sectionId");
+        expect(JSON.stringify(result)).not.toContain("PRIVATE TITLE");
+      }
+    }finally{await client.query("rollback");}
   });
   it("rejects mismatched post-to-topic membership and absent targets without disclosure",async()=>{
     expect(await reader.inspect("queue-moderator",{kind:"topic",topicId:"nonexistent"})).toBeUndefined();

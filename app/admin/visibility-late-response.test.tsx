@@ -61,7 +61,7 @@ function inspection(kind:Kind):HiddenInspection{
     lastEvent:{action:kind==="topic"?"topic.hidden" as const:"post.hidden" as const,
       at:"2026-11-22T00:00:00.000Z",reason:secret},
   };
-  return kind==="topic"?{...base,kind:"topic"}
+  return kind==="topic"?{...base,kind:"topic",isOrdinary:true}
     :{...base,kind:"post",parentPostId:null,parentUnavailable:false,topicHidden:false};
 }
 

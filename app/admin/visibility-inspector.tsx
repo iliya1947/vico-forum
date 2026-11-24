@@ -23,7 +23,7 @@ export function canRestoreHiddenInspection(
 
 export default function VisibilityInspector() {
   const loaderSnapshot=useLoaderData<typeof loader>();
-  const {locale,access,canReadPostHistory,inspection,revisions}=loaderSnapshot;
+  const {locale,access,canReadPostHistory,canMoveTopic,inspection,revisions}=loaderSnapshot;
   const {t}=useTranslation("common");
   const viewerId=useHeaderAuthUser()?.id??null;
   const canRestore=canRestoreHiddenInspection(access,inspection,viewerId);
@@ -68,6 +68,8 @@ export default function VisibilityInspector() {
           </dd></div>
         </>:null}
       </dl>
+      {canMoveTopic&&canRestore?<p><Link to={routing.admin.topicMove(locale,inspection.topicId)}>
+        {t("topicMoveTitle")}</Link></p>:null}
       {canRestore?<VisibilityRestoreForm
         key={JSON.stringify([access.actorId,inspection.kind,inspection.topicId,inspection.id,
           inspection.visibilityVersion,inspection.currentRevisionId])}

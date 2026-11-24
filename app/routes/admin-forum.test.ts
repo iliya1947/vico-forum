@@ -5,6 +5,7 @@ import {authorizationContext} from "../authorization/request-context";
 import {adminForumContext} from "../admin/forum.server";
 import {ADMIN_FORUM_PERMISSIONS} from "../admin/access";
 import {AdminForumUnavailableError} from "../../db/hyperdrive-admin-forum";
+import {StructureInvariantError} from "../../db/forum-structure";
 import {AuthorizationUnavailableError} from "../../db/authorization-service";
 import {loader as forum} from "./admin-forum";
 import {loader as category} from "./admin-category";
@@ -40,10 +41,10 @@ for(const [name,loader,index] of [["forum",forum,0],["category",category,1],["se
   await expect(loader(args(e.context))).rejects.toMatchObject({status:503});e.reads.forEach(read=>expect(read).not.toHaveBeenCalled());
   const h=environment(["forum.topic.pin"]);h.reads[index].mockRejectedValueOnce(new AdminForumUnavailableError());
   await expect(loader(args(h.context))).rejects.toMatchObject({status:503});
-  const error=new Error("unexpected SQL");h.reads[index].mockRejectedValueOnce(error);await expect(loader(args(h.context))).rejects.toBe(error);
+  for(const error of [new Error("unexpected SQL"),new StructureInvariantError("Structure singleton missing")]){h.reads[index].mockRejectedValueOnce(error);await expect(loader(args(h.context))).rejects.toBe(error);}
  });
  it("validates bounded literal search and cursors before reading",async()=>{
-  for(const query of ["?q=a&q=b","?after=a&after=b","?after=","?q=%00","?after=%00","?q="+"x".repeat(201),"?after="+"x".repeat(2049)]){
+  for(const query of ["?q=a&q=b","?after=a&after=b","?after=","?q=%00","?after=%00","?q="+"x".repeat(201),"?after="+"x".repeat(index===2?2049:16385)]){
    const e=environment(["forum.topic.pin"]);await expect(loader(args(e.context,query))).rejects.toMatchObject({status:400});e.reads.forEach(read=>expect(read).not.toHaveBeenCalled());
   }
   const e=environment(["forum.topic.pin"]);await loader(args(e.context,"?q="+encodeURIComponent("😀".repeat(200))));expect(e.reads[index]).toHaveBeenCalled();

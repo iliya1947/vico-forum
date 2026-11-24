@@ -23,6 +23,7 @@ import {
   forumOnlinePresence,
   userPrivacyPreferences,
   forumCategories,
+  forumStructureState,
   forumHelpDuplicateAppeals,
   forumHelpDuplicateRelationships,
   forumHelpSignals,
@@ -777,13 +778,32 @@ export class DrizzleForumRepository {
   }
 
   async createCategory(input: { id: string; name: string }) {
-    const [created] = await this.database.insert(forumCategories).values(input).returning();
-    return created;
+    // Trusted setup only: no actor admission, structural version or History command.
+    return this.database.transaction(async tx => {
+      await tx.select({ id: forumStructureState.id }).from(forumStructureState)
+        .where(eq(forumStructureState.id, 1)).for("no key update");
+      const [created] = await tx.insert(forumCategories).values({ ...input,
+        sortPosition: input.id === HELP_SOLUTIONS_CATEGORY_ID ? 0n : sql`(
+          select coalesce(max(sort_position) + 1, 0) from forum_categories
+          where id <> ${HELP_SOLUTIONS_CATEGORY_ID}
+        )`,
+      }).returning({ id: forumCategories.id, name: forumCategories.name, createdAt: forumCategories.createdAt });
+      return created;
+    });
   }
 
   async createSection(input: { id: string; categoryId: string; name: string }) {
-    const [created] = await this.database.insert(forumSections).values(input).returning();
-    return created;
+    // Serialize fixture appends; production structure commands are a separate capability.
+    return this.database.transaction(async tx => {
+      await tx.select({ id: forumStructureState.id }).from(forumStructureState)
+        .where(eq(forumStructureState.id, 1)).for("no key update");
+      const [created] = await tx.insert(forumSections).values({ ...input,
+        sortPosition: sql`(select coalesce(max(sort_position) + 1, 0) from forum_sections
+          where category_id = ${input.categoryId})`,
+      }).returning({ id: forumSections.id, categoryId: forumSections.categoryId,
+        name: forumSections.name, createdAt: forumSections.createdAt });
+      return created;
+    });
   }
 
   async createTopic(input: CreateTopicInput): Promise<ForumTopic> {
@@ -839,14 +859,15 @@ export class DrizzleForumRepository {
         if (existing) {
           // An idempotent receipt is not active-account admission.
           await assertActiveAccountForDrizzleMutation(tx, input.authorId);
-          // Receipt replay may follow closure: project persisted closure, not a default.
+          // Replay projects persisted closure/location without taking a topic lock after actor admission.
           const [persisted] = await tx.select({
             isClosed: forumTopics.isClosed, closureVersion: forumTopics.closureVersion,
+            sectionId: forumTopics.sectionId,
           }).from(forumTopics).where(eq(forumTopics.id, existing.topicId));
           if (!persisted) throw new ForumEntityNotFoundError("replayed topic does not exist");
           return {
             topic: {
-              id: existing.topicId, sectionId: input.sectionId, authorId: input.authorId,
+              id: existing.topicId, sectionId: persisted.sectionId, authorId: input.authorId,
               title: input.titleRevision, isSolved: false, bestAnswerPostId: null,
               isClosed: persisted.isClosed, closureVersion: persisted.closureVersion,
             },
@@ -1223,8 +1244,8 @@ export class DrizzleForumRepository {
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(
         sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
-        asc(forumCategories.createdAt),
-        asc(forumCategories.id),
+        asc(forumCategories.sortPosition),
+        sql`${forumCategories.id} collate "C"`,
       );
   }
 
@@ -1240,7 +1261,8 @@ export class DrizzleForumRepository {
   }
 
   async readHomepage(): Promise<ForumHomepageCategorySummary[]> {
-    const categories = await this.database
+    return this.database.transaction(async (tx) => {
+    const categories = await tx
       .select({
         id: forumCategories.id,
         name: forumCategories.name,
@@ -1254,11 +1276,11 @@ export class DrizzleForumRepository {
       .groupBy(forumCategories.id, forumCategories.name, forumCategories.createdAt)
       .orderBy(
         sql`case when ${forumCategories.id} = ${HELP_SOLUTIONS_CATEGORY_ID} then 0 else 1 end`,
-        asc(forumCategories.createdAt),
-        asc(forumCategories.id),
+        asc(forumCategories.sortPosition),
+        sql`${forumCategories.id} collate "C"`,
       );
 
-    const sectionRows = await this.database
+    const sectionRows = await tx
       .select({
         categoryId: forumSections.categoryId,
         id: forumSections.id,
@@ -1278,8 +1300,8 @@ export class DrizzleForumRepository {
       )
       .orderBy(
         asc(forumSections.categoryId),
-        asc(forumSections.createdAt),
-        asc(forumSections.id),
+        asc(forumSections.sortPosition),
+        sql`${forumSections.id} collate "C"`,
       );
 
     const sectionsByCategory = new Map<string, ForumHomepageSectionSummary[]>();
@@ -1304,6 +1326,7 @@ export class DrizzleForumRepository {
         sections,
       };
     });
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async readPopular(referenceTime = new Date(), limitPerPeriod = 10): Promise<ForumPopularPage> {
@@ -3353,10 +3376,11 @@ export class DrizzleForumRepository {
   }
 
   async readCategory(id: string, pinnedTopicsPerSection = 10): Promise<ForumCategoryPage | undefined> {
+    return this.database.transaction(async (tx) => {
     if (!Number.isInteger(pinnedTopicsPerSection) || pinnedTopicsPerSection < 1 || pinnedTopicsPerSection > 10) {
       throw new RangeError("pinnedTopicsPerSection must be an integer between 1 and 10");
     }
-    const rows = await this.database
+    const rows = await tx
       .select({
         categoryId: forumCategories.id,
         categoryName: forumCategories.name,
@@ -3378,11 +3402,11 @@ export class DrizzleForumRepository {
       .leftJoin(forumPosts, and(eq(forumPosts.topicId, forumTopics.id), eq(forumPosts.isHidden, false)))
       .where(eq(forumCategories.id, id))
       .groupBy(forumCategories.id, forumCategories.name, forumSections.id, forumSections.name, forumSections.createdAt)
-      .orderBy(asc(forumSections.createdAt), asc(forumSections.id));
+      .orderBy(asc(forumSections.sortPosition), sql`${forumSections.id} collate "C"`);
     const first = rows[0];
     if (!first) return undefined;
 
-    const topicActivity = this.database
+    const topicActivity = tx
       .select({
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
@@ -3412,7 +3436,7 @@ export class DrizzleForumRepository {
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil)
       .as("category_section_topic_activity");
 
-    const rankedTopics = this.database
+    const rankedTopics = tx
       .select({
         sectionId: topicActivity.sectionId,
         id: topicActivity.id,
@@ -3430,7 +3454,7 @@ export class DrizzleForumRepository {
       .from(topicActivity)
       .as("category_section_ranked_topics");
 
-    const latestTopics = await this.database
+    const latestTopics = await tx
       .select({
         sectionId: rankedTopics.sectionId,
         id: rankedTopics.id,
@@ -3459,7 +3483,7 @@ export class DrizzleForumRepository {
       latestBySection.set(topic.sectionId, list);
     }
 
-    const pinnedActivity = this.database
+    const pinnedActivity = tx
       .select({
         sectionId: forumTopics.sectionId,
         id: forumTopics.id,
@@ -3496,7 +3520,7 @@ export class DrizzleForumRepository {
       )
       .as("category_section_pin_activity");
 
-    const rankedPinned = this.database
+    const rankedPinned = tx
       .select({
         sectionId: pinnedActivity.sectionId,
         id: pinnedActivity.id,
@@ -3514,7 +3538,7 @@ export class DrizzleForumRepository {
       .from(pinnedActivity)
       .as("category_section_ranked_pins");
 
-    const pinnedTopics = await this.database
+    const pinnedTopics = await tx
       .select({
         sectionId: rankedPinned.sectionId,
         id: rankedPinned.id,
@@ -3557,17 +3581,19 @@ export class DrizzleForumRepository {
           }]
         : []),
     };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async readSection(id: string): Promise<ForumSectionPage | undefined> {
+    return this.database.transaction(async (tx) => {
     if (id === HELP_SOLUTIONS_SERVICE_SECTION_ID) return undefined;
-    const [section] = await this.database
+    const [section] = await tx
       .select({ id: forumSections.id, name: forumSections.name, categoryId: forumCategories.id, categoryName: forumCategories.name })
       .from(forumSections)
       .innerJoin(forumCategories, eq(forumCategories.id, forumSections.categoryId))
       .where(eq(forumSections.id, id));
     if (!section) return undefined;
-    const topics = await this.database
+    const topics = await tx
       .select({
         id: forumTopics.id,
         revisionId: forumTopicTitleRevisions.id,
@@ -3592,7 +3618,7 @@ export class DrizzleForumRepository {
       .groupBy(forumTopics.id, forumTopicTitleRevisions.id, user.id, user.name,
         user.deactivatedAt, user.deactivatedByUserId, user.retainAtLeastUntil, forumTopicPins.topicId)
       .orderBy(asc(forumTopics.createdAt), asc(forumTopics.id));
-    const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id));
+    const tagsByTopic = await this.readTagsForTopics(topics.map((topic) => topic.id), tx);
     return {
       id: section.id,
       name: section.name,
@@ -3611,6 +3637,7 @@ export class DrizzleForumRepository {
         };
       }),
     };
+    }, { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async readTopicPage(id: string): Promise<ForumTopicPage | undefined> {

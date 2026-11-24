@@ -391,7 +391,8 @@ function mapRole(row: RoleRow): AuthorizationRole {
   return { id: row.id, slug: row.slug, displayName: row.display_name, isSystem: row.is_system };
 }
 
-async function effectivePermission(
+/** Raw current RBAC/Owner lookup; also usable on the caller-owned mutation transaction. */
+export async function effectivePermission(
   database: Queryable, userId: string, permission: PermissionKey, ownerUserId?: string,
 ): Promise<boolean> {
   if (!isPermissionKey(permission)) return false;
