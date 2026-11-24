@@ -17,7 +17,6 @@ import {
 const origin = "https://vico.test";
 const referenceTime = new Date("2026-11-24T10:00:00.000Z");
 const baseline = () => createP2RawBaseline(referenceTime);
-const request = () => new Request(origin + "/en/settings/administrator");
 type Flow = ReturnType<typeof createP2AuthSessionFlow>;
 async function contextFor(flow: Flow, extraHeaders?: HeadersInit) {
   const { context } = await flow.createRequestContext(
