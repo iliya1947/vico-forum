@@ -33,5 +33,5 @@ Legacy cutover не является отдельным текущим product d
 2. AUTH-05 provider-neutral; конкретный anti-bot provider/adapter не является implementation dependency.
 3. Полный технический план принят для начала реализации.
 4. Delivery mode: stacked AUTH-01→AUTH-06, AUTH-07 final gate. Причина — одна зависимая vertical; промежуточный merge foundation-кода в main не нужен.
-5. Активная ступень — AUTH-01. Implementation назначена Лире; остальные ступени не активны до coordinator checkpoint предыдущей.
+5. Активная ступень — AUTH-01. По прямому решению владельца implementation назначена Лёве; остальные ступени не активны до coordinator checkpoint предыдущей. Поскольку Лёва участвует в реализации, независимый final reviewer определяется отдельно.
 6. External activation остаётся Stage-6-only.
