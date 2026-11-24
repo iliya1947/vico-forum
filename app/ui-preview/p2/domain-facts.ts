@@ -141,9 +141,9 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
       { id: "p0-post-body-revision", kind: "post-body", contentId: "p0-first-post",
         originalContent: core.posts[0]!.body, sourceLocale: "en", createdAt: at(-4 * day + 60 * 60 * 1000) },
       { id: "review-title-v0", kind: "topic-title", contentId: reviewTopicId,
-        originalContent: "Early project feedback", sourceLocale: "en", createdAt: at(-5 * day) },
+        originalContent: "Early project feedback", sourceLocale: "en", createdAt: at(-3 * day) },
       { id: "review-title-revision", kind: "topic-title", contentId: reviewTopicId,
-        originalContent: core.topics[1]!.title, sourceLocale: "en", createdAt: at(-3 * day) },
+        originalContent: core.topics[1]!.title, sourceLocale: "en", createdAt: at(-3 * day + 60 * 60 * 1000) },
       { id: "preview-review-body-revision", kind: "post-body", contentId: reviewPostId,
         originalContent: core.posts[1]!.body, sourceLocale: "en", createdAt: at(-3 * day + 60 * 60 * 1000) },
       { id: "preview-review-reply-revision", kind: "post-body", contentId: reviewReplyId,
@@ -389,9 +389,10 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
     if (complaint.initialDecisionId !== decision.id || decision.caseId !== complaint.id) {
       throw new Error("P2 domain appeal Decision/case mismatch");
     }
-    const targetAuthorId = complaint.target.kind === "post"
-      ? core.posts.find((row) => row.id === complaint.target.postId)?.authorId
-      : core.topics.find((row) => row.id === complaint.target.topicId)?.authorId;
+    const target = complaint.target;
+    const targetAuthorId = target.kind === "post"
+      ? core.posts.find((row) => row.id === target.postId)?.authorId
+      : core.topics.find((row) => row.id === target.topicId)?.authorId;
     if (appeal.side === "author" && appeal.appellantId !== targetAuthorId) {
       throw new Error("P2 domain appeal author mismatch");
     }
