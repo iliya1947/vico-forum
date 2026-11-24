@@ -15,9 +15,9 @@
 
 ## Coordinator review result
 
-**HOLD.** Не исправлять план до owner decision Q-01.
+**HOLD — correction pass назначен.**
 
-После решения владельца одним correction pass:
-1. зафиксировать выбранную cutover policy Q-01;
-2. убрать Turnstile как обязательный выбранный pre-Stage-6 adapter и сделать AUTH-05 provider-neutral; конкретный provider допускается только как отдельно утверждённый Stage-6 choice/candidate;
-3. остальную архитектуру не перерабатывать без нового подтверждённого finding.
+1. Удалить Q-01 и обе legacy/grandfathering ветви из текущего технического плана. Проект pre-release без публичного production release; mandatory verification — единый target contract. Local/CI fixtures обновляются вместе с implementation. Возможные реальные external accounts проверяются только перед Stage 6 как operational data/cutover case после установления фактов.
+2. Убрать Turnstile как обязательный выбранный pre-Stage-6 adapter. AUTH-05 оставить provider-neutral; конкретный anti-bot provider не выбран owner decision.
+3. Остальную архитектуру не перерабатывать без нового подтверждённого finding.
+4. После correction обновить PLAN.md, этот файл и WORKFLOW.md и передать Мире на повторную проверку. Implementation не начинать.
