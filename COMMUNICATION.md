@@ -25,3 +25,11 @@ Q-01: D-01 не определяет transition старых unverified accounts
 ## Следующий переход
 
 Результат полного плана передан Мире для проверки модели/зависимостей и выбора delivery mode. Рекомендация AUTH-01 independent / AUTH-02–06 stack / AUTH-07 final gate не является implementation назначением. Implementation/CI/external activation не выполнялись. Постоянные документы main отражают реально отложенные verification/recovery до отдельного docs closeout после реализации.
+
+
+## Coordinator review полного технического плана — HOLD
+
+1. Структура AUTH-01–AUTH-07 и основные зависимости покрыты; старый AUTH-01 plan не переиспользован механически.
+2. **Blocker Q-01:** требуется owner decision о ранее созданных unverified credential accounts и уже выданных им sessions. Ветви materially различаются и не выводятся однозначно из текущего D-01.
+3. **Scope correction:** конкретный anti-bot provider не был зафиксирован owner decision. TASK/DECISIONS исправлены на provider-neutral challenge boundary. Технический план должен убрать Turnstile как обязательный pre-Stage-6 adapter; его можно оставить только как Stage-6 candidate после отдельного решения.
+4. После Q-01 Лёва получает один correction pass по этим двум пунктам. Implementation до coordinator PASS полного плана не назначается.
