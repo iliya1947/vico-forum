@@ -209,7 +209,7 @@ describe("P2-B7a typed AccountSecurity.read via original settings-account loader
     const runtime = createP2AuthSessionFlow(baseline(), "member").runtime;
     const identity = accountIdentity((await runtime.getSession(new Headers())).session!);
     await expect(runtime.security!.changePassword(new Headers(), identity, "old", "new"))
-      .rejects.toThrow(P2AccountSecurityWriteNotConfiguredError);
+      .rejects.toMatchObject({ code: "invalid-password" });
     await expect(runtime.security!.revokeOneOther(new Headers(), identity, "other"))
       .rejects.toThrow("P2 AccountSecurity write not configured: revokeOneOther");
     await expect(runtime.security!.revokeAllOthers(new Headers(), identity))
