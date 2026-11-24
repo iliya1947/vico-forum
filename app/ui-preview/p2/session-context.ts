@@ -74,9 +74,16 @@ const authResponseHeaders = {
   Pragma: "no-cache",
 } as const;
 
-/** B4 supports fixture-only password admission; no provider/real credential transport. */
+/** B4/B5: local fixture-only email authentication; no provider/real credentials. */
 export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
   let activeSession = sessionForActor(baseline, actor);
+  // Registrations are transient to this preview flow; published seed users and
+  // authorship never change, and another instance starts from the same baseline.
+  const registered = new Map<string, {
+    readonly account: PreviewRawBaseline["users"][number];
+    readonly session: AuthSession;
+  }>();
+  let registrationSequence = 0;
   const current = () => activeSession;
 
   return {
@@ -95,6 +102,127 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
         // Better Auth 1.7.7 exposes { session, user } or JSON null; no wrapper.
         const session = current();
         return new Response(JSON.stringify(session), { headers: authResponseHeaders });
+      }
+      if (url.pathname === "/api/auth/sign-up/email") {
+        if (request.method !== "POST") {
+          return new Response(JSON.stringify({ code: "METHOD_NOT_ALLOWED" }), {
+            status: 405, headers: { ...authResponseHeaders, Allow: "POST" },
+          });
+        }
+        const origin = request.headers.get("Origin");
+        if (origin) {
+          let sameOrigin = false;
+          try { sameOrigin = new URL(origin).origin === url.origin; } catch { /* invalid */ }
+          if (!sameOrigin) return new Response(JSON.stringify({ code: "INVALID_ORIGIN" }), {
+            status: 403, headers: authResponseHeaders,
+          });
+        }
+        const media = request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase();
+        let input: unknown;
+        try {
+          if (media === "application/json") input = await request.json();
+          else if (media === "application/x-www-form-urlencoded") {
+            const form = new URLSearchParams(await request.text());
+            input = {
+              name: form.get("name"), email: form.get("email"), password: form.get("password"),
+              ...(form.has("callbackURL") ? { callbackURL: form.get("callbackURL") } : {}),
+            };
+          } else return new Response(JSON.stringify({ code: "UNSUPPORTED_MEDIA_TYPE" }), {
+            status: 415, headers: authResponseHeaders,
+          });
+        } catch {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const body = input as Record<string, unknown>;
+        if (typeof body.name !== "string" || typeof body.email !== "string"
+          || typeof body.password !== "string"
+          || (body.callbackURL !== undefined && typeof body.callbackURL !== "string")
+          || (body.rememberMe !== undefined && typeof body.rememberMe !== "boolean")) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const name = body.name.trim();
+        if (!name || name.length > 100) {
+          return new Response(JSON.stringify({ code: "INVALID_NAME" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) {
+          return new Response(JSON.stringify({ code: "INVALID_EMAIL" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (body.password.length < 8 || body.password.length > 128) {
+          return new Response(JSON.stringify({ code: "INVALID_PASSWORD" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        if (body.callbackURL !== undefined && (!body.callbackURL.startsWith("/")
+          || body.callbackURL.startsWith("//") || body.callbackURL.includes("\\"))) {
+          return new Response(JSON.stringify({ code: "INVALID_CALLBACK_URL" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const email = body.email.toLowerCase();
+        if (baseline.users.some((user) => user.identity.email.toLowerCase() === email)
+          || registered.has(email)) {
+          return new Response(JSON.stringify({
+            code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL", message: "User already exists",
+          }), { status: 422, headers: authResponseHeaders });
+        }
+        // This is the current server-side creation gate, not a UI flag. Do not
+        // cache it at runtime creation or default an invalid setting to open.
+        const settings = baseline.domains.registrationSettings;
+        if (typeof settings.emailRegistrationEnabled !== "boolean"
+          || !Number.isSafeInteger(settings.version) || settings.version < 1) {
+          throw new Error("P2 registration settings are missing or invalid");
+        }
+        if (!settings.emailRegistrationEnabled) {
+          return new Response(JSON.stringify({
+            code: "vico_email_registration_closed", message: "New email registrations are closed.",
+          }), { status: 403, headers: authResponseHeaders });
+        }
+        // The pinned Better Auth 1.7.7 sign-up contract returns {token,user}
+        // with an automatically established session (verification not required).
+        // Generated identities exist ONLY in this preview flow's transient map.
+        const number = ++registrationSequence;
+        const userId = "preview-registered-" + number;
+        if (baseline.users.some((entry) => entry.identity.id === userId)) {
+          throw new Error("P2 generated user ID collides with the raw baseline");
+        }
+        const now = new Date(baseline.referenceTime);
+        const user = {
+          id: userId, name, email, emailVerified: false, image: null,
+          createdAt: new Date(now), updatedAt: new Date(now),
+        };
+        const sessionId = "preview-registered-session-" + number;
+        const session: AuthSession = {
+          user,
+          session: {
+            id: sessionId, token: "p2-internal-only:" + sessionId, userId,
+            createdAt: new Date(now), updatedAt: new Date(now),
+            expiresAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+          },
+        };
+        registered.set(email, {
+          account: { identity: user, state: { status: "active", userId },
+            methods: ["password"], credentialPassword: body.password },
+          session,
+        });
+        activeSession = session;
+        const headers = new Headers(authResponseHeaders);
+        headers.append("Set-Cookie", "better-auth.session_token="
+          + encodeURIComponent(session.session.token) + "; Path=/; HttpOnly; SameSite=Lax"
+          + (url.protocol === "https:" ? "; Secure" : ""));
+        return new Response(JSON.stringify({ token: session.session.token, user }), { headers });
       }
       if (url.pathname === "/api/auth/sign-in/email") {
         if (request.method !== "POST") {
@@ -161,15 +289,17 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
           });
         }
         const normalizedEmail = body.email.toLowerCase();
+        const created = registered.get(normalizedEmail);
         const account = baseline.users.find((user) =>
-          user.identity.email.toLowerCase() === normalizedEmail);
+          user.identity.email.toLowerCase() === normalizedEmail) ?? created?.account;
         if (!account || !account.methods.includes("password")
           || account.credentialPassword !== body.password || account.state.status !== "active") {
           return new Response(JSON.stringify({
             code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password",
           }), { status: 401, headers: authResponseHeaders });
         }
-        const resolved = sessionForUser(baseline, account.identity.id);
+        const resolved = created?.account === account
+          ? created.session : sessionForUser(baseline, account.identity.id);
         if (!resolved) {
           return new Response(JSON.stringify({ code: "FAILED_TO_CREATE_SESSION" }), {
             status: 401, headers: authResponseHeaders,
