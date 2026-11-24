@@ -222,7 +222,7 @@ try:
         with p.expect_response(lambda r:r.request.method=="POST" and "moveAction" in r.url) as pending:
             mf.locator('button[type="submit"]').click()
         private(pending.value,200)
-        expect(p.locator('.topic-breadcrumb-row a[href="/en/sections/'+quote(section_b,safe='')+'"]')).to_be_visible()
+        expect(p.locator('.topic-breadcrumb-row a[href="/en/sections/'+quote(section_b,safe='')+'"]').first).to_be_visible()
         assert title_from_db(topic_id)["section_id"]==section_b
         expect(draft_title).to_have_value("F5 unsent title draft עברית")
         expect(reply).to_have_value("F5 retained reply draft first more")
