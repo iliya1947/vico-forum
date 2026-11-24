@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AccountSecurityError, authSessionForRequest } from "../../auth/request-context";
 import { action as accountAction, loader as accountLoader } from "../../routes/settings-account";
 import { action as authAction } from "../../routes/auth-api";
@@ -312,6 +312,30 @@ describe("P2-B7b1 password change via original protected Settings action and Aut
     ))).data).toEqual({ saved: "change-password" });
     expect(seed.users.find((user) => user.identity.id === seed.actorIds.member)?.credentialPassword)
       .toBe(oldPassword);
+  });
+
+  it("releases the preview attempt bucket after the documented 10-second window", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-11-24T10:00:00.000Z"));
+      const seed = baseline();
+      const flow = createP2AuthSessionFlow(seed, "member");
+      for (let i = 0; i < 3; i++) {
+        expect((await authRoute(flow, authRequest("change-password", {
+          currentPassword: "Wrong-Old-2026!", newPassword: changed,
+        }))).status).toBe(400);
+      }
+      expect((await settingsAction(flow, changeRequest(seed.actorIds.member,
+        "preview-session-member", "Preview-Member-2026!", changed,
+      ))).init?.status).toBe(429);
+      vi.advanceTimersByTime(10_001);
+      const retried = await settingsAction(flow, changeRequest(seed.actorIds.member,
+        "preview-session-member", "Preview-Member-2026!", changed,
+      ));
+      expect(retried.data).toEqual({ saved: "change-password" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("guards direct HTTP Origin, wrong method, unsupported content and no active session", async () => {
