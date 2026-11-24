@@ -4951,6 +4951,14 @@ p {
   box-shadow: var(--shadow-panel);
 }
 
+.topic-admin-panel {
+  /* Move picker values must not set the min-content width of the panel grid. */
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  box-sizing: border-box;
+}
+.topic-move-form bdi { overflow-wrap: anywhere; }
+
 .topic-best-answer-panel {
   width: max-content;
   max-width: min(20rem, calc(100vw - 2rem));
