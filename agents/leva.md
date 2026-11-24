@@ -1,8 +1,8 @@
-# agents/leva.md — Task 6 F4 coordinator PASS, STOP
+# agents/leva.md — reserved for Task 6 / F6 after F5 PASS
 
-- F4 #382 accepted exact `18627a8c53a6db681a7f4f278b88fcdd55f579c1`, base F3 unchanged; F1/F2/F3/F4 coordinator PASS.
-- Mira independently re-checked corrected F4 and closed F4-01; no confirmed current-F4 blocker remains.
-- Stack #379/#380/#381/#382 stays Draft/unmerged.
-- **STOP before F5.** Do not begin F5 without a new explicit service assignment.
-- Final independent whole-feature reviewer remains Mark if code-independent because Leva participated in implementation.
+- F1/F2/F3/F4 coordinator PASS; F5 is currently active under Lira in stacked Draft #383.
+- **Do not start F6 yet.**
+- Owner route: after Lira completes whole F5 author gate, Mira performs bounded F5 coordinator checkpoint. **If F5 PASS, F6 implementation/final assembly is assigned to Leva.**
+- F6 scope is the canonical PLAN S8/S9 whole-feature final assembly and acceptance only; exact base/head is determined from accepted F5 at activation time.
+- Because Leva participated in earlier implementation stages and may implement F6, final independent whole-feature Codex reviewer remains Mark if code-independent.
 - #342 is the only service channel; #300/Stage6/general UI/UX/deploy remain inactive.
