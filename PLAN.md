@@ -273,4 +273,4 @@ Repository PASS не подтверждает mailbox delivery/reputation, provi
 
 ## 13. Передача
 
-Correction review Миры: **PASS**. Delivery mode зафиксирован: stacked AUTH-01→AUTH-06, затем AUTH-07 final gate. Первый implementation stage — AUTH-01, исполнитель Лира. Лёва implementation не начинает и других агентов не запускает. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).
+Correction review Миры: **PASS**. Delivery mode зафиксирован: stacked AUTH-01→AUTH-06, затем AUTH-07 final gate. Первый implementation stage — AUTH-01, исполнитель Лёва по прямому назначению владельца. Поскольку Лёва участвует в implementation, независимый final technical reviewer определяется отдельно. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).
