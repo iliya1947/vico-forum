@@ -2,9 +2,8 @@
 
 Исполнитель: Лена (GPT-6.2), независимый аудит, без реализации.
 Baseline: a3dae5815e26d158c566a27c552127b4b1ab29aa (main, docs closeout #378).
-A0: рабочее пространство и план подготовлены; фактическое создание PR подтверждается самим PR.
-Следующий bounded-блок: A1 — полная инвентаризация и coverage matrix.
-Проверяемые implementation PR: нет, задача относится к main.
-Параллельные active workstreams: #342 (включая Task 6 stack #379–#383), #315 security, #320 auth lifecycle, #369 preview (#373/#375), #368 workflow; #377 localization cleanup. Не включать unmerged code в baseline.
-Блокер: нет для статической инвентаризации. Runtime access и возможность запуска тестов устанавливаются в A1.
-Следующий переход: команда разработчика продолжить → A1.
+A0–A1: завершены. Полное дерево baseline и маршруты/таблицы инвентаризированы; результаты в research/INVENTORY.md и research/COVERAGE.md.
+Следующий bounded-блок: A2 — архитектура и runtime; начать с entry/root/routes/Worker, module and request boundaries, configuration/error/cache. Уточнить coverage по фактическим связям.
+Проверяемые implementation PR: нет; unmerged workstreams учтены в COVERAGE.md.
+Ограничение: статический GitHub доступ есть; локальный executable baseline не установлен (DNS/toolchain), runtime evidence отдельно в A8–A10. Не заявлять выполнение тестов.
+Следующий переход: команда разработчика продолжить → A2.
