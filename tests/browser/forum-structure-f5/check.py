@@ -189,6 +189,19 @@ try:
         post_draft=p.locator(".topic-post-edit-form textarea")
         expect(post_draft).to_be_visible()
         post_draft.fill("F5 retained post draft")
+        held_uploads=[]
+        def hold_upload(route):
+            held_uploads.append(route)
+            # Keep the real browser XHR pending while the independent Move commits.
+        p.route("**/api/attachments",hold_upload)
+        reply_file=p.locator('.topic-reply-form input[type="file"]')
+        reply_file.set_input_files({
+            "name":"f5-inflight-upload.txt","mimeType":"text/plain",
+            "buffer":b"F5 browser-pending attachment bytes",
+        })
+        uploading=p.locator(".topic-reply-form .markdown-editor-attachment.is-uploading")
+        expect(uploading).to_have_count(1)
+        assert len(held_uploads)==1,len(held_uploads)
         p.evaluate("""() => {
           window.__f5_editor_nodes={
             title:document.querySelector('.topic-title-editor input[name=title]'),
@@ -210,6 +223,9 @@ try:
         expect(draft_title).to_have_value("F5 unsent title draft עברית")
         expect(reply).to_have_value("F5 retained reply draft first more")
         expect(post_draft).to_have_value("F5 retained post draft")
+        expect(uploading).to_have_count(1)
+        expect(uploading).to_contain_text("f5-inflight-upload.txt")
+        assert len(held_uploads)==1
         assert p.evaluate("""() => {
           const x=window.__f5_editor_nodes;
           return x.title===document.querySelector('.topic-title-editor input[name=title]') &&
@@ -219,7 +235,10 @@ try:
         }""")
         reply.press("Control+z")
         assert reply.input_value()!="F5 retained reply draft first more"
-        record("real topic Move revalidation preserves title/reply/post Editor 2.0 DOM, drafts and undo")
+        held_uploads[0].fulfill(status=503,content_type="application/json",body='{"error":"unavailable"}')
+        expect(p.locator(".topic-reply-form .markdown-editor-attachment.is-error")).to_have_count(1)
+        p.unroute("**/api/attachments",hold_upload)
+        record("real Move revalidation preserves title/reply/post Editor DOM, undo and pending attachment XHR")
 
         for locale,direction in [("en","ltr"),("ru","ltr"),("he","rtl")]:
             for width in [320,390]:
