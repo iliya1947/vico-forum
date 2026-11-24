@@ -15,3 +15,5 @@
 9. **2026-11-25:** Лена завершила независимую revalidation AUTH-01–AUTH-07 на main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`: product scope PASS, все семь этапов сохранены, актуальные integration/test dependencies зафиксированы в COMMUNICATION.md. Старый AUTH-01 technical plan остаётся superseded; следующий шаг — полный технический план Лёвы, без implementation/external activation.
 
 10. **2026-11-25:** владелец указал на выход Лены за роль независимого аудитора при самостоятельном назначении Лёвы. Handoff исправлен: результат revalidation передан Мире для координации; технический вывод PASS не изменён.
+
+11. **2026-11-25:** Мира проверила основания revalidation, приняла product-scope PASS и передала Лёве полный технический план всей AUTH-01–AUTH-07 задачи по новому регламенту; implementation остаётся неназначенной.
