@@ -236,9 +236,8 @@ describe("P2 cross-domain raw fixture integrity", () => {
     expect(() => assertP2RawBaselineIntegrity(wrongSession)).toThrow("session user");
     const orphanHistory = mutate(base, {
       ...base.domains,
-      complaintHistory: base.domains.complaintHistory.map((item) => ({
-        ...item, caseId: "missing-case",
-      })),
+      complaintHistory: base.domains.complaintHistory.map((item) => item.id === "preview-case-history-decision"
+        ? { ...item, caseId: "missing-case" } : item),
     });
     expect(() => assertP2RawBaselineIntegrity(orphanHistory)).toThrow("complaint history case");
   });
