@@ -6,7 +6,7 @@ import {
 import { authorizationOwnerContext } from "../../authorization/request-context";
 import { loader as settingsAccountLoader } from "../../routes/settings-account";
 import { createP2RawBaseline } from "./raw-baseline";
-import { createP2AccountSecurityRuntime, P2AccountSecurityWriteNotConfiguredError } from "./account-security";
+import { createP2AccountSecurityRuntime } from "./account-security";
 import { createP2AuthSessionFlow } from "./session-context";
 
 const baseURL = "https://vico.test";
