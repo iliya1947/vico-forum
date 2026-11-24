@@ -1,7 +1,7 @@
 # Текущее оперативное состояние аудита
 
 Исполнитель: Лена (GPT-6.2), независимый аудит, без реализации.
-Baseline current: 59e2fd9092bb1884392221eb856c2b989cc87ade. Prior A0–A6.3b2 reports remain exact baseline a3dae5815e26d158c566a27c552127b4b1ab29aa; unchanged evidence reused, changed surfaces pending delta verification.
+Baseline current: 9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432 (#387 documentation only; implementation identical to 59e2fd9092bb1884392221eb856c2b989cc87ade). Prior A0–A6.3b2 reports remain exact baseline a3dae5815e26d158c566a27c552127b4b1ab29aa; unchanged evidence reused, changed surfaces pending delta verification.
 A0–A1 завершены; research/INVENTORY.md и research/COVERAGE.md.
 A2 shared runtime review: stages/A2/REVIEW.md, CACHE_MODULES.md; READSTATE-CACHE-01 residual. Domain graph A3–A7, assets A9, reconciliation A11.
 A3 common static review: stages/A3/AUTH_SESSION.md, AUTHORIZATION_CORE.md, MEASURES.md, HTTP_ABUSE.md, PRIVACY.md. 3 new independent findings, 12 known residuals, AUTH-REG-01 conflict.
@@ -46,7 +46,8 @@ A6.3c2: stages/A6/TRANSLATION_PROVIDER_ALLOWANCE.md; LENA-TRANSLATION-ALLOWANCE-
 A6.3c3: stages/A6/TRANSLATION_TASK_LIFECYCLE.md; LENA-TRANSLATION-TERMINAL-STATE-01 (superseded content task allowance acquisition overwrites completed/failed terminal state); claim/retry/reconciliation reviewed.
 A6.3c4: stages/A6/TRANSLATION_CONDITIONAL_PUBLICATION.md; conditional UI/title/body publication, claim/generation/revision fences, manual priority and atomicity reviewed; no additional independent finding. A6.3 and original A6 static scope complete.
 A6.D1: stages/A6/STRUCTURE_DELTA_AUTHORITY.md; structure authority/admission and private read boundaries reviewed; prior independent #379 final PASS on 42efaaa transfers to current main via identical full Git tree cbffe29. All six Task6 review findings closed before merge, no additional finding.
-Суммарно: 27 новых independent findings, 24 ранее известных residuals, 1 contract conflict (accumulated registry; new baseline recount pending delta). Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A6.D2: targeted reconciliation of affected earlier findings and unreviewed cross-domain effects of #379 (read scope/cost, move/receipt, History/privacy and dependent projections); reuse byte-identical prior whole-feature review evidence rather than repeat; then A7 schema/concurrency reconciliation. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
-Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success applies to prior baseline implementation; #379 final exact CI45411761750 +18 applicable acceptance successes previously independently verified, tree identical to current main. Full evidence and harness reliability inventory pending A9.
-Следующий переход: команда разработчика продолжить → A6.D2.
+A6.D2: stages/A6/STRUCTURE_DELTA_RECONCILIATION.md; #387 documentation-only transition (six paths), affected earlier findings remain, no additional findings; A6 and Task6 static delta scope complete.
+Суммарно: 27 новых independent findings, 24 ранее известных residuals, 1 contract conflict (accumulated registry; final recount A11). Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A7.1: migration/schema inventory and integrity reconciliation including 0072; subdivide related schema/constraints, query/index and transaction graph under PLAN A7. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success applies to prior baseline implementation; #379 final exact CI45411761750 +18 applicable acceptance successes previously independently verified, implementation/test/config bytes identical to current main after documentation-only #387. Full evidence and harness reliability inventory pending A9.
+Следующий переход: команда разработчика продолжить → A7.1.
