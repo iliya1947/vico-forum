@@ -1,10 +1,12 @@
-# agents/leva.md — Task 6 / F6 ACTIVE
+# agents/leva.md — F6 ACTIVE
 
-- F1–F5 have Mira coordinator PASS. Accepted F5 exact: `b5efc4d4ea0db1563b5036057518f3ec2b54e656` in Draft #383, base F4 unchanged.
-- Owner assigned **F6** to Leva after F5 PASS.
-- Scope: **F6 only** from `stages/forum-structure/PLAN.md`: whole-feature S9/post-visibility acceptance and final stacked assembly.
-- Required result: complete the applicable full-feature PG/Worker/Better Auth/Chromium/R2 evidence; assemble the stack according to current AGENTS; produce one stable final exact head with author self-check and applicable checks.
-- Do not broaden product scope, start F7 docs, Stage6/deploy or #300.
-- After F6 author gate/final assembly: **STOP → Mira whole-feature review**.
-- Leva cannot be independent reviewer of this implementation. After Mira PASS, final independent Codex reviewer is Mark if code-independent; owner merges.
-- #342 is the only service channel and never merges.
+- Accepted F5 #383 exact b5efc4d4ea0db1563b5036057518f3ec2b54e656; own branch feat/forum-structure-f6 in /workspace/work/visibility-review, based exactly on F5. F6-only work; no commits/PR yet.
+- Read current AGENTS/RULES/TASK/WORKFLOW, canonical PLAN S9/F6 and F5 accepted PR evidence; main still a3dae5815e26d158c566a27c552127b4b1ab29aa.
+- Extended existing .github/workflows/forum-structure-f5-browser.yml to whole-feature connected Chromium/local-only R2 (reuses CI-only sa04-attachments worker-entry.ts, production app delegated unchanged). New tests/browser/forum-structure-f6/check.py is called with --full-feature from existing F5 fixture. F5/F6 loopback DB names explicitly guarded.
+- New PG discovery/projection case in forum-structure-read.test.ts passes:39 tests total. Search/Unanswered/Tags/Unread/Bookmarks/Mute location follows move/reparent, Help/hidden remain excluded.
+- First local full F5+F6 browser/R2 cases passed (upload/publish/bytes, same-session grant revoke/AP10, hidden direct Move/dual grant/revoke/Owner noop, receipt/draft/Complaint references/Restore/cleanup, future Watch/Mute fanout). Local /tmp/forum-f6-evidence/results.json records12 cases.
+- Confirmed F6-01: real Move commits but empty204 acknowledgement triggers automatic Router revalidation of private context; TopicMoveForm silently resets frozen expectations and re-enables Confirm without explicit refresh. Actual Chromium failed this case before fix; draft retained, DB move committed.
+- Minimal correction uses official shared moveFetcher.Form defaultShouldRevalidate={false}; existing confirmed-receipt useRevalidator effect still refreshes on success. No custom route hook/state layer added. Route/control unit9, typecheck/lint pass. Rebuilt local Worker with this correction; full Chromium rerun still required.
+- Local disposable DB vico_f6_browser_test on originally stopped vico-title-edit-pg; temporary wrangler.jsonc points CI wrapper/local R2 and .dev.vars contains only synthetic test constants. Original config /tmp/forum-f6-original-wrangler.jsonc MUST restore; remove .dev.vars/build/server/.dev.vars/node_modules symlink and test __pycache__ before commit. Build logs /tmp/forum-f6-build-final.log; preview log /tmp/forum-f6-preview.log. Current rebuild complete; start fresh preview4253 and rerun full browser.
+- Assembly route: create F6 Draft based F5 for bounded evidence; before advancing first branch feat/forum-structure-f1 to final head, CLOSE all intermediate PRs (#380–#383 and F6) as superseded, verify merged=false, then fast-forward first branch. This avoids GitHub automatic merged-into-base detection. Original #379 stays Draft targeting main, becomes final whole-feature PR. Run final exact-head CI/acceptance there once.
+- Then STOP → Mira whole-feature review → independent Mark if code-independent → owner merge. No F7 docs/Stage6/#300/deploy.
