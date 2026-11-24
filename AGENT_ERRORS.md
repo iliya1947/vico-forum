@@ -29,8 +29,10 @@
 
 ## E-04 — гипотетический legacy-case превращён в product blocker
 
-**Что произошло:** Мира вынесла владельцу Q-01 о grandfathering ранее созданных unverified credential accounts/sessions как обязательное продуктовое решение до реализации.
+**Что произошло:** Лёва ввёл в технический план Q-01 о grandfathering гипотетических ранее созданных unverified accounts/sessions, добавил варианты marker/session-expiry migration и дважды запросил решение владельца. Мира затем также приняла вопрос как blocker до его повторной проверки.
 
 **Почему это ошибка:** проект находится в pre-release и публичный production release не выполнен. Наличие реальных пользователей, которым нужна legacy-policy, не было установлено. Future-only operational data case был ошибочно превращён в текущую product complexity и blocker.
 
 **Как предотвращать:** перед добавлением migration/compatibility policy сначала установить, существует ли реальный текущий state, который её требует. До публичного релиза не вводить legacy-механику ради гипотетических пользователей; реальные external данные проверять непосредственно перед rollout.
+
+**Исправлено:** из PLAN удалены legacy-ветвление, marker, migration завершения прежних sessions и owner gate. Mandatory verification — единый target contract; local/CI fixtures меняются в implementation. Ошибка относится и к исходному планированию Лёвы. Строка общего AGENT_LOGIC_ERRORS.md подготовлена в service branch; перенос в main — через разрешённый documentation route координатора, без прямого commit/merge main.

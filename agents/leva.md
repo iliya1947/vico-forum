@@ -4,20 +4,12 @@
 
 Полный технический план AUTH-01–AUTH-07 подготовлен в PLAN.md на main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, передан Мире на review модели/зависимостей и выбор delivery mode. Implementation не назначена и не начата. CI/acceptance/external activation не выполнялись.
 
-## Существенные основания продолжения
+## Текущее состояние после correction pass
 
-- Exact Better Auth 1.7.7 semantics и официальные источники: research/better-auth-1.7.7.md. Critical delta — email-only replayable verification JWT, reset consume вне общей credential/session transaction, native Google-only reset creation, row-count-only unlink, mandatory-verification synthetic signup response для createUser403.
-- Новый lifecycle сохраняет Better Auth identity/crypto/session, расширяется одним canonical plugin и transaction-aware existing guard. Direct API не может обойти proof/state/abuse. Existing SET-05/AccountState/registration/Owner History переиспользуются.
-- Рекомендация поставки: AUTH-01 допускает independent, AUTH-02–06 единая vertical stack, AUTH-07 на final head; решение Миры, не моё implementation назначение.
-- Q-01: владелец опрошен о mandatory verification для legacy unverified accounts/sessions; ответа пока нет. Обе ветви и blocker на AUTH-02 cutover записаны в PLAN. Не выбирать grandfathering/cutover вместо владельца.
-- Review plan и результаты implementation/gate — разные состояния. Product-scope revalidation PASS не принимает техническую реализацию. Stage 6 отдельно заблокирована; служебный #320 не merge.
+Назначенные Мирой исправления выполнены: PLAN содержит единый mandatory-verification target, без legacy/grandfathering ветвей, marker, session-expiry migration и запроса owner decision. Local/CI fixtures меняются вместе с implementation. Реальные external данные проверяются только в разрешённом Stage-6 operational recheck.
 
+AUTH-05 provider-neutral: verifier contract/injection/fakes и обязательные DB limits; конкретный anti-bot provider/adapter не выбран. Turnstile — только reference candidate в research.
 
-## Coordinator review result
+Exact Better Auth 1.7.7 исследование и прочая архитектура сохранены. HTTP/direct proof/state/abuse parity, transaction-aware guard, reuse SET-05/AccountState/Owner History — без изменений. CI/implementation/external activation не выполнялись.
 
-**HOLD — correction pass назначен.**
-
-1. Удалить Q-01 и обе legacy/grandfathering ветви из текущего технического плана. Проект pre-release без публичного production release; mandatory verification — единый target contract. Local/CI fixtures обновляются вместе с implementation. Возможные реальные external accounts проверяются только перед Stage 6 как operational data/cutover case после установления фактов.
-2. Убрать Turnstile как обязательный выбранный pre-Stage-6 adapter. AUTH-05 оставить provider-neutral; конкретный anti-bot provider не выбран owner decision.
-3. Остальную архитектуру не перерабатывать без нового подтверждённого finding.
-4. После correction обновить PLAN.md, этот файл и WORKFLOW.md и передать Мире на повторную проверку. Implementation не начинать.
+Результат передан Мире на проверку двух corrections и определение delivery mode. Самостоятельно PASS, режим поставки или реализатора не назначаю. Ошибка исходного предположения о «старых пользователях» признана: она возникла в моём плане, а не только при последующем coordinator review.

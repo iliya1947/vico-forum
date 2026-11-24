@@ -2,13 +2,13 @@
 
 ## 1. Статус и основания
 
-**FULL TECHNICAL PLAN PREPARED — coordinator review required; implementation не назначена.**
+**FULL TECHNICAL PLAN CORRECTED — coordinator correction review required; implementation не назначена.**
 
 Baseline: `main 9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`; входной service head: `ad08cca57be5cded2d1ef1e83977ef9deeac08c0`. Оба сверены с GitHub при планировании 2026-11-25. Better Auth и Drizzle adapter остаются **1.7.7**. Это план, не результат implementation/security acceptance. Implementation, CI, provider calls, provisioning и deployment на этом назначении не выполнялись.
 
 Решения владельца: [DECISIONS.md](DECISIONS.md); scope: [TASK.md](TASK.md). Критические основания revalidation перепроверены по коду и exact-version source, а не приняты автоматически. Источники и существенные выводы: [research/better-auth-1.7.7.md](research/better-auth-1.7.7.md). Старый AUTH-01 plan superseded.
 
-**Открытый продуктовый вопрос Q-01:** распространять ли обязательное подтверждение на ранее созданные unverified credential accounts и уже выданные им сессии. Рекомендация — распространять с явным переходом и сохранением самостоятельного Google sign-in. Владелец опрошен; ответа при составлении плана нет. Обе ветви спроектированы в §4; решение необходимо до реализации cutover AUTH-02. Остальные разделы готовы к review. Технические рекомендации не становятся новыми owner decisions автоматически.
+Correction pass выполнен по назначению Миры: единый mandatory-verification target contract, без grandfathering/legacy policy и связанного owner blocker; AUTH-05 — provider-neutral. Остальная архитектура сохранена.
 
 ## 2. Целевая модель и существующие seams
 
@@ -89,9 +89,9 @@ Contract `sendAuthMail({purpose, recipient, locale, actionURL, operationId})` �
 
 **Acceptance:** injected fetch contracts обоих adapters без сети; accepted/4xx/429/timeout/uncertain/no retry; fail-closed config/fake isolation; URL abuse/escaping/Unicode/RTL/fallback; secrets отсутствуют в errors/logs/client bundle. AUTH-01 не меняет signup/session behavior, поэтому возможен independent PR с полным review cycle.
 
-## 4. AUTH-02 — mandatory verification и cutover
+## 4. AUTH-02 — mandatory verification
 
-Зависимости: AUTH-01; §2 transaction/plugin/state и AUTH-05 abuse primitives внедряются **до** открытия endpoints. При необходимости bounded AUTH-02a = foundation/constraints/budgets, AUTH-02b = verification/UI/cutover.
+Зависимости: AUTH-01; §2 transaction/plugin/state и AUTH-05 abuse primitives внедряются **до** открытия endpoints. При необходимости bounded AUTH-02a = foundation/constraints/budgets, AUTH-02b = verification/UI.
 
 Config: `requireEmailVerification:true`, explicit `autoSignIn:false`, `sendOnSignUp:true`, `sendOnSignIn:false`, `autoSignInAfterVerification:false`. Signup не выдаёт полноценную session; после verify нужен явный sign-in. Guest verify не переключает другой вошедший аккаунт. Google OAuth/admission/explicit linking сохраняются независимо.
 
@@ -99,16 +99,13 @@ Flow: signup → user+credential commit без session → verification state co
 
 Exact-version особенность: с mandatory verification signup catch превращает `createUser` 403 в synthetic success, затрагивая SET-02 closure и wrapped policy-read errors. Canonical boundary сохраняет исходный request-local admission outcome и восстанавливает controlled closure/503/unexpected error; не выводить успех из HTTP 200. Existing-user duplicate privacy и fresh-create gate различимы внутренне. Проверить HTTP и direct без зависимости от optional telemetry.
 
-### Q-01: обе ветви перехода, выбор владельца обязателен
+### Единый target contract и local/CI fixtures
 
-| Решение | Реализация |
-| --- | --- |
-| Mandatory и для старых accounts — рекомендация | Не backfill verified=true. Old unverified credential access требует mailbox proof; прежние sessions не grandfather. Session schema не хранит login-method provenance, поэтому linked accounts нельзя использовать как доказательство происхождения старой session. Даже mixed account может потребовать повторного Google sign-in, который остаётся доступным. Сохранить identity/content/retained inactive data; не добавлять Owner foreign-session control. |
-| Только новые регистрации | Server-owned boolean legacy eligibility на user row, default false; forward migration выставляет true только существовавшим credential identities выбранного cutover snapshot. Поле не writable Better Auth additionalFields и не public DTO. Узкое исключение применяется только canonical credential sign-in через plugin, а новые users всегда остаются false. Не timestamp-эвристика и не global verification bypass. |
+D-01 применяется ко всей целевой email/password системе: до подтверждения email полноценный credential access недоступен. Проект pre-release; отдельной legacy-policy, grandfathering marker, исключения signInEmail и migration массового завершения прежних сессий в scope нет. Existing local/CI fixtures приводятся к новому контракту: pending verification проверяется настоящим flow, остальные сценарии получают verified fixture через test helper. Это не основание заранее проектировать rollout неустановленных реальных данных.
 
-Для первого варианта предусмотреть отдельную forward data migration: у ещё действующих sessions активных unverified users уменьшить expires_at до времени cutover, сохранив сами rows; не затрагивать inactive retained accounts/sessions и не ставить verified=true. Provenance старой session неизвестна, поэтому соответствующий Google/mixed user также один раз входит повторно. Новые Google sessions после cutover допускаются native OAuth; credential sign-in уже требует verification. Stage-6 ordering: приостановить старые auth writers/выдачу sessions → migration и verification результата → strict runtime → открыть ingress; иначе старый runtime мог бы выдать новую bypass session между migration и rollout. Local upgrade fixture исполняет ту же sequence. Для второго варианта plugin signInEmail переиспользует native password verification/session creation, но разрешает unverified только при свежем server-owned legacy flag; mandatory config не ослабляется глобально. В обоих вариантах rollback не возвращает verification bypass; выбранные SQL/schema и tests включаются только после Q-01. Реализатор не выбирает вариант сам.
+Возможный external data/cutover case проверяется по фактическому состоянию только перед отдельно разрешённым Stage 6; текущий план не требует нового продуктового решения или совместимости с гипотетическими пользователями.
 
-**Acceptance:** signup без session/cookie; login до verify denied и после verify successful; duplicate не меняет password; expiry/replay/tamper/concurrent consume, resend latest-generation, mail failures, deactivation-first без durable effects. Закрытие registration flags не блокирует existing verify/login/recovery/linking. Google same-email не объединяет identities. Изменить устаревший auto-session контракт `forum-email-registration`; unrelated authz/forum tests получают verified fixtures через test helper, без production bypass. Выбранный Q-01 transition покрыть legacy fixtures.
+**Acceptance:** signup без session/cookie; login до verify denied и после verify successful; duplicate не меняет password; expiry/replay/tamper/concurrent consume, resend latest-generation, mail failures, deactivation-first без durable effects. Закрытие registration flags не блокирует existing verify/login/recovery/linking. Google same-email не объединяет identities. Изменить устаревший auto-session контракт `forum-email-registration`; unrelated authz/forum tests получают verified fixtures через test helper, без production bypass.
 
 ## 5. AUTH-03 — recovery и password creation
 
@@ -118,7 +115,7 @@ Exact-version особенность: с mandatory verification signup catch п�
 
 `/:locale/forgot-password` принимает email и даёт одинаковый neutral acknowledgement для missing/inactive/ineligible/eligible. Mail outcome не различает existence через status/body; bounded response-time policy проверяется с одинаковыми failure classes, без обещания constant-time внешней сети. Limits до lookup.
 
-Target eligible: active identity с существующим password method и требуемым verification/legacy status по AUTH-02. Unverified сначала проходит verification; reset не выставляет verified=true и не обходит D-01. Token bound к userId/current-email/purpose/generation, не ambient session. Registration closure не блокирует recovery.
+Target eligible: active identity с существующим password method и требуемым verification status по AUTH-02. Unverified сначала проходит verification; reset не выставляет verified=true и не обходит D-01. Token bound к userId/current-email/purpose/generation, не ambient session. Registration closure не блокирует recovery.
 
 POST reset: validate token и password 8–128 → native hash → lock/consume/update/invalidate pending/**revoke all target sessions** в одной transaction. `revokeSessionsOnPasswordReset:true` соответствует контракту, но сама настройка не доказывает atomicity. Нет automatic session; sign-in отдельный. При вошедшем другом account reset не переключает его, не отзывает его session и не раскрывает target; UI предлагает явный переход к sign-in.
 
@@ -148,7 +145,7 @@ Final transaction: active user, current snapshot, token state и uniqueness norm
 
 Own UI выбирает native account row ID, freshly resolved server-side; active fresh session, expected user/session, explicit action. UI предлагает Google disconnect; direct canonical `/unlink-account` для любого разрешённого account подчиняется тому же invariant.
 
-Usable password = собственный credential с непустым hash **и разрешённым credential access по verification/legacy policy**. Usable Google = linked Google identity, допускаемая текущей login configuration; закрытие новой регистрации existing login не отключает. Hashless/unknown-provider rows не считаются usable. Временная внешняя доступность не измеряется live probe.
+Usable password = собственный credential с непустым hash **и разрешённым credential access по mandatory-verification policy**. Usable Google = linked Google identity, допускаемая текущей login configuration; закрытие новой регистрации existing login не отключает. Hashless/unknown-provider rows не считаются usable. Временная внешняя доступность не измеряется live probe.
 
 После user lock заново читать methods, проверять remaining usable set, удалять только freshly resolved own row. Enforcement также в guarded adapter delete/deleteMany callable auth paths, не только перед UI. Physical deletion/bulk removal остаются disabled. Concurrent Google/credential unlink, password creation/change/reset не могут оставить ноль методов. Unlink сам по себе не вводит forced global logout; existing sessions сохраняют native lifecycle.
 
@@ -175,7 +172,7 @@ Atomic upsert/CAS unique key, multi-client native PG races; без read-then-wri
 
 Challenge interface `verifyRegistrationChallenge` → passed/rejected/unavailable; independent Google/email **fresh create** policy. Не заменяет SET-02 flag и не блокирует existing login/link/recovery. Google successful challenge связан с signed OAuth state; callback проверяет purpose/expiry/actual fresh-create policy. Client boolean/cookie недостаточен. Existing Google login не требует new-account challenge.
 
-До Stage 6 explicit local fake fixtures; external-required mode без verifier/key, wrong hostname/action, expiry/replay, timeout/uncertain → deny/unavailable. Turnstile adapter через injected fetch: documented token limit, Siteverify schema, expected hostname/action, bounded timeout; Cloudflare документирует 300 s validity и replay convergence нюансы, поэтому own transaction/idempotency обязательны. Real sitekey/widget/secrets/site registration/edge rules сейчас не активируются.
+В repository/local-CI реализовать provider-neutral verifier contract, request-scoped injection и explicit fake fixtures, покрывающие passed/rejected/unavailable, invalid binding, expired/replayed proof и timeout/uncertain. Provider-required mode без verifier fail closed, а не включает fake fallback. Format/token limits, TTL, replay guarantees и hostname/action binding принадлежат будущему выбранному adapter; numeric Turnstile-specific values не являются общим контрактом. Конкретный anti-bot provider, SDK/HTTP adapter, widget/sitekey/secrets и real resources сейчас не выбираются и не реализуются. Turnstile остаётся лишь исследованным candidate, не implementation dependency. Existing database-backed rate limits обязательны независимо от будущего provider; его выбор/активация — отдельная Stage-6 работа.
 
 **Acceptance:** HTTP/Settings/direct parity и no double count, multi-client burst, canonical target variants, spoofed/unknown network, config/storage failures, HMAC key rotation, challenge negatives без user/session/mail effects. UI 429/explicit retry/no enumeration. Passive SA02 telemetry не считается enforcement.
 
@@ -197,7 +194,7 @@ No password/hash/cookie/token/raw email/URL/query/provider errors/challenge resp
 
 | Область | План |
 | --- | --- |
-| Native auth schema | Existing fields достаточны, кроме Q-01 cutover/legacy marker по решению; нового identity/session store нет |
+| Native auth schema | Existing fields достаточны; legacy marker, нового identity/session store и migration массового завершения прежних sessions нет |
 | Account uniqueness | Forward unique `(provider_id, account_id)` и partial unique credential owner (`user_id` WHERE provider=credential) для concurrent identity linking/creation. Сейчас только userId index. Duplicate preflight останавливает migration, не merge/delete identities автоматически |
 | Verification | Existing columns + purpose/user PK/versioned metadata, без blanket unique(identifier), меняющего native semantics |
 | Attempt CHECK | Forward SQL/schema/metadata с existing-row compatibility по мере добавления operations |
@@ -225,7 +222,7 @@ Regression foundation: database auth-runtime/account-security/auth-link-identity
 Обязательная matrix:
 
 1. New credential pending/verified/login, independent Google, explicit linking/no same-email claim, duplicates, return injection.
-2. Missing/inactive/verified/legacy accounts и Q-01 sessions, registration flags во всех комбинациях, closure vs unavailable.
+2. Missing/inactive/unverified/verified accounts, pending signup без session, registration flags во всех комбинациях, closure vs unavailable.
 3. Expiry/replay/wrong-purpose/phase/tamper, resend latest-generation, старые tokens после email/password changes, email reused другим user.
 4. Reset/create/change proof, SET-05 current-password и session policy; foreign ambient session, stale/freshness, own/other/all revocation.
 5. Two-phase email change/occupied race/mail failure/restart, account switch, Google identity неизменна.
@@ -235,7 +232,7 @@ Regression foundation: database auth-runtime/account-security/auth-link-identity
 9. Anti-abuse HTTP/direct/Settings parity, burst/spoofed/unknown IP/challenge failures; no secrets в responses/logs/History.
 10. Exact Owner/RBAC, SET-02/05, retained AccountState/public neutral identity, scoped/global/target History original IDs/paging и inert Integrations GET.
 
-Fake inbox только private disposable harness, не debug route в application/production. Google local transport не считается real OAuth. Egress spy должен fail при попытке real mail/Turnstile/provider request.
+Fake inbox только private disposable harness, не debug route в application/production. Google local transport не считается real OAuth. Egress spy должен fail при попытке real mail/challenge/provider request.
 
 Applicable implementation CI — одноразовый `run:ci`, browser/connected — `run:acceptance`, с проверкой реально исполненных suites и exact SHA. Local checks при необходимости: lint/typecheck/unit, db:check, db:test только `_test` DB, build/Worker smoke. Planning service PR не запускает CI и эти labels.
 
@@ -245,7 +242,7 @@ Applicable implementation CI — одноразовый `run:ci`, browser/connec
 
 Отдельная проверка final assembled feature после AUTH-06; не implementation пакет и не замена review cycle. Author self-check/applicable checks → whole-feature coordinator review Миры → независимая техническая проверка назначенного reviewer на **том же stable exact head**. Исполнитель независимо собственную реализацию не проверяет; Марк по отдельному назначению; reviewer не получает merge/activation authority.
 
-Gate связывает D-01–D-10 с AUTH-06 evidence: identity isolation/explicit linking, immutable subject/purpose/current generation, recovery+session revocation, usable-method под lock, AccountState/retention, direct/HTTP/origin/freshness, multi-write atomicity/uncertainty, rate/challenge, privacy/History proof, no hidden activation. Q-01 должен иметь решение и coverage до PASS.
+Gate связывает D-01–D-10 с AUTH-06 evidence: identity isolation/explicit linking, immutable subject/purpose/current generation, recovery+session revocation, usable-method под lock, AccountState/retention, direct/HTTP/origin/freshness, multi-write atomicity/uncertainty, rate/challenge, privacy/History proof, no hidden activation.
 
 PASS только без подтверждённых current-scope defects и непроверенных critical invariants. Findings одним пакетом реализатору; исправления → соответствующий цикл на новом head. Дефект архитектуры сначала исправляет PLAN. Stage REVIEW/RESULT создаются при реальном gate с evidence, не заранее. Repository PASS не deployed security acceptance.
 
@@ -255,7 +252,7 @@ PASS только без подтверждённых current-scope defects и �
 | --- | --- | --- |
 | AUTH-01 | main | Independent возможен при disabled send и прежнем auth behavior |
 | AUTH-02a transaction/plugin/state/limits/constraints | AUTH-01 | Foundation вертикали; intermediate merge нежелателен без доказательства совместимости old flows |
-| AUTH-02b verification/UI/cutover | AUTH-02a + owner Q-01 | Новый signup/session contract; без mail/resend/abuse/transition выпускать нельзя |
+| AUTH-02b verification/UI | AUTH-02a | Новый signup/session contract; mail/resend/abuse и согласованные local/CI fixtures обязательны |
 | AUTH-03 recovery/create | AUTH-02 | Shared credential/state/session boundaries |
 | AUTH-04 email/unlink | AUTH-03 | Shared invalidation и новая usable-method policy |
 | AUTH-05 completion | Primitives 02a, flows 02–04 | Завершение challenge/budget/config, baseline enforcement уже доставлена |
@@ -270,10 +267,10 @@ Stack: первый PR от current main, следующий с base на head �
 
 Отдельный docs PR после implementation/review/merge: PROJECT/PROJECT_STATE/ROADMAP, SETTINGS, AUTHORIZATION, SUPER_ADMIN, при необходимости профильный auth lifecycle contract. Только фактически доставленное поведение; exact review/check evidence в `docs/PROJECT_HISTORY/` + index. Сейчас main «verification/recovery отложены» остаётся правдой.
 
-Stage 6 **BLOCKED — explicit owner resume required**. Затем новый operational plan against current external state: pending schema-first migrations/evidence/least-privilege runtime, согласованный legacy cutover, preview/private-data isolation, provider accounts/domains/DNS/SPF/DKIM/DMARC/from/keys, real Resend и Brevo send/delivery/failure acceptance (один выбранный одновременно), production Google OAuth/exact Owner binding, Turnstile hostname/action/sitekeys/edge limits, deployed browser/lifecycle/backup/rollback acceptance. Это prerequisites, не разрешение выполнять их сейчас.
+Stage 6 **BLOCKED — explicit owner resume required**. Затем новый operational plan against current external state: pending schema-first migrations/evidence/least-privilege runtime, фактический recheck external accounts/data перед rollout, preview/private-data isolation, provider accounts/domains/DNS/SPF/DKIM/DMARC/from/keys, real Resend и Brevo send/delivery/failure acceptance (один выбранный одновременно), production Google OAuth/exact Owner binding, выбор и acceptance anti-bot provider при необходимости, hostname/action/resource policy и edge limits, deployed browser/lifecycle/backup/rollback acceptance. Это prerequisites, не разрешение выполнять их сейчас.
 
 Repository PASS не подтверждает mailbox delivery/reputation, provider health/DNS, real challenge/edge или production rollout. Merge, Monitoring GET и наличие env variable не активируют внешние ресурсы.
 
 ## 13. Передача
 
-Мире: проверить полноту модели и зависимостей, определить delivery mode и конкретное implementation назначение; до AUTH-02 зафиксировать owner Q-01. План охватывает все AUTH-01–07, не только следующий этап. Лёва implementation не начинает и других агентов не запускает. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).
+Мире: проверить два назначенных correction — единый mandatory-verification target без legacy-ветвления и provider-neutral AUTH-05 — затем определить delivery mode и конкретное implementation назначение. План охватывает все AUTH-01–07, не только следующий этап. Лёва implementation не начинает и других агентов не запускает. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).

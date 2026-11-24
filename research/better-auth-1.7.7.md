@@ -78,6 +78,6 @@ Worker создаёт request-local auth/collectors, pre-routing authoritative s
 
 - [Resend send email](https://resend.com/docs/api-reference/emails/send-email): HTTP send, Bearer, Idempotency-Key; documented expiry 24 h/max256 chars. Не обещать inbox delivery/exactly-once по 2xx.
 - [Brevo transactional email](https://developers.brevo.com/reference/sendtransacemail): api-key, sender/to/subject/htmlContent/textContent; 201/messageId. Equivalent Resend idempotency не подтверждена и не предполагается.
-- [Cloudflare Turnstile validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/): server-side Siteverify, 300 s validity, intended single-use с documented network-convergence/reuse оговоркой. Проверять hostname/action; challenge не заменяет own transactional invariants.
+- Только исследованный candidate, не выбранный provider и не требование AUTH-05: [Cloudflare Turnstile validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/): server-side Siteverify, 300 s validity, intended single-use с documented network-convergence/reuse оговоркой. Проверять hostname/action; challenge не заменяет own transactional invariants.
 
 Никаких real provider accounts, credentials, DNS, outbound mail/challenge, deployment/production database calls. Документация mutable: перед разрешённым Stage-6 rollout перепроверить.

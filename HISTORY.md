@@ -23,3 +23,5 @@
 12. **2026-11-25:** Мира проверила полный технический план Лёвы и поставила coordinator HOLD: открыт owner Q-01 по legacy unverified accounts/sessions; также исправлен неподтверждённый выбор Turnstile на provider-neutral challenge boundary. Implementation не назначена.
 
 13. **2026-11-25:** Q-01 снят после повторной проверки: legacy-grandfathering оказался future-only усложнением без установленного реального пользовательского state. Лёве назначен correction pass: единый mandatory-verification target contract + provider-neutral AUTH-05.
+
+14. **2026-11-25:** Лёва выполнил назначенный correction pass: удалил из PLAN legacy/grandfathering ветвление, связанный owner gate и неподтверждённую data migration; AUTH-05 сделан provider-neutral без обязательного Turnstile adapter. Исправлена атрибуция E-04: ошибка возникла при исходном планировании Лёвы. Результат возвращён Мире на correction review; implementation/CI/external activation не выполнялись.
