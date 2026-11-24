@@ -28,6 +28,12 @@ export interface PreviewRawTopic {
   readonly sourceLocale: string;
   readonly createdAt: Date;
   readonly isSolved: boolean;
+  readonly isClosed: boolean;
+  readonly closureVersion: number;
+  readonly needsDetails: boolean;
+  readonly duplicateOf: string | null;
+  readonly duplicateDisputed: boolean;
+  readonly isPinned: boolean;
   readonly bestAnswerPostId: string | null;
   readonly tags: readonly string[];
 }
@@ -40,6 +46,9 @@ export interface PreviewRawPost {
   readonly body: string;
   readonly sourceLocale: string;
   readonly createdAt: Date;
+  readonly solutionModerationStatus: null | "needs-review" | "outdated";
+  readonly solutionOutdatedReason: string | null;
+  readonly solutionOutdatedReasonKind: null | "best-answer-replaced";
 }
 export interface PreviewRawBaseline {
   readonly domains: PreviewRawDomainFacts;
@@ -57,7 +66,7 @@ export interface PreviewRawBaseline {
   readonly topics: readonly PreviewRawTopic[];
   readonly posts: readonly PreviewRawPost[];
   readonly attachments: readonly {
-    readonly id: string; readonly postId: string; readonly fileName: string; readonly byteSize: number;
+    readonly id: string; readonly postId: string; readonly fileName: string; readonly byteSize: number; readonly detectedType: string;
   }[];
   readonly bookmarks: readonly { readonly userId: string; readonly topicId: string; readonly savedAt: Date }[];
   readonly watches: readonly { readonly userId: string; readonly topicId: string }[];
@@ -141,12 +150,16 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
         id: P0_TOPIC_ID, sectionId: "sample-section", authorId,
         titleRevisionId: "p0-topic-title-revision", title: P0_TOPIC_TITLE,
         sourceLocale: "en", createdAt: at(-4 * day), isSolved: false,
+        isClosed: false, closureVersion: 0, needsDetails: false,
+        duplicateOf: null, duplicateDisputed: false, isPinned: false,
         bestAnswerPostId: null, tags: ["typescript"],
       },
       {
         id: "preview-review-topic", sectionId: "review-section", authorId: memberId,
         titleRevisionId: "review-title-revision", title: "Feedback on a small project",
         sourceLocale: "en", createdAt: at(-3 * day), isSolved: true,
+        isClosed: false, closureVersion: 0, needsDetails: false,
+        duplicateOf: null, duplicateDisputed: false, isPinned: false,
         bestAnswerPostId: "preview-review-reply", tags: ["typescript"],
       },
     ],
@@ -156,22 +169,25 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
         parentPostId: null, bodyRevisionId: "p0-post-body-revision",
         body: P0_POST_BODY + "\n\n![P0 fixture image](vico-attachment:" + P0_ATTACHMENT_ID + ")",
         sourceLocale: "en", createdAt: at(-4 * day + hour),
+        solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       },
       {
         id: "preview-review-post", topicId: "preview-review-topic", authorId: memberId,
         parentPostId: null, bodyRevisionId: "preview-review-body-revision",
         body: "Looking for feedback.", sourceLocale: "en", createdAt: at(-3 * day + hour),
+        solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       },
       {
         id: "preview-review-reply", topicId: "preview-review-topic", authorId: moderatorId,
         parentPostId: "preview-review-post", bodyRevisionId: "preview-review-reply-revision",
         body: "Check the error boundary and retry path.", sourceLocale: "en",
         createdAt: at(-3 * day + 2 * hour),
+        solutionModerationStatus: null, solutionOutdatedReason: null, solutionOutdatedReasonKind: null,
       },
     ],
     attachments: [{
       id: P0_ATTACHMENT_ID, postId: "p0-first-post",
-      fileName: P0_ATTACHMENT_NAME, byteSize: P0_ATTACHMENT_BYTE_SIZE,
+      fileName: P0_ATTACHMENT_NAME, byteSize: P0_ATTACHMENT_BYTE_SIZE, detectedType: "png",
     }],
     bookmarks: [{ userId: memberId, topicId: P0_TOPIC_ID, savedAt: at(-day) }],
     watches: [{ userId: memberId, topicId: P0_TOPIC_ID }],
