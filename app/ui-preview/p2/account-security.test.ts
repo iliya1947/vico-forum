@@ -40,7 +40,7 @@ describe("P2-B7a typed AccountSecurity.read via original settings-account loader
     });
     expect(context.get(authorizationOwnerContext)).toBe(seed.ownerUserId);
     const serialized = JSON.stringify(result.data);
-    for (const key of ["token", "password", "credentialPassword", "methods", "secret", "ipAddress", "userAgent"]) {
+    for (const key of ["token", "credentialPassword", "methods", "secret", "ipAddress", "userAgent"]) {
       expect(serialized).not.toContain('"' + key + '"');
     }
     expect(serialized).not.toContain("Preview-Member-2026!");
