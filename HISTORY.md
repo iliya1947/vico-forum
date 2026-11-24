@@ -16,3 +16,5 @@
 2026-11-24 — A3.3a: common HTTP/Origin/rate-limit review; FORM-BODY-BOUNDS-01 and FORUM-EDIT-SPAM-01 residuals independently confirmed; no new independent findings. Evidence stages/A3/HTTP_ABUSE.md.
 
 2026-11-24 — A3.3b: common privacy/identity projection review; PUBLIC-PROJECTION-01 residual confirmed, no new independent defect. A3 common static scope complete; domain obligations remain. Evidence stages/A3/PRIVACY.md.
+
+2026-11-24 — A4.1: public hierarchy/read/discovery static review, four existing findings independently confirmed, Help list scope extension; no new independent finding. Evidence stages/A4/PUBLIC_READ.md.
