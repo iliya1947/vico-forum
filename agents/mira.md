@@ -2,11 +2,12 @@
 
 ## Текущий контекст
 
-1. #320 работает по новому служебному регламенту на baseline `main 9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. Лена завершила независимую revalidation AUTH-01–AUTH-07: product scope PASS.
-3. Мира проверила критические основания следующего handoff и не нашла блокирующего противоречия.
-4. Старый AUTH-01 technical plan и прежний handoff Лире superseded.
+1. Лена завершила product-scope revalidation AUTH-01–AUTH-07: PASS.
+2. Лёва подготовил полный технический план.
+3. Coordinator review полного плана: **HOLD** по двум основаниям.
+4. Q-01 требует owner decision: grandfather или mandatory verification для ранее созданных unverified credential accounts/sessions.
+5. Turnstile был необоснованно превращён в выбранный provider; TASK/DECISIONS исправлены на provider-neutral challenge boundary.
 
 ## Текущее назначение
 
-Активной работы нет. Полный технический план всей задачи назначен Лёве. После его результата Мира должна проверить структуру/зависимости плана и определить delivery mode по `AGENTS.md`; implementation до этого не назначать.
+Ожидать решение владельца Q-01. После него вернуть Лёве один correction pass, затем проверить только исправленные основания и определить delivery mode при PASS.
