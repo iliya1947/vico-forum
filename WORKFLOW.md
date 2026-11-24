@@ -1,29 +1,66 @@
-# WORKFLOW.md — Task6 / residual R2a-01 author PASS → Mira
+# WORKFLOW.md — Task6 / Lena final independent re-review
 
 ## Active gate
 
-**Mira coordinator review нового final exact #379 после residual R2a-01 correction.**
+**Mira coordinator PASS on new final exact → Lena independent re-review.**
 
-Stable exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`; base/actual main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Reviewed parent28064df. Draft/open/unmerged; no merge. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false, metadata rechecked.
+Final implementation:
+- Draft #379, branch `feat/forum-structure-f1`;
+- stable exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`;
+- parent reviewed exact `28064dfe51c2c62811dd5674387825a5f0289fd0`;
+- base/current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
+- Draft/open/unmerged; main unchanged.
 
-Пять prior implementation defects и topic-move часть R2a-01 закрыты Lena re-review. Единственный residual — ordinary section reparent→Help destination, reconciled by Mira as controlled409, corrected now; новое решение reviewer ещё требуется.
+## Residual R2a-01 correction
 
-## Correction / author self-check
+The only implementation change after Lena's previous re-review is one commit with four files:
+- `db/forum-structure.ts`: after validating the source through existing `findSection()/ordinarySection()`, reserved Help destination throws existing `StructureConflictError("reserved-destination")`;
+- focused DB/action/browser regressions.
 
-PostgresStructureWriter.moveSection сначала валидирует ordinary source, затем отклоняет Help destination существующим StructureConflictError(reserved-destination) до generic category helper. Product delta2 lines. Missing destination/protected or Help source/direct protected Help operations404 сохранены; no write/version/History on refusal. Allowed path, locks/admission, UI/schema/permissions/dependencies не менялись.
+Resulting contract:
+- admitted ordinary section → reserved Help destination = controlled 409;
+- absent destination = 404;
+- protected/Help source = 404;
+- direct protected Help-object operations = 404;
+- refusal has no write/global-version/History effect.
 
-**Leva author PASS**:
-- Regression на28064df воспроизводимо падает; fixed87PG/29 action tests/lint/typecheck/Python syntax PASS.
-- CI45411761750 SUCCESS:3196unit/1834PG и все migration/schema/manifest75/runtime/credential/Worker checks.
-- Все18 applicable acceptance SUCCESS (first attempt). Whole-feature45411775325/job138507191628/artifact14929216238 downloaded/digest/integrity checked: exact SHA match,19groups,pageErrors/external=[].
-- Новый actual Worker section reparent409 / absent/protected/direct Help404, unchanged section/global version/History. Existing WF-01/F6-01/six-item/editor/privacy/authority/retained state assertions сохранены.
-- Database-only retry из-за поздно подключённого handler ожидаемого conflict в старом Complaints race test; current source не менялся. Latest database138509974425 SUCCESS,1834 tests и remaining steps.
-- Local testDB removed, PG restored stopped, symlink removed; worktree clean/main unchanged.
+No schema, permissions, UI, dependency, lock-graph, successful-reparent or unrelated behavior changed.
 
-Полная актуальная evidence и прозрачность retry: **stages/forum-structure/CORRECTIVE_REPORT.md** (latest residual section, затем сохранённая28064df baseline). Canonical PLAN unchanged; original LENA_REVIEW сохранён.
+## Mira coordinator re-review
 
-## Next / STOP
+Coordinator review on exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`: **PASS**.
 
-**Leva author STOP → Mira new-exact coordinator review #379 → Lena independent re-review того же42efaaa → owner merge только после PASS.** Предыдущий implementation gate не авторизует merge изменённого head. Independent self-review не выполняется.
+Verified independently:
+- exact implementation diff is one commit over 28064df, four files, product delta two lines;
+- source eligibility remains checked before Help-destination classification, so protected/Help source stays 404;
+- existing request permission and authoritative writer admission/locking remain unchanged;
+- route maps `StructureConflictError` to private409 and `StructureNotFoundError` to private404;
+- exact CI `45411761750` latest jobs SUCCESS;
+- all 18 applicable acceptance workflows SUCCESS;
+- whole-feature connected run `45411775325`, artifact `14929216238`;
+- artifact independently downloaded: SHA256 matches GitHub digest, implementationSha=checkoutSha=exact head, fullFeature=true, 19 groups, pageErrors=[], external=[];
+- residual browser case proves actual ordinary section→Help409 plus absent/protected/direct Help404 and unchanged section/version/History.
 
-F7 docs после owner merge. #342 sole service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive. #384 paused.
+CI database first attempt had 118/118 files and 1834/1834 tests pass but one asynchronously handled expected error from unchanged `sa04-complaints-n1.test.ts` was reported by Vitest as an unhandled rejection. Correction diff does not touch Complaints; rerun on the same exact succeeded. This is unrelated to Task6 residual correction and is not treated as a current-Task6 blocker.
+
+No confirmed current-Task6 blocker remains at coordinator level.
+
+## Next — Lena
+
+Independently re-review **the same exact head** `42efaaaabcae24fbb1fa74d042e18e850827b23d`.
+
+Because the previous independent review completed the whole Task6 scope and found only residual R2a-01, focus on:
+- exact correction semantics above;
+- absence of regression introduced by the four-file delta;
+- exact-head evidence/provenance.
+
+Do not mechanically repeat unchanged whole-feature checks without cause. Prior independent evidence remains valid for unchanged code, but final PASS must explicitly apply to this new exact head.
+
+If Lena PASS → owner merge #379. Agents do not merge. Any implementation-head change invalidates the gate and returns to Mira coordinator review.
+
+## Boundaries
+
+- F7 docs inactive until actual owner merge #379.
+- #342 sole service channel and never merge.
+- #300/#320/Stage6/general UI/UX/deploy inactive.
+- #384 full-forum audit remains paused.
