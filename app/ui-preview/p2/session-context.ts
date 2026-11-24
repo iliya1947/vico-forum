@@ -1,7 +1,6 @@
 import type { RouterContextProvider } from "react-router";
-import type {
-  AuthRuntime, AuthSession, AuthSessionResolution,
-  AccountSecurityError,
+import {
+  AccountSecurityError, type AuthRuntime, type AuthSession, type AuthSessionResolution,
 } from "../../auth/request-context";
 import { initializeAuthContext } from "../../auth/session-context";
 import { createP2PublicReadContext } from "./public-read-context";
