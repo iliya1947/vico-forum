@@ -1,15 +1,24 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Результат текущего назначения
+## Текущее назначение
 
-Полный технический план AUTH-01–AUTH-07 подготовлен в PLAN.md на main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, передан Мире на review модели/зависимостей и выбор delivery mode. Implementation не назначена и не начата. CI/acceptance/external activation не выполнялись.
+По прямому решению владельца реализовать **AUTH-01 — Mail foundation** как первую ступень stacked delivery по `PLAN.md` и `stages/AUTH-01/PLAN.md`.
 
-## Текущее состояние после correction pass
+## Границы реализации
 
-Назначенные Мирой исправления выполнены: PLAN содержит единый mandatory-verification target, без legacy/grandfathering ветвей, marker, session-expiry migration и запроса owner decision. Local/CI fixtures меняются вместе с implementation. Реальные external данные проверяются только в разрешённом Stage-6 operational recheck.
+1. Создать отдельный implementation PR от актуального `main`.
+2. Реализовать provider-neutral server-only auth-mail boundary.
+3. Реализовать Resend и Brevo transport adapters через injected transport без real outbound calls/credentials.
+4. Добавить explicit local/CI fake transport и egress-safe test seams.
+5. Добавить безопасные HTML/text templates, locale/fallback/direction handling и server-built action URL validation.
+6. Добавить необходимые runtime/config injection seams; fake не должен быть production fallback.
+7. Сохранить текущее signup/session/verification поведение: mandatory verification начинается только на следующей ступени.
+8. Не добавлять schema/migration/provider SDK без подтверждённой необходимости; не реализовывать AUTH-02+.
+9. Не выбирать и не реализовывать anti-bot provider.
+10. Реальные Resend/Brevo accounts/keys/DNS/send, production Google OAuth и любые external resources запрещены до Stage 6.
 
-AUTH-05 provider-neutral: verifier contract/injection/fakes и обязательные DB limits; конкретный anti-bot provider/adapter не выбран. Turnstile — только reference candidate в research.
+## Завершение ступени
 
-Exact Better Auth 1.7.7 исследование и прочая архитектура сохранены. HTTP/direct proof/state/abuse parity, transaction-aware guard, reuse SET-05/AccountState/Owner History — без изменений. CI/implementation/external activation не выполнялись.
+После implementation выполнить author self-check и применимые targeted/local checks, записать implementation PR, stable exact head и фактические результаты в #320 и остановиться для coordinator checkpoint Миры. Следующую ступень самостоятельно не начинать.
 
-Результат передан Мире на проверку двух corrections и определение delivery mode. Самостоятельно PASS, режим поставки или реализатора не назначаю. Ошибка исходного предположения о «старых пользователях» признана: она возникла в моём плане, а не только при последующем coordinator review.
+Поскольку Лёва теперь участвует в implementation, независимую финальную technical review собственной реализации он не выполняет; reviewer финальной сборки определяется отдельно.
