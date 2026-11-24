@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { authSessionForRequest } from "../../auth/request-context";
 import { forumReaderForRequest, forumWriterContext } from "../../forum/request-context";
 import { registryForRequest } from "../../localization/request-context";
+import { parseLocaleCandidate } from "../../localization/locale";
 import { P0_ATTACHMENT_ID } from "../p0/attachment-fixture";
 import { P0_POST_BODY, P0_TOPIC_ID } from "../p0/fixture";
 import { createP2RawBaseline, previewActorId } from "./raw-baseline";
@@ -153,7 +154,7 @@ describe("P2 first production ForumReader and registry contexts", () => {
     expect(one.health).toEqual({ status: "healthy" });
     expect(one.registry.activeLocales().map((item) => item.tag)).toEqual(["en", "ru", "he"]);
     expect(one.registry.find("he")?.locale.direction).toBe("rtl");
-    expect(one.registry.find("iw")?.locale.tag).toBe("he");
+    expect(one.registry.find(parseLocaleCandidate("iw")!.translationTag)?.locale.tag).toBe("he");
     expect(one.semanticIdentity).toBe(two.semanticIdentity);
   });
 });
