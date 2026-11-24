@@ -12,30 +12,8 @@
 - После P1: author self-check + применимые checks/browser/CI, stable exact head → Мира на coordinator checkpoint. P2 только после PASS.
 
 
-## Coordinator correction — main drift is not a stack-sync trigger
+## Текущее состояние при передаче P1
 
-- Current main `a3dae5815e26d158c566a27c552127b4b1ab29aa` being ahead of the accepted P0 baseline does **not** by itself require rebasing/synchronizing the active P0→P1 stack.
-- Under AGENTS stacked workflow, mandatory upper-stack synchronization is triggered when the **lower stack step changes**. Accepted P0 exact `e1f077c0c8c7f15d4600df0a64dd661982755bb8` has not changed.
-- Do **not** modify/rebase P0 or P1 merely to chase parallel main merges. That would invalidate an already reviewed lower step and create a moving target without a confirmed P1 blocker.
-- New main routes/features are handled at final stack integration/whole-feature assembly, or earlier only if a concrete verified change makes the current P1 gate impossible or incorrect. No such blocker is currently established.
-- **Authorized next step only:** P1-G4c residual audit against the existing P1 gate on current stack. If clear, perform final P1 author self-check and hand the stable exact P1 head to Mira for coordinator checkpoint.
-- No P2, no merge/deploy, no stack sync before that checkpoint.
-
-
-## Coordinator correction — P1-G4c exact current blocker
-
-- G4c residual audit found **one confirmed current P1 defect**: ordinary screen `action` exports that do not have a `clientAction` currently bypass the preview request normalization used by the existing clientAction bridge. Several real production routes use `requireSameOrigin` on exactly this path, so the browser preview must preserve the same-origin request contract there.
-- This finding is **not** a mandate to invent separate Origin requirements for every loader/middleware/export. Do not expand G4c into a new matrix audit. The defect is the ordinary screen-action request boundary; ancestor middleware may be verified as part of the same request path where relevant.
-- Required result: the generic preview route/runtime path must preserve browser-origin semantics for ordinary screen actions while retaining explicit foreign Origin so production guards can reject it. No product handler duplication and no feature-specific workaround.
-- Add only the targeted regression evidence needed to prove the corrected generic path and preserve the already accepted clientAction/resource behavior.
-- After the minimal fix: run applicable targeted checks + exact-head CI/browser evidence, then complete the **final P1 author self-check** and hand the stable exact P1 head to Mira.
-- Do not continue hunting for speculative gaps after this confirmed blocker is closed. Do not start P2, merge, deploy, rebase or stack-sync.
-
-
-## Execution rule for the active G4c assignment
-
-- **G4c is already authorized implementation work.** It is not waiting for another assignment or another coordinator decision.
-- When the developer activates Lira with `...` while this assignment is current, that activation means: **perform the next concrete implementation step now**. Do not answer by restating that G4c is open, that Lira remains the assignee, or that no changes have been made.
-- The next concrete step is to implement the minimal generic ordinary-screen-action request normalization in Draft #375, add the targeted regression, and run the applicable checks.
-- Only stop without changing #375 if an actual technical blocker is discovered that prevents the authorized fix. In that case report the blocker itself, not the assignment status.
-- After the fix and exact-head evidence, complete final P1 author self-check and hand the stable head to Mira. No additional coordinator confirmation is required before implementing G4c.
+- G4c исправлен в Draft #375 exact `a0137ce3a67bf451b650395e7b9b883eaa01aa46`: generic screen `action` без `clientAction` получает виртуальный browser-origin Request; explicit foreign Origin остаётся и отклоняется исходным `requireSameOrigin`. Путь покрыт `app/ui-preview/p0/request-context.test.tsx`; P1-only включение не меняет принятый P0 head.
+- [CI #45300801211](https://github.com/iliya1947/vico-forum/actions/runs/45300801211): checks/database SUCCESS; 231 files / 2811 tests, lint/typecheck, Chromium P0/78-route P1 и builds PASS. Финальная самопроверка P1 — PASS; coordinator checkpoint Миры ещё не выполнялся.
+- Следующий владелец — Мира по `WORKFLOW.md` служебного #369. Лира STOP до конкретного возврата. P2, rebase/stack sync, merge/deploy запрещены. Уход `main` вперёд без изменения принятого нижнего P0 не означает необходимость немедленной синхронизации.
