@@ -10,7 +10,7 @@
 2. Обязательное подтверждение email для email/password регистрации.
 3. Password recovery/reset и безопасное создание password method для Google-only аккаунта.
 4. Завершение own Account & security lifecycle: email/status, email change, password, Google link/unlink, own sessions.
-5. Anti-abuse foundation и подготовка Turnstile boundary без внешней активации до Stage 6.
+5. Anti-abuse foundation и provider-neutral registration challenge boundary без внешней активации до Stage 6; конкретный anti-bot provider отдельно не выбран.
 6. Единая lifecycle/security acceptance, включая negative/adversarial сценарии.
 7. Pre-Stage-6 security gate.
 8. Отдельный docs closeout после реализации.
@@ -21,7 +21,7 @@
 1. Better Auth остаётся authentication/session provider; application authorization остаётся отдельным server-side слоем.
 2. Automatic/implicit linking Google ↔ email/password запрещён; linking только явный из собственного authenticated account.
 3. Текущие AccountState, Owner monitoring/History, registration settings и SET-05 должны переиспользоваться, а не обходиться параллельной реализацией.
-4. Реальные Resend/Brevo credentials, DNS, outbound provider calls, Turnstile, production Google OAuth и edge rate-limit rules не активируются до Stage 6.
+4. Реальные Resend/Brevo credentials, DNS, outbound provider calls, anti-bot provider resources, production Google OAuth и edge rate-limit rules не активируются до Stage 6.
 5. Не расширять задачу до account physical deletion/anonymization, 2FA/passkeys, дополнительных OAuth providers, automatic provider failover или собственного risk engine без отдельного решения владельца.
 
 ## Критерий завершения текущей repository/local-CI части
