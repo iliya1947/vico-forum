@@ -4,6 +4,8 @@ import type {
 } from "../../auth/request-context";
 import { initializeAuthContext } from "../../auth/session-context";
 import { createP2PublicReadContext } from "./public-read-context";
+import { authorizationOwnerContext } from "../../authorization/request-context";
+import { createP2AccountSecurityRuntime } from "./account-security";
 import { createP2GoogleSocialAdapter, type P2GoogleScenario } from "./google-auth";
 import { previewActorId, type PreviewActor, type PreviewRawBaseline } from "./raw-baseline";
 
@@ -88,11 +90,23 @@ export function createP2AuthRuntime(
   }>();
   let registrationSequence = 0;
   const current = () => activeSession;
+  const transientGoogle = new Map<string, PreviewRawBaseline["users"][number]>();
   const google = createP2GoogleSocialAdapter(baseline, actor, googleScenario, (session) => {
     activeSession = session;
+    if (!baseline.users.some((item) => item.identity.id === session.user.id)) {
+      transientGoogle.set(session.user.id, {
+        identity: session.user,
+        state: { status: "active", userId: session.user.id },
+        methods: ["google"], credentialPassword: null,
+      });
+    }
   });
+  const security = createP2AccountSecurityRuntime(baseline, current, (userId) =>
+    [...registered.values()].find((item) => item.account.identity.id === userId)?.account
+      ?? transientGoogle.get(userId));
 
   return {
+    security,
     async getSession(headers: Headers): Promise<AuthSessionResolution> {
       void headers; // Only the trusted preview actor is authoritative.
       return { session: current(), headers: new Headers() };
@@ -390,6 +404,7 @@ export function createP2AuthSessionFlow(
     runtime,
     async createRequestContext(request: Request): Promise<P2SessionReadContext> {
       const context = createP2PublicReadContext(baseline);
+      context.set(authorizationOwnerContext, baseline.ownerUserId);
       const authHeaders = await initializeAuthContext(context, request, runtime);
       return { context, authHeaders };
     },
