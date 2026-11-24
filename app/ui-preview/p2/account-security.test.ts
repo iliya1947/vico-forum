@@ -205,15 +205,15 @@ describe("P2-B7a typed AccountSecurity.read via original settings-account loader
     expect(google.data.canViewForum).toBe(false);
   });
 
-  it("never fabricates success for password change or session revocation in B7a", async () => {
+  it("rejects invalid password or missing other-session target without revoking the current session", async () => {
     const runtime = createP2AuthSessionFlow(baseline(), "member").runtime;
     const identity = accountIdentity((await runtime.getSession(new Headers())).session!);
     await expect(runtime.security!.changePassword(new Headers(), identity, "old", "new"))
       .rejects.toMatchObject({ code: "invalid-password" });
     await expect(runtime.security!.revokeOneOther(new Headers(), identity, "other"))
-      .rejects.toThrow("P2 AccountSecurity write not configured: revokeOneOther");
-    await expect(runtime.security!.revokeAllOthers(new Headers(), identity))
-      .rejects.toThrow("P2 AccountSecurity write not configured: revokeAllOthers");
+      .rejects.toMatchObject({ code: "session-not-found" });
+    await expect(runtime.security!.revokeAllOthers(new Headers(), identity)).resolves.toBeUndefined();
+    expect((await runtime.getSession(new Headers())).session?.session.id).toBe(identity.sessionId);
   });
 
   it("keeps the typed AccountSecurity error identity rather than silently masking unsafe states", async () => {
