@@ -102,6 +102,48 @@ function mount(locale:"en"|"ru"|"he",area:"events"|"history",routing?:Administra
   </I18nextProvider>);
 }
 
+describe("F5-D Owner original structural History presentation",()=>{
+  it.each(["en","ru","he"] as const)("shows safe before/after with translated fields and one original identity (%s)",async locale=>{
+    const tr=locale==="ru"?russianCommonValues:locale==="he"?hebrewCommonValues:
+      Object.fromEntries(Object.entries(canonicalEnglishCatalog.common).map(([key,value])=>[key,value.source]));
+    const source:OwnerHistoryPage={entries:[
+      {origin:"admin-history",id:"original-topic-move",occurredAt:at,recordedAt:at,
+        kind:"topic.moved",source:"admin_history",quality:null,monitorKeys:["forum.structure"],
+        values:{actorUserId:"moderator",targetType:"topic",targetId:"secret-topic-id",
+          beforeExists:true,beforeCategoryId:"ca",beforeCategoryName:"Old category",
+          beforeSectionId:"a",beforeSectionName:"Old section",
+          afterCategoryId:"cb",afterCategoryName:"New category",
+          afterSectionId:"x",afterSectionName:"New section",
+          beforeStructureVersion:"9007199254740993",afterStructureVersion:"9007199254740994"}},
+      {origin:"admin-history",id:"original-category-create",occurredAt:at,recordedAt:at,
+        kind:"category.created",source:"admin_history",quality:null,monitorKeys:["forum.structure"],
+        values:{actorUserId:"manager",targetType:"category",targetId:"new-category",
+          beforeExists:false,afterName:"Категория עברית",afterSortPosition:"7",
+          beforeStructureVersion:"1",afterStructureVersion:"2"}},
+    ],next:null};
+    const {container}=mount(locale,"history",undefined,source,{area:"forum",monitorKey:"forum.structure"});
+    await waitFor(()=>expect(container.querySelectorAll('.super-admin-timeline li[data-history-origin="admin-history"]')).toHaveLength(2));
+    const moved=container.querySelector('li[data-history-kind="topic.moved"]')!;
+    expect(moved.querySelector("h3")?.textContent).toBe(tr.historyTopicMoved);
+    const labels=[...moved.querySelectorAll("dt")].map(e=>e.textContent);
+    expect(labels).toContain(tr.historyStructureBeforeCategoryName);
+    expect(labels).toContain(tr.historyStructureAfterSectionId);
+    expect(labels).toContain(tr.historyStructureBeforeVersion);
+    expect(labels).toContain(tr.historyStructureAfterVersion);
+    expect(moved.textContent).toContain("9007199254740993");
+    expect(moved.textContent).toContain("original-topic-move");
+    const created=container.querySelector('li[data-history-kind="category.created"]')!;
+    expect([...created.querySelectorAll("dt")].map(e=>e.textContent))
+      .toContain(tr.historyStructureBeforeExists);
+    expect(created.textContent).toContain("Категория עברית");
+    expect(container.textContent).not.toMatch(/secret title|secret body|revision|private reason/i);
+    const choices=historyFilterCatalog({area:"forum",monitorKey:"forum.structure"})
+      .scopes["monitor:forum.structure"];
+    expect(choices).toHaveLength(1);
+    expect(choices[0].kinds).toHaveLength(8);
+    expect(choices[0].kinds).toContain("topic.moved");
+  });
+});
 describe("SA02-D3.1 source-aware original History route presentation",()=>{
   it.each(["en","ru","he"] as const)("renders the original account lifecycle fact and retention without a mutation control (%s)",async locale=>{
     const id="001234567890-0000-4000-8000-000000000001",retained="2027-11-16T12:00:00.123Z";
