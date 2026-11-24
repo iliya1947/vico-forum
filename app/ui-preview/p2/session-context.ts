@@ -93,7 +93,7 @@ export function createP2AuthRuntime(
   // Never mutate the shared baseline or registered account records on password change.
   // Both the original Settings action and canonical Auth HTTP read this same overlay.
   const changedPasswords = new Map<string, string>();
-  let passwordChangeAttempts = 0;
+  const passwordChangeAttempts: number[] = [];
   const current = () => activeSession;
   const transientGoogle = new Map<string, PreviewRawBaseline["users"][number]>();
   const google = createP2GoogleSocialAdapter(baseline, actor, googleScenario, (session) => {
@@ -116,10 +116,17 @@ export function createP2AuthRuntime(
     },
     storePassword: (userId, password) => { changedPasswords.set(userId, password); },
     admitAttempt: () => {
-      // This preview has no trusted client-IP transport: use one bounded
-      // controller-local attempt bucket rather than trusting spoofable headers.
-      if (passwordChangeAttempts >= 3) throw new AccountSecurityError("rate-limited", 10);
-      passwordChangeAttempts += 1;
+      // There is no trusted client-IP transport in preview: use a per-flow
+      // 3-per-10-second window rather than trusting spoofable request headers.
+      const now = Date.now();
+      while (passwordChangeAttempts.length && passwordChangeAttempts[0]! <= now - 10_000) {
+        passwordChangeAttempts.shift();
+      }
+      if (passwordChangeAttempts.length >= 3) {
+        throw new AccountSecurityError("rate-limited",
+          Math.max(1, Math.ceil((passwordChangeAttempts[0]! + 10_000 - now) / 1000)));
+      }
+      passwordChangeAttempts.push(now);
     },
   });
 
@@ -200,8 +207,8 @@ export function createP2AuthRuntime(
           const [code, status] = codes[error.code as keyof typeof codes];
           const headers = new Headers(authResponseHeaders);
           if (status === 429) {
-            headers.set("Retry-After", "10");
-            headers.set("X-Retry-After", "10");
+            headers.set("Retry-After", String(error.retryAfterSeconds ?? 10));
+            headers.set("X-Retry-After", String(error.retryAfterSeconds ?? 10));
           }
           return new Response(JSON.stringify({ code }), { status, headers });
         }
