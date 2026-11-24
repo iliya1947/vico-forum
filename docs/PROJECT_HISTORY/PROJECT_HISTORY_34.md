@@ -58,8 +58,10 @@ Final implementation exact:
    — финальный exact-head author-check: **3196 unit** и
    **1834 PostgreSQL** теста, локальные lint/type/build.
 2. [Whole-feature acceptance #45411775325](https://github.com/iliya1947/vico-forum/actions/runs/45411775325)
-   — **18 применимых acceptance SUCCESS**, включая
+   — SUCCESS одного connected whole-feature workflow с
    Worker/Better Auth/PostgreSQL 17/Chromium и local-R2 seams.
+   Всего на том же exact head успешно завершились
+   **18 отдельных применимых acceptance workflows**.
 3. Финальный Chromium artifact `14929216238` проверен в
    independent review: exact SHA, 19 groups, без page errors
    и внешних обращений. Latest database CI потребовал
