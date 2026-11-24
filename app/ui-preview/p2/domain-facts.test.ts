@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createP2RawBaseline, assertP2RawBaselineIntegrity, previewActorId,
   type PreviewRawBaseline } from "./raw-baseline";
-import { P0_TOPIC_ID } from "../p0/fixture";
+import { P0_POST_BODY, P0_TOPIC_ID } from "../p0/fixture";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_BYTE_SIZE } from "../p0/attachment-fixture";
 import { deriveAppealPolicy } from "../../../db/complaint-appeal-policy";
 import { catalogDescriptors } from "../../localization/catalog";
@@ -19,6 +19,13 @@ describe("P2 cross-domain raw fixture integrity", () => {
     expect(facts.revisions.find((item) => item.id === "review-title-v0"))
       .toMatchObject({ kind: "topic-title", contentId: "preview-review-topic" });
     expect(facts.revisions.filter((item) => item.contentId === "preview-review-topic")).toHaveLength(2);
+    expect(base.posts.find((post) => post.id === "p0-first-post")?.body)
+      .toBe(P0_POST_BODY + "\n\n![P0 fixture image](vico-attachment:" + P0_ATTACHMENT_ID + ")");
+    const reviewRevisions = facts.revisions.filter((item) => item.contentId === "preview-review-topic")
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    expect(reviewRevisions[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(
+      base.topics.find((item) => item.id === "preview-review-topic")!.createdAt.getTime());
+    expect(reviewRevisions[1]!.createdAt.getTime()).toBeGreaterThan(reviewRevisions[0]!.createdAt.getTime());
     expect(facts.tags).toContainEqual({ key: "typescript", name: "TypeScript" });
     expect(facts.attachmentPayloads[0]).toMatchObject({
       attachmentId: P0_ATTACHMENT_ID, byteSize: P0_ATTACHMENT_BYTE_SIZE,
@@ -102,6 +109,12 @@ describe("P2 cross-domain raw fixture integrity", () => {
           topicId: P0_TOPIC_ID, revisionId: "review-title-v0" } } : item),
     });
     expect(() => assertP2RawBaselineIntegrity(stale)).toThrow("revision owner mismatch");
+    const premature = mutate(base, {
+      ...base.domains,
+      revisions: base.domains.revisions.map((revision) => revision.id === "review-title-v0"
+        ? { ...revision, createdAt: new Date("2000-01-01T00:00:00Z") } : revision),
+    });
+    expect(() => assertP2RawBaselineIntegrity(premature)).toThrow("revision predates content");
   });
 
   it("rejects complaint evidence, Decision and Appeal attached to another case", () => {
