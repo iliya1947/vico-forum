@@ -1,26 +1,29 @@
-# WORKFLOW.md — Task 6 / F7 docs corrected author PASS → Мира re-review
+# WORKFLOW.md — Task 6 / F7 docs PASS → owner merge
 
 ## Current state
 
-Task 6 implementation #379 is merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade`. Final reviewed implementation exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`: Mira coordinator PASS, Lena independent whole-feature PASS, all six implementation findings CLOSED. No implementation finding reopened.
+Task 6 implementation #379 is merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade`. Final reviewed implementation exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`: Mira coordinator PASS, Lena independent whole-feature PASS, all six implementation findings CLOSED.
 
-Separate [Draft F7 docs PR #387](https://github.com/iliya1947/vico-forum/pull/387) is still open:
-- new stable exact head `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`; base main remains `59e2fd9092bb1884392221eb856c2b989cc87ade`;
-- six docs-only files in the full PR;
-- no code, schema, dependency, test, deployment or external-service changes.
+Separate F7 docs PR #387 is open on stable exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`, base current main `59e2fd9092bb1884392221eb856c2b989cc87ade`. Full PR remains exactly six docs files; no code/schema/dependency/test/deploy/external-service changes.
 
-## F7-DOC-01 / F7-DOC-02 corrections — Lira author PASS
+## F7 docs review — Mira PASS
 
-Mira's two confirmed documentation findings have been corrected in exactly two files:
+Initial docs exact `bcf6cc68ebe1eb692f8821f581903313b7685fae` had two factual findings:
+- stale claim that admin initial grants were unchanged after Task6;
+- aggregate 18-workflow acceptance evidence attributed to one whole-feature run.
 
-1. `docs/auth/AUTHORIZATION.md`: replaced stale sentence about unchanged admin initial grants with the factual migration `0072` additions: `forum.structure.manage` and `forum.topic.move`.
-2. `docs/PROJECT_HISTORY/PROJECT_HISTORY_34.md`: the linked workflow run `45411775325` is now identified as one successful connected whole-feature workflow; **18 separate applicable acceptance workflows** succeeded at the same implementation exact head, not within that one run.
+Lira corrected both. New exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b` changes exactly those two docs files relative to the reviewed head:
+- `docs/auth/AUTHORIZATION.md` now truthfully records migration0072 initial admin structure/move grants while retaining dynamic grant/override semantics;
+- `docs/PROJECT_HISTORY/PROJECT_HISTORY_34.md` distinguishes the single successful whole-feature run `45411775325` from the aggregate **18 separate applicable acceptance workflows** on the same implementation exact.
 
-Author check: previous reviewed docs head `bcf6cc68ebe1eb692f8821f581903313b7685fae` → new head changes **exactly the two docs files** above; total PR remains six planned docs files. GitHub workflow evidence confirmed the single run success and the 18 separate successful applicable runs. Final newlines/whitespace clean, main/base unchanged; no mechanical implementation CI for docs-only correction.
+Re-review confirmed both findings closed and no new current-F7 factual defect in the changed delta. Previous review of the other four unchanged docs remains valid.
+
+**Mira F7 docs verdict: PASS on exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`.**
+
+No implementation CI is required for this docs-only closeout. No independent Codex review is required by the current F7 route.
 
 ## Next gate
 
-**Лира STOP → Мира independently re-reviews corrected F7 docs #387 on exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`.**
-If new current-F7 factual defects are confirmed, return to Lira; otherwise Mira PASS → owner merge #387. No independent Codex review for docs-only closeout.
+**Owner merges #387 on this exact head.** Any docs-head content change before merge requires Mira re-review of the changed docs.
 
-Only after actual docs merge: evaluate Task 6/#342 closeout, then established #320 route. #342 never merges; #300/#320/Stage6/general UI/UX/deploy remain inactive during F7; #384 full-forum audit remains paused.
+After actual docs merge: evaluate Task6/#342 completion criteria and then check the established #320 route. #342 never merges. #300/Stage6/general UI/UX/deploy remain inactive until that closeout check. #384 full-forum audit remains paused.
