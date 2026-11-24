@@ -1,4 +1,4 @@
-name: F5 forum structure scoped connected Chromium
+name: Forum structure whole-feature connected Chromium and local R2
 
 on:
   pull_request:
@@ -7,6 +7,13 @@ on:
     paths:
       - ".github/workflows/forum-structure-f5-browser.yml"
       - "tests/browser/forum-structure-f5/**"
+      - "tests/browser/forum-structure-f6/**"
+      - "tests/database/*structure*.test.ts"
+      - "tests/database/topic-move.test.ts"
+      - "db/forum-structure*.ts"
+      - "db/topic-move.ts"
+      - "db/forum-repository.ts"
+      - "db/admin-forum.ts"
       - "app/admin/structure*.tsx"
       - "app/admin/structure*.ts"
       - "app/admin/forum.tsx"
@@ -30,24 +37,26 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_DB: vico_f5_browser_test
+          POSTGRES_DB: vico_f6_browser_test
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d vico_f5_browser_test"
+          --health-cmd "pg_isready -U postgres -d vico_f6_browser_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
       CI: "true"
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_f5_browser_test
-      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_f5_browser_test
-      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_f5_browser_test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_f6_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_f6_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_f6_browser_test
       IMPLEMENTATION_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.head.sha }}
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 12.3.4
@@ -79,13 +88,24 @@ jobs:
             'BETTER_AUTH_URL=http://127.0.0.1:4253' \
             'GOOGLE_CLIENT_ID=local-test-unused' \
             'GOOGLE_CLIENT_SECRET=local-test-unused' \
-            'VICO_OWNER_USER_ID=f5-synthetic-owner' > .dev.vars
+            'VICO_OWNER_USER_ID=f5-synthetic-owner' \
+            'K5_CLEANUP_TOKEN=forum-structure-f6-local-probe' > .dev.vars
+          cp wrangler.jsonc "$RUNNER_TEMP/f6-original-wrangler.jsonc"
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const config=JSON.parse(readFileSync("wrangler.jsonc","utf8"));
+            if(config.main!=="./workers/app.ts" || config.r2_buckets) throw new Error("Unexpected production config");
+            config.main="./tests/browser/sa04-attachments/worker-entry.ts";
+            config.r2_buckets=[{binding:"ATTACHMENT_R2",bucket_name:"sa04-k5-local-attachments",remote:false}];
+            writeFileSync("wrangler.jsonc",JSON.stringify(config,null,2));
+          '
+          test "$(git rev-parse HEAD)" = "$IMPLEMENTATION_SHA"
           pnpm build
-      - name: Real F5 UI, Editor 2.0, ACL and Owner History in Chromium
+      - name: Whole-feature UI, grants, visibility, receipts and local R2 in Chromium
         run: |
           pnpm exec vite preview --host 127.0.0.1 --port 4253 --strictPort > "$RUNNER_TEMP/f5-preview.log" 2>&1 &
           preview_pid=$!
-          trap 'kill "$preview_pid" 2>/dev/null || true; rm -f .dev.vars build/server/.dev.vars' EXIT
+          trap 'kill "$preview_pid" 2>/dev/null || true; cp "$RUNNER_TEMP/f6-original-wrangler.jsonc" wrangler.jsonc; rm -f .dev.vars build/server/.dev.vars' EXIT
           ready=false
           for attempt in $(seq 1 90); do
             if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:4253/en/ >/dev/null 2>&1; then
@@ -100,15 +120,15 @@ jobs:
             exit 1
           fi
           "$RUNNER_TEMP/f5-playwright/bin/python" tests/browser/forum-structure-f5/check.py \
-            --url http://127.0.0.1:4253 --output "$RUNNER_TEMP/f5-evidence" || {
+            --full-feature --url http://127.0.0.1:4253 --output "$RUNNER_TEMP/f5-evidence" || {
               tail -n 120 "$RUNNER_TEMP/f5-preview.log"
               exit 1
             }
-      - name: Preserve disposable F5 browser evidence
+      - name: Preserve whole-feature browser evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: forum-structure-f5-connected
+          name: forum-structure-whole-feature-connected
           path: ${{ runner.temp }}/f5-evidence/
           if-no-files-found: warn
           retention-days: 7

@@ -133,7 +133,8 @@ export function TopicMoveForm({locale,context,onRefresh,suspended=false}:{
     <h3>{t("topicMoveTitle")}</h3>
     <p>{t("topicMoveCurrent")}: <bdi dir="auto">{context.currentSection.name} ({context.currentSection.id})</bdi></p>
     {!context.isHidden?<p><Link to={forumSectionPath(locale,context.currentSection.id)}>{t("topicMoveCurrent")}</Link></p>:null}
-    <moveFetcher.Form method="post" action={forumTopicPath(locale,context.topicId)+"?moveAction=1"}
+    {/* Only a confirmed receipt above or explicit refresh may replace frozen expectations. */}
+    <moveFetcher.Form defaultShouldRevalidate={false} method="post" action={forumTopicPath(locale,context.topicId)+"?moveAction=1"}
       aria-busy={busy} onSubmit={submit}>
       <input type="hidden" name="intent" value="moveTopic"/>
       <input type="hidden" name="editorActorId" value={context.actorId}/>

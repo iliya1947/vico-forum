@@ -248,3 +248,42 @@ describe("real PostgreSQL hierarchy snapshot races",()=>{
   await client.query("update forum_categories set name='First' where id='z'");
  });
 });
+
+
+describe("F6 complete discovery location projections",()=>{
+ it("moves current Search/Unanswered/Tags/Unread/Bookmarks/Mute context, preserves ranking and excludes Help/hidden",async()=>{
+  const repo=forum();
+  await client.query("insert into forum_tags(key,name)values('f6-location-tag','F6 location tag')");
+  await client.query("insert into forum_topic_tags(topic_id,tag_key)values('t','f6-location-tag')");
+  try {
+   await repo.setTopicBookmark({topicId:"t",actorId:"mover",bookmarked:true});
+   await repo.setTopicWatch({topicId:"t",actorId:"mover",watching:true});
+   await repo.setTopicMute({topicId:"t",actorId:"visibility",muted:true});
+   async function located(section:string,category:string) {
+    const [search,unanswered,tag,unread,bookmarks,mutes]=await Promise.all([
+     repo.search("SECRET_TITLE"),repo.readUnanswered(),repo.readTag("f6-location-tag"),repo.readUnreadForUser("mover"),repo.readTopicBookmarks("mover"),repo.readMutedTopics("visibility")]);
+    for(const rows of [search,unanswered,tag!.topics,unread,bookmarks.items,mutes.items])
+     expect(rows.find(row=>row.id==="t")).toMatchObject({section:{id:section},category:{id:category}});
+    expect((await repo.readPopular())["24h"].map(row=>row.id)).toContain("t");
+    expect((await repo.readHelpSolutionsAll())?.questions.map(row=>row.id)).not.toContain("t");
+    expect((await repo.searchHelpSolutionsSimilar({title:"SECRET_TITLE",body:"SECRET_BODY",tags:["f6-location-tag"]})).map(row=>row.id)).not.toContain("t");
+   }
+   await located("s000","z");
+   await moves().moveTopic("mover","t",{expectedSectionId:"s000",targetSectionId:"target",expectedStructureVersion:"0",expectedLocationVersion:"0"});
+   await located("target","a");
+   expect((await repo.readCategory("z"))?.sections.find(s=>s.id==="s000")?.topicCount).toBe(0);
+   await structures().moveSection("owner","target",{expectedCategoryId:"a",targetCategoryId:"z",expectedStructureVersion:"0"});
+   await located("target","z");
+   expect((await repo.readCategory("a"))?.sections).toHaveLength(0);
+   await repo.setTopicVisibility({topicId:"t",actorId:"dual",hidden:true,expectedVisibilityVersion:0,expectedRevisionId:"tr",reason:"F6 private discovery"});
+   for(const rows of [await repo.search("SECRET_TITLE"),await repo.readUnanswered(),(await repo.readTag("f6-location-tag"))?.topics??[],await repo.readUnreadForUser("mover"),(await repo.readPopular())["24h"]])
+    expect(rows.map(row=>row.id)).not.toContain("t");
+   for(const rows of [(await repo.readTopicBookmarks("mover")).items,(await repo.readMutedTopics("visibility")).items]) {
+    expect(rows.find(row=>row.id==="t")).toMatchObject({unavailable:true});
+    expect(JSON.stringify(rows)).not.toMatch(/SECRET_TITLE|SECRET_BODY/);
+   }
+  }finally{
+   await client.query("delete from forum_topic_tags where tag_key='f6-location-tag';delete from forum_tags where key='f6-location-tag';delete from forum_topic_bookmarks where topic_id='t';delete from forum_topic_watches where topic_id='t';delete from forum_topic_mutes where topic_id='t'");
+  }
+ });
+});

@@ -1,8 +1,9 @@
-"""F5 bounded real Worker/Better Auth/PG17/Chromium author acceptance (synthetic only)."""
+"""Shared F5 UI fixture; --full-feature adds F6 HTTP/Chromium/local-R2 matrix."""
 import argparse
 import json
 import os
 import re
+import runpy
 import select
 import shutil
 import subprocess
@@ -14,12 +15,13 @@ from playwright.sync_api import sync_playwright, expect
 arg=argparse.ArgumentParser()
 arg.add_argument("--url",required=True)
 arg.add_argument("--output",type=Path,required=True)
+arg.add_argument("--full-feature",action="store_true")
 a=arg.parse_args()
 base=a.url.rstrip("/")
 db=urlparse(os.environ["DATABASE_URL"])
 assert os.environ.get("CI")=="true"
 assert urlparse(base).hostname in ("localhost","127.0.0.1")
-assert db.hostname in ("localhost","127.0.0.1") and db.path=="/vico_f5_browser_test"
+assert db.hostname in ("localhost","127.0.0.1") and db.path in ("/vico_f5_browser_test","/vico_f6_browser_test")
 a.output.mkdir(parents=True,exist_ok=True)
 repo=Path(__file__).resolve().parents[3]
 pg=subprocess.Popen([shutil.which("node"),"--import","tsx",str(Path(__file__).with_name("pg.mjs"))],
@@ -116,6 +118,7 @@ try:
             c=browser.new_context(viewport={"width":1280,"height":900},service_workers="block",
                 extra_http_headers={"cf-connecting-ip":"192.0.2."+str(80+len(contexts))})
             contexts.append(c)
+            c.on("page",lambda page:page.on("pageerror",lambda e:errors.append(str(e))))
             c.route("**/*",lambda route:route.continue_() if route.request.url.startswith(base+"/")
                 else (external.append(route.request.url),route.abort())[-1])
             return c
@@ -139,7 +142,6 @@ try:
                        ["f5-synthetic-owner",issued]))>=1
         p=admin.new_page()
         p.set_default_timeout(18000)
-        p.on("pageerror",lambda e:errors.append(str(e)))
         cat_a=create_category(p,prefix+" category A עברית")
         cat_b=create_category(p,prefix+" category B שלום")
         category_a="/en/admin/forum/categories/"+quote(cat_a,safe="")
@@ -304,7 +306,6 @@ try:
         record("two authentic tabs yield stale409 and one original Move event")
 
         other=owner.new_page()
-        other.on("pageerror",lambda e:errors.append(str(e)))
         visit(other,"/en/super-admin/monitoring/forum/forum.structure/history")
         expect(other.locator('li[data-history-kind="topic.moved"]').first).to_be_visible()
         original=sql("select id from admin_history where action='topic.moved' and target_id=$1",[topic_id])[0]["id"]
@@ -313,6 +314,12 @@ try:
         assert "F5 original topic title" not in other.locator("main").inner_text()
         record("exact Owner forum.structure shows original ID, bounded before/after without content")
 
+        if a.full_feature:
+            runpy.run_path(str(repo/"tests/browser/forum-structure-f6/check.py"))["run"](
+                base=base,admin=admin,actor=actor,mover=mover,mover_id=mover_id,owner=owner,
+                guest=guest,account=account,sql=sql,record=record,private=private,
+                section_a=section_a,section_b=section_b,section_c=section_other,output=a.output)
+
         assert not errors,errors
         assert not external,external
         browser.close()
@@ -320,4 +327,6 @@ finally:
     pg.stdin.close()
     pg.wait(timeout=20)
     (a.output/"results.json").write_text(json.dumps({
-        "cases":cases,"pageErrors":errors,"external":external},ensure_ascii=False,indent=2))
+        "implementationSha":os.environ.get("IMPLEMENTATION_SHA"),
+        "checkoutSha":subprocess.check_output(["git","rev-parse","HEAD"],cwd=repo,text=True).strip(),
+        "fullFeature":a.full_feature,"cases":cases,"pageErrors":errors,"external":external},ensure_ascii=False,indent=2))

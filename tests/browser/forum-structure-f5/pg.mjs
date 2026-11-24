@@ -9,7 +9,7 @@ import { DrizzleForumRepository } from "../../../db/forum-repository.ts";
 const databaseUrl=process.env.DATABASE_URL;
 if(process.env.CI!=="true" || !databaseUrl)throw new Error("CI test database is required");
 const target=new URL(databaseUrl);
-if(!["localhost","127.0.0.1"].includes(target.hostname) || target.pathname!=="/vico_f5_browser_test")
+if(!["localhost","127.0.0.1"].includes(target.hostname) || !["/vico_f5_browser_test","/vico_f6_browser_test"].includes(target.pathname))
   throw new Error("F5 fixture must use its own disposable loopback database");
 const client=new pg.Client({connectionString:databaseUrl});
 await client.connect();
