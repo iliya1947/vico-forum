@@ -1,11 +1,16 @@
-# agents/mira.md — Task6 F7 docs review HOLD
+# agents/mira.md — Task6 F7 docs PASS
 
-Reviewed Draft #387 exact `bcf6cc68ebe1eb692f8821f581903313b7685fae` against merged main and Task6 code/evidence.
+Draft #387 was reviewed first at `bcf6cc68...`, with two factual docs findings. Lira corrected exactly those two areas.
 
-Confirmed only two current-F7 docs defects:
-- stale Authorization statement says admin initial grants do not change despite Task6 adding structure/move grants;
-- PROJECT_HISTORY_34 attributes the aggregate 18 successful applicable acceptance workflows to one linked whole-feature run.
+Re-reviewed stable exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b` against unchanged main `59e2fd9092bb1884392221eb856c2b989cc87ade`.
 
-Everything else in the six-file diff is aligned at review level with merged permissions/routes/AP-10/migration0072/structural History and repository-vs-production boundary.
+Confirmed:
+- AUTHORIZATION initial-grant wording now matches migration0072/current catalog;
+- PROJECT_HISTORY_34 correctly separates one linked whole-feature run from the aggregate 18 successful applicable acceptance workflows;
+- correction delta touches only those two docs files;
+- full PR remains the six assigned docs-only files;
+- no new current-F7 blocker.
 
-Lira owns a minimal two-line-area docs correction. After new stable #387 exact, Mira re-reviews. No independent Codex review for this docs-only closeout.
+**Mira F7 docs PASS.**
+
+Next: owner merge #387. After actual merge, evaluate Task6/#342 completion and then the established #320 route.
