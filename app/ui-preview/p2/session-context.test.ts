@@ -182,9 +182,9 @@ describe("P2 actor-selected original AuthRuntime session boundary", () => {
       request: new Request("https://vico.test/api/auth/link-social", { method: "POST" }),
       context,
     })).rejects.toThrow(P2AuthEndpointNotConfiguredError);
-    await expect(runtime.handle(new Request("https://vico.test/api/auth/change-password", {
+    await expect(runtime.handle(new Request("https://vico.test/api/auth/set-password", {
       method: "POST",
-    }))).rejects.toThrow("P2 Auth API not configured: POST /api/auth/change-password");
+    }))).rejects.toThrow("P2 Auth API not configured: POST /api/auth/set-password");
     expect(() => context.get(forumWriterContext)).toThrow();
   });
 });
