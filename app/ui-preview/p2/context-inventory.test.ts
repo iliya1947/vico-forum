@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { P2_WORKER_CONTEXTS, P2_AUTH_CONTEXTS, P2_B1_CONFIGURED_CONTEXTS } from "./context-inventory";
+import { P2_WORKER_CONTEXTS, P2_AUTH_CONTEXTS, P2_B1_CONFIGURED_CONTEXTS, P2_B2_CONFIGURED_CONTEXTS } from "./context-inventory";
 
 const contextRegistrations = (source: string) =>
   [...source.matchAll(/context\.set\s*\(\s*([A-Za-z_][A-Za-z_0-9]*)\s*,/g)]
@@ -25,6 +25,10 @@ describe("P2 production context contract inventory", () => {
     expect(P2_AUTH_CONTEXTS).toHaveLength(2);
     expect(P2_B1_CONFIGURED_CONTEXTS).toEqual([
       "forumReaderContext", "registryLoaderContext",
+    ]);
+    expect(P2_B2_CONFIGURED_CONTEXTS).toEqual([
+      "forumReaderContext", "registryLoaderContext",
+      "authRuntimeContext", "authSessionContext",
     ]);
   });
 });
