@@ -51,7 +51,7 @@ After Lena PASS → owner merge #379. No agent merges implementation.
 
 ## Independent review progress
 
-R0 entry/assembly/evidence inventory completed; no entry blocker, not final PASS. Detailed route and evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R1 foundation. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
+R0 entry/assembly and R1 foundation completed; no confirmed current-Task6 blocker in reviewed scope, not final PASS. Detailed route and evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R2a seven container commands/atomic History and lock graph, then R2b topic move/receipt/concurrency. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
 
 ## Границы
 
