@@ -1,13 +1,14 @@
-# agents/mira.md — Task6 residual R2a-01 confirmed
+# agents/mira.md — Task6 final exact coordinator PASS
 
-Previous whole-feature coordinator PASS applied to #379 exact `28064dfe51c2c62811dd5674387825a5f0289fd0`, but Lena's independent HOLD required reconciliation of one HTTP contract.
+Reviewed #379 exact `42efaaaabcae24fbb1fa74d042e18e850827b23d` against parent `28064dfe51c2c62811dd5674387825a5f0289fd0` and current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-Reconciliation against the accepted original plan and current PLAN confirms a real current-Task6 defect: ordinary section→reserved Help category is an unsupported Help transition and must be controlled409; current writer returns404 because destination Help is classified through the generic protected-category lookup.
+Residual R2a-01 is correctly closed:
+- ordinary admitted section → Help destination = 409;
+- absent destination / protected or Help source / direct protected Help operations = 404;
+- no state/version/History effect on refusal.
 
-The distinction is now explicit:
-- direct protected Help target/source and absent target →404;
-- admitted ordinary object → reserved/Help destination transition →409.
+The change is one commit, four files, two product lines; no adjacent contract regression found. Exact CI/18 acceptance and downloaded whole-feature artifact were independently checked; artifact exact SHA matches, 19 groups, no page errors/external requests. The one database retry came from an unchanged Complaints async test race and is unrelated to this Task6 correction.
 
-No plan change or owner choice is required. Leva is assigned one bounded correction. Prior coordinator PASS is not a merge gate on any changed head.
+**Mira coordinator PASS.**
 
-Next after Leva author PASS: Mira reviews the new exact, then Lena independently re-reviews that same exact.
+Next: Lena independent re-review of the same exact head. No merge/F7 before her PASS.
