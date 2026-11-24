@@ -149,7 +149,7 @@ describe("P2 canonical local Better Auth read and sign-out transport", () => {
     const flow = createP2AuthSessionFlow(baseline(), "member");
     for (const [path, method] of [
       ["/api/auth/link-social", "POST"],
-      ["/api/auth/change-password", "POST"],
+      ["/api/auth/set-password", "POST"],
       ["/api/auth/list-sessions", "GET"],
       ["/api/auth/callback/apple", "GET"],
     ]) {
