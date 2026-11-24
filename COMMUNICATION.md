@@ -16,19 +16,21 @@
 
 #354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-## Текущий этап — Task6
+## Текущий этап — Task6: F6 author gate PASS, whole-feature review
 
-Moderation visibility #355 и separate docs #378 merged; current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task5 findings/docs debt закрыты.
+Current main остаётся `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Task5 findings/docs debt закрыты. Task6 code ещё не merged.
 
-Лёва завершил current-main reconciliation полного accepted S0–S10. Канонический план — `stages/forum-structure/PLAN.md`: восстановлены исходные требования, сохранены принятые scope/global mutex/location CAS/receipt/History/permission/state contracts; конкретизирован hidden move context/authority/lock boundary после visibility.
+F1–F5 bounded coordinator PASS; F6 acceptance/final assembly завершены автором. Итоговый Draft **#379 exact bf3e97d6c52b224d1a77bd14f96597b446405472**, base main. Intermediate #380/#381/#382/#383/#386 закрыты superseded без merge до fast-forward первой ветки; GitHub metadata перепроверена.
 
-Hidden ordinary topic move требует move+visibility rights уже по принятому исходному S2.6. Source-free protected context и canonical action не расширяют public/ordinary Admin readers. Move не Restore и не source edit. Inline shared form сохраняет Editor lifetime; publication receipt replay возвращает persisted location; topic.moved History нейтральна и проецируется original source в Owner forum.structure.
+Канонический accepted S0–S10: stages/forum-structure/PLAN.md. Полная применимая S9/post-visibility evidence и provenance: **stages/forum-structure/F6_REPORT.md**. Final CI3151unit/1831PG и все18 applicable acceptance PASS на exact head. Dedicated real Worker/BetterAuth/PG17/local-R2/Chromium13groups: SHA match/no page errors/no external requests.
+
+F6-01 (automatic expectation refresh after a lost Move acknowledgement) подтверждён браузером и минимально исправлен в общей форме. Unknown outcome требует осознанного refresh; automatic POST replay не добавлен.
 
 ## Следующий gate
 
-Мира проверяет scope/fit reconciliation и определяет delivery mode/исполнителя/bounded F1. Стадии F1–F7 и done criteria — S8 плана. Owner разрешил использовать Лёву как последующего implementation agent; пока code не назначен. При его участии independent reviewer не должен участвовать в implementation.
+**Мира whole-feature coordinator review #379 main→bf3e97d** → независимый **Марк** при code independence → owner merge. Лёва автор implementation/assembly и после author gate STOP.
 
-Это planning self-check, не runtime PASS. Code/schema/dependencies/implementation PR/CI/deployment не менялись. Повторного принятия S-P/S-T нет. #342 не merge; #300/general UI/UX/Stage6 не активированы.
+F7 separate docs только после фактического merge. Не объявлять Task6 состоянием main заранее. #342 never merge; #300/general UI/UX/Stage6/deploy не активированы.
 
 ## 2026-11-20 — stacked delivery adopted
 
