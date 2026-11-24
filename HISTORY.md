@@ -40,3 +40,5 @@
 2026-11-24 — A5.4a: Owner route admission and presentation static review; LENA-OWNER-01 new finding. Evidence stages/A5/OWNER_ADMISSION.md.
 
 2026-11-24 — A5.4b1: System/Accounts/Security current measurement and observation sampling review; no additional independent finding. Evidence stages/A5/OWNER_SYSTEM_ACCOUNTS_CURRENT.md.
+
+2026-11-24 — A5.4b2: exact auth facts/attempt telemetry static review; MON-AUTH-OUTCOME-01 existing residual confirmed. Evidence stages/A5/OWNER_AUTH_TELEMETRY.md.
