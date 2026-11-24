@@ -148,10 +148,10 @@ describe("P2 canonical local Better Auth read and sign-out transport", () => {
   it("keeps non-B3 Auth API handlers unavailable and never emits provider redirects", async () => {
     const flow = createP2AuthSessionFlow(baseline(), "member");
     for (const [path, method] of [
-      ["/api/auth/sign-in/social", "POST"],
+      ["/api/auth/link-social", "POST"],
       ["/api/auth/change-password", "POST"],
       ["/api/auth/list-sessions", "GET"],
-      ["/api/auth/callback/google", "GET"],
+      ["/api/auth/callback/apple", "GET"],
     ]) {
       const request = route(path, method);
       const { context } = await flow.createRequestContext(request);
