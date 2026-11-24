@@ -1,16 +1,13 @@
-# agents/mira.md — Task6 F7 docs PASS
+# agents/mira.md — #342 COMPLETE
 
-Draft #387 was reviewed first at `bcf6cc68...`, with two factual docs findings. Lira corrected exactly those two areas.
+Service task #342 has satisfied all TASK.md completion criteria.
 
-Re-reviewed stable exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b` against unchanged main `59e2fd9092bb1884392221eb856c2b989cc87ade`.
+Final verification:
+- #343/#344, #345/#349, #346/#350, #351/#353, corrective #354, #355/#378 and #379/#387 are all closed+merged;
+- current main is `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`;
+- Task5 and Task6 final implementation/docs gates are complete;
+- no current-task finding/docs debt or open implementation/docs PR remains in this workspace.
 
-Confirmed:
-- AUTHORIZATION initial-grant wording now matches migration0072/current catalog;
-- PROJECT_HISTORY_34 correctly separates one linked whole-feature run from the aggregate 18 successful applicable acceptance workflows;
-- correction delta touches only those two docs files;
-- full PR remains the six assigned docs-only files;
-- no new current-F7 blocker.
+#342 may be closed without merge.
 
-**Mira F7 docs PASS.**
-
-Next: owner merge #387. After actual merge, evaluate Task6/#342 completion and then the established #320 route.
+Next bounded action after this closeout: inspect the established #320 route against current main/PROJECT_STATE before activating any new work.
