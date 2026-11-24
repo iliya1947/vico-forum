@@ -1,6 +1,6 @@
 # F6 — baseline acceptance и final assembly (до six-item correction)
 
-Актуальный final exact **28064dfe51c2c62811dd5674387825a5f0289fd0** и author gate после Lena HOLD: **[CORRECTIVE_REPORT.md](CORRECTIVE_REPORT.md)**. Следующая Мира whole-feature review нового exact → Lena independent re-review после Mira PASS. Ниже сохранена baseline F6/WF-01 S9/post-visibility/assembly evidence на f601e91; она не подменяет current-head checks.
+Актуальный final exact **42efaaaabcae24fbb1fa74d042e18e850827b23d** и author gate после Lena HOLD: **[CORRECTIVE_REPORT.md](CORRECTIVE_REPORT.md)**. Следующая Мира whole-feature review нового exact → Lena independent re-review после Mira PASS. Ниже сохранена baseline F6/WF-01 S9/post-visibility/assembly evidence на f601e91; она не подменяет current-head checks.
 
 ## Итог и reviewer route
 
