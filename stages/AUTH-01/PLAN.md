@@ -32,4 +32,4 @@
 3. Targeted/local tests подтверждают transport/config/template/URL/security boundaries без real egress.
 4. Existing auth signup/signin/session/linking regressions текущего поведения не сломаны применимыми checks.
 5. Stable exact head и фактические checks записаны в #320.
-6. Лира останавливается; следующая ступень только после coordinator checkpoint Миры.
+6. Лёва останавливается; следующая ступень только после coordinator checkpoint Миры.
