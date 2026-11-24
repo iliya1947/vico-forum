@@ -20,7 +20,7 @@ Baseline: main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, Better Auth 1.7.7. AU
 
 Лёва подготовил PLAN.md для AUTH-01–AUTH-07 на прежнем актуальном main. Критические source semantics перепроверены; evidence и официальные ссылки — research/better-auth-1.7.7.md. Новые существенные основания: verification JWT не одноразовый/user-ID-bound; reset может создавать Google-only credential и не объединяет consume/password/session effects одной transaction; native unlink считает rows до delete; requireEmailVerification меняет createUser403 в synthetic signup success. План закрывает эти gaps canonical Better Auth plugin + transaction-aware guard, не новой auth системой. Это предложенная реализация, не выполненные tests/acceptance.
 
-Q-01: D-01 не определяет transition старых unverified accounts/sessions. Владельцу задан вопрос, ответа пока нет. Рекомендован mandatory transition без grandfathering; обе ветви в PLAN §4, до AUTH-02 нужны решение и конкретизация cutover. D-01–D-10 самостоятельно не изменены.
+Legacy cutover не является отдельным текущим product decision: публичный production release не выполнен. D-01 задаёт единый target contract mandatory verification; local/CI fixtures меняются вместе с implementation. Реальные external accounts перед Stage 6 требуют отдельной фактической operational проверки, а не заранее встроенного grandfathering-механизма.
 
 ## Следующий переход
 
@@ -30,6 +30,6 @@ Q-01: D-01 не определяет transition старых unverified accounts
 ## Coordinator review полного технического плана — HOLD
 
 1. Структура AUTH-01–AUTH-07 и основные зависимости покрыты; старый AUTH-01 plan не переиспользован механически.
-2. **Blocker Q-01:** требуется owner decision о ранее созданных unverified credential accounts и уже выданных им sessions. Ветви materially различаются и не выводятся однозначно из текущего D-01.
-3. **Scope correction:** конкретный anti-bot provider не был зафиксирован owner decision. TASK/DECISIONS исправлены на provider-neutral challenge boundary. Технический план должен убрать Turnstile как обязательный pre-Stage-6 adapter; его можно оставить только как Stage-6 candidate после отдельного решения.
-4. После Q-01 Лёва получает один correction pass по этим двум пунктам. Implementation до coordinator PASS полного плана не назначается.
+2. **Q-01 снят:** отдельная product policy для legacy unverified users была ложной постановкой. Текущий проект pre-release, публичный production release не выполнен; current task не должна усложняться grandfathering-механизмом для гипотетических будущих данных. Mandatory verification остаётся единым target contract. Local/CI fixtures обновляются в implementation; реальные external accounts, если они обнаружатся перед Stage 6, рассматриваются как operational cutover/data case после фактической проверки.
+3. **Scope correction:** конкретный anti-bot provider не зафиксирован owner decision. AUTH-05 должен быть provider-neutral; Turnstile допустим только как отдельно подтверждённый candidate/Stage-6 choice.
+4. Лёва выполняет один correction pass только по пунктам 2–3. Implementation до coordinator PASS полного плана не назначается.
