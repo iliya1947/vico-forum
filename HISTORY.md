@@ -18,3 +18,5 @@
 2026-11-24 — A3.3b: common privacy/identity projection review; PUBLIC-PROJECTION-01 residual confirmed, no new independent defect. A3 common static scope complete; domain obligations remain. Evidence stages/A3/PRIVACY.md.
 
 2026-11-24 — A4.1: public hierarchy/read/discovery static review, four existing findings independently confirmed, Help list scope extension; no new independent finding. Evidence stages/A4/PUBLIC_READ.md.
+
+2026-11-24 — A4.2: publication/edit/revision static review; FORUM-PUB-01 residual independently confirmed, title edit scope extension; no new independent finding. Evidence stages/A4/PUBLICATION.md.
