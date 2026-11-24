@@ -278,7 +278,9 @@ def run(*, base, admin, actor, mover, mover_id, owner, guest, account, sql,
     category_transport = "**/en/admin/forum.data*"
     category_page.route(category_transport, lose_category_ack)
     category_submit = category_form.locator('button[type="submit"]')
-    category_submit.click()
+    with category_page.expect_response(lambda response: response.request.method == "POST" and "/en/admin/forum.data" in response.url) as lost_category:
+        category_submit.click()
+    assert lost_category.value.status == 204
     expect(category_page.get_by_role("alert")).to_contain_text("The result could not be confirmed.")
     expect(category_submit).to_be_disabled()
     expect(category_form.locator('input[name="name"]')).to_have_value(category_name)
