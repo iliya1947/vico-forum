@@ -38,7 +38,8 @@ A6.2c: stages/A6/ATTACHMENT_DOWNLOAD_EVIDENCE.md; public/private/hidden and Comp
 A6.2d: stages/A6/ATTACHMENT_CLEANUP.md; LENA-ATTACH-CANCEL-SPAM-01 (unbounded durable empty-operation cancellation markers); cleanup and physical deletion fences reviewed. A6.2 static scope complete.
 A6.3a1: stages/A6/LOCALE_REGISTRY_PREFERENCES.md; registry/resolution and own-account locale preference reviewed, no additional findings. A6.3a subdivided to separate bundle review.
 A6.3a2: stages/A6/UI_TRANSLATION_BUNDLES.md; exact UI sources/validation/bundle identity, read fallback and atomic publication/reconciliation reviewed, no additional findings. A6.3a static scope complete.
-Суммарно: 22 новых independent findings, 24 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A6.3b1: content translation source locale, exact-revision identity and presentation; then request planning/budgets, jobs/reconciliation/provider boundaries under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+A6.3b1: stages/A6/CONTENT_TRANSLATION_PRESENTATION.md; LENA-TRANSLATION-RECOVERY-REVISION-01 (post edit recovery mixes current original with stale translation disclosure); source locale, exact revision read identity and presentation reviewed.
+Суммарно: 23 новых independent findings, 24 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A6.3b2: semantic Markdown translation, protected fragments and source fingerprints; then request planning/budgets, jobs/reconciliation/provider boundaries under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A6.3b1.
+Следующий переход: команда разработчика продолжить → A6.3b2.
