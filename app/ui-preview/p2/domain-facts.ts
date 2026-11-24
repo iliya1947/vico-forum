@@ -364,6 +364,17 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
   for (const report of facts.complaintReports) {
     requireRef(cases, report.caseId, "report case");
     requireRef(users, report.reporterId, "reporter");
+    const complaint = facts.complaintCases.find((item) => item.id === report.caseId)!;
+    const target = complaint.target;
+    const reportedRevision = facts.revisions.find((item) => item.id === target.revisionId)!;
+    const currentId = target.kind === "post"
+      ? core.posts.find((item) => item.id === target.postId)!.bodyRevisionId
+      : core.topics.find((item) => item.id === target.topicId)!.titleRevisionId;
+    const current = facts.revisions.find((item) => item.id === currentId)!;
+    if (report.createdAt < reportedRevision.createdAt
+      || (target.revisionId !== currentId && report.createdAt >= current.createdAt)) {
+      throw new Error("P2 domain fresh complaint targets a stale or future revision");
+    }
   }
   for (const complaint of facts.complaintCases) {
     if (!facts.complaintReports.some((row) => row.caseId === complaint.id)) {
@@ -426,6 +437,11 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
     requireRef(cases, activity.caseId, "review activity case");
     requireRef(users, activity.reviewerId, "reviewer activity user");
     if (activity.expiresAt <= core.referenceTime) throw new Error("P2 domain expired active review");
+    if (!facts.complaintHistory.some((event) => event.caseId === activity.caseId
+      && event.actorId === activity.reviewerId && event.event === "review-started"
+      && event.occurredAt <= core.referenceTime && event.occurredAt < activity.expiresAt)) {
+      throw new Error("P2 domain active review has no review-started event");
+    }
   }
   ids(facts.complaintHistory, (row) => row.id, "complaint event");
   for (const event of facts.complaintHistory) {
