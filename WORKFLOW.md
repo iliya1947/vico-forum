@@ -1,30 +1,29 @@
-# WORKFLOW.md — Task6 / residual R2a-01 author checks
+# WORKFLOW.md — Task6 / residual R2a-01 author PASS → Mira
 
-## Active step
+## Active gate
 
-**Leva: residual section→Help classification corrected; exact-head checks running.**
+**Mira coordinator review нового final exact #379 после residual R2a-01 correction.**
 
-Final Draft #379 new stable exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`, base/current main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Reviewed parent28064df; no merge.
+Stable exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`; base/actual main `a3dae5815e26d158c566a27c552127b4b1ab29aa`. Reviewed parent28064df. Draft/open/unmerged; no merge. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false, metadata rechecked.
 
-Mira reconciliation confirmed the accepted distinction: direct protected/Help canonical target/source and absent destination404; admitted ordinary object→reserved/Help destination transition409. Five prior defects and topic-move R2a part are closed by review; this assignment changes only ordinary section reparent classification.
+Пять prior implementation defects и topic-move часть R2a-01 закрыты Lena re-review. Единственный residual — ordinary section reparent→Help destination, reconciled by Mira as controlled409, corrected now; новое решение reviewer ещё требуется.
 
-## Bounded correction
+## Correction / author self-check
 
-In PostgresStructureWriter.moveSection, findSection first validates the ordinary source. Immediately after it, the Help destination is rejected via the existing StructureConflictError(reserved-destination), before the generic protected-category lookup. Two product lines; successful path, locks/admission, schema/permissions/UI and generic404 helpers unchanged.
+PostgresStructureWriter.moveSection сначала валидирует ordinary source, затем отклоняет Help destination существующим StructureConflictError(reserved-destination) до generic category helper. Product delta2 lines. Missing destination/protected or Help source/direct protected Help operations404 сохранены; no write/version/History on refusal. Allowed path, locks/admission, UI/schema/permissions/dependencies не менялись.
 
-Regression:
-- New real-PG case fails on original28064df (StructureNotFoundError instead of conflict), passes after correction.
-- Ordinary section→Help conflict, absent destination404, actual service/Help-parent/missing source404, direct protected operations404.
-- Full structure/topic/post/revision/global-version/History snapshots unchanged on refusal.
-- Route regression checks private controlled409 vs404 using existing error mapper.
-- Whole-feature HTTP harness now additionally checks actual section→Help409 and absent/protected/direct Help404 with no section/global version/History effects.
+**Leva author PASS**:
+- Regression на28064df воспроизводимо падает; fixed87PG/29 action tests/lint/typecheck/Python syntax PASS.
+- CI45411761750 SUCCESS:3196unit/1834PG и все migration/schema/manifest75/runtime/credential/Worker checks.
+- Все18 applicable acceptance SUCCESS (first attempt). Whole-feature45411775325/job138507191628/artifact14929216238 downloaded/digest/integrity checked: exact SHA match,19groups,pageErrors/external=[].
+- Новый actual Worker section reparent409 / absent/protected/direct Help404, unchanged section/global version/History. Existing WF-01/F6-01/six-item/editor/privacy/authority/retained state assertions сохранены.
+- Database-only retry из-за поздно подключённого handler ожидаемого conflict в старом Complaints race test; current source не менялся. Latest database138509974425 SUCCESS,1834 tests и remaining steps.
+- Local testDB removed, PG restored stopped, symlink removed; worktree clean/main unchanged.
 
-Local author checks:87 PostgreSQL tests (commands + move),29 action tests, lint/typecheck and Python syntax PASS. Disposable testDB removed, originally stopped PG restored stopped; node_modules symlink removed, own worktree clean.
+Полная актуальная evidence и прозрачность retry: **stages/forum-structure/CORRECTIVE_REPORT.md** (latest residual section, затем сохранённая28064df baseline). Canonical PLAN unchanged; original LENA_REVIEW сохранён.
 
-CI/18 applicable acceptance launched on the new exact. Final author PASS pending.
+## Next / STOP
 
-## Next gate / boundaries
+**Leva author STOP → Mira new-exact coordinator review #379 → Lena independent re-review того же42efaaa → owner merge только после PASS.** Предыдущий implementation gate не авторизует merge изменённого head. Independent self-review не выполняется.
 
-After applicable exact-head checks/artifact verification: **Leva author STOP → Mira coordinator review → Lena independent re-review of the same exact** → owner merge only after PASS. Previous final review does not authorize merge of a changed implementation head.
-
-F7 docs only after owner merge. #342 sole service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive; #384 paused. Canonical PLAN unchanged.
+F7 docs после owner merge. #342 sole service/never merge; #300/#320/Stage6/general UI/UX/deploy inactive. #384 paused.
