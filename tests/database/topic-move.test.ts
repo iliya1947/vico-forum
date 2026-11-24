@@ -139,6 +139,7 @@ describe("F5-D original Owner forum.structure History projection",()=>{
     await structure().renameCategory("structurer","ca",{name:"Категория עברית",expectedStructureVersion:"1"});
     await structure().reorderCategory("structurer","ca",{direction:"down",expectedStructureVersion:"2"});
     const section=await structure().createSection("structurer","ca",{name:"New section",expectedStructureVersion:"3"});
+    expect(section.value).toMatchObject({name:"New section",categoryId:"ca"});
     await structure().renameSection("structurer","a",{name:"Renamed section",expectedStructureVersion:"4"});
     await structure().reorderSection("structurer","a",{direction:"down",expectedStructureVersion:"5"});
     await structure().moveSection("structurer","b",{
