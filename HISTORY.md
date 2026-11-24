@@ -11,3 +11,5 @@
 7. **2026-11-24:** #320 перестроен по текущим `SERVICE_PR_STRUCTURE.md` и `SERVICE_PR_RULES.md`; старый AUTH-01 handoff считается superseded до нового полного планирования.
 
 8. **2026-11-24:** владелец передал повторную проверку актуальности authentication lifecycle плана Лене / GPT-6.2; незавершённое назначение Миры superseded без параллельного дублирования проверки.
+
+9. **2026-11-25:** Лена завершила независимую revalidation AUTH-01–AUTH-07 на main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`: product scope PASS, все семь этапов сохранены, актуальные integration/test dependencies зафиксированы в COMMUNICATION.md. Старый AUTH-01 technical plan остаётся superseded; следующий шаг — полный технический план Лёвы, без implementation/external activation.
