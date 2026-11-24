@@ -1,23 +1,11 @@
 # agents/lena.md — личная рабочая память Лены по authentication lifecycle
 
-## Текущее назначение
+## Результат назначения
 
-Провести независимую повторную проверку актуальности текущей authentication lifecycle задачи и её декомпозиции AUTH-01–AUTH-07 против актуального `main`.
+Независимая revalidation AUTH-01–AUTH-07 завершена на main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`: PASS для product scope, не для старого технического плана или security/implementation acceptance.
 
-## Цель проверки
+Проверены существующие auth/server configuration, registration admission, SET-05, AccountState write guard, Worker runtime, bounded attempt telemetry, exact auth facts, Integrations projections и релевантные test contracts. Все существенные выводы и file anchors переданы в COMMUNICATION.md. PLAN.md уточняет reuse и оставляет full technical plan незавершённым.
 
-Установить, остаётся ли текущий продуктовый план корректным после изменений проекта, и какие его части требуют изменения до нового полного технического планирования.
+Отдельно важно: native HTTP unlink уже существует и проверяется SA04-I4c, но own SET-05 unlink flow и last-usable-method invariant ещё требуют планирования/проверки; reset credential write защищён существующим AccountState adapter guard, но это не реализованный recovery lifecycle. Старые auto-session signup expectations подлежат изменению в AUTH-02. Не запускала CI, не меняла implementation/main, не активировала внешние ресурсы.
 
-## Обязательный объём
-
-1. Начать с актуальных `AGENTS.md`, локальных `RULES.md`, `TASK.md`, `WORKFLOW.md` и этого файла.
-2. Проверить текущий `main` и относящиеся source-of-truth документы.
-3. Сопоставить AUTH-01–AUTH-07 с фактически существующими auth/session, AccountState/deactivation, registration settings, SET-05, Owner monitoring/auth facts/attempt telemetry/History и Worker runtime boundaries.
-4. Для каждого найденного расхождения установить: это реальная проблема текущей auth-задачи, уже реализованная часть, изменившаяся зависимость или только будущая возможность.
-5. Не выполнять implementation и не проектировать полный технический способ реализации вместо следующего планировочного этапа.
-6. Не принимать прежние выводы Миры или старый AUTH-01 technical plan как факт без собственной проверки.
-7. По завершении обновить только относящийся рабочий контекст в #320 и зафиксировать итог проверки так, чтобы следующим шагом можно было передать задачу на полный технический план.
-
-## Граница
-
-Внешняя активация Resend/Brevo/Turnstile/production Google OAuth и других Stage-6 ресурсов не входит в эту проверку.
+Следующее назначение — full technical plan Лёвы; на этом моя revalidation завершена.
