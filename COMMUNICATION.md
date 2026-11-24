@@ -27,9 +27,11 @@ Legacy cutover не является отдельным текущим product d
 Результат полного плана передан Мире для проверки модели/зависимостей и выбора delivery mode. Рекомендация AUTH-01 independent / AUTH-02–06 stack / AUTH-07 final gate не является implementation назначением. Implementation/CI/external activation не выполнялись. Постоянные документы main отражают реально отложенные verification/recovery до отдельного docs closeout после реализации.
 
 
-## Coordinator review и выполненный correction pass
+## Coordinator review — PASS
 
-1. Структура AUTH-01–AUTH-07 и основные зависимости покрыты; старый AUTH-01 plan не переиспользован механически.
-2. **Q-01 снят:** отдельная product policy для legacy unverified users была ложной постановкой. Текущий проект pre-release, публичный production release не выполнен; current task не должна усложняться grandfathering-механизмом для гипотетических будущих данных. Mandatory verification остаётся единым target contract. Local/CI fixtures обновляются в implementation; реальные external accounts, если они обнаружатся перед Stage 6, рассматриваются как operational cutover/data case после фактической проверки.
-3. **Scope correction:** конкретный anti-bot provider не зафиксирован owner decision. AUTH-05 должен быть provider-neutral; Turnstile допустим только как отдельно подтверждённый candidate/Stage-6 choice.
-4. Лёва выполнил correction pass по пунктам 2–3: PLAN больше не содержит legacy-ветвления/marker/session-expiry migration и зависимости от нового owner decision; AUTH-05 содержит provider-neutral contract/injection/fakes без обязательного конкретного adapter. Остальная архитектура сохранена. Результат передан Мире на correction review; coordinator PASS и delivery mode ещё не назначены. Implementation не начата.
+1. Назначенные corrections проверены: legacy/Q-01 ветвление удалено; mandatory verification остаётся единым target contract.
+2. AUTH-05 provider-neutral; конкретный anti-bot provider/adapter не является implementation dependency.
+3. Полный технический план принят для начала реализации.
+4. Delivery mode: stacked AUTH-01→AUTH-06, AUTH-07 final gate. Причина — одна зависимая vertical; промежуточный merge foundation-кода в main не нужен.
+5. Активная ступень — AUTH-01. Implementation назначена Лире; остальные ступени не активны до coordinator checkpoint предыдущей.
+6. External activation остаётся Stage-6-only.
