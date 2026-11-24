@@ -26,7 +26,8 @@ A5.4d4: stages/A5/OWNER_INTEGRATIONS_CURRENT.md; LENA-OWNER-AUTH-GROUPS-01 (reta
 A5.4e: stages/A5/OWNER_OVERVIEW.md; LENA-OWNER-OVERVIEW-ROLLBACK-01 (storage retained count survives rejected web snapshot); LENA-OWNER-HELP-01 extends to Overview through same reader. All 13 Overview areas and sampling composition reviewed.
 A5.4f1: stages/A5/OWNER_HISTORY_SOURCES.md; original global/scoped source projection, association, terminal provenance and display checked; no additional independent finding. Filters/cursors and target attribution remain.
 A5.4f2: stages/A5/OWNER_HISTORY_FILTERS.md; LENA-OWNER-OVERVIEW-CURSOR-01 (Overview size5 v2 cursor rejected by Event log size25), global/scoped filters and pagination reviewed.
-Суммарно: 13 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A5.4f3: target profile History attribution, dedup/pagination and viewer-bound presentation; then A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+A5.4f3: stages/A5/OWNER_PROFILE_HISTORY.md; LENA-OWNER-PROFILE-COVERAGE-01 (target profile hides known terminal-time coverage gaps); target attribution/paging/admission/presentation reviewed. A5 static scope complete.
+Суммарно: 14 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A6.1: editor/revision and Markdown safety/validation lifecycle; then attachments and translation/jobs under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A5.4f3.
+Следующий переход: команда разработчика продолжить → A6.1.
