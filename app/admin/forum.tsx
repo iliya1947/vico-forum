@@ -52,21 +52,33 @@ function CreateCategoryForm({actorId,version,path}:{actorId:string;version:strin
   const fetcher=useFetcher<CategoryCreateResult>();
   const revalidator=useRevalidator();
   const [name,setName]=useState("");
+  const [attempted,setAttempted]=useState(false);
   const acknowledged=useRef<unknown>(null);
   const response=fetcher.state==="idle"&&fetcher.data?.operation==="createCategory"?fetcher.data:null;
+  const success=Boolean(response&&"ok" in response&&response.ok&&response.actorId===actorId);
+  const acknowledgedResponse=Boolean(response&&("error" in response||success));
+  const unknown=attempted&&fetcher.state==="idle"&&!acknowledgedResponse;
   useEffect(()=>{
     if(!response||acknowledged.current===response)return;
     acknowledged.current=response;
-    if("ok" in response&&response.ok&&response.actorId===actorId)setName("");
-  },[response,actorId]);
-  const blocked=response&&"error" in response&&["conflict","unavailable","unauthenticated","forbidden"].includes(response.error);
+    if("ok" in response&&response.ok&&response.actorId===actorId){
+      setName("");setAttempted(false);
+      void revalidator.revalidate();
+    }
+  },[response,actorId,revalidator]);
+  const blocked=unknown||response&&"error" in response&&["conflict","unavailable","unauthenticated","forbidden"].includes(response.error);
   const busy=fetcher.state!=="idle"||revalidator.state!=="idle";
   const error=response&&"error" in response?response.error:null;
-  const errorKey=error==="conflict"?"structureActionConflict"
+  const errorKey=unknown||error==="unavailable"?"structureActionUnconfirmed":error==="conflict"?"structureActionConflict"
     :error==="forbidden"||error==="unauthenticated"?"structureActionDenied"
-    :error==="unavailable"?"structureActionUnconfirmed":"structureActionInvalid";
+    :"structureActionInvalid";
   return <div className="admin-forum-search">
-    <fetcher.Form method="post" action={path} aria-busy={busy}>
+    {/* A missing receipt keeps the attempt fenced until explicit verification. */}
+    <fetcher.Form defaultShouldRevalidate={false} method="post" action={path} aria-busy={busy}
+      onSubmit={event=>{
+        if(busy||blocked||!name.trim()){event.preventDefault();return;}
+        setAttempted(true);
+      }}>
       <input type="hidden" name="intent" value="createCategory"/>
       <input type="hidden" name="editorActorId" value={actorId}/>
       <input type="hidden" name="expectedStructureVersion" value={version}/>
@@ -78,9 +90,9 @@ function CreateCategoryForm({actorId,version,path}:{actorId:string;version:strin
     </fetcher.Form>
     {response&&"ok" in response&&response.ok&&response.actorId===actorId
       ?<p role="status">{t("structureActionSaved")}</p>:null}
-    {error?<p role="alert">{t(errorKey)}</p>:null}
+    {unknown||error?<p role="alert">{t(errorKey)}</p>:null}
     {blocked?<button type="button" disabled={busy} onClick={()=>{
-      fetcher.reset();
+      fetcher.reset();setAttempted(false);
       void revalidator.revalidate();
     }}>{t("structureActionReload")}</button>:null}
   </div>;

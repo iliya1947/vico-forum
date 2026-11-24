@@ -254,3 +254,57 @@ def run(*, base, admin, actor, mover, mover_id, owner, guest, account, sql,
     expect(draft_reply).to_have_value("F6 unsent draft through lost acknowledgement")
     uncertain.close()
     record("F6 real commit with lost acknowledgement requires explicit fresh read and never replays POST")
+
+    # WF-01: commit the real category command and lose only its typed receipt.
+    # Observe every POST through explicit refresh, independently of interception.
+    category_page = admin.new_page()
+    assert category_page.goto(base + "/en/admin/forum", wait_until="networkidle").status == 200
+    category_form = category_page.locator('form:has(input[name="intent"][value="createCategory"])')
+    category_name = "WF-01 unconfirmed category " + str(uuid4())
+    category_form.locator('input[name="name"]').fill(category_name)
+    category_version = category_form.locator('input[name="expectedStructureVersion"]')
+    original_version = category_version.input_value()
+    category_posts = []
+    category_page.on("request", lambda request: category_posts.append(request.url) if request.method == "POST" else None)
+
+    def lose_category_ack(route):
+        if route.request.method != "POST":
+            route.continue_()
+            return
+        actual = route.fetch()
+        assert actual.status == 200, (actual.status, actual.text()[:300])
+        route.fulfill(status=204, headers={"X-Remix-Response": "yes", "Cache-Control": "private, no-store"}, body="")
+
+    category_transport = "**/en/admin/forum.data*"
+    category_page.route(category_transport, lose_category_ack)
+    category_submit = category_form.locator('button[type="submit"]')
+    category_submit.click()
+    expect(category_page.get_by_role("alert")).to_contain_text("The result could not be confirmed.")
+    expect(category_submit).to_be_disabled()
+    expect(category_form.locator('input[name="name"]')).to_have_value(category_name)
+    expect(category_version).to_have_value(original_version)
+
+    def committed_category():
+        rows = sql("select id from forum_categories where name=$1", [category_name])
+        assert len(rows) == 1, rows
+        assert len(sql("select id from admin_history where action='category.created' and target_id=$1", [rows[0]["id"]])) == 1
+        assert len(category_posts) == 1, category_posts
+
+    committed_category()
+    # Neither a disabled click nor another submit event may send a new command.
+    category_submit.evaluate("button => button.click()")
+    category_form.dispatch_event("submit")
+    category_page.wait_for_load_state("networkidle")
+    committed_category()
+    category_page.screenshot(path=str(output / "wf01-category-unconfirmed.png"), full_page=True)
+    category_page.get_by_role("button", name="Refresh structure", exact=True).click()
+    current_version = sql("select version::text from forum_structure_state where id=1")[0]["version"]
+    assert current_version != original_version
+    expect(category_version).to_have_value(current_version)
+    expect(category_submit).to_be_enabled()
+    expect(category_form.locator('input[name="name"]')).to_have_value(category_name)
+    category_page.wait_for_load_state("networkidle")
+    committed_category()
+    category_page.unroute(category_transport, lose_category_ack)
+    category_page.close()
+    record("WF-01 real category commit/lost acknowledgement preserves name, fences retries and refreshes without POST replay")
