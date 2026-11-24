@@ -12,3 +12,6 @@
 - Do not perform P3 route/action matrix, P4 browser matrix, P5 cutover, SQL/WASM/external services or durable persistence.
 - P2 is already authorized: on activation, implement the next concrete P2 step rather than restating assignment/status.
 - After self-check + applicable evidence, stable exact P2 head → Mira coordinator checkpoint. P3 only after PASS.
+
+- P2-A1 raw fixture baseline PASS in Draft #385 exact `ab8e62218294dd5e08d9ac046c6c55dada5f1b38`, stacked on accepted P1. `app/ui-preview/p2/raw-baseline.ts` + 5 Vitest checks in `raw-baseline.test.ts`: stable P0 IDs, actor/Owner separation, roles, typed raw topic/post/attachments/personal-state references, clock and strict integrity validation. CI #45303006702 checks/database SUCCESS, 232 files / 2816 tests; P0/P1 Chromium PASS. No P2 runtime wiring yet.
+- Current STOP after P2-A1. Next explicitly activated P2-A2 extends current-stage raw domains and reference checks; P2 whole gate is still open. Continue only within #385, no P3/merge/deploy/stack sync.
