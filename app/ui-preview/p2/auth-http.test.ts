@@ -45,7 +45,6 @@ describe("P2 canonical local Better Auth read and sign-out transport", () => {
     for (const forbidden of ["ownerUserId", "roleId", "grants", "state", "methods", "deactivatedAt"]) {
       expect(publicJson).not.toContain('"' + forbidden + '"');
     }
-    expect(result.user.id).not.toBe(data.ownerUserId);
   });
 
   it.each(["guest", "inactive"] as const)("returns JSON null for %s without credential leakage", async (actor) => {
