@@ -221,3 +221,11 @@ STOP:
 - [Final exact-head CI #45441999103](https://github.com/iliya194/vico-forum/actions/runs/45441999103): **checks/database SUCCESS, 244 files / 2967 tests PASS**, lint/TypeScript, Chromium P0/full P1, builds, PostgreSQL17/Worker smoke. Earlier B8a lint cleanup and neutral import graph adjustment were verified on this final head. No P2 browser bootstrap or external/provider request.
 - **P2-B8a author PASS / STOP only.** Full P2 typed context inventory, management read/writes, browser runtime and Mira coordinator checkpoint remain open. P3–P5, stack sync, merge and Pages deployment not started.
 - Next new explicit developer `...` → **Лира P2-B8b1** — bounded read-only `AuthorizationManagementCapability.readManagementState()` via existing canonical `authorization-admin` loader with raw roles/grants/assignments/overrides, per-user effective Owner projection and fresh protected admission; keep targeted/list reads and all management writers for later bounded steps. Validate original route, private access/denial, consistency and no fake writes. STOP after B8b1.
+
+
+## Исполнитель P2 изменён
+
+- Лира снимается с исполнения P2 после B8a PASS.
+- Новый исполнитель P2 — **Лена**.
+- Продолжить текущий P2 с Draft #385 exact `56f63e1e0732a76419e4f3fd74f95e65e699de0a` по актуальным `AGENTS.md`, `RULES.md`, `WORKFLOW.md` и `PLAN.md`.
+- Следующий bounded шаг — B8b1. Не начинать P2 заново.
