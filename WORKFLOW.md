@@ -1,25 +1,33 @@
-# WORKFLOW.md — Task6 / F6 final assembly
+# WORKFLOW.md — Task6 / F6 author gate PASS
 
-**F6 ACTIVE → Лёва: final exact-head author checks.**
+## Активный gate — Мира: whole-feature coordinator review
 
-- Final whole-feature Draft [#379](https://github.com/iliya1947/vico-forum/pull/379).
-- Head: `bf3e97d6c52b224d1a77bd14f96597b446405472`, branch `feat/forum-structure-f1`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
-- F1–F5 bounded coordinator PASS retained in prior reports/commits; F6 rung #386 based on accepted F5 `b5efc4d4ea0db1563b5036057518f3ec2b54e656`.
-- Assembly performed: #386/#383/#382/#381/#380 were closed superseded BEFORE first-branch advancement. All checked state=closed/merged=false. First branch fast-forwarded, no merge or force-push. Original rung heads remain in Git history.
-- Canonical plan: stages/forum-structure/PLAN.md S9/F6. #342 remains service-only, never merge.
+**F1–F6 folded; author gate PASS.** Итоговый Draft [#379](https://github.com/iliya1947/vico-forum/pull/379):
+- branch `feat/forum-structure-f1`;
+- stable exact **`bf3e97d6c52b224d1a77bd14f96597b446405472`**;
+- base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`;
+-107 files/+15502−413; одна forward migration0072, accepted history unchanged;
+- Draft/open/merged=false; main не изменён.
 
-## F6 author evidence
+Канонический план: [PLAN.md](stages/forum-structure/PLAN.md). Полная S9/post-visibility matrix, evidence, F6-01 и сборка: [F6_REPORT.md](stages/forum-structure/F6_REPORT.md).
 
-- Existing F5 full UI/editor/History matrix extended with real HTTP same-session revoke/AP10, hidden direct Move/dual authority, publication receipt, published/draft/Complaint local-R2 bytes+cleanup, post-move Watch/Mute fanout.
-- New PG39-reader suite includes complete Search/Unanswered/Tags/Unread/Bookmarks/Mute location projection after Move/reparent/Hide; existing F1–F5 PG concurrency/preservation/Owner matrices remain.
-- Confirmed and corrected F6-01: automatic Router revalidation after an empty acknowledgement silently refreshed frozen Move expectations. Minimal shared Form defaultShouldRevalidate=false retains expectations until confirmed receipt or explicit refresh. Actual Chromium commit→empty204→explicit refresh passes, no automatic POST, Editor draft retained.
-- Local full Chromium13 cases, PG39, targeted unit control/Editor9, TypeScript/lint PASS.
-- Full final-head CI and applicable acceptance on #379 have been triggered. Results pending; author does not declare final PASS yet.
+## Подтверждённый author result
 
-## Next gate
+- [CI45310905077](https://github.com/iliya1947/vico-forum/actions/runs/45310905077): **3151 unit /1831 PostgreSQL**, lint/typecheck/build/UI-preview/schema/runtime/credential и built Worker HTTP smoke SUCCESS.
+- Все **18 применимых acceptance workflows** SUCCESS на том же exact head.
+- [Whole-feature Chromium/local R2](https://github.com/iliya1947/vico-forum/actions/runs/45310913957), artifact14883765442:13 groups, implementationSha=checkoutSha=bf3e97d, fullFeature=true, pageErrors/external empty. Артефакт скачан и проверен; narrow/RTL/hidden screenshots просмотрены.
+- F6-01 подтверждён реальным lost acknowledgement после committed Move и исправлен минимальным shared Form defaultShouldRevalidate=false. Confirmed receipt обновляет через existing explicit effect; unknown требует explicit refresh, no automatic POST, Editor draft retained.
 
-Лёва completes final checks and records S9 evidence/assembly metadata in F6_REPORT, then **STOP → Мира whole-feature coordinator review** of #379 at exact head.
+## Final assembly metadata
 
-After Mira whole-feature PASS: independent **Марк** if code-independent → owner merge. Лёва is implementation/assembly author, not independent reviewer.
+F1–F5 bounded coordinator PASS сохранены в истории. Accepted F5 b5efc4d4ea0db1563b5036057518f3ec2b54e656; F6 rung #386 добавил6files/+344−19.
 
-F7 docs inactive until owner merge. No Stage6/#300/general UI/UX/deploy.
+#386/#383/#382/#381/#380 закрыты superseded **до** fast-forward первой ветки. После advancement повторно проверено: все state=closed/merged=false, исходные heads сохранены. Force push и merge не выполнялись.
+
+## Следующий шаг и STOP
+
+**Мира** проверяет whole-feature #379 main→bf3e97d против полного PLAN и F6_REPORT; при confirmed current-scope findings возвращает один bounded пакет. Author gate не является coordinator/independent PASS.
+
+**Лёва STOP**; автор implementation/acceptance/assembly не проводит independent review своего кода. После Mira whole-feature PASS — **Марк** при code independence, затем **owner merge**.
+
+F7 docs активируется отдельно только после фактического owner merge. #342 — единственный service channel, никогда не merge. #300/Stage6/general UI/UX/deploy не активированы.
