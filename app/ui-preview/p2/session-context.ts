@@ -4,7 +4,9 @@ import {
 } from "../../auth/request-context";
 import { initializeAuthContext } from "../../auth/session-context";
 import { createP2PublicReadContext } from "./public-read-context";
-import { authorizationOwnerContext } from "../../authorization/request-context";
+import { authorizationContext, authorizationOwnerContext } from "../../authorization/request-context";
+import { authSessionForRequest } from "../../auth/request-context";
+import { createP2AuthorizationReadCapability } from "./authorization-read";
 import { createP2AccountSecurityRuntime } from "./account-security";
 import { createP2GoogleSocialAdapter, type P2GoogleScenario } from "./google-auth";
 import { previewActorId, type PreviewActor, type PreviewRawBaseline } from "./raw-baseline";
@@ -501,6 +503,10 @@ export function createP2AuthSessionFlow(
       const context = createP2PublicReadContext(baseline);
       context.set(authorizationOwnerContext, baseline.ownerUserId);
       const authHeaders = await initializeAuthContext(context, request, runtime);
+      // A new transient email/Google actor inherits built-in user grants; raw
+      // roles/assignments stay unchanged and each request gets a fresh reader.
+      context.set(authorizationContext,
+        createP2AuthorizationReadCapability(baseline, authSessionForRequest(context)?.user.id));
       return { context, authHeaders };
     },
   };
