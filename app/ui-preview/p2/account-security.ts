@@ -10,7 +10,7 @@ import type { PreviewRawBaseline, PreviewRawUser } from "./raw-baseline";
 /** Better Auth 1.7.7 default freshAge is 24 hours, in seconds. */
 const DEFAULT_FRESH_AGE_MS = 24 * 60 * 60 * 1000;
 
-/** Remaining session-revocation writes are intentionally separate B7b2 work. */
+/** Unwired standalone adapters remain fail-closed; the preview runtime owns revocation state. */
 export class P2AccountSecurityWriteNotConfiguredError extends Error {
   constructor(operation: string) {
     super("P2 AccountSecurity write not configured: " + operation);
@@ -26,7 +26,7 @@ export interface P2CredentialMutation {
 }
 
 /**
- * Original typed AccountSecurityRuntime, with bounded B7b1 credential changes.
+ * Original typed AccountSecurityRuntime, with bounded B7b1/B7b2 local mutations.
  * Identity comes only from the controller-selected AuthSession. Headers/form
  * values never select an account; origin/field admission belongs to routes.
  */
@@ -35,6 +35,7 @@ export function createP2AccountSecurityRuntime(
   selectedSession: () => AuthSession | null,
   transientAccount: (userId: string) => PreviewRawUser | undefined,
   credentialMutation?: P2CredentialMutation,
+  revokedSessionIds?: Set<string>,
 ): AccountSecurityRuntime {
   function verifyIdentity(identity: AccountSecurityIdentity): { selected: AuthSession; account: PreviewRawUser } {
       const selected = selectedSession();
@@ -53,30 +54,46 @@ export function createP2AccountSecurityRuntime(
       return { selected, account };
   }
 
+  function verifyLiveSession(selected: AuthSession): { now: number; fresh: boolean } {
+    const now = baseline.referenceTime.getTime();
+    const created = selected.session.createdAt.getTime();
+    const expires = selected.session.expiresAt.getTime();
+    if (!Number.isFinite(now) || !Number.isFinite(created) || !Number.isFinite(expires)
+      || created > now || expires <= now || revokedSessionIds?.has(selected.session.id)) {
+      throw new AccountSecurityError("unauthenticated");
+    }
+    return { now, fresh: now - created < DEFAULT_FRESH_AGE_MS };
+  }
+
+  function ownOtherSessions(userId: string, currentId: string, now: number) {
+    return baseline.domains.sessions.filter((entry) =>
+      entry.userId === userId && entry.id !== currentId
+      && entry.issuedAt.getTime() <= now && entry.expiresAt.getTime() > now
+      && !revokedSessionIds?.has(entry.id));
+  }
+
+  function authorizeRevocation(identity: AccountSecurityIdentity) {
+    if (!revokedSessionIds) throw new P2AccountSecurityWriteNotConfiguredError("session revocation");
+    const { selected } = verifyIdentity(identity);
+    const { now, fresh } = verifyLiveSession(selected);
+    if (!fresh) throw new AccountSecurityError("not-fresh");
+    return { selected, now };
+  }
+
   return {
     async read(headers: Headers, identity: AccountSecurityIdentity) {
       void headers; // No request-supplied actor selection in P2.
       const { selected, account } = verifyIdentity(identity);
-      const now = baseline.referenceTime.getTime();
-      const created = selected.session.createdAt.getTime();
-      const expires = selected.session.expiresAt.getTime();
-      if (!Number.isFinite(now) || !Number.isFinite(created) || !Number.isFinite(expires)
-        || created > now || expires <= now) {
-        throw new AccountSecurityError("unauthenticated");
-      }
+      const { now, fresh } = verifyLiveSession(selected);
       const linkedMethods = [...new Set(account.methods)];
       const hasPassword = linkedMethods.includes("password");
-      const fresh = now - created < DEFAULT_FRESH_AGE_MS;
       if (!fresh) {
         return { linkedMethods, hasPassword, sessionAccess: "not-fresh" as const, sessions: [] };
       }
 
       // The current auth session may be transient (new email or Google account)
       // and need not be present in raw Better Auth session fixtures.
-      const sessions = baseline.domains.sessions
-        .filter((entry) => entry.userId === identity.userId
-          && entry.issuedAt.getTime() <= now && entry.expiresAt.getTime() > now
-          && entry.id !== selected.session.id)
+      const sessions = ownOtherSessions(identity.userId, selected.session.id, now)
         .map((entry) => ({
           id: entry.id,
           createdAt: entry.issuedAt.toISOString(),
@@ -114,11 +131,22 @@ export function createP2AccountSecurityRuntime(
       }
       credentialMutation.storePassword(identity.userId, newPassword);
     },
-    async revokeOneOther() {
-      throw new P2AccountSecurityWriteNotConfiguredError("revokeOneOther");
+    async revokeOneOther(headers, identity, sessionId) {
+      void headers; // Original Settings action owns Origin and allowlisted form admission.
+      const { selected, now } = authorizeRevocation(identity);
+      if (sessionId === selected.session.id) throw new AccountSecurityError("current-session");
+      const other = ownOtherSessions(identity.userId, selected.session.id, now)
+        .find((entry) => entry.id === sessionId);
+      if (!other) throw new AccountSecurityError("session-not-found");
+      revokedSessionIds!.add(other.id);
     },
-    async revokeAllOthers() {
-      throw new P2AccountSecurityWriteNotConfiguredError("revokeAllOthers");
+    async revokeAllOthers(headers, identity) {
+      void headers;
+      const { selected, now } = authorizeRevocation(identity);
+      // Only the selected user's existing, active, non-current sessions.
+      for (const session of ownOtherSessions(identity.userId, selected.session.id, now)) {
+        revokedSessionIds!.add(session.id);
+      }
     },
   };
 }
