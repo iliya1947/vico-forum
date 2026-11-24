@@ -142,3 +142,12 @@ STOP:
 - Out of scope: full route/action UI matrix and screen-by-screen coverage (P3), browser acceptance matrix/anti-drift (P4), cutover/deletion of old preview (P5), SQL/WASM/external services/durable persistence.
 - STOP only for a concrete P1/PLAN blocker or a required production capability contract that cannot be represented without changing the accepted architecture. Do not stop merely to restate status.
 - After author self-check and applicable CI/contract/browser evidence, hand the stable exact P2 head to Mira for coordinator checkpoint. Do not start P3 before PASS.
+
+## P2-A1 — typed core fixture baseline / PASS / STOP
+
+- New stacked [Draft #385](https://github.com/iliya1947/vico-forum/pull/385), base accepted P1 branch/head `a0137ce3a67bf451b650395e7b9b883eaa01aa46`; exact P2-A1 head `ab8e62218294dd5e08d9ac046c6c55dada5f1b38`.
+- Added `app/ui-preview/p2/raw-baseline.ts`: typed synthetic core entities (identity, account state, auth methods, original permission grants/assignments/overrides, exact Owner binding, categories/sections/topics/posts, P0 attachment reference, bookmark/watch/mute/block/read-state) with a reference-time clock, stable P0 IDs and explicit cross-entity validation. Owner's regular role remains `user`, independent of exact Owner binding. Actor selection is referential, not an authorship rewrite.
+- New `app/ui-preview/p2/raw-baseline.test.ts` contains 5 cases for accepted P0 identity links, role/Owner separation, actor-switch stability, relative account retention, rejection of dangling, cross-topic, self-block, duplicate and inconsistent account references.
+- [Exact-head CI #45303006702](https://github.com/iliya1947/vico-forum/actions/runs/45303006702): **checks/database SUCCESS**, **232 unit files / 2816 tests PASS**; lint/typecheck, full 78-route P1 and P0 Chromium, production/preview builds, PostgreSQL/Worker smoke PASS.
+- **P2-A1 PASS / STOP only.** This is raw identity/forum foundation, not completion of the entire §10.1 entity inventory or P2 capability/context gate. P1/P0 implementation unchanged; no P2 browser fixture/router integration claimed.
+- Next on a new activation: **P2-A2** extend the same raw baseline with the remaining current-stage entity families (complaints/measures, notification/privacy/registration, translations, Owner monitoring, etc.) and cross-reference tests, in bounded scope. No generic capability adapter, full P3 UI matrix, stack sync/merge/deploy.
