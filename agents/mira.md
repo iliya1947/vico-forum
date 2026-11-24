@@ -1,10 +1,11 @@
-# agents/mira.md — Task6 corrective reconciliation complete
+# agents/mira.md — Task6 whole-feature coordinator PASS
 
-Lena independent review of #379 exact `f601e91dcab19ee1992012564e9a0b557c2ea596` ended HOLD.
+Reviewed final #379 exact `28064dfe51c2c62811dd5674387825a5f0289fd0` against main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-Mira independently reconciled all six items against current code and canonical PLAN:
-- R2a-01 is an implementation/HTTP-classification mismatch, not a reason to rewrite PLAN: ordinary admitted source → reserved/Help destination must be 409; genuine absent/protected/hidden/Help-source remains neutral 404.
-- R3b-01, R4a-01, R4a-02, R4a-03 and R4b-01 are confirmed current-Task6 implementation defects.
-- No future-only finding is included.
+The correction is one commit over previously reviewed `f601e91...`. All six Lena findings were independently reconciled and the 21-file corrective delta plus adjacent seams were reviewed. No confirmed current-Task6 blocker remains.
 
-Leva owns one bounded corrective package. After new stable exact + author gate: Mira whole-feature coordinator review; only then Lena independent re-review. No merge/F7 before those gates.
+Evidence independently checked: exact CI/18 acceptance, connected artifact provenance/integrity/results, and relevant screenshots. Two retries are unchanged unrelated harness races on the same exact head and do not block Task6.
+
+**Mira coordinator PASS.**
+
+Next: Lena independently re-reviews the same exact head. No merge/F7 before Lena PASS and owner action.
