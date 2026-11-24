@@ -10,3 +10,5 @@
 2026-11-24 — A3.1: static auth/session review, one new independent finding LENA-AUTH-01, seven current prior finding paths, one contract conflict AUTH-REG-01. Evidence stages/A3/AUTH_SESSION.md.
 
 2026-11-24 — A3.2a: central RBAC/Owner/AccountState review; LENA-AUTHZ-01 and existing AUTHZ-FAIL-01 confirmed statically. AP-10 transitions/read review next. Evidence stages/A3/AUTHORIZATION_CORE.md.
+
+2026-11-24 — A3.2b: AP-10 measures/appeals central static review, one new LENA-MEASURE-01 queue paging defect; no new independent authorization escalation or transaction integrity defect. Evidence stages/A3/MEASURES.md.
