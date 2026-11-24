@@ -51,7 +51,7 @@ After Lena PASS → owner merge #379. No agent merges implementation.
 
 ## Independent review progress
 
-R0/R1/R2a complete. R2a-01 low/P3 current Task6 HTTP-contract discrepancy (reserved container transition returns 404 vs S7 409), pending reconciliation; no transactional/authority blocker found in R2a. Not final PASS. Detailed evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R2b topic move/hidden admission/receipt/cross-domain concurrency. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
+R0/R1/R2 complete. R2a-01 low/P3 current Task6 HTTP-contract discrepancy (reserved container/Help destination returns 404 vs S7 409) pending reconciliation; no additional confirmed finding in R2b. In-flight AP10/CAS ordering noted for final reconciliation, not counted. Not final PASS. Detailed evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R3a coherent public/Admin hierarchy readers/order/snapshot tests; then R3b protected context/picker/route/privacy. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
 
 ## Границы
 

@@ -79,3 +79,5 @@
 2026-11-24 — Lena independent review R1 foundation completed on f601e91; no confirmed current-Task6 blocker in reviewed scope. Next R2a. No final PASS.
 
 2026-11-24 — Lena independent R2a seven container commands complete on f601e91; R2a-01 minor HTTP contract discrepancy recorded, no transactional blocker. Next R2b.
+
+2026-11-24 — Lena independent R2b topic move/retained state/receipt concurrency review complete on f601e91; R2a-01 extended to Help destination, no new independent confirmed finding. Next R3a.
