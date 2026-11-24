@@ -145,7 +145,8 @@ describe("P2 actor-selected original AuthRuntime session boundary", () => {
     const request = page({ Cookie: "not-an-authority=example" });
     const context = new RouterContextProvider();
     const headers = await initializeAuthContext(context, request, runtime);
-    expect(getSession).toHaveBeenCalledExactlyOnceWith(request.headers);
+    expect(getSession).toHaveBeenCalledTimes(1);
+    expect(getSession).toHaveBeenCalledWith(request.headers);
     expect(authSessionForRequest(context)?.user.id).toBe(seed.actorIds.moderator);
     expect(authRuntimeForRequest(context)).toBe(runtime);
     expect(headers.getSetCookie()).toEqual([]);
