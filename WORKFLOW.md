@@ -128,3 +128,17 @@ STOP:
 - No duplicated product route/action layer, SQL/WASM runtime, external server/provider or P2 fixture universe was introduced.
 - Parallel main drift does not invalidate this checkpoint because accepted lower P0 did not change.
 - P2 is not started or authorized by this PASS. Next bounded step requires separate continuation/assignment.
+
+## P2 — assignment to Lira
+
+- P1 coordinator checkpoint PASS: Draft #375 exact `a0137ce3a67bf451b650395e7b9b883eaa01aa46`.
+- P2 is the next authorized bounded stage. Create a new stacked implementation PR with base on the P1 branch/head, not on main.
+- Goal: one coherent typed fixture/capability environment for the current production route/runtime contracts, without duplicating product logic or building a second backend.
+- Required P2 scope is PLAN §10–11 and §15 P2: raw baseline entities; stable identities; real fixture User/Moderator/Admin/Owner with raw grants/binding; all current production contexts/capabilities; test auth/session/resources/localization/monitoring; deterministic fault/delay profiles; small overlays/transient patches only where a real UI flow requires them.
+- Integrity gate: foreign references resolve; the same user/topic/case keeps one identity/owner across readers; actor switch must not rewrite authorship/ownership; public projections must not receive private/Owner data.
+- Context gate: typed registration must cover the current production context inventory; no broad `any`, silent defaults, generic success adapter or catch-all capability implementation.
+- State gate: explicitly verify Guest, ordinary User, privileged reader, exact Owner, no-session and inactive-account states. Storage acknowledgement may be non-durable when PLAN allows it, but real handlers must produce the normal result/error/redirect.
+- Reuse the accepted P1 runtime/transport and P1 attachment foundation. Do not re-open P1 unless a concrete lower-stage defect blocks P2.
+- Out of scope: full route/action UI matrix and screen-by-screen coverage (P3), browser acceptance matrix/anti-drift (P4), cutover/deletion of old preview (P5), SQL/WASM/external services/durable persistence.
+- STOP only for a concrete P1/PLAN blocker or a required production capability contract that cannot be represented without changing the accepted architecture. Do not stop merely to restate status.
+- After author self-check and applicable CI/contract/browser evidence, hand the stable exact P2 head to Mira for coordinator checkpoint. Do not start P3 before PASS.
