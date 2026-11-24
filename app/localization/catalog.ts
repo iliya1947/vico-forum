@@ -40,8 +40,8 @@ export const canonicalEnglishCatalog = {
     historyStructureNeighborId: message("historyStructureNeighborId", "Swapped neighbor ID", "F5 Owner original forum.structure History: labeled bounded structural change field."),
     historyStructureNeighborBeforePosition: message("historyStructureNeighborBeforePosition", "Neighbor position before", "F5 Owner original forum.structure History: labeled bounded structural change field."),
     historyStructureNeighborAfterPosition: message("historyStructureNeighborAfterPosition", "Neighbor position after", "F5 Owner original forum.structure History: labeled bounded structural change field."),
-    historyStructureBeforeVersion: message("historyStructureBeforeVersion", "Structure version before", "F5 Owner original forum.structure History: labeled bounded structural change field."),
-    historyStructureAfterVersion: message("historyStructureAfterVersion", "Structure version after", "F5 Owner original forum.structure History: labeled bounded structural change field."),
+    historyStructureBeforeVersion: message("historyStructureBeforeVersion", "Version before", "F5 Owner original forum.structure History: labeled bounded structural change field."),
+    historyStructureAfterVersion: message("historyStructureAfterVersion", "Version after", "F5 Owner original forum.structure History: labeled bounded structural change field."),
 
     sa08TerminalCoverageNote: message("sa08TerminalCoverageNote", "These existing checks count retained records with missing or invalid terminal times or missing human attribution. Zero counts do not establish complete History or overall service health.", "SA08 Overview disclosure of existing retained terminal-time and human-attribution coverage."),
     sa08TerminalCoverageLimited: message("sa08TerminalCoverageLimited", "Retained records have time or human attribution gaps.", "SA08 Overview disclosure of existing retained terminal-time and human-attribution coverage."),
