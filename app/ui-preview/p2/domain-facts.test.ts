@@ -81,6 +81,8 @@ describe("P2 cross-domain raw fixture integrity", () => {
     });
     expect(base.domains.locales.map((locale) => locale.tag)).toEqual(["en", "ru", "he"]);
     expect(base.domains.locales.find((locale) => locale.tag === "he")?.direction).toBe("rtl");
+    expect(base.users.find((user) => user.identity.id === base.actorIds.moderator)?.identity.locale).toBe("ru");
+    expect(base.domains).not.toHaveProperty("userPreferences");
     expect(catalogDescriptors().some((item) => item.namespace === "common" && item.key === "sa08Unavailable")).toBe(true);
     expect(base.domains.contentTranslations[0]).toMatchObject({
       contentType: "topic-title", contentId: "preview-review-topic",
@@ -146,6 +148,27 @@ describe("P2 cross-domain raw fixture integrity", () => {
       })),
     });
     expect(() => assertP2RawBaselineIntegrity(badMeasureAppeal)).toThrow("measure appeal subject mismatch");
+    const lateAppeal = mutate(base, {
+      ...base.domains,
+      measureAppeals: base.domains.measureAppeals.map((appeal) => ({ ...appeal, createdAt: now })),
+    });
+    expect(() => assertP2RawBaselineIntegrity(lateAppeal)).toThrow("outside active account lifecycle");
+  });
+
+  it("rejects a fresh Complaint against an already superseded source revision", () => {
+    const base = baseline();
+    const stale = mutate(base, {
+      ...base.domains,
+      complaintCases: base.domains.complaintCases.map((item) => item.id === "preview-case-open"
+        ? { ...item, target: { kind: "topic-title" as const,
+          topicId: "preview-review-topic", revisionId: "review-title-v0" } } : item),
+    });
+    expect(() => assertP2RawBaselineIntegrity(stale)).toThrow("fresh complaint targets a stale");
+    const missingActivityEvent = mutate(base, {
+      ...base.domains,
+      complaintHistory: base.domains.complaintHistory.filter((item) => item.event !== "review-started"),
+    });
+    expect(() => assertP2RawBaselineIntegrity(missingActivityEvent)).toThrow("no review-started event");
   });
 
   it("rejects privacy leakage, invalid translation references and wrong attachment bytes", () => {
