@@ -64,6 +64,9 @@ describe("P2 cross-domain raw fixture integrity", () => {
     }
     expect(shifted.domains.sessions[0]!.expiresAt.getTime() - first.domains.sessions[0]!.expiresAt.getTime())
       .toBe(7 * 86_400_000);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    expect(first.domains.measures[0]!.id).toMatch(uuid);
+    expect(first.domains.measureAppeals[0]!.id).toMatch(uuid);
     expect(first.domains.measures[0]!.expiresAt!.getTime()).toBeGreaterThan(now.getTime());
     expect(shifted.domains.measures[0]!.expiresAt!.getTime() - first.domains.measures[0]!.expiresAt!.getTime())
       .toBe(7 * 86_400_000);
