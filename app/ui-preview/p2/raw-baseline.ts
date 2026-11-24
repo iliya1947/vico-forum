@@ -154,7 +154,8 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
       {
         id: "p0-first-post", topicId: P0_TOPIC_ID, authorId,
         parentPostId: null, bodyRevisionId: "p0-post-body-revision",
-        body: P0_POST_BODY, sourceLocale: "en", createdAt: at(-4 * day + hour),
+        body: P0_POST_BODY + "\n\n![P0 fixture image](vico-attachment:" + P0_ATTACHMENT_ID + ")",
+        sourceLocale: "en", createdAt: at(-4 * day + hour),
       },
       {
         id: "preview-review-post", topicId: "preview-review-topic", authorId: memberId,
