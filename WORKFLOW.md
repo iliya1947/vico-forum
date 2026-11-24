@@ -20,7 +20,8 @@ A5.4b1: stages/A5/OWNER_SYSTEM_ACCOUNTS_CURRENT.md; ten System/Accounts/Security
 A5.4b2: stages/A5/OWNER_AUTH_TELEMETRY.md; exact auth facts, source attribution and bounded attempts static review. MON-AUTH-OUTCOME-01 independently confirmed existing; no new independent finding. A5.4b complete.
 A5.4c: stages/A5/OWNER_NATIVE_CURRENT.md; LENA-OWNER-HELP-01 (queue-eligible aggregate counts hidden primary topics/answer targets); ten native monitors and shared sampling static review complete.
 A5.4d1: stages/A5/OWNER_BACKGROUND_LOCALIZATION.md; six SA07 Background/Localization current monitors reviewed, no additional defect; cleanup predicates and runtime flags verified, producer details remain A6/History.
+A5.4d2: stages/A5/OWNER_FILES_STORAGE.md; Files native metrics, 13 retained R2 slots, actual adapter capture and bounded recorder reviewed; no additional independent finding. Full attachment lifecycle A6.
 Суммарно: 10 новых independent findings, 22 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A5.4d2: SA07 Files/attachment and retained storage current monitoring; then Data/Integrations in bounded subblocks, SA08 Overview and global/scoped/target History. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+Следующий bounded-блок A5.4d3: SA07 Data current application/compatibility/retention; then Integrations, SA08 Overview and global/scoped/target History. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A5.4d2.
+Следующий переход: команда разработчика продолжить → A5.4d3.
