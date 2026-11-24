@@ -174,16 +174,17 @@ describe("P2 actor-selected original AuthRuntime session boundary", () => {
       .toThrow("ambiguous active session");
   });
 
-  it("keeps auth endpoints and account security unwired instead of simulating success", async () => {
+  it("keeps unrelated Auth and account security endpoints unwired", async () => {
     const { context } = await createP2SessionReadContext(baseline(), "member", page());
     const runtime = authRuntimeForRequest(context);
     expect(runtime.security).toBeUndefined();
     await expect(authApiLoader({
-      request: new Request("https://vico.test/api/auth/get-session"), context,
+      request: new Request("https://vico.test/api/auth/sign-in/email", { method: "POST" }),
+      context,
     })).rejects.toThrow(P2AuthEndpointNotConfiguredError);
-    await expect(runtime.handle(new Request("https://vico.test/api/auth/sign-out", {
+    await expect(runtime.handle(new Request("https://vico.test/api/auth/change-password", {
       method: "POST",
-    }))).rejects.toThrow("P2 Auth API not configured: POST /api/auth/sign-out");
+    }))).rejects.toThrow("P2 Auth API not configured: POST /api/auth/change-password");
     expect(() => context.get(forumWriterContext)).toThrow();
   });
 });
