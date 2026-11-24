@@ -340,6 +340,27 @@ def run(*, base, admin, actor, mover, mover_id, owner, guest, account, sql,
     private(missing, 404)
     record("R2a-01 admitted ordinary to Help is 409; absent target stays private 404 without effects")
 
+    # Residual R2a-01: the same distinction for ordinary section reparent.
+    section_before = sql("select id,category_id,name,sort_position::text from forum_sections where id=$1", [section_c])
+    structure_before = sql("select version::text from forum_structure_state where id=1")
+    reparent_events = sql("select id from admin_history where action='section.moved' order by position")
+    reparent_fields = {"intent": "moveSection", "editorActorId": actor,
+                       "expectedStructureVersion": structure_before[0]["version"],
+                       "expectedCategoryId": section_before[0]["category_id"], "targetCategoryId": "help-solutions"}
+    section_url = base + "/en/admin/forum/sections/" + quote(section_c, safe="") + ".data"
+    private(admin.request.post(section_url, headers={"Origin": base}, form=reparent_fields), 409)
+    private(admin.request.post(section_url, headers={"Origin": base},
+                               form={**reparent_fields, "targetCategoryId": str(uuid4())}), 404)
+    private(admin.request.post(base + "/en/admin/forum/sections/help-solutions-questions.data", headers={"Origin": base},
+                               form={**reparent_fields, "expectedCategoryId": "help-solutions"}), 404)
+    private(admin.request.post(base + "/en/admin/forum/categories/help-solutions.data", headers={"Origin": base}, form={
+        "intent": "createSection", "editorActorId": actor, "expectedStructureVersion": structure_before[0]["version"],
+        "name": "Forbidden Help child"}), 404)
+    assert sql("select id,category_id,name,sort_position::text from forum_sections where id=$1", [section_c]) == section_before
+    assert sql("select version::text from forum_structure_state where id=1") == structure_before
+    assert sql("select id from admin_history where action='section.moved' order by position") == reparent_events
+    record("Residual R2a-01 actual section to Help reparent409; absent/protected/direct Help404; no state/version/History effect")
+
     # R3b-01: create a genuine Help question, then Hide via its canonical action.
     help_author, help_actor = account("r3b-help-author")
     help_created = help_author.request.post(base + "/en/categories/help-solutions", headers={"Origin": base}, form={

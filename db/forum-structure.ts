@@ -229,6 +229,8 @@ export class PostgresStructureWriter implements StructureWriter {
     const id = identity(sectionId), expected = identity(input.expectedCategoryId), target = identity(input.targetCategoryId);
     return this.run<SectionStructure>(actorId, input.expectedStructureVersion, async client => {
       const initial = await this.findSection(client, id);
+      // Classify the Help destination only after validating the ordinary source.
+      if (target === HELP_SOLUTIONS_CATEGORY_ID) throw new StructureConflictError("reserved-destination");
       await this.categories(client, [initial.categoryId, target]);
       const [before] = await this.sections(client, initial);
       if (before.categoryId !== expected) throw new StructureConflictError("parent-changed");

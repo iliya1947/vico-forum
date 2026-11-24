@@ -158,4 +158,16 @@ describe("F5-B category and section strict Admin POST actions",()=>{
     expect((await invoke(v,unavailable.context)).init?.status).toBe(503);
     Object.values(unavailable.writers).forEach(w=>expect(w).not.toHaveBeenCalled());
   });
+  it("R2a-01 maps reserved section reparent to private 409 and retains protected/missing 404",async()=>{
+    const v=variants[5];
+    for(const [error,status,kind] of [
+      [new StructureConflictError("reserved-destination"),409,"conflict"],
+      [new StructureNotFoundError("Ordinary category not found"),404,"notFound"],
+    ] as const){
+      const e=env();e.writers.moveSection.mockRejectedValueOnce(error);
+      const result=await invoke(v,e.context);
+      expect(result).toMatchObject({data:{operation:"moveSection",error:kind},init:{status,headers:{"Cache-Control":"private, no-store"}}});
+      expect(e.writers.moveSection).toHaveBeenCalledTimes(1);
+    }
+  });
 });

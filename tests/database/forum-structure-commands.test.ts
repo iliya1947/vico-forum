@@ -188,7 +188,6 @@ describe("F2 real authoritative structure commands and History", () => {
       await expect(writer.renameCategory("actor", id, rename("Help"))).rejects.toBeInstanceOf(StructureNotFoundError);
       await expect(writer.reorderCategory("actor", id, { ...current(), direction: "up" })).rejects.toBeInstanceOf(StructureNotFoundError);
       await expect(writer.createSection("actor", id, rename())).rejects.toBeInstanceOf(StructureNotFoundError);
-      await expect(writer.moveSection("actor", "s-a", { ...current(), expectedCategoryId: "c-a", targetCategoryId: id })).rejects.toBeInstanceOf(StructureNotFoundError);
     }
     for (const id of [SERVICE,"absent"]) {
       await expect(writer.renameSection("actor", id, rename("Questions"))).rejects.toBeInstanceOf(StructureNotFoundError);
@@ -198,6 +197,21 @@ describe("F2 real authoritative structure commands and History", () => {
     await expect(writer.createCategory("actor", rename("\nBad"))).rejects.toBeInstanceOf(StructureValidationError);
     await expect(writer.reorderCategory("actor", "c-a", { ...current(), direction: "sideways" as never })).rejects.toBeInstanceOf(StructureValidationError);
     await expect(writer.renameCategory("actor", "c-a", rename("A", "00"))).rejects.toBeInstanceOf(StructureValidationError);
+    expect(await snapshot()).toEqual(before);
+  });
+  it("R2a-01 distinguishes unsupported ordinary section to Help reparent from protected or absent objects", async () => {
+    await client.query("insert into forum_sections(id,category_id,name,sort_position) values('help-child',$1,'Protected child',1)",[HELP]);
+    const before = await snapshot();
+    await expect(writer.moveSection("actor","s-a",{...current(),expectedCategoryId:"c-a",targetCategoryId:HELP}))
+      .rejects.toMatchObject({reason:"reserved-destination"});
+    expect(await snapshot()).toEqual(before);
+    await expect(writer.moveSection("actor","s-a",{...current(),expectedCategoryId:"c-a",targetCategoryId:"absent"}))
+      .rejects.toBeInstanceOf(StructureNotFoundError);
+    for(const id of [SERVICE,"help-child","absent"]){
+      await expect(writer.moveSection("actor",id,{...current(),expectedCategoryId:HELP,targetCategoryId:HELP}))
+        .rejects.toBeInstanceOf(StructureNotFoundError);
+      expect(await snapshot()).toEqual(before);
+    }
     expect(await snapshot()).toEqual(before);
   });
   it("requires the exact permission, respects role/override revocation and admits the bound Owner", async () => {
