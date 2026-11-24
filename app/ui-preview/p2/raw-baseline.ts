@@ -85,14 +85,14 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
     throw new Error("P2 reference clock must be valid");
   }
   const at = (delta: number) => new Date(referenceTime.getTime() + delta);
-  const identity = (id: string, name: string): AuthUser => ({
+  const identity = (id: string, name: string, locale = "en"): AuthUser => ({
     id, name, email: id + "@preview.invalid", emailVerified: true,
-    image: null, locale: "en", createdAt: at(-120 * day), updatedAt: at(-day),
+    image: null, locale, createdAt: at(-120 * day), updatedAt: at(-day),
   });
   const users: PreviewRawUser[] = [
     { identity: identity(memberId, "Preview member"), state: { status: "active", userId: memberId }, methods: ["password"] },
     { identity: identity(authorId, "Preview author"), state: { status: "active", userId: authorId }, methods: ["google"] },
-    { identity: identity(moderatorId, "Preview moderator"), state: { status: "active", userId: moderatorId }, methods: ["password"] },
+    { identity: identity(moderatorId, "Preview moderator", "ru"), state: { status: "active", userId: moderatorId }, methods: ["password"] },
     { identity: identity(adminId, "Preview admin"), state: { status: "active", userId: adminId }, methods: ["google"] },
     // The Owner's ordinary role deliberately remains "user": only the exact binding grants Owner authority.
     { identity: identity(ownerId, "Preview owner"), state: { status: "active", userId: ownerId }, methods: ["google"] },
