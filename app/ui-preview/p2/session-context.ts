@@ -7,9 +7,9 @@ import { createP2PublicReadContext } from "./public-read-context";
 import { previewActorId, type PreviewActor, type PreviewRawBaseline } from "./raw-baseline";
 
 /**
- * B2 server-side session adapter. The preview controller selects a fixture actor
- * BEFORE request routing; request cookies, headers and account names never choose it.
- * It is not a Better Auth HTTP/provider emulator (that belongs to later P2 work).
+ * Preview controller selects a fixture actor before request routing; incoming
+ * cookies and headers never choose it. B3 provides only canonical read/sign-out
+ * HTTP semantics, not a second Better Auth/provider implementation.
  */
 const previewActors: readonly PreviewActor[] = [
   "guest", "member", "moderator", "admin", "owner", "inactive",
@@ -66,21 +66,64 @@ function sessionForActor(baseline: PreviewRawBaseline, actor: PreviewActor): Aut
   };
 }
 
-/** One immutable selected actor for this request. A later request may select another. */
+const authResponseHeaders = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "private, no-store",
+  Pragma: "no-cache",
+} as const;
+
+/** Normal Browser/Beter Auth session endpoints; no provider or credential transport. */
 export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
   const selected = sessionForActor(baseline, actor);
+  let signedOut = false;
+  const current = () => signedOut ? null : selected;
+
   return {
     async getSession(headers: Headers): Promise<AuthSessionResolution> {
-      void headers; // Session authority is selected by the preview controller, never by request headers.
-      // Deliberately do not trust an incoming Cookie or return Set-Cookie.
-      return { session: selected, headers: new Headers() };
+      void headers; // Only the trusted preview actor is authoritative.
+      return { session: current(), headers: new Headers() };
     },
     async handle(request: Request): Promise<Response> {
-      // Do not fabricate sign-in, sign-out, account security or OAuth success
-      // until their original HTTP transport contracts are implemented in P2.
-      throw new P2AuthEndpointNotConfiguredError(
-        request.method, new URL(request.url).pathname,
-      );
+      const url = new URL(request.url);
+      if (url.pathname === "/api/auth/get-session") {
+        if (request.method !== "GET") {
+          return new Response(JSON.stringify({ code: "METHOD_NOT_ALLOWED" }), {
+            status: 405, headers: { ...authResponseHeaders, Allow: "GET" },
+          });
+        }
+        // Better Auth 1.7.7 exposes { session, user } or JSON null; no wrapper.
+        const session = current();
+        return new Response(JSON.stringify(session), { headers: authResponseHeaders });
+      }
+      if (url.pathname === "/api/auth/sign-out") {
+        if (request.method !== "POST") {
+          return new Response(JSON.stringify({ code: "METHOD_NOT_ALLOWED" }), {
+            status: 405, headers: { ...authResponseHeaders, Allow: "POST" },
+          });
+        }
+        // The real Better Auth endpoint checks same-origin requests. Never let a
+        // foreign Origin trigger a local actor transition.
+        const origin = request.headers.get("Origin");
+        if (origin) {
+          let sameOrigin = false;
+          try { sameOrigin = new URL(origin).origin === url.origin; } catch { /* invalid */ }
+          if (!sameOrigin) {
+            return new Response(JSON.stringify({ code: "INVALID_ORIGIN" }), {
+              status: 403, headers: authResponseHeaders,
+            });
+          }
+        }
+        signedOut = true;
+        // Match the pinned Better Auth core sign-out envelope and expired cookie
+        // names. The preview does not issue or accept any authentication token.
+        const headers = new Headers(authResponseHeaders);
+        for (const name of ["session_token", "session_data", "dont_remember"]) {
+          headers.append("Set-Cookie",
+            "better-auth." + name + "=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
+        }
+        return new Response(JSON.stringify({ success: true }), { headers });
+      }
+      throw new P2AuthEndpointNotConfiguredError(request.method, url.pathname);
     },
   };
 }
@@ -100,7 +143,21 @@ export async function createP2SessionReadContext(
   actor: PreviewActor,
   request: Request,
 ): Promise<P2SessionReadContext> {
-  const context = createP2PublicReadContext(baseline);
-  const authHeaders = await initializeAuthContext(context, request, createP2AuthRuntime(baseline, actor));
-  return { context, authHeaders };
+  return createP2AuthSessionFlow(baseline, actor).createRequestContext(request);
+}
+
+/**
+ * A controller-owned flow reuses the same AuthRuntime across fresh requests.
+ * Sign-out persists as Guest within that flow; a new preview instance resets it.
+ */
+export function createP2AuthSessionFlow(baseline: PreviewRawBaseline, actor: PreviewActor) {
+  const runtime = createP2AuthRuntime(baseline, actor);
+  return {
+    runtime,
+    async createRequestContext(request: Request): Promise<P2SessionReadContext> {
+      const context = createP2PublicReadContext(baseline);
+      const authHeaders = await initializeAuthContext(context, request, runtime);
+      return { context, authHeaders };
+    },
+  };
 }
