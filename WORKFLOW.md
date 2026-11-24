@@ -51,7 +51,7 @@ After Lena PASS → owner merge #379. No agent merges implementation.
 
 ## Independent review progress
 
-R0/R1/R2/R3 complete. Two current Task6 findings pending final reconciliation: R2a-01 low/P3 reserved Help HTTP-contract discrepancy (404 vs S7 409); R3b-01 P3 hidden Help inspector exposes Move link although S2.1 permits ordinary topics only (direct context correctly denies). In-flight AP10/CAS ordering noted for final reconciliation, not counted. No final PASS. Detailed evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R4 shared forms/QuickActions/editor lifetime and original History projections; then R5 exact evidence/final reconciliation. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
+R0/R1/R2/R3/R4a complete. Five current Task6 findings pending final reconciliation: R2a-01 reserved Help HTTP-contract discrepancy; R3b-01 hidden Help inspector Move link; R4a-01 early structural action errors ignored by forms; R4a-02 category picker throws into Admin page boundary; R4a-03 unrelated revalidation clears Move uncertainty fence. In-flight AP10/CAS ordering noted for reconciliation, not counted. No final PASS. Detailed evidence: `stages/forum-structure/LENA_REVIEW.md`. Next R4b original Admin/Owner History projections, filters/cursors/person, localization and remaining related tests; then R5 exact evidence/final reconciliation. Prior #384 audit paused at A5.4c; no unrelated scope expansion.
 
 ## Границы
 
