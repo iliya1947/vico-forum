@@ -160,8 +160,9 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
             status: 400, headers: authResponseHeaders,
           });
         }
+        const normalizedEmail = body.email.toLowerCase();
         const account = baseline.users.find((user) =>
-          user.identity.email.toLowerCase() === body.email.toLowerCase());
+          user.identity.email.toLowerCase() === normalizedEmail);
         if (!account || !account.methods.includes("password")
           || account.credentialPassword !== body.password || account.state.status !== "active") {
           return new Response(JSON.stringify({
