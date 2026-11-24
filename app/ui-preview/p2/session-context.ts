@@ -1,6 +1,7 @@
 import type { RouterContextProvider } from "react-router";
 import type {
   AuthRuntime, AuthSession, AuthSessionResolution,
+  AccountSecurityError,
 } from "../../auth/request-context";
 import { initializeAuthContext } from "../../auth/session-context";
 import { createP2PublicReadContext } from "./public-read-context";
@@ -89,6 +90,10 @@ export function createP2AuthRuntime(
     readonly session: AuthSession;
   }>();
   let registrationSequence = 0;
+  // Never mutate the shared baseline or registered account records on password change.
+  // Both the original Settings action and canonical Auth HTTP read this same overlay.
+  const changedPasswords = new Map<string, string>();
+  let passwordChangeAttempts = 0;
   const current = () => activeSession;
   const transientGoogle = new Map<string, PreviewRawBaseline["users"][number]>();
   const google = createP2GoogleSocialAdapter(baseline, actor, googleScenario, (session) => {
@@ -103,7 +108,20 @@ export function createP2AuthRuntime(
   });
   const security = createP2AccountSecurityRuntime(baseline, current, (userId) =>
     [...registered.values()].find((item) => item.account.identity.id === userId)?.account
-      ?? transientGoogle.get(userId));
+      ?? transientGoogle.get(userId), {
+    passwordFor: (userId) => {
+      const account = baseline.users.find((item) => item.identity.id === userId)
+        ?? [...registered.values()].find((item) => item.account.identity.id === userId)?.account;
+      return changedPasswords.get(userId) ?? account?.credentialPassword ?? null;
+    },
+    storePassword: (userId, password) => { changedPasswords.set(userId, password); },
+    admitAttempt: () => {
+      // This preview has no trusted client-IP transport: use one bounded
+      // controller-local attempt bucket rather than trusting spoofable headers.
+      if (passwordChangeAttempts >= 3) throw new AccountSecurityError("rate-limited", 10);
+      passwordChangeAttempts += 1;
+    },
+  });
 
   return {
     security,
@@ -124,6 +142,74 @@ export function createP2AuthRuntime(
         // Better Auth 1.7.7 exposes { session, user } or JSON null; no wrapper.
         const session = current();
         return new Response(JSON.stringify(session), { headers: authResponseHeaders });
+      }
+      if (url.pathname === "/api/auth/change-password") {
+        if (request.method !== "POST") {
+          return new Response(JSON.stringify({ code: "METHOD_NOT_ALLOWED" }), {
+            status: 405, headers: { ...authResponseHeaders, Allow: "POST" },
+          });
+        }
+        const origin = request.headers.get("Origin");
+        if (origin) {
+          let valid = false;
+          try { valid = new URL(origin).origin === url.origin; } catch { /* malformed */ }
+          if (!valid) return new Response(JSON.stringify({ code: "INVALID_ORIGIN" }), {
+            status: 403, headers: authResponseHeaders,
+          });
+        }
+        if (request.headers.get("Content-Type")?.split(";")[0]?.trim().toLowerCase() !== "application/json") {
+          return new Response(JSON.stringify({ code: "UNSUPPORTED_MEDIA_TYPE" }), {
+            status: 415, headers: authResponseHeaders,
+          });
+        }
+        let input: unknown;
+        try { input = await request.json(); }
+        catch { return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+          status: 400, headers: authResponseHeaders,
+        }); }
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const body = input as Record<string, unknown>;
+        if (typeof body.currentPassword !== "string" || typeof body.newPassword !== "string"
+          || (body.revokeOtherSessions !== undefined && body.revokeOtherSessions !== false)) {
+          return new Response(JSON.stringify({ code: "INVALID_BODY" }), {
+            status: 400, headers: authResponseHeaders,
+          });
+        }
+        const selected = current();
+        if (!selected) return new Response(JSON.stringify({ code: "UNAUTHORIZED" }), {
+          status: 401, headers: authResponseHeaders,
+        });
+        try {
+          await security.changePassword(request.headers, {
+            userId: selected.user.id, sessionId: selected.session.id,
+          }, body.currentPassword, body.newPassword);
+        } catch (error) {
+          if (!(error instanceof AccountSecurityError)) throw error;
+          const codes = {
+            "invalid-password": ["INVALID_PASSWORD", 400],
+            "no-password": ["CREDENTIAL_ACCOUNT_NOT_FOUND", 400],
+            unauthenticated: ["UNAUTHORIZED", 401],
+            "account-changed": ["UNAUTHORIZED", 401],
+            "rate-limited": ["RATE_LIMITED", 429],
+          } as const;
+          if (!(error.code in codes)) throw error;
+          const [code, status] = codes[error.code as keyof typeof codes];
+          const headers = new Headers(authResponseHeaders);
+          if (status === 429) {
+            headers.set("Retry-After", "10");
+            headers.set("X-Retry-After", "10");
+          }
+          return new Response(JSON.stringify({ code }), { status, headers });
+        }
+        // Pinned Better Auth 1.7.7 response when revokeOtherSessions=false:
+        // password updated; existing current/other sessions preserved.
+        return new Response(JSON.stringify({ token: null, user: selected.user }), {
+          headers: authResponseHeaders,
+        });
       }
       if (url.pathname === "/api/auth/sign-up/email") {
         if (request.method !== "POST") {
@@ -315,7 +401,8 @@ export function createP2AuthRuntime(
         const account = baseline.users.find((user) =>
           user.identity.email.toLowerCase() === normalizedEmail) ?? created?.account;
         if (!account || !account.methods.includes("password")
-          || account.credentialPassword !== body.password || account.state.status !== "active") {
+          || (changedPasswords.get(account.identity.id) ?? account.credentialPassword) !== body.password
+          || account.state.status !== "active") {
           return new Response(JSON.stringify({
             code: "INVALID_EMAIL_OR_PASSWORD", message: "Invalid email or password",
           }), { status: 401, headers: authResponseHeaders });
