@@ -3,6 +3,7 @@ import type { AccountState } from "../../../db/account-state";
 import { INITIAL_ROLE_GRANTS, type PermissionKey } from "../../authorization/catalog";
 import { P0_ACTOR_ID, P0_TOPIC_ID, P0_TOPIC_TITLE, P0_POST_BODY } from "../p0/fixture";
 import { P0_ATTACHMENT_ID, P0_ATTACHMENT_NAME, P0_ATTACHMENT_BYTE_SIZE } from "../p0/attachment-fixture";
+import { createP2DomainFacts, assertP2DomainFactsIntegrity, type PreviewRawDomainFacts } from "./domain-facts";
 
 /**
  * P2 raw, synthetic domain facts. Handlers/readers will project these records
@@ -41,6 +42,7 @@ export interface PreviewRawPost {
   readonly createdAt: Date;
 }
 export interface PreviewRawBaseline {
+  readonly domains: PreviewRawDomainFacts;
   readonly referenceTime: Date;
   readonly ownerUserId: string;
   readonly actorIds: Readonly<Record<Exclude<PreviewActor, "guest">, string>>;
@@ -104,7 +106,7 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
       methods: ["password"],
     },
   ];
-  const baseline: PreviewRawBaseline = {
+  const core: Omit<PreviewRawBaseline, "domains"> = {
     referenceTime: new Date(referenceTime),
     ownerUserId: ownerId,
     actorIds: {
@@ -178,6 +180,7 @@ export function createP2RawBaseline(referenceTime: Date): PreviewRawBaseline {
       userId: memberId, topicId: "preview-review-topic", lastReadPostId: "preview-review-reply",
     }],
   };
+  const baseline: PreviewRawBaseline = { ...core, domains: createP2DomainFacts(core) };
   assertP2RawBaselineIntegrity(baseline);
   return baseline;
 }
@@ -252,4 +255,5 @@ export function assertP2RawBaselineIntegrity(baseline: PreviewRawBaseline): void
     const post = baseline.posts.find((item) => item.id === read.lastReadPostId);
     if (post?.topicId !== read.topicId) throw new Error("P2 read-state post belongs to another topic");
   }
+  assertP2DomainFactsIntegrity(baseline, baseline.domains);
 }
