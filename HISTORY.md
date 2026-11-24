@@ -32,3 +32,5 @@
 2026-11-24 — A5.2a: complaint submission/queue/triage static review; no additional confirmed finding. Evidence stages/A5/COMPLAINT_SUBMISSION_QUEUE.md.
 
 2026-11-24 — A5.2b: Case review/notes/Decision/History static review; LENA-CASE-01 new, COMPLAINT-PRIV-01 existing residual independently confirmed. Evidence stages/A5/COMPLAINT_REVIEW_HISTORY.md.
+
+2026-11-24 — A5.2c: Appeal policy/review/resources/notifications static review; LENA-APPEAL-01 new, existing privacy finding extended, Complaints central static scope complete. Evidence stages/A5/COMPLAINT_APPEALS.md.
