@@ -101,7 +101,7 @@ void (async () => {
     }
     console.info("P1_MODULE_IMPORTED", id);
   }
-  const routes = createPreviewDataRoutes(routeManifest, modules);
+  const routes = createPreviewDataRoutes(routeManifest, modules, true);
   transport.configure(routes, modules);
   // Real catch-all module: prove HTTP interception with no Pages/backend fetch.
   const unknownApi = await fetch(new URL("/api/vico-preview-resource-probe", window.location.origin));
