@@ -287,7 +287,7 @@ retain their own permissions and do not follow from complaint review.
 В текущем выпуске все role/grant/assignment/override writes выполняет только
 exact server-bound Owner. Для каждого запроса сервер повторно проверяет fresh effective
 permission и Owner policy внутри serialized transaction; obsolete manager-count/last-manager
-veto остаётся удалённым. Начальные grants роли `admin` не меняются.
+veto остаётся удалённым. Начальные grants `admin` включают также `forum.structure.manage` и `forum.topic.move` по миграции `0072`; конкретные effective permissions по-прежнему определяются текущими role grants и per-user overrides.
 
 `admin.history.read` independently admits ordinary admin History and Overview recent actions.
 AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
