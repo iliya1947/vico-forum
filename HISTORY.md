@@ -4,3 +4,5 @@
 2026-11-24 — A1: полный tracked inventory (1152 файлов), 80 route declarations, 74 pgTable declarations, coverage matrix и ограничения runtime. Код не менялся, тесты не запускались.
 
 2026-11-24 — A2.1: общий request/SSR/runtime composition review, 0 подтверждённых дефектов; A2.2 открыт для дальнейшего cache/error/module-boundary анализа. Evidence stages/A2/REVIEW.md.
+
+2026-11-24 — A2.2: exact framework headers and existing CI evidence; residual READSTATE-CACHE-01 confirmed, 0 new independent findings. Shared A2 static review closed; domain graph/build evidence allocated A3–A9/A11.
