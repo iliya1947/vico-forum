@@ -69,12 +69,10 @@ describe("P2 first production ForumReader and registry contexts", () => {
     expect(await reader.searchMentionableUsers("PREVIEW")).toEqual([
       { id: "preview-admin", name: "Preview admin" },
       { id: "sample-author", name: "Preview author" },
-      { id: "preview-member-placeholder", name: "Preview member placeholder" },
-    ].filter((item) => item.id !== "preview-member-placeholder").concat([
       { id: "p0-preview-user", name: "Preview member" },
       { id: "preview-moderator", name: "Preview moderator" },
       { id: "preview-owner", name: "Preview owner" },
-    ]));
+    ]);
     expect(await reader.searchMentionableUsers("Inactive")).toEqual([]);
     expect(await reader.searchMentionableUsers("")).toEqual([]);
     expect(await reader.searchMentionableUsers("x".repeat(65))).toEqual([]);
