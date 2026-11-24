@@ -2,7 +2,7 @@
 
 ## 1. Статус и основания
 
-**FULL TECHNICAL PLAN CORRECTED — coordinator correction review required; implementation не назначена.**
+**FULL TECHNICAL PLAN — COORDINATOR PASS. Delivery mode: stacked AUTH-01→AUTH-06; AUTH-07 final gate.**
 
 Baseline: `main 9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`; входной service head: `ad08cca57be5cded2d1ef1e83977ef9deeac08c0`. Оба сверены с GitHub при планировании 2026-11-25. Better Auth и Drizzle adapter остаются **1.7.7**. Это план, не результат implementation/security acceptance. Implementation, CI, provider calls, provisioning и deployment на этом назначении не выполнялись.
 
@@ -259,7 +259,7 @@ PASS только без подтверждённых current-scope defects и �
 | AUTH-06 | AUTH-01–05 | Whole vertical evidence |
 | AUTH-07 | Final AUTH-06 head | Review/gate, затем merge владельцем |
 
-Техническая рекомендация: AUTH-01 independent допустим; AUTH-02–06 — один stack, AUTH-07 на финальной сборке. Можно включить AUTH-01 в тот же stack. **Режим и исполнителя определяет Мира**, это не назначение Лиры данным планом.
+Coordinator decision: **AUTH-01→AUTH-06 выполняются одним stacked delivery**, потому что это одна зависимая authentication vertical и промежуточный merge foundation-кода в `main` не нужен. AUTH-07 выполняется как финальный gate на собранном stable exact head. Первый implementation PR AUTH-01 создаётся от текущего `main`; каждая следующая ступень имеет base на предыдущую.
 
 Stack: первый PR от current main, следующий с base на head предыдущего и bounded diff; author self-check/checks → coordinator checkpoint PASS → следующая ступень, без independent review/intermediate merge. Изменение нижней ступени синхронизирует верхние. Final head перенести в первый PR, промежуточные закрыть superseded; final author/whole-feature coordinator/independent review/gate на одном head. Service files #320 в implementation ветки не переносить. При изменившемся main пересмотреть affected plan/evidence, не механически наследовать baseline.
 
@@ -273,4 +273,4 @@ Repository PASS не подтверждает mailbox delivery/reputation, provi
 
 ## 13. Передача
 
-Мире: проверить два назначенных correction — единый mandatory-verification target без legacy-ветвления и provider-neutral AUTH-05 — затем определить delivery mode и конкретное implementation назначение. План охватывает все AUTH-01–07, не только следующий этап. Лёва implementation не начинает и других агентов не запускает. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).
+Correction review Миры: **PASS**. Delivery mode зафиксирован: stacked AUTH-01→AUTH-06, затем AUTH-07 final gate. Первый implementation stage — AUTH-01, исполнитель Лира. Лёва implementation не начинает и других агентов не запускает. Оперативный переход — [WORKFLOW.md](WORKFLOW.md).
