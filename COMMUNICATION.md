@@ -16,21 +16,21 @@
 
 #354 merged в main как `6fa2a43b02c55515bbd46a0d74fe6cc0d4424caf` после Mira+Leva PASS одного exact head. Все четыре исходных finding и TITLE-AUDIT-1-R1 CLOSED; current-scope defects = 0.
 
-## Текущий этап — Task6: corrective author PASS → Mira whole-feature review
+## Текущий этап — Task6: residual R2a author PASS → Mira review
 
-Main `a3dae5815e26d158c566a27c552127b4b1ab29aa`, Task6 не merged. Final Draft **#379 exact 28064dfe51c2c62811dd5674387825a5f0289fd0**. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false; metadata/main повторно проверены, no merge.
+Main `a3dae5815e26d158c566a27c552127b4b1ab29aa`, Task6 не merged. Final Draft **#379 exact 42efaaaabcae24fbb1fa74d042e18e850827b23d**, parent/reviewed28064df. Intermediate #380/#381/#382/#383/#386 closed/superseded/merged=false; metadata/main перепроверены.
 
-После завершённого Lena R0–R5 HOLD и независимой Mira reconciliation Лёва реализовал назначенный six-item package: narrow ordinary-topic→Help409/neutral protected404; hidden Help no Move; structural generic errors; category picker local400/503/q200; Move explicit-read fence through unrelated Watch/revalidation; ordinary Admin full/recent structural before/after/target navigation всех8 actions.
+Lena re-review закрыл пять implementation defects и topic-move часть R2a-01. Mira reconciliation подтвердил единственный residual: admitted ordinary section→Help destination должен давать409; absent destination/protected source/direct protected Help operations404. Лёва исправил только эту классификацию после ordinary source validation,2 product lines. Allowed path/UI/schema/permissions/dependencies unchanged, no write/version/History on refusal.
 
-**Author self-check/acceptance PASS** нового exact: CI45392525193 —3195unit/1833PG плюс все migration/schema/manifest75/runtime/credential/Worker checks; все18 applicable acceptance SUCCESS. Whole-feature run45392540116/artifact14919557003 скачан: digest/integrity и implementationSha=checkoutSha=28064df,18groups,pageErrors/external=[].
+**Author self-check/acceptance PASS**: regression воспроизводится на28064df; corrected local87PG/29 action tests/lint/typecheck PASS. CI45411761750 —3196unit/1834PG и все migration/schema/manifest75/runtime/credential/Worker checks. Все18 applicable acceptance first-attempt SUCCESS. Whole-feature45411775325/artifact14929216238 downloaded/digest/integrity checked: implementationSha=checkoutSha=42efaaa,19groups,pageErrors/external=[].
 
-12 targeted baseline regressions воспроизводят замечания; fixed169 related unit/63PG и18 connected groups local PASS. Два старых harness races (K5 editor initialization и Owner lifecycle NOWAIT после discarded socket) потребовали по одному targeted retry на unchanged exact; source не менялся. Полная causal/effect matrix, exact jobs/attempts и доказательства: **stages/forum-structure/CORRECTIVE_REPORT.md**. Original LENA_REVIEW.md не менялся; F6_REPORT.md хранит baseline S9/assembly и ссылается на новый corrective report. Schema/dependencies/production config не менялись, WF-01/F6-01/editor/authority/privacy/no-replay preserved.
+Database-only retry на том же head: ожидаемый Complaints conflict получил handler поздно в старом concurrency test; initial1834 tests passed, но global unhandled rejection провалил attempt. Latest database138509974425 и remaining steps SUCCESS; current source не менялся. Полная latest evidence: **stages/forum-structure/CORRECTIVE_REPORT.md**; previous six-item baseline сохранена ниже, original LENA_REVIEW unchanged.
 
 ## Следующий gate
 
-**Мира whole-feature review #379 main→28064df (все118files)** → после Mira PASS **Lena independent re-review того же exact** → owner merge только после PASS. Старый independent HOLD автором не закрывается. Лёва author STOP, собственный independent review не выполняет.
+**Лёва author STOP → Мира new-exact coordinator review #379 → Lena independent re-review того же42efaaa → owner merge только после PASS.** Старые final gates не переносятся автоматически на изменённый implementation head. Автор свой independent review не выполняет.
 
-F7 separate docs после фактического merge. #342 only service/never merge; #300/#320/general UI/UX/Stage6/deploy inactive. WORKFLOW.md — оперативный источник.
+F7 docs после фактического merge. #342 only service/never merge; #300/#320/general UI/UX/Stage6/deploy inactive. WORKFLOW.md — оперативный источник.
 
 ## 2026-11-20 — stacked delivery adopted
 
