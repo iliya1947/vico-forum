@@ -35,7 +35,8 @@ A6.2a1: stages/A6/ATTACHMENT_UPLOAD_ADMISSION.md; independently confirmed existi
 A6.2a2: stages/A6/ATTACHMENT_CONTAINER_VALIDATION.md; LENA-ATTACH-CONTAINER-READ-BUDGET-01 (per-record storage reads exceed default Worker budgets on supported archives); container validators and read budget reviewed. A6.2a static scope complete.
 A6.2b: stages/A6/ATTACHMENT_SELECTION_PUBLICATION.md; LENA-ATTACH-MULTI-IMAGE-SELECTION-01 (stale Advanced selection corrupts inline image source during synchronous multi-image insertion); mounted selection/retry/rebase and atomic publication binding reviewed.
 A6.2c: stages/A6/ATTACHMENT_DOWNLOAD_EVIDENCE.md; public/private/hidden and Complaint/Appeal evidence delivery reviewed. No additional independent finding.
-Суммарно: 21 новых independent findings, 24 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
-Следующий bounded-блок A6.2d: attachment cleanup, journal/reservation/claim fences and physical deletion/reference races; then A6.3 translation/jobs under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
+A6.2d: stages/A6/ATTACHMENT_CLEANUP.md; LENA-ATTACH-CANCEL-SPAM-01 (unbounded durable empty-operation cancellation markers); cleanup and physical deletion fences reviewed. A6.2 static scope complete.
+Суммарно: 22 новых independent findings, 24 ранее известных residuals, 1 contract conflict. Static evidence, no production exploit/leak/load claim.
+Следующий bounded-блок A6.3a: localization UI bundle/catalog/registry and preference resolution; then content translation exact-revision identity, request planning/budgets, jobs/reconciliation/provider boundaries under PLAN A6. SUPER_ADMIN.md full coverage established; reuse unchanged contracts. A6 attachments/translation/revision consumers; A7 query/index/schema/concurrency reconciliation. A8–A10 dynamic UI/CI/operational checks; A11 reconcile.
 Ограничение: новые executable tests/browser не запускались. Existing CI #355 run 45168532264 success; implementation trees identical to baseline.
-Следующий переход: команда разработчика продолжить → A6.2d.
+Следующий переход: команда разработчика продолжить → A6.3a.
