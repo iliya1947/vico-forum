@@ -170,8 +170,8 @@ describe("F5-D original Owner forum.structure History projection",()=>{
         source:"admin_history",monitorKeys:["forum.structure"],
         values:{actorUserId:row.actor_id,targetType:row.target_type,targetId:row.target_id},
       });
-      expect(projectedEntry?.values.afterVersion).toBe(row.context.version);
-      expect(projectedEntry?.values.beforeVersion).toBe(row.context.previousVersion);
+      expect(projectedEntry?.values.afterStructureVersion).toBe(row.context.version);
+      expect(projectedEntry?.values.beforeStructureVersion).toBe(row.context.previousVersion);
     }
     const byKind=(kind:string)=>projected.entries.find(e=>e.kind===kind)!;
     expect(byKind("category.created").values).toMatchObject({
@@ -202,7 +202,7 @@ describe("F5-D original Owner forum.structure History projection",()=>{
       beforeSectionId:"a",beforeSectionName:"Renamed section",
       afterCategoryId:"cb",afterCategoryName:"Category B",
       afterSectionId:"x",afterSectionName:"Section X",
-      beforeVersion:"0",afterVersion:"1",
+      beforeStructureVersion:"0",afterStructureVersion:"1",
     });
     const json=JSON.stringify(projected.entries);
     expect(json).not.toMatch(/Secret title|Secret body|originalContent|sourceLocale|revisionId|privateReason/);
