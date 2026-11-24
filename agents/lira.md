@@ -1,11 +1,11 @@
-# agents/lira.md — Task 6 / F7 docs correction ACTIVE
+# agents/lira.md — Task 6 / F7 docs correction author PASS, STOP
 
-Docs PR #387 exact reviewed: `bcf6cc68ebe1eb692f8821f581903313b7685fae`, base main `59e2fd9092bb1884392221eb856c2b989cc87ade`.
+Merged Task 6 implementation #379: main `59e2fd9092bb1884392221eb856c2b989cc87ade`, reviewed exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`; Mira and Lena PASS, six implementation findings CLOSED.
 
-Mira docs review HOLD on exactly two documentation defects:
+F7 docs-only [Draft PR #387](https://github.com/iliya1947/vico-forum/pull/387) reviewed at `bcf6cc68...`, then Mira found two current-doc defects. Both corrected:
+- F7-DOC-01: obsolete unchanged-admin-initial-grants claim updated for structure/move grants in migration 0072.
+- F7-DOC-02: 18 distinct acceptance workflow successes distinguished from single linked whole-feature run 45411775325.
 
-1. `docs/auth/AUTHORIZATION.md`: Task6 correctly adds initial grants for admin/moderator, but the old sentence “Начальные grants роли admin не меняются.” remains and now contradicts the same section plus migration0072. Remove/rewrite that stale claim only.
+New stable docs exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`, base unchanged `59e2fd9092bb1884392221eb856c2b989cc87ade`. Compared with prior docs review head: two corrected files only; total PR six assigned docs files; format, factual evidence and scope checked. Implementation CI not applicable to docs-only changes. No production/deploy claims.
 
-2. `docs/PROJECT_HISTORY/PROJECT_HISTORY_34.md`: item2 links one whole-feature workflow run `45411775325` but attributes all **18 applicable acceptance SUCCESS** to that single run. Exact-head GitHub metadata shows 18 separate applicable acceptance workflows succeeded; the linked run is one of them. Separate the aggregate statement from the one-run description without changing established counts/results.
-
-No implementation/source changes, no new docs scope, no mechanical CI. Keep #387 docs-only. After correction author-check exact diff/facts and STOP → Mira re-review.
+**STOP → Мира independent F7 docs re-review #387 on new head.** If PASS, only owner merges; after actual docs merge, evaluate Task6/#342 closure before any #320 route. No Codex docs gate.
