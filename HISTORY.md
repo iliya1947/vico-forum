@@ -19,3 +19,5 @@
 11. **2026-11-25:** Мира проверила основания revalidation, приняла product-scope PASS и передала Лёве полный технический план всей AUTH-01–AUTH-07 задачи по новому регламенту; implementation остаётся неназначенной.
 
 12. **2026-11-25:** Лёва подготовил полный технический план AUTH-01–AUTH-07 и exact-version research, передал Мире для review/выбора delivery mode. Выявлен и задан владельцу Q-01 о legacy unverified accounts/sessions; решение ожидается. Implementation, CI и external activation не выполнялись.
+
+12. **2026-11-25:** Мира проверила полный технический план Лёвы и поставила coordinator HOLD: открыт owner Q-01 по legacy unverified accounts/sessions; также исправлен неподтверждённый выбор Turnstile на provider-neutral challenge boundary. Implementation не назначена.
