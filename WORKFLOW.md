@@ -1,41 +1,34 @@
-# WORKFLOW.md — Task6 / F7 documentation closeout ACTIVE
+# WORKFLOW.md — Task 6 / F7 docs author PASS, STOP → Мира
 
 ## Current state
 
-Task6 implementation is merged.
+Task 6 implementation is merged:
+- [#379](https://github.com/iliya1947/vico-forum/pull/379) merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade`;
+- reviewed implementation exact `42efaaaabcae24fbb1fa74d042e18e850827b23d`;
+- Mira coordinator PASS and Lena independent whole-feature PASS on same exact;
+- all six Task 6 findings closed. This is repository/local-CI, not production deployment.
 
-- Final implementation PR #379 merged into main at `59e2fd9092bb1884392221eb856c2b989cc87ade`.
-- Reviewed implementation exact was `42efaaaabcae24fbb1fa74d042e18e850827b23d`.
-- Mira coordinator PASS + Lena independent whole-feature PASS were on that exact.
-- All six Task6 findings are closed.
-- Current main equals the #379 merge commit.
+## F7 documentation — Lira author PASS
 
-## Active bounded step — F7 docs closeout
+Separate [Draft docs PR #387](https://github.com/iliya1947/vico-forum/pull/387):
+- exact head `bcf6cc68ebe1eb692f8821f581903313b7685fae`, base main merge `59e2fd9092bb1884392221eb856c2b989cc87ade`;
+- six docs-only files: `PROJECT.md`, `PROJECT_STATE.md`,
+  `docs/ADMIN_PANEL.md`, `docs/auth/AUTHORIZATION.md`,
+  `docs/PROJECT_HISTORY/PROJECT_HISTORY_34.md`,
+  `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`;
+- permanent ordinary structure/topic Move product/authorization/Admin/History contracts;
+- current repository/local-CI facts and migration ceiling `0072`;
+- meaningful F1–F6/review/merge historical snapshot and index.
 
-**Lira is assigned the separate docs-only closeout PR from current main.**
+Author-check on exact head:
+- compared against exact merged main: six expected docs files, no code/schema/dependency/test/deploy edits;
+- grants match current `app/authorization/catalog.ts` (structure: admin; move: moderator/admin), AP-10 family and dual-permission hidden Move match merged code;
+- protected routes and eight History kinds matched merged code;
+- index/new history links, final newlines and whitespace hygiene verified;
+- no production acceptance claim; no implementation CI run mechanically for docs-only changes.
 
-Required result: permanent documentation must describe the forum-structure/topic-move capability that is now actually present in main, and current-state/history docs must reflect the completed implementation without claiming production/deployed acceptance.
+## Next gate / ownership
 
-Expected documentation scope:
-- `PROJECT.md`: durable product-level forum structure/topic move contract where appropriate.
-- `docs/ADMIN_PANEL.md`: ordinary Admin category/section structure operations, shared topic Move surfaces, private hidden-topic move boundary, structural History presentation.
-- `docs/auth/AUTHORIZATION.md`: code-backed `forum.structure.manage` and `forum.topic.move`, initial grants, Owner projection, Admin Forum/AP-10 relationships, hidden-topic dual-authority boundary.
-- `PROJECT_STATE.md`: factual repository/local-CI state, migration ceiling `0072`, Task6 capability now present in main, and nearest route after closeout without history-detail duplication.
-- new `docs/PROJECT_HISTORY/PROJECT_HISTORY_34.md`: concise significant Task6 implementation/review/correction/merge snapshot.
-- `docs/PROJECT_HISTORY/PROJECT_HISTORY.md`: add navigation entry for history 34.
+**Лира STOP. Next Мира:** independent bounded docs review of all six files in #387 against current merged main, source-of-truth consistency, links, current-state versus history separation and exact head. If findings, return to Лире for scoped docs correction. If PASS, owner may merge docs PR #387; independent Codex review is not required.
 
-Use existing source-of-truth structure rather than create a new standalone architecture document unless an actual gap requires it. Keep docs factual to merged main; do not copy the full S0–S10 plan or service chronology into current-state docs.
-
-## Done
-
-- One separate docs-only PR based on current main.
-- No implementation, schema, dependencies, tests, deployment or external-service changes.
-- Cross-document terminology/permissions/routes/migration facts agree with merged code and current source-of-truth.
-- Author self-check covers diff, links and factual consistency; do not run implementation CI mechanically for docs-only changes unless an actual check is required by the changed docs.
-- STOP → Mira docs review.
-- After Mira PASS → owner merge docs PR. Independent Codex review is not required for this docs-only closeout under current AGENTS/process.
-- After actual docs merge, Task6/#342 closeout can be evaluated; only then may the established #320 route be checked.
-
-## Boundaries
-
-#342 never merges. #300/#320/Stage6/general UI/UX/deploy remain inactive during F7. #384 full-forum audit remains paused.
+Only after docs actually merge: evaluate Task 6 / #342 closure and then established #320 route. #342 never merges. #300/#320/Stage 6/general UI/UX/deploy inactive during F7; #384 audit paused.
