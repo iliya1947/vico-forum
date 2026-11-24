@@ -130,7 +130,8 @@ describe("P2-B8a original AuthorizationCapability + production route admission",
     const modified = {
       ...seed,
       overrides: [
-        ...seed.overrides,
+        ...seed.overrides.filter((override) =>
+          !(override.userId === seed.actorIds.member && override.permission === "forum.topic.pin")),
         { userId: seed.actorIds.member, permission: "forum.topic.create" as const, effect: "deny" as const },
         { userId: seed.actorIds.member, permission: "forum.topic.pin" as const, effect: "allow" as const },
         { userId: seed.actorIds.member, permission: "forum.reply.create" as const, effect: "inherit" as const },
