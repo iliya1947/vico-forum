@@ -1,32 +1,21 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Существенные текущие факты
+## Независимая revalidation Лены — PASS (product scope only)
 
-1. Текущий `main` для revalidation: `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. Better Auth в текущем project baseline — `1.7.7`; email/password и Google foundation уже существуют.
-3. Email verification, transactional email sender и password recovery в текущем `main` по-прежнему не реализованы.
-4. SET-05 уже реализует own linked-method view, смену существующего credential password и управление собственными sessions.
-5. Automatic/implicit account linking отключён; explicit Google linking существующего authenticated user уже существует.
-6. SET-02 уже имеет независимые Owner-controlled flags новых Google и email/password registrations.
-7. После старого плана #320 в `main` появились AccountState lifecycle/enforcement, exact-Owner deactivation, Accounts & authentication / Security monitoring, auth facts, bounded attempt telemetry и source-aware History. Новый технический план обязан учитывать эти существующие границы.
-8. Super-admin SA-01–SA-08 и Task 6 уже завершены в repository/local-CI; Stage 6 external integration остаётся paused.
-9. `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` и `docs/auth/AUTHORIZATION.md` актуализированы относительно более раннего состояния; `docs/SETTINGS.md` не менялся с предыдущей проверки.
-10. Постоянная документация всё ещё отражает verification/recovery как отложенные функции; текущее owner-решение этой задачи меняет целевое будущее состояние, но source-of-truth обновляется только после фактической реализации отдельным docs PR.
+Baseline: main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, Better Auth 1.7.7. AUTH-01–AUTH-07 и D-01–D-10 остаются актуальными; исключать/добавлять product stages оснований нет. Старый AUTH-01 technical plan не принят повторно. Проверка статическая: изучены текущие product/state contracts, релевантные разделы Settings/Authorization/Super-admin, реализация и существующие test contracts; тесты заново не запускались. Это не security/implementation acceptance.
 
-## Текущие ограничения
+## Входные данные нового полного технического плана
 
-1. Никакой implementation до повторной проверки плана и нового полного технического планирования.
-2. Никакой external activation до явного возобновления Stage 6 владельцем.
-3. Общий security PR не является служебным каналом этой задачи; security findings используются только как релевантные входные данные.
-4. Старый AUTH-01 technical plan доступен в Git history, но не является текущим планом исполнения.
+1. AUTH-01: mail boundary остаётся новой работой. В `app/auth/auth.server.ts` нет mail callbacks, в Worker auth environment нет mail provider wiring; существующая таблица verification и auth schema в `db/schema.ts` уже доступны. Resend/Brevo — один выбранный provider одновременно, fake/test transport, без external calls. Проверить locale-safe transactional mail и безопасные callback/return URLs, failure/retry semantics; не вводить параллельную auth identity.
+2. AUTH-02: `requireEmailVerification: false` и нынешний `credential-view.tsx` предполагают успешную signup session и показывают отсутствие verification; `forum-email-registration.test.ts` прямо требует unverified session. Новый план должен осознанно изменить этот контракт, учитывать ранее созданные unverified accounts/сессии и локальные fixtures, не отключая независимый Google login. SET-02 admission (`registration-admission.ts`) — fresh create-user-only policy; закрытие регистрации не блокирует login, explicit linking, verification или recovery существующего аккаунта.
+3. AUTH-03: repository не содержит полноценного forgot/reset/set-password UX или mail callbacks. `session-write-guard.ts` уже защищает native credential updateMany, user/account writes и pathless setPassword actor admission; SA04-I4c тестирует updatePassword/deactivation. Эти primitives не доказывают полный recovery lifecycle. План должен определить проверенные token/identity/expiry/replay/partial-failure/session-revocation semantics, включая Google-only password creation и невозможность recovery как reactivation. Не считать штатный endpoint сам по себе готовой функцией.
+4. AUTH-04: SET-05 уже доставил own linked-method read, explicit Google linking, existing password change, own session list/revoke-one/revoke-others с stale-user/session и fresh-session checks, private/no-store. Не реализовывать это повторно. Дополнить email/status/change и отсутствующие user flows; native HTTP unlink уже подтверждён test contract SA04-I4c (active credential+Google account). Проверить last usable method и concurrent unlink/credential changes на canonical API и persistence boundary, а не только UI. Password creation shared с AUTH-03; не два backends. Сохранить exact Owner binding к user.id и separate RBAC, не добавить transfer/recovery of ownership/foreign credential mutation. `app/routes/settings-account.tsx`, `app/auth/request-context.ts`, `app/auth/auth.server.ts` — существующие seams.
+5. AUTH-05: Better Auth database rateLimit table/config уже существуют; SET-05 change-password через HTTP shares canonical bucket (3/10s), trusted IP boundary cf-connecting-ip. Потребуются применимые ограничения verification/recovery/resend/new registration challenge; не подменять rate limits passive SA02 attempt telemetry. Проверить direct/server и HTTP пути, не обходить admission. Turnstile boundary без внешней активации.
+6. Cross-cutting AccountState: SA04/SA05 authoritative active-user row locking защищает session create/update/delete, user update, account create/update/delete; inactive own signed sign-out — узкое исключение. Новые token consumption/verification/recovery/change/link/unlink paths обязаны сохранять fail-closed state, retained data и commit ordering с deactivation; проверить весь многозаписный lifecycle, не считать защиту отдельных adapter writes доказательством atomicity всей операции. Не добавлять physical purge/reactivation/foreign-session control.
+7. Cross-cutting observability: `auth.server.ts` emits auth.passwordChanged только для /change-password; reset updateMany не покрывается автоматически. `db/owner-auth-facts.ts`, `db/owner-sa02-catalog.ts`, `app/auth/session-deletion-evidence.ts` имеют закрытые kind/reason/linkContext; новый flow может потребовать расширения. `app/observability/attempt-collector.server.ts`, `db/owner-attempt-telemetry.ts` и DB CHECK в migration 0063 не охватывают verify/recovery/email-change/unlink. При необходимости новых operation/fact values согласовать forward migration/schema, writer, safe labels, scoped/global/target History и Integrations projections. Сохранить exact persisted proof, bounded cardinality, trusted attribution, best-effort observation; не логировать tokens/passwords/email/payloads и не объявлять monitoring полным audit. `db/owner-integration-monitoring.ts` и `app/observability/integration-runtime.ts` сейчас отражают Google configuration presence и retained auth facts, не real provider health. Не добавлять active external probes в Monitoring GET.
+8. AUTH-06/07: existing native PostgreSQL tests `auth-runtime`, `account-security`, `forum-email-registration`, `sa04-session-atomic`, `sa02-auth-creations`, `sa02-auth-password-change`, `sa02-auth-oauth-rollback`, attempt-collector и connected Worker/Chromium SET-05/Super-admin — foundation для regression, но не acceptance новых lifecycle flows. Устаревшие ожидания auto-session on unverified signup изменить осознанно, остальные границы сохранить; положительные/negative/race сценарии, stale identity, replay, failure and no secret leakage. Новые tests и pre-Stage-6 gate должны проверять целую feature, а не только green existing CI.
+9. Worker `workers/app.ts` создаёт request-local AuthRuntime/collectors, initializes authoritative session before Router dispatch, затем flushes bounded observations. Новые auth capabilities должны сохранить cookie ordering, classified storage failures, separate web runtime/DB access, request scope, generic locale/RTL. Реальные provider/edge credentials, DNS, production OAuth/Owner binding и deployed acceptance остаются Stage 6.
 
-## Текущее назначение
+## Следующий переход
 
-1. Владелец передал повторную проверку актуальности плана **Лене / GPT-6.2**.
-2. Проверка должна быть независимой: прежние выводы Миры и старый AUTH-01 plan не считаются установленными фактами.
-3. Implementation и полное техническое проектирование в этот шаг не входят.
-
-## Незакрытое
-
-1. Лене повторно проверить AUTH-01–AUTH-07 против текущих AccountState/Monitoring/History/auth-runtime границ.
-2. После её результата определить следующий этап полного технического планирования и delivery mode.
+Лёва готовит полный технический план AUTH-01–AUTH-07 против актуального main, включая перечисленные зависимости и проверяемые критерии. Если планирование выявит реально неоднозначное продуктовое решение, вынести его владельцу; не менять D-01–D-10 самостоятельно. Режим поставки после полного плана определяет Мира по AGENTS.md. Implementation не назначена. Постоянная документация текущего поведения (verification/recovery пока отложены) обновляется отдельным docs closeout после реализации; это не основание преждевременно менять main.
