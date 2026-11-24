@@ -30,3 +30,5 @@
 2026-11-24 — A5.1b: static pin/closure/visibility/private inspection review; no additional independent findings. Evidence stages/A5/VISIBILITY.md.
 
 2026-11-24 — A5.2a: complaint submission/queue/triage static review; no additional confirmed finding. Evidence stages/A5/COMPLAINT_SUBMISSION_QUEUE.md.
+
+2026-11-24 — A5.2b: Case review/notes/Decision/History static review; LENA-CASE-01 new, COMPLAINT-PRIV-01 existing residual independently confirmed. Evidence stages/A5/COMPLAINT_REVIEW_HISTORY.md.
