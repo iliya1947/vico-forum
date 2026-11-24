@@ -8,3 +8,5 @@
 2026-11-24 — A2.2: exact framework headers and existing CI evidence; residual READSTATE-CACHE-01 confirmed, 0 new independent findings. Shared A2 static review closed; domain graph/build evidence allocated A3–A9/A11.
 
 2026-11-24 — A3.1: static auth/session review, one new independent finding LENA-AUTH-01, seven current prior finding paths, one contract conflict AUTH-REG-01. Evidence stages/A3/AUTH_SESSION.md.
+
+2026-11-24 — A3.2a: central RBAC/Owner/AccountState review; LENA-AUTHZ-01 and existing AUTHZ-FAIL-01 confirmed statically. AP-10 transitions/read review next. Evidence stages/A3/AUTHORIZATION_CORE.md.
