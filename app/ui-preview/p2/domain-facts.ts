@@ -58,11 +58,10 @@ export interface PreviewRawDomainFacts {
   readonly presence: readonly { readonly userId: string; readonly seenAt: Date }[];
   readonly privacy: readonly { readonly userId: string; readonly showOnline: boolean }[];
   readonly registrationSettings: RegistrationSettings;
-  readonly userPreferences: readonly { readonly userId: string; readonly locale: string }[];
   readonly measures: readonly {
     readonly id: string; readonly targetUserId: string; readonly issuerId: string;
     readonly restrictions: readonly UserMeasureRestrictionId[]; readonly version: number;
-    readonly expiresAt: Date | null; readonly liftedAt: Date | null; readonly reason: string;
+    readonly createdAt: Date; readonly expiresAt: Date | null; readonly liftedAt: Date | null; readonly reason: string;
   }[];
   readonly measureAppeals: readonly {
     readonly id: string; readonly measureId: string; readonly appellantId: string;
@@ -91,7 +90,7 @@ export interface PreviewRawDomainFacts {
   }[];
   readonly complaintHistory: readonly {
     readonly id: string; readonly caseId: string; readonly actorId: string | null;
-    readonly event: "submitted" | "decision" | "appeal-submitted";
+    readonly event: "submitted" | "decision" | "appeal-submitted" | "review-started";
     readonly occurredAt: Date;
   }[];
   readonly locales: readonly LocaleDefinition[];
@@ -133,7 +132,7 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
       { id: "preview-session-moderator", userId: moderatorId, issuedAt: at(-day), expiresAt: at(day) },
       { id: "preview-session-admin", userId: adminId, issuedAt: at(-day), expiresAt: at(day) },
       { id: "preview-session-owner", userId: ownerBinding, issuedAt: at(-day), expiresAt: at(day) },
-      { id: "preview-session-inactive", userId: inactiveId, issuedAt: at(-day), expiresAt: at(day) },
+      { id: "preview-session-inactive", userId: inactiveId, issuedAt: at(-2 * day), expiresAt: at(day) },
     ],
     revisions: [
       { id: "p0-topic-title-revision", kind: "topic-title", contentId: P0_TOPIC_ID,
@@ -167,24 +166,21 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
       googleRegistrationEnabled: true, emailRegistrationEnabled: true,
       version: 1, updatedAt: at(-day).toISOString(),
     },
-    userPreferences: [
-      { userId: memberId, locale: "en" }, { userId: moderatorId, locale: "ru" },
-    ],
     measures: [
       { id: measureId, targetUserId: inactiveId, issuerId: adminId,
         restrictions: ["topics.create", "replies.create"], version: 1,
-        expiresAt: at(2 * day), liftedAt: null, reason: "Synthetic temporary restriction" },
+        createdAt: at(-5 * day), expiresAt: at(2 * day), liftedAt: null, reason: "Synthetic temporary restriction" },
     ],
     measureAppeals: [
       { id: "preview-measure-appeal", measureId, appellantId: inactiveId,
-        status: "pending", ordinal: 1, createdAt: at(-12 * 60 * 60 * 1000) },
+        status: "pending", ordinal: 1, createdAt: at(-2 * day) },
     ],
     complaintCases: [
       { id: resolvedCaseId,
         target: { kind: "post", topicId: P0_TOPIC_ID, postId: "p0-first-post", revisionId: "p0-post-body-revision" },
         state: "resolved", version: 2, initialDecisionId: decisionId },
       { id: openCaseId,
-        target: { kind: "topic-title", topicId: reviewTopicId, revisionId: "review-title-v0" },
+        target: { kind: "topic-title", topicId: reviewTopicId, revisionId: "review-title-revision" },
         state: "open", version: 1, initialDecisionId: null },
     ],
     complaintReports: [
@@ -210,7 +206,7 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
         body: "Synthetic reviewer note", createdAt: at(-day) },
     ],
     complaintActivity: [
-      { caseId: openCaseId, reviewerId: adminId, expiresAt: at(5 * 60 * 1000) },
+      { caseId: openCaseId, reviewerId: adminId, expiresAt: at(60 * 1000) },
     ],
     complaintHistory: [
       { id: "preview-case-history-submit", caseId: resolvedCaseId, actorId: memberId,
@@ -219,6 +215,10 @@ export function createP2DomainFacts(core: Core): PreviewRawDomainFacts {
         event: "decision", occurredAt: at(-day) },
       { id: "preview-case-history-appeal", caseId: resolvedCaseId, actorId: authorId,
         event: "appeal-submitted", occurredAt: at(-12 * 60 * 60 * 1000) },
+      { id: "preview-case-open-submit", caseId: openCaseId, actorId: authorId,
+        event: "submitted", occurredAt: at(-day) },
+      { id: "preview-case-open-review", caseId: openCaseId, actorId: adminId,
+        event: "review-started", occurredAt: at(-30 * 1000) },
     ],
     locales: localeRegistry.activeLocales().map((locale) => ({
       ...locale, fallbackChain: [...locale.fallbackChain],
@@ -308,13 +308,12 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
   for (const topic of core.topics) for (const tag of topic.tags) requireRef(tags, tag, "topic tag");
   const registry = new InMemoryLocaleRegistry(facts.locales.filter((locale) => locale.tag !== "en"));
   const locales = new Set(registry.activeLocales().map((locale) => locale.tag));
-  for (const preference of facts.userPreferences) {
-    requireRef(users, preference.userId, "preferences user");
-    requireRef(locales, preference.locale, "preferences locale");
+  // The preferred language has a single source: the production auth user.locale field.
+  for (const user of core.users) if (user.identity.locale) {
+    requireRef(locales, user.identity.locale, "account locale");
   }
   for (const privacy of facts.privacy) requireRef(users, privacy.userId, "privacy user");
   ids(facts.privacy, (row) => row.userId, "privacy");
-  ids(facts.userPreferences, (row) => row.userId, "preferences");
   for (const presence of facts.presence) {
     requireRef(users, presence.userId, "presence user");
     if (facts.privacy.some((privacy) => privacy.userId === presence.userId && !privacy.showOnline)) {
@@ -330,6 +329,7 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
     requireRef(users, measure.targetUserId, "measure target");
     requireRef(users, measure.issuerId, "measure issuer");
     if (!measure.restrictions.length || new Set(measure.restrictions).size !== measure.restrictions.length
+      || measure.createdAt >= core.referenceTime
       || (measure.expiresAt !== null && measure.expiresAt <= core.referenceTime)) {
       throw new Error("P2 domain invalid active measure");
     }
@@ -340,6 +340,11 @@ export function assertP2DomainFactsIntegrity(core: Core, facts: PreviewRawDomain
     const measure = facts.measures.find((row) => row.id === appeal.measureId)!;
     if (appeal.appellantId !== measure.targetUserId) {
       throw new Error("P2 domain measure appeal subject mismatch");
+    }
+    const targetState = core.users.find((row) => row.identity.id === appeal.appellantId)?.state;
+    if (appeal.createdAt < measure.createdAt
+      || (targetState?.status === "deactivated" && appeal.createdAt >= targetState.deactivatedAt)) {
+      throw new Error("P2 domain measure appeal outside active account lifecycle");
     }
   }
   for (const complaint of facts.complaintCases) {
