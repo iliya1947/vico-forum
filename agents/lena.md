@@ -1,3 +1,9 @@
-# agents/lena.md — Task6 independent re-review complete / waiting for reconciliation
+# agents/lena.md — Task6 independent review HOLD / waiting for residual correction
 
-Exact #379 `28064dfe51c2c62811dd5674387825a5f0289fd0`, base `a3dae5815e26d158c566a27c552127b4b1ab29aa`. R0–R5 complete. Five implementation defects and topic portion of R2a-01 closed; no new confirmed implementation defect. Independent HOLD only for residual R2a-01 S7 protected-container404 vs unsupported transition409 contract clarification. Full checkpoint evidence retained in `stages/forum-structure/LENA_REVIEW.md` corrected-head section. Current action with Mira per WORKFLOW. On same exact after explicit reconciliation, check resolution only; no repeated unchanged code checks or CI. If implementation head changes, fresh coordinator and independent review. No merge/F7. #384 primary audit paused at A5.4c until owner directs resumption.
+Independent re-review of #379 exact `28064dfe51c2c62811dd5674387825a5f0289fd0` completed R0–R5. Five prior implementation defects and topic-move part of R2a-01 are closed; no other confirmed implementation defect was found.
+
+Mira reconciliation resolved the remaining contract question as a real current-Task6 defect: admitted ordinary section→reserved Help category is an unsupported Help transition and must be409, while direct protected Help targets/sources and absent targets remain404.
+
+Leva is assigned the narrow correction. If implementation head changes, prior independent evidence remains useful but final independent gate must re-review the new stable exact after Mira PASS, focused on the changed classification plus regression interaction; unchanged whole-feature evidence need not be mechanically repeated without cause.
+
+No merge/F7. #384 audit remains paused.
