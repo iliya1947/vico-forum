@@ -1,18 +1,15 @@
-# agents/leva.md — Task6 WF-01 correction ACTIVE
+# agents/leva.md — Task6 WF-01 author STOP
 
-Mira whole-feature review of #379 exact `bf3e97d6c52b224d1a77bd14f96597b446405472` is **HOLD** with one confirmed current-scope finding.
+Final Draft #379 stable exact `f601e91dcab19ee1992012564e9a0b557c2ea596`, base main `a3dae5815e26d158c566a27c552127b4b1ab29aa`.
 
-## WF-01
+WF-01 bounded correction завершена: Create Category attempted/unknown fence + native per-submission revalidation opt-out; имя сохраняется, повторный create до explicit verification блокируется, confirmed success явно обновляет структуру, typed errors сохранены. Backend/schema/API не менялись.
 
-Create Category does not preserve the S7/S9 uncertain-response fence. Current `CreateCategoryForm` lacks unknown-attempt blocking. After a real create COMMIT with missing typed action payload, default React Router post-action revalidation can advance the loader's `structureVersion` while the entered name remains and Submit becomes available. Since duplicate names are valid and create IDs are server-generated, another click can create a second category without the required explicit result verification.
+Author gate PASS: CI45314820622 (3158unit/1831PG и все остальные steps),18 applicable acceptance SUCCESS. Real whole-feature Chromium/local-R2 run45314830099, artifact14885421479 downloaded/checked: exact SHA match,14groups, no page errors/external requests. Новый commit/lost-ack Create Category case: один category/History/POST до и после explicit refresh, повторные click/submit блокированы, имя сохранено. Source regression reproduces failure before correction.
 
-## Required result
+Correction7ee7d06; final test-only f601e91 ждёт завершения перехваченного POST до DB assertions (первый CI run выявил race теста). K5 attempt2: старый harness прочитал empty editorOperationId до useEffect; повторён только failed job на том же exact, исходники не менялись.
 
-Correct **WF-01 only**:
-- committed-but-unconfirmed category create cannot enable another create before explicit fresh verification;
-- retain entered name/context;
-- never auto-replay POST;
-- add focused regression proving real/equivalent commit + lost acknowledgement leaves exactly one category until user explicitly refreshes/verifies;
-- preserve normal confirmed success and typed error behavior.
+Полная проверяемая evidence и S9/post-visibility matrix: stages/forum-structure/F6_REPORT.md. Актуальный маршрут: WORKFLOW.md.
 
-After correction: new stable final exact #379, author self-check + applicable exact-head CI/acceptance, then **STOP → Mira whole-feature re-review**. Do not start Mark, F7/docs, Stage6/deploy or #300.
+**STOP → Мира whole-feature re-review #379 main→f601e91.** Предыдущий Mira HOLD ожидает её нового решения; я автор реализации и не объявляю independent PASS. Mark inactive до coordinator PASS. Не merge; F7/docs только после owner merge; #342 only service/never merge; #300/Stage6/deploy inactive.
+
+Локальное окружение очищено, testDB удалена, PostgreSQL container снова stopped, preview остановлен, original wrangler/vars восстановлены; own worktree clean.
