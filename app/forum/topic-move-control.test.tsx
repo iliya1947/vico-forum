@@ -184,10 +184,12 @@ describe("F5-C2 shared visible/direct topic Move form",()=>{
   });
   it("handles typed private picker outage without navigation, then deliberate refresh",async()=>{
     const v=fixture(<TopicMoveForm locale="en" context={move}/>);
+    // Wait for the initial successful private snapshot before forcing the next
+    // read to fail. Otherwise the first load may race with the explicit search.
+    await waitFor(()=>expect(v.container.querySelector('select[name="targetSectionId"] option[value="target/שלום"]')).toBeTruthy());
     v.behavior.pickerError="unavailable";
-    // The next explicit search is still a private read, not a POST.
-    await waitFor(()=>expect(v.destinations).toHaveBeenCalledTimes(1));
     fireEvent.click(v.getByRole("button",{name:"Find sections"}));
+    await waitFor(()=>expect(v.destinations).toHaveBeenCalledTimes(2));
     await waitFor(()=>expect(v.container.textContent).toContain("Move not confirmed."));
     expect(v.container.querySelector('button[type="submit"]')?.hasAttribute("disabled")).toBe(true);
     expect(v.router.state.errors).toBeNull();
