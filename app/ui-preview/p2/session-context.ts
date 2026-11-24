@@ -72,7 +72,7 @@ const authResponseHeaders = {
   Pragma: "no-cache",
 } as const;
 
-/** Normal Browser/Beter Auth session endpoints; no provider or credential transport. */
+/** Normal browser/Better Auth session endpoints; no provider or credential transport. */
 export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: PreviewActor): AuthRuntime {
   const selected = sessionForActor(baseline, actor);
   let signedOut = false;
@@ -119,7 +119,8 @@ export function createP2AuthRuntime(baseline: PreviewRawBaseline, actor: Preview
         const headers = new Headers(authResponseHeaders);
         for (const name of ["session_token", "session_data", "dont_remember"]) {
           headers.append("Set-Cookie",
-            "better-auth." + name + "=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
+            "better-auth." + name + "=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax"
+              + (url.protocol === "https:" ? "; Secure" : ""));
         }
         return new Response(JSON.stringify({ success: true }), { headers });
       }
