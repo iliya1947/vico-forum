@@ -17,7 +17,7 @@
    - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
    - единый transaction owner и sequencing correction приняты;
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — correction/finalization ACTIVE у Лёвы.** Full review завершён HOLD с тремя confirmed findings: built-preview auth binding, SSR resend email leakage, locale/generation ordering. Входной head #391 `bbd35cb60273a2a90cce7aea997d50e4f42943cf`; AUTHOR PASS отсутствует. После correction и coordinator PASS Лёва остаётся исполнителем AUTH-03 → AUTH-06.
+3. **AUTH-02b — coordinator HOLD.** Лёва закрыл прежние три findings и получил AUTHOR PASS на `4fbf8e829fd18c7190a540eade17bdf543a406d3`, но coordinator review подтвердил ещё один current-scope security defect: credential sign-in/sign-up form без явного POST допускает default GET до hydration и утечку email/password в URL. Лёва исправляет этот finding; AUTH-03 ждёт PASS.
 
 ## Существенные технические зависимости следующих этапов
 
@@ -30,4 +30,4 @@
 
 ## Текущий переход
 
-Лёва исправляет три confirmed findings и доводит AUTH-02b #391 до coherent stable head. После полного author self-check и exact-head checks он останавливается для coordinator checkpoint Миры. AUTH-03 начинается только после PASS AUTH-02b.
+Лёва исправляет coordinator credential-transport finding и доводит AUTH-02b #391 до нового stable head. После author self-check и exact-head checks он останавливается для повторного coordinator checkpoint Миры. AUTH-03 начинается только после PASS AUTH-02b.
