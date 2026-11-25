@@ -35,3 +35,5 @@
 17. **2026-11-25:** AUTH-01 в PR #388 на exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a` прошёл coordinator checkpoint Миры: PASS, 0 confirmed current-scope defects. CI exact-head checks/database SUCCESS; переход к AUTH-02a разрешён без intermediate merge и independent Codex review.
 
 18. **2026-11-25:** после coordinator PASS AUTH-01 активирован AUTH-02a — transaction/plugin/state/limits/constraints foundation. По стандартному workflow реализация назначена Лире; новый stacked PR должен базироваться на branch PR #388. User-visible verification остаётся AUTH-02b.
+
+19. **2026-11-25:** владелец напрямую переназначил AUTH-02a с Лиры на Лену до начала implementation. Scope и stacked-base не изменены; Лена становится исполнителем второй ступени и после реализации не может быть независимым final reviewer этой сборки.
