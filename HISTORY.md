@@ -39,3 +39,5 @@
 19. **2026-11-25:** владелец напрямую переназначил AUTH-02a с Лиры на Лену до начала implementation. Scope и stacked-base не изменены; Лена становится исполнителем второй ступени и после реализации не может быть независимым final reviewer этой сборки.
 
 20. **2026-11-25:** на переданную техническую эскалацию AUTH-02a Лёва подтвердил конфликт native cleanup Better Auth 1.7.7 с длинными Vico budgets и исправил ошибочное требование общего rate_limit. PLAN/stage PLAN теперь требуют explicit-expiry auth_lifecycle_budget, прежний native limiter и exact schema/capability/cleanup acceptance. STORAGE-DECISION.md передан Лене для её correction pass A-01–A-04 и sequencing diagnostics. #389 head ab2f09f не изменён; author/coordinator PASS, AUTH-02b, merge и внешняя активация не выполнялись.
+
+21. **2026-11-25:** владелец заранее назначил следующую после AUTH-02a stacked-ступень AUTH-02b Лёве / Codex-6.1 Sol. Текущий AUTH-02a остаётся у Лены до coordinator checkpoint; AUTH-02b ещё не активирован и начнётся только после PASS с base на принятом stable head AUTH-02a.
