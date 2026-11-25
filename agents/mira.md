@@ -2,14 +2,14 @@
 
 ## Текущий контекст
 
-1. AUTH-01: PR #388 / head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`, coordinator PASS.
-2. AUTH-02a: PR #389 / head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, author PASS + coordinator PASS.
-3. AUTH-02b: draft #391 / входной correction head `bbd35cb60273a2a90cce7aea997d50e4f42943cf`.
-4. Лёва завершил full technical review: HOLD, три confirmed current-scope findings.
-5. Correction/finalization AUTH-02b активирован у Лёвы.
-6. После нового stable head + author self-check + applicable exact-head checks Мира проводит coordinator checkpoint всего bounded AUTH-02b.
-7. После PASS AUTH-02b Лёва остаётся исполнителем AUTH-03 → AUTH-06; final independent whole-feature reviewer назначается отдельно.
+1. AUTH-01: coordinator PASS.
+2. AUTH-02a: coordinator PASS.
+3. AUTH-02b #391: AUTHOR PASS был на `4fbf8e829fd18c7190a540eade17bdf543a406d3`.
+4. Coordinator checkpoint полного bounded AUTH-02b завершён **HOLD**.
+5. Confirmed current-scope defect: credential sign-in/sign-up form в `app/auth/credential-view.tsx` без явного POST; pre-hydration/no-JS default GET может положить email/password в URL.
+6. Предыдущие три findings Лёвы на этом exact head закрыты; остальные проверенные AUTH-02b runtime/observability/migration boundaries новых confirmed defects не дали.
+7. Лёва исправляет coordinator finding; AUTH-03 заблокирован до нового PASS.
 
 ## Следующий переход
 
-Ждать correction handoff Лёвы. На checkpoint проверить не только закрытие трёх findings, но и весь AUTH-02b contract на новом exact head; green CI использовать только как supporting evidence.
+После нового stable exact head провести повторный coordinator checkpoint изменённого AUTH-02b, включая regression credential transport и отсутствие регрессий signup/verification flow.
