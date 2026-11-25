@@ -166,3 +166,12 @@ PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d8
 3. Если запрошенная локаль больше недоступна, verification mail использует bootstrap locale и его корневой return path. Перед fallback по-прежнему валидируется исходный locale-local путь. Тест через fake runtime подтвердил принятие письма и отклонение подменённого return path.
 
 Локально прошли typecheck, выбранные unit/component проверки (55), чистые миграции PostgreSQL 17, ownership probe, P7 и SA04-J12. Exact-head CI #45710166025 и acceptance, включая AUTH-02b #45710173292, запущены. AUTHOR PASS зависит от итогов проверок.
+
+
+### Author self-check и итог exact-head проверок
+
+**AUTHOR PASS** на `4fbf8e829fd18c7190a540eade17bdf543a406d3` после сверки bounded AUTH-02b с PLAN и исправления трёх замечаний. Изменения ограничены preview test bindings, SSR resend POST и verification locale fallback с тестом fake delivery. Локально также прошёл SA05-2 (63 HTTP-запроса); файл test binding очищен. Отправка resend через canonical API по-прежнему выполняется с JavaScript.
+
+- [CI #45710166025](https://github.com/iliya1947/vico-forum/actions/runs/45710166025) PASS: checks и database, включая PG17, manifest/privilege probes, P7, SA04-J12 и SA05-2.
+- 19/19 применимых acceptance workflows PASS, включая [AUTH-02b Worker Chromium](https://github.com/iliya1947/vico-forum/actions/runs/45710173292) и [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/45710173538).
+- Stable exact head передан Мире для coordinator checkpoint. AUTH-03 ждёт coordinator PASS. Реальные провайдеры и Stage-6 остаются на паузе.
