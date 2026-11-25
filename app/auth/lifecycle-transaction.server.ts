@@ -73,14 +73,14 @@ export class AuthLifecycleTransaction {
    * belong to the explicit owner and must not wait behind their own parent.
    * Raw lifecycle work still cannot enter an unrelated busy transaction.
    */
-  async runAdapterOperation<T>(work: () => Promise<T>): Promise<T> {
-    if (this.context.getStore()) {
-      this.ownsCurrentWork();
-      return work();
-    }
+  async runAdapterOperation<T>(work: () => Promise<T>, transactional = false): Promise<T> {
+    // Track EVERY nested adapter operation, including reads and native CAS
+    // primitives, so a caught failure or outstanding query cannot escape
+    // the owning transaction's rollback/commit decision.
+    if (this.context.getStore()) return this.run(work);
     const task = this.adapterTail.then(() => {
       this.ownsCurrentWork();
-      return work();
+      return transactional ? this.run(work) : work();
     });
     this.adapterTail = task.then(() => undefined, () => undefined);
     return task;
