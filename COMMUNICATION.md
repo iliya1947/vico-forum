@@ -19,6 +19,8 @@
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
 3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST. Следующая ступень AUTH-03 назначена Лёве, но ещё не активирована.
 
+4. **AUTH-03 — активен.** Исполнитель: Лёва / Codex-6.1 Sol. Base — AUTH-02b exact `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`. Scope: neutral forgot/reset verified credential и own fresh-session password creation для Google-only; email change/unlink остаются AUTH-04.
+
 ## Существенные технические зависимости следующих этапов
 
 1. Verification/recovery/change/unlink обязаны использовать AUTH-02a transaction/state/budget primitives и сохранять AccountState ordering.
@@ -30,4 +32,4 @@
 
 ## Текущий переход
 
-Лёва исправляет coordinator credential-transport finding и доводит AUTH-02b #391 до нового stable head. После author self-check и exact-head checks он останавливается для повторного coordinator checkpoint Миры. AUTH-03 начинается только после PASS AUTH-02b.
+Лёва реализует AUTH-03 по `stages/AUTH-03/PLAN.md`. После stable exact head + author self-check + applicable checks он останавливается для coordinator checkpoint Миры. AUTH-04 до PASS не начинается.
