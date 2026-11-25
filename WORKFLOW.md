@@ -9,11 +9,11 @@
 5. AUTH-01 и AUTH-02a остаются intermediate stacked PRs: без merge в main и без independent intermediate review.
 6. Активный bounded-этап: **AUTH-02b — mandatory email verification + resend + UI**.
 7. По прямому решению владельца текущий исполнитель: **Лена / GPT-6.2**. Предыдущее назначение Лёвы снято до появления сохранённой реализации AUTH-02b.
-8. AUTH-02b implementation PR #391 (draft), head `63f19896e039074d767110ceaad3a69d3b2fbd37`, base #389 / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Prior exact `f353431d280068ecd9b298ef14bcc50076d7b381`: dedicated connected verification acceptance #45654464233 PASS, lint PASS, CI #45654463122 typecheck FAIL (TS2345 and TS2742); database and remaining acceptance still pending at inspection. New corrective type package committed, run:ci submitted. New exact-head acceptance and author PASS pending.
+8. AUTH-02b implementation PR #391 (draft), head `43af58080b6299584c97451d38562828148ffcce`, base #389 / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Prior `63f19896e039074d767110ceaad3a69d3b2fbd37` lint/typecheck PASS, checks/database FAIL #45655035999; previous connected verification PASS and all other connected workflows except AP-10 browser PASS on `f353431d`. Diagnosed corrective package committed; run:ci/run:acceptance submitted. Stable exact-head author PASS pending.
 9. Scope AUTH-02b: обязательная verification email/password, no-session signup, explicit POST confirmation, resend и пользовательская presentation; recovery/password-create/email-change/unlink остаются последующими ступенями.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 11. Лёва участвовал в AUTH-01; Лена участвовала в AUTH-02a и теперь реализует AUTH-02b. Оба не могут быть независимыми final reviewers всей собранной feature; final reviewer определяется отдельно.
 
 ## Следующий переход
 
-Лена продолжает AUTH-02b #391: collect remaining prior-head failures for diagnosis, inspect new exact-head CI; repair confirmed current-scope defects, run applicable connected acceptance on stable exact head, complete bounded author self-check and record stable evidence for coordinator checkpoint Миры. No AUTH-03, merge, independent final review or external activation.
+Лена продолжает AUTH-02b #391: check corrected exact-head results, complete bounded semantic self-check against PLAN and resolve only confirmed current-scope defects. Do not treat green CI as sufficient. Record evidence for coordinator checkpoint Миры; no AUTH-03, merge, independent final review or external activation.
