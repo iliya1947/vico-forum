@@ -6,6 +6,7 @@ import { RouterContextProvider } from "react-router";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { betterAuthOptions, createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
 import { AccountStateUnexpectedError } from "../../db/account-state";
+import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
 import { authSessionForRequest } from "../../app/auth/request-context";
 import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/session-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
@@ -1086,4 +1087,116 @@ describe("SA04-I5a connected native account lifecycle across retained cookies", 
       'select deactivated_at from "user" where id=$1', [unrelated.userId],
     )).rows[0]?.deactivated_at).toBeNull();
   }, 45_000);
+});
+
+describe("AUTH-02a explicit lifecycle owner with the native Better Auth guard", () => {
+  function scoped() {
+    const scope = new AuthLifecycleTransaction(writer);
+    const instance = betterAuth(betterAuthOptions(drizzle(writer), env, undefined, false, scope));
+    return { scope, instance };
+  }
+
+  function signupRequest(email: string) {
+    return new Request(origin + "/api/auth/sign-up/email", {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ name: "AUTH-02a", email, password }),
+    });
+  }
+
+  it("keeps native user and credential inserts invisible until the single outer signup commit", async () => {
+    const { instance } = scoped();
+    const email = "auth02a-atomic-signup@example.test";
+    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\s/i.test(sql));
+    const signing = instance.handler(signupRequest(email));
+    try {
+      await Promise.race([paused.entered, signing.then(() => {
+        throw new Error("Signup completed before reaching the native session write");
+      })]);
+      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
+      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
+      paused.resume();
+      const response = await signing;
+      expect(response.status).toBe(200);
+      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+      const row = (await deactivator.query<{ id: string }>(
+        'select id from "user" where email=$1', [email],
+      )).rows[0];
+      expect(row?.id).toBeTruthy();
+      expect((await deactivator.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
+      expect((await deactivator.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(1);
+    } finally {
+      paused.resume();
+      await signing.catch(() => undefined);
+      paused.restore();
+    }
+  }, 30_000);
+
+  it("rolls back native signup user and credential when the final session insert fails", async () => {
+    const { instance } = scoped();
+    const email = "auth02a-atomic-failure@example.test";
+    const original = writer.query;
+    let injected = false;
+    writer.query = ((...args: unknown[]) => {
+      if (!injected && /^insert into "session"\s/i.test(nativeSql(args[0]))) {
+        injected = true;
+        return Promise.reject(new Error("test-only native session insert failure"));
+      }
+      return Reflect.apply(original, writer, args);
+    }) as typeof writer.query;
+    try {
+      const result = await instance.handler(signupRequest(email)).catch(() => null);
+      expect(injected).toBe(true);
+      if (result) {
+        expect(result.ok).toBe(false);
+        expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      }
+      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
+      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
+    } finally { writer.query = original; }
+  }, 30_000);
+
+  it("holds the AccountState row lock after nested writes return, through the outer commit", async () => {
+    const { userId } = await signUp("lifecycle-owner-lock");
+    const { instance, scope } = scoped();
+    const direct = (await instance.$context).internalAdapter;
+    await scope.run(async () => {
+      await direct.updateUser(userId, { name: "Owned lifecycle update" });
+      await scope.run(async () => {
+        await direct.updatePassword(userId, "test-only-owned-hash");
+      });
+      await deactivator.query("set lock_timeout='120ms'");
+      try {
+        await expect(deactivator.query(deactivateSql, [userId])).rejects.toMatchObject({ code: "55P03" });
+        expect((await deactivator.query<{ name: string }>(
+          'select name from "user" where id=$1', [userId],
+        )).rows[0]?.name).toBe("I4a active member");
+      } finally { await deactivator.query("set lock_timeout='0'"); }
+    });
+    await deactivator.query(deactivateSql, [userId]);
+    expect((await deactivator.query<{ name: string }>(
+      'select name from "user" where id=$1', [userId],
+    )).rows[0]?.name).toBe("Owned lifecycle update");
+    expect((await deactivator.query<{ password: string }>(
+      "select password from account where user_id=$1", [userId],
+    )).rows[0]?.password).toBe("test-only-owned-hash");
+  }, 30_000);
+
+  it("does not commit earlier nested effects when a later inactive-target denial is caught", async () => {
+    const active = await signUp("lifecycle-active");
+    const inactive = await signUp("lifecycle-inactive");
+    await deactivator.query(deactivateSql, [inactive.userId]);
+    const { instance, scope } = scoped();
+    const direct = (await instance.$context).internalAdapter;
+    await expect(scope.run(async () => {
+      await direct.updateUser(active.userId, { name: "Must roll back" });
+      await direct.updateUser(inactive.userId, { name: "Denied" }).catch(() => undefined);
+    })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+    expect((await deactivator.query<{ name: string }>(
+      'select name from "user" where id=$1', [active.userId],
+    )).rows[0]?.name).toBe("I4a active member");
+  }, 30_000);
 });
