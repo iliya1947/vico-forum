@@ -175,3 +175,24 @@ PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d8
 - [CI #45710166025](https://github.com/iliya1947/vico-forum/actions/runs/45710166025) PASS: checks и database, включая PG17, manifest/privilege probes, P7, SA04-J12 и SA05-2.
 - 19/19 применимых acceptance workflows PASS, включая [AUTH-02b Worker Chromium](https://github.com/iliya1947/vico-forum/actions/runs/45710173292) и [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/45710173538).
 - Stable exact head передан Мире для coordinator checkpoint. AUTH-03 ждёт coordinator PASS. Реальные провайдеры и Stage-6 остаются на паузе.
+
+
+## Coordinator checkpoint Миры — HOLD
+
+Проверен stable exact head `4fbf8e829fd18c7190a540eade17bdf543a406d3` против принятого AUTH-02b PLAN и AUTH-02a base. Предыдущие три findings Лёвы на этом head закрыты; exact-head CI #45710166025 и 19/19 applicable acceptance PASS использованы как supporting evidence, но не как основание PASS.
+
+### Confirmed current-scope finding
+
+**Credential sign-in/sign-up form может отправить email и password через GET до hydration.**
+
+`app/auth/credential-view.tsx` содержит email/password `<form>` без явного `method`. У полей есть `name="email"` и `name="password"`. При submission до React hydration либо с отключённым JavaScript применяется HTML default GET, поэтому credential values могут попасть в URL/query/browser history. Это отличается от уже исправленной resend-формы и относится к текущему AUTH-02b: этот файл входит в bounded diff и именно здесь меняется signup presentation под mandatory verification.
+
+Классификация: **current-scope security defect, blocking coordinator PASS**. Это не future-only улучшение и не основание расширять AUTH-03.
+
+### Остальной coordinator review
+
+Самостоятельно проверены canonical signup/verification/resend endpoints, signup creation evidence, mandatory verification/no-session contract, read-only GET + explicit POST terminal confirmation, AccountState/transaction ordering, generation/replay/expiry, Google isolation/explicit linking, locale fallback, verification observability, forward migration 0075 и три предыдущих correction areas. Дополнительных confirmed current-scope defects не установлено.
+
+### Следующий этап
+
+Лёва исправляет только credential transport finding и добавляет regression для SSR/no-JS/pre-hydration submission semantics. После нового stable exact head, author self-check и применимых exact-head checks требуется повторный coordinator checkpoint. AUTH-03 до PASS не начинается.
