@@ -32,4 +32,4 @@
 
 ## Текущий checkpoint
 
-Implementation PR #391 (draft), branch `feat/auth-02b-email-verification` / `f353431d280068ecd9b298ef14bcc50076d7b381` от accepted #389. Static corrective package: node composite dependencies, fixture native signup/sign-in limiter isolation, real connected signup window, guest page aliases and outer Worker response privacy, affected uncertain-commit assertion. run:ci/run:acceptance submitted; inspect results, complete self-check and repair confirmed defects. No author PASS.
+Implementation PR #391 (draft), branch `feat/auth-02b-email-verification` / `63f19896e039074d767110ceaad3a69d3b2fbd37` от accepted #389. Prior `f353431d280068ecd9b298ef14bcc50076d7b381` dedicated connected verification browser PASS #45654464233; CI #45654463122 checks failed TS2345 test DB URL closure and TS2742 inferred Zod types via pnpm. Explicit typed AuthEndpoint/Plugin boundary using pinned Better Auth public type contract, DB URL narrowing fixed; run:ci submitted for new head. Check remaining prior runs and new CI, rerun acceptance at stable head. No author PASS.
