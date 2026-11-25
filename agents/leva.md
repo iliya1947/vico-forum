@@ -15,3 +15,8 @@ AUTH-01 реализован Лёвой в #388 и принят coordinator chec
 ## Продолжение
 
 Лена продолжает своё назначение: A-01–A-04 единым пакетом и воспроизводимая диагностика preimage-read sequencing risk, затем stable head/author checks и checkpoint Миры. AUTH-02b/merge/external resources не разрешены. При новой технической эскалации нужен конкретный reproducer; не продолжать workaround chain и не подменять цель green CI.
+
+
+## Готовность следующего пакета
+
+AUTH-02a coordinator checkpoint PASS на exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. По прямому решению владельца следующая ступень AUTH-02b назначена Лёве, но ещё не активирована. До отдельного handoff реализацию не начинать. При активации base = принятый AUTH-02a head.
