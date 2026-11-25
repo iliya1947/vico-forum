@@ -62,7 +62,7 @@ export async function signupVerifiedSession(db: TestDatabase, handle: Handler, r
     throw new Error("Fixture email already exists");
   const pending = await handle(request);
   if (pending.status !== 200 || pending.headers.getSetCookie().some(value => value.includes("session_token=")))
-    throw new Error("Expected pending signup without session");
+    throw new Error(`Expected pending signup without session (HTTP ${pending.status})`);
   const result = await pending.json() as {status?:boolean;token?:unknown};
   if (result.status !== true || result.token !== null || Object.keys(result).length !== 2)
     throw new Error("Unexpected pending signup acknowledgement");
@@ -72,7 +72,7 @@ export async function signupVerifiedSession(db: TestDatabase, handle: Handler, r
     method: "POST", headers: request.headers, body: JSON.stringify({email,password}),
   }));
   if (response.status !== 200 || !response.headers.getSetCookie().some(value => value.includes("session_token=")))
-    throw new Error("Expected actual verified sign-in session");
+    throw new Error(`Expected actual verified sign-in session (HTTP ${response.status})`);
   const login = await response.clone().json() as {user?:{id:string;emailVerified:boolean}};
   if (login.user?.id !== id || login.user.emailVerified !== true) throw new Error("Unexpected fixture identity");
   return response;
@@ -80,7 +80,8 @@ export async function signupVerifiedSession(db: TestDatabase, handle: Handler, r
 
 /** Connected smoke fixture only: a shared local Worker ingress bucket is
  * unrelated to the forum behavior under test. Reset the disposable lifecycle
- * budget before provisioning each fixture, never during abuse/policy probes. */
+ * budget before provisioning each fixture, never during abuse/policy probes.
+ * Callers must await each entire provisioning operation sequentially. */
 export async function signupConnectedVerifiedSession(
   db: TestDatabase, handle: Handler, request: Request,
 ): Promise<Response> {

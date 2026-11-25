@@ -103,9 +103,10 @@ async function run(){
   closeSync(fd);
   await ready();
 
-  const [author,reporter,reviewer]=await Promise.all([
-    signUp("author"),signUp("reporter"),signUp("reviewer")
-  ]);
+  // Fixture preparation owns shared disposable budget rows; do not overlap it.
+  const author=await signUp("author");
+  const reporter=await signUp("reporter");
+  const reviewer=await signUp("reviewer");
   for(const user of [author,reporter,reviewer])
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-user') on conflict do nothing",[user.id]);
   await client.query("update authz_user_roles set role_id='builtin-moderator' where user_id=$1",[reviewer.id]);

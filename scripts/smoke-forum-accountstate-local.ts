@@ -51,9 +51,8 @@ async function submit(topicId: string, cookie: string, body: string) {
   }, cookie);
 }
 async function signUp(label: "author" | "control" | "actor" | "unavailable" | "unexpected") {
-  // The prior CI smoke uses the same disposable DB's persistent Better Auth
-  // rate-limit table. Test-only distinct Cloudflare IP headers keep these real
-  // registrations independent, without mutating the rate-limit table.
+  // Distinct synthetic ingress headers identify the fixture requests.
+  // Shared disposable limiter reset and signup/sign-in are sequential.
   const ip = {
     author: "192.0.2.41", control: "192.0.2.42", actor: "192.0.2.43",
     unavailable: "192.0.2.44", unexpected: "192.0.2.45",
@@ -147,10 +146,11 @@ async function run() {
   closeSync(fd);
   await ready();
 
-  const [author, control, actor, unavailableActor, unexpectedActor] = await Promise.all([
-    signUp("author"), signUp("control"), signUp("actor"),
-    signUp("unavailable"), signUp("unexpected"),
-  ]);
+  const author = await signUp("author");
+  const control = await signUp("control");
+  const actor = await signUp("actor");
+  const unavailableActor = await signUp("unavailable");
+  const unexpectedActor = await signUp("unexpected");
   const forum = new DrizzleForumRepository(drizzle(admin), { cooldownMs: 0, now: () => new Date() });
   const categoryId = randomUUID(), sectionId = randomUUID(), topicId = randomUUID();
   await forum.createCategory({ id: categoryId, name: "J12 lifecycle fixture" });

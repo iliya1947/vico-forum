@@ -166,9 +166,9 @@ async function acceptedVisibility(topicId: string, moderator: Actor,
 
 async function main() {
   await client.connect();
-  const [author, moderator, ordinary] = await Promise.all([
-    signup("author"), signup("moderator"), signup("ordinary"),
-  ]);
+  const author = await signup("author");
+  const moderator = await signup("moderator");
+  const ordinary = await signup("ordinary");
   for (const actor of [author, moderator, ordinary]) {
     await client.query("insert into authz_user_roles(user_id,role_id) " +
       "values ($1,$2) on conflict do nothing",

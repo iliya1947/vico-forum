@@ -205,7 +205,7 @@ export function betterAuthOptions(
           // Track it in the same transaction owner so a native synthetic
           // duplicate acknowledgement cannot swallow a failed SQL read and
           // cause COMMIT to be attempted against a still-blocked connection.
-          let result = await lifecycle.runAdapterOperation(() => registrationAdmission(data, context));
+          let result = await lifecycle.runAdapterOperation(async () => registrationAdmission(data, context));
           // The provider-neutral challenge exchange is AUTH-05. Until it is
           // wired, a required mode cannot silently admit fresh email signup.
           if (!result && data.source.action === "create-user" && data.source.method === "email-password" &&
