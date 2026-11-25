@@ -10,7 +10,7 @@ const templateKeys = {
   "password-create": ["authMailCreateSubject", "authMailCreateBody", "authMailCreateAction"],
   "email-change-confirmation": ["authMailChangeConfirmSubject", "authMailChangeConfirmBody", "authMailChangeConfirmAction"],
   "email-change-verification": ["authMailChangeVerifySubject", "authMailChangeVerifyBody", "authMailChangeVerifyAction"],
-} as const satisfies Record<AuthMailPurpose, readonly UiKey<"common">[]>;
+} as const satisfies Record<AuthMailPurpose, readonly UiKey<"authMail">[]>;
 
 function escapeHTML(value: string): string {
   return value.replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
@@ -20,14 +20,14 @@ export async function renderAuthMail(
   purpose: AuthMailPurpose, actionURL: string, locale: ResolvedLocaleContext,
   resources: Pick<TranslationResourceLoader, "load">,
 ): Promise<{ subject: string; html: string; text: string }> {
-  const snapshot = await resources.load(locale, ["common"]);
+  const snapshot = await resources.load(locale, ["authMail"]);
   const runtime = createTranslationRuntime(snapshot);
   const [subjectKey, bodyKey, actionKey] = templateKeys[purpose];
-  const subject = runtime.t(subjectKey);
-  const body = runtime.t(bodyKey);
-  const action = runtime.t(actionKey);
-  const ignore = runtime.t("authMailIgnore");
-  const link = runtime.t("authMailLink");
+  const subject = runtime.t(subjectKey, { ns: "authMail" });
+  const body = runtime.t(bodyKey, { ns: "authMail" });
+  const action = runtime.t(actionKey, { ns: "authMail" });
+  const ignore = runtime.t("authMailIgnore", { ns: "authMail" });
+  const link = runtime.t("authMailLink", { ns: "authMail" });
   if (!safeMailHeader(subject, 200) || [body, action, ignore, link].some(value =>
     typeof value !== "string" || value.length > 2000 || /[\p{Cc}\p{Cf}]/u.test(value))) {
     throw new AuthMailValidationError();

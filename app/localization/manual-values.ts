@@ -4,23 +4,6 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
-  authMailVerifySubject: "Подтвердите email",
-  authMailVerifyBody: "Подтвердите этот адрес для своего аккаунта Vico Forum.",
-  authMailVerifyAction: "Подтвердить email",
-  authMailResetSubject: "Восстановление пароля",
-  authMailResetBody: "Перейдите по ссылке, чтобы задать новый пароль аккаунта Vico Forum.",
-  authMailResetAction: "Задать новый пароль",
-  authMailCreateSubject: "Добавление пароля",
-  authMailCreateBody: "Подтвердите добавление пароля к своему аккаунту Vico Forum.",
-  authMailCreateAction: "Продолжить добавление пароля",
-  authMailChangeConfirmSubject: "Подтвердите смену email",
-  authMailChangeConfirmBody: "Подтвердите, что вы запросили смену адреса своего аккаунта Vico Forum.",
-  authMailChangeConfirmAction: "Подтвердить смену адреса",
-  authMailChangeVerifySubject: "Подтвердите новый email",
-  authMailChangeVerifyBody: "Подтвердите новый адрес для своего аккаунта Vico Forum.",
-  authMailChangeVerifyAction: "Подтвердить новый адрес",
-  authMailIgnore: "Если вы не отправляли этот запрос, проигнорируйте письмо.",
-  authMailLink: "Также можно открыть ссылку:",
   sa08TerminalCoverageNote: "Эти существующие проверки считают сохранённые записи без корректного времени завершения или атрибуции человеку. Нулевые значения не подтверждают полноту Истории или общую исправность сервисов.",
   sa08TerminalCoverageLimited: "В сохранённых записях есть пробелы времени или атрибуции человеку.",
 
@@ -1980,23 +1963,6 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
-  authMailVerifySubject: "אימות כתובת הדוא״ל",
-  authMailVerifyBody: "אמתו את כתובת הדוא״ל של חשבון Vico Forum שלכם.",
-  authMailVerifyAction: "אימות הדוא״ל",
-  authMailResetSubject: "איפוס סיסמה",
-  authMailResetBody: "השתמשו בקישור לבחירת סיסמה חדשה לחשבון Vico Forum שלכם.",
-  authMailResetAction: "איפוס הסיסמה",
-  authMailCreateSubject: "הוספת סיסמה",
-  authMailCreateBody: "אשרו את הבקשה להוסיף סיסמה לחשבון Vico Forum שלכם.",
-  authMailCreateAction: "המשך הוספת סיסמה",
-  authMailChangeConfirmSubject: "אישור שינוי כתובת הדוא״ל",
-  authMailChangeConfirmBody: "אשרו שביקשתם לשנות את כתובת הדוא״ל בחשבון Vico Forum שלכם.",
-  authMailChangeConfirmAction: "אישור שינוי הכתובת",
-  authMailChangeVerifySubject: "אימות כתובת הדוא״ל החדשה",
-  authMailChangeVerifyBody: "אמתו כתובת דוא״ל חדשה זו עבור חשבון Vico Forum שלכם.",
-  authMailChangeVerifyAction: "אימות הכתובת החדשה",
-  authMailIgnore: "אם לא ביקשתם זאת, אפשר להתעלם מהודעה זו.",
-  authMailLink: "אפשר גם לפתוח קישור זה:",
   sa08TerminalCoverageNote: "הבדיקות הקיימות סופרות רשומות שמורות עם מועדי סיום חסרים או לא תקינים, או ללא ייחוס לאדם. ערכי אפס אינם מעידים על היסטוריה מלאה או על תקינות כוללת.",
   sa08TerminalCoverageLimited: "ברשומות השמורות קיימים פערי זמן או ייחוס לאדם.",
 

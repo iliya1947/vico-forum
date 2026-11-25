@@ -82,6 +82,12 @@ describe("AUTH-01 URL boundary", () => {
 });
 
 describe("AUTH-01 templates and locale architecture", () => {
+  it("loads only the mail namespace, without loading the general UI catalog", async () => {
+    const load = vi.fn(resources.load.bind(resources));
+    const locale = authMailLocale("en", localeRegistry);
+    await renderAuthMail("email-verification", action(), locale, { load });
+    expect(load).toHaveBeenCalledExactlyOnceWith(locale, ["authMail"]);
+  });
   it.each(authMailPurposes)("renders HTML/text %s for EN/RU/HE without egress", async purpose => {
     for (const [locale, direction, subject] of [
       ["en", "ltr", /email|password/i], ["ru", "ltr", /Подтвердите|пароля/], ["he", "rtl", /דוא״ל|סיסמה/],
@@ -114,14 +120,14 @@ describe("AUTH-01 templates and locale architecture", () => {
   });
   it("escapes translated HTML and rejects header injection without reflecting it", async () => {
     const locale = authMailLocale("en", localeRegistry);
-    const snapshot = await resources.load(locale, ["common"]);
-    snapshot.resourcesByLocale.en.common.authMailVerifyBody = '<img src=x onerror="attack()"> & text';
+    const snapshot = await resources.load(locale, ["authMail"]);
+    snapshot.resourcesByLocale.en.authMail.authMailVerifyBody = '<img src=x onerror="attack()"> & text';
     const loader = { load: async () => snapshot };
     const mail = await renderAuthMail("email-verification", action(), locale, loader);
     expect(mail.html).not.toContain("<img");
     expect(mail.html).toContain("&lt;img");
     expect(mail.text).toContain('<img src=x onerror="attack()">');
-    snapshot.resourcesByLocale.en.common.authMailVerifySubject = "Subject\r\nBcc: victim@example.com";
+    snapshot.resourcesByLocale.en.authMail.authMailVerifySubject = "Subject\r\nBcc: victim@example.com";
     await expect(renderAuthMail("email-verification", action(), locale, loader)).rejects.toThrow("Invalid authentication mail input");
   });
 });
