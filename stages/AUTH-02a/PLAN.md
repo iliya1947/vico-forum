@@ -38,10 +38,13 @@
 
 5. **Shared anti-abuse primitives**
    - server-owned DB-backed budgets, пригодные для HTTP и direct/server lifecycle paths без double count;
+   - storage correction A-01: `auth_lifecycle_budget` с HMAC key PK, positive count, finite `expires_at timestamptz`, cleanup index `(expires_at,key)`; native rate_limit/configuration/limits сохраняются;
    - domain-separated HMAC target keys без plaintext email/token;
-   - atomic consume/CAS, bounded TTL/window semantics, trusted `cf-connecting-ip` boundary и bounded unknown-network behavior;
+   - atomic consume/CAS, fixed expiry на DB clock; bounded locked cleanup ≤64 expired rows этой таблицы, без удаления native/live/locked/renewed rows;
+   - admission коммитится до domain transaction, failed-domain attempts остаются учтёнными; trusted `cf-connecting-ip` boundary и bounded unknown-network behavior;
    - storage failure для защищаемых lifecycle mutations fail closed;
-   - provider-neutral challenge contract/injection допускается только как foundation; конкретный anti-bot provider/adapter/widget не реализуется.
+   - provider-neutral challenge contract/injection допускается только как foundation; конкретный anti-bot provider/adapter/widget не реализуется;
+   - exact schema/expiry/capability/migration/acceptance contract: [STORAGE-DECISION.md](STORAGE-DECISION.md). Deadline-in-last_request, dummy native rules и подмена native storage/cleanup не допускаются.
 
 6. **Observability compatibility**
    - transaction staging existing auth facts/session-deletion evidence так, чтобы rollback/zero-row/uncertain commit не создавали ложный success evidence;
@@ -63,8 +66,8 @@
 1. Native PostgreSQL tests подтверждают transaction ownership, rollback, nested composition, AccountState/deactivation ordering и multi-client race invariants.
 2. Better Auth/Worker regression доказывает, что текущие signup/signin/session/linking flows после foundation ведут себя как на AUTH-01.
 3. Lifecycle-state tests покрывают purpose isolation, latest generation, expiry, wrong-purpose/tamper/missing state и отсутствие raw secrets.
-4. Budget tests покрывают HTTP/direct shared admission, no double count, concurrent consume, spoofed/unknown ingress и storage failure.
-5. Migration tests: clean PostgreSQL 17, pre-existing fixtures, duplicate preflight, schema/manifest parity по применимому contract.
+4. Budget tests покрывают HTTP/direct shared admission, no double count, concurrent consume, spoofed/unknown ingress и storage failure; real native HTTP sweep vs live 600 s Vico window, fixed DB expiry и bounded concurrent cleanup по STORAGE-DECISION.md.
+5. Migration tests: clean PostgreSQL 17, pre-existing fixtures/upgrade после 0073, duplicate preflight, schema/manifest parity и exact web CRUD / localization-denial probes новой таблицы. Следующая forward budget migration не меняет accepted history или external evidence.
 6. No real egress; production mail/challenge остаются dormant.
 7. Stable exact head + фактические checks записаны в `stages/AUTH-02a/RESULT.md`; исполнитель останавливается для coordinator checkpoint Миры.
 
@@ -75,3 +78,7 @@
 3. Existing user-visible auth contract не изменён.
 4. Author self-check и применимые CI/checks PASS на stable exact head.
 5. Следующая ступень AUTH-02b не начинается до coordinator checkpoint PASS.
+
+## Correction pass до author PASS
+
+На входном #389 head `ab2f09fc916279455d78bc2ca8a78c27eca72128` зелёный CI не снимает HOLD. Лена реализует A-01 по storage decision и согласует с A-02–A-04 из RESULT.md: единственный transaction control для standalone/lifecycle, единая protected-operation classification, удаление неиспользуемого markFailed после inventory. Sequencing risk native revokeOtherSessions/preimage READ диагностировать на воспроизводимом interleaving; ослабление ownership/подавление ошибок не допускается. Новое решение не объявляет риск доказанным или закрытым. Затем новый stable head, author checks/applicable CI и checkpoint Миры.

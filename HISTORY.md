@@ -37,3 +37,5 @@
 18. **2026-11-25:** после coordinator PASS AUTH-01 активирован AUTH-02a — transaction/plugin/state/limits/constraints foundation. По стандартному workflow реализация назначена Лире; новый stacked PR должен базироваться на branch PR #388. User-visible verification остаётся AUTH-02b.
 
 19. **2026-11-25:** владелец напрямую переназначил AUTH-02a с Лиры на Лену до начала implementation. Scope и stacked-base не изменены; Лена становится исполнителем второй ступени и после реализации не может быть независимым final reviewer этой сборки.
+
+20. **2026-11-25:** на переданную техническую эскалацию AUTH-02a Лёва подтвердил конфликт native cleanup Better Auth 1.7.7 с длинными Vico budgets и исправил ошибочное требование общего rate_limit. PLAN/stage PLAN теперь требуют explicit-expiry auth_lifecycle_budget, прежний native limiter и exact schema/capability/cleanup acceptance. STORAGE-DECISION.md передан Лене для её correction pass A-01–A-04 и sequencing diagnostics. #389 head ab2f09f не изменён; author/coordinator PASS, AUTH-02b, merge и внешняя активация не выполнялись.

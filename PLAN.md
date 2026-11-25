@@ -10,6 +10,8 @@ Baseline: `main 9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`; входной servic
 
 Correction pass выполнен по назначению Миры: единый mandatory-verification target contract, без grandfathering/legacy policy и связанного owner blocker; AUTH-05 — provider-neutral. Остальная архитектура сохранена.
 
+**AUTH-02a storage correction, 2026-11-25:** дополнительные Vico lifecycle-бюджеты перенесены в техническом плане из native `rate_limit` в отдельную `auth_lifecycle_budget` с явным `expires_at`. Проверка Better Auth 1.7.7 установила несовместимость общей native очистки с независимыми 600 s окнами. Native HTTP limiter сохраняется. Причина, минимальная schema/cleanup/capability и acceptance — [stages/AUTH-02a/STORAGE-DECISION.md](stages/AUTH-02a/STORAGE-DECISION.md). Это решение для исправления #389, не PASS реализации; product scope и численные лимиты прежние.
+
 ## 2. Целевая модель и существующие seams
 
 Better Auth сохраняет владение user/account/session, password hashing, session cookies и Google OAuth/state. Нет второго identity store, session protocol, RBAC/Admin plugin, ownership recovery или нового OAuth provider. Связи и exact Owner binding остаются на неизменном `user.id`, независимо от email и способов входа.
@@ -21,7 +23,7 @@ Better Auth сохраняет владение user/account/session, password h
 | `registration-admission.ts`, SET-02 | Fresh create-user-only policy; verification/recovery existing account не являются новой регистрацией |
 | `settings-account.tsx`, `request-context.ts`, SET-05 | Дополнить safe DTO email/status/pending и own actions; сохранить password change и session controls |
 | `auth-client.ts`, `credential-view.tsx`, credential routes | Signup становится «проверьте почту»; verification/resend/forgot/reset, без предположения session по HTTP 200 |
-| Existing `verification`, `rate_limit` | Bounded lifecycle state и enforced budgets; новый auth store не нужен |
+| Existing `verification`, native `rate_limit` | Lifecycle state в verification, прежние native HTTP limits; дополнительные HTTP/direct budgets в `auth_lifecycle_budget` с независимым expiry |
 | SA02 facts/attempt collectors, Owner History/Integrations | Расширить closed values и projections только по доказанным новым transitions; без второго журнала/probes |
 | `workers/app.ts`, split DB capabilities | Request-scoped mail/challenge injection; auth использует web DB, localization-read — только готовые ресурсы |
 
@@ -155,7 +157,7 @@ Usable password = собственный credential с непустым hash **�
 
 Enforcement primitives входят в AUTH-02a и каждый flow с момента появления. AUTH-05 завершает matrix/challenge/config/adversarial coverage; безопасность resend/recovery не откладывается до этого этапа.
 
-Сохранить DB `rate_limit`, trusted `cf-connecting-ip` и native buckets 1.7.7: sign-in/up/change-password/change-email 3/10 s; verification/reset mail requests 3/60 s. Settings и canonical shares bucket; direct проходит common budget. X-Forwarded-For/X-Real-IP не принимаются как authority.
+Сохранить DB `rate_limit`, trusted `cf-connecting-ip` и native buckets 1.7.7: sign-in/up/change-password/change-email 3/10 s; verification/reset mail requests 3/60 s. Native configuration/storage implementation и обычный last-request timestamp сохраняются. Settings и canonical shares native bucket; direct проходит common budget. X-Forwarded-For/X-Real-IP не принимаются как authority.
 
 Дополнительный server-owned bounded policy:
 
@@ -166,7 +168,9 @@ Enforcement primitives входят в AUTH-02a и каждый flow с моме
 | Terminal verify/reset | 10/10 min network; limiter storage failure не разрешает mutation |
 | Own email-change/unlink/password-create | 5/min user + fresh checks/native HTTP limits |
 
-Counters независимы от existence, без plaintext email/token; domain-separated HMAC server key, bounded input, TTL/cleanup existing storage. Recipient budget ограничивает отправки, не account login/valid-token redemption. Unknown trusted IP → bounded shared unknown-network budget + target/user, не unlimited. DB outage → fail-closed 503, не memory fallback.
+Дополнительные counters независимы от existence, без plaintext email/token/IP; domain-separated HMAC server key, bounded input. Storage `auth_lifecycle_budget`: единственный PK key, positive integer count, finite `expires_at timestamptz`, cleanup index `(expires_at,key)`. Fixed window начинается при первом разрешённом consume на authoritative DB clock; expiry сохраняется внутри окна и обновляется только при истечении, denial не увеличивает count/expiry. Atomic upsert/CAS и bounded locked cleanup ≤64 expired rows только этой таблицы. Native sweep не владеет Vico counters; common budget больше не пишет в `rate_limit`. Полный contract — [STORAGE-DECISION.md](stages/AUTH-02a/STORAGE-DECISION.md).
+
+Admission коммитится до domain transaction, включая уже списанные ранние buckets при последующем denial; failed domain work не возвращает attempts. HTTP/direct/nested используют существующий service/server-owned receipt. Future timestamp в native last_request, dummy native rule, private API или переписывание native cleanup не используются. Recipient budget ограничивает отправки, не account login/valid-token redemption. Unknown trusted IP → bounded shared unknown-network budget + target/user, не unlimited. DB outage → fail-closed 503, не memory fallback.
 
 Atomic upsert/CAS unique key, multi-client native PG races; без read-then-write local counters. Path normalization защищает от aliases/trailing slash. Server-owned admission receipt исключает double counting nested call, клиент не присылает bypass. Safe 429 `Retry-After`/`X-Retry-After` проходят route/document; automatic retries запрещены.
 
@@ -174,7 +178,7 @@ Challenge interface `verifyRegistrationChallenge` → passed/rejected/unavailabl
 
 В repository/local-CI реализовать provider-neutral verifier contract, request-scoped injection и explicit fake fixtures, покрывающие passed/rejected/unavailable, invalid binding, expired/replayed proof и timeout/uncertain. Provider-required mode без verifier fail closed, а не включает fake fallback. Format/token limits, TTL, replay guarantees и hostname/action binding принадлежат будущему выбранному adapter; numeric Turnstile-specific values не являются общим контрактом. Конкретный anti-bot provider, SDK/HTTP adapter, widget/sitekey/secrets и real resources сейчас не выбираются и не реализуются. Turnstile остаётся лишь исследованным candidate, не implementation dependency. Existing database-backed rate limits обязательны независимо от будущего provider; его выбор/активация — отдельная Stage-6 работа.
 
-**Acceptance:** HTTP/Settings/direct parity и no double count, multi-client burst, canonical target variants, spoofed/unknown network, config/storage failures, HMAC key rotation, challenge negatives без user/session/mail effects. UI 429/explicit retry/no enumeration. Passive SA02 telemetry не считается enforcement.
+**Acceptance:** HTTP/Settings/direct parity и no double count, multi-client burst, canonical target variants, spoofed/unknown network, config/storage failures, HMAC key rotation, challenge negatives без user/session/mail effects. Real native HTTP sweep при short-window reset сохраняет live Vico 600 s counter; Vico cleanup не затрагивает native/live/locked/renewed rows. DB-clock expiry, unchanged native limits, new schema/manifest/runtime capability probes обязательны. UI 429/explicit retry/no enumeration. Passive SA02 telemetry не считается enforcement.
 
 ## 8. Наблюдаемость и изменения contracts/schema
 
@@ -197,13 +201,14 @@ No password/hash/cookie/token/raw email/URL/query/provider errors/challenge resp
 | Native auth schema | Existing fields достаточны; legacy marker, нового identity/session store и migration массового завершения прежних sessions нет |
 | Account uniqueness | Forward unique `(provider_id, account_id)` и partial unique credential owner (`user_id` WHERE provider=credential) для concurrent identity linking/creation. Сейчас только userId index. Duplicate preflight останавливает migration, не merge/delete identities автоматически |
 | Verification | Existing columns + purpose/user PK/versioned metadata, без blanket unique(identifier), меняющего native semantics |
+| Lifecycle budgets | Forward `auth_lifecycle_budget`: HMAC key PK, count, finite expires_at + cleanup index; независимость от native rate_limit cleanup. Web-only CRUD capability/provisioning/parity probes; localization-read без доступа. Без external provisioning |
 | Attempt CHECK | Forward SQL/schema/metadata с existing-row compatibility по мере добавления operations |
 | Auth facts | Existing generic `owner_events`; проверить closed constraints/catalog/projections, новые таблицы/ACL не нужны |
 | Dependencies | Pinned Better Auth/adapter без upgrade, no provider SDK; existing fetch/Web Crypto/public exports. Если export не покрывает extension — остановить affected slice для пересмотра, без private imports |
 | Runtime | Explicit mail/challenge modes, request capabilities, server-only placeholders; existing cookie/DB split |
 | Public contracts | Signup без session, новые locale routes/explicit POST confirm, safe AccountSecurity DTO/actions/errors/429; более строгие native API proof restrictions |
 
-Migrations нумеровать от актуального main на implementation; accepted `0000–0072`/snapshots не переписывать. Проверять clean DB и pre-existing fixtures. Structural manifest/relation/privilege probes обновлять только при фактическом изменении их contract; reuse auth tables не требует новых grants. External migration evidence не менять local разработкой.
+Migrations нумеровать от актуальной implementation history; accepted `0000–0072`/snapshots не переписывать. Budget migration следует за `0073` account uniqueness (при текущем основании — `0074`). Проверять clean DB и pre-existing fixtures. Structural manifest/relation/privilege probes обновлять по фактическому contract; новая budget table получает exact repository web CRUD contract, без расширения localization/default ACL или external provisioning. External migration evidence не менять local разработкой.
 
 ## 9. AUTH-06 — whole-lifecycle/security acceptance
 

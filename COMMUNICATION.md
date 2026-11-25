@@ -24,7 +24,7 @@ Legacy cutover не является отдельным текущим product d
 
 ## Следующий переход
 
-AUTH-01 реализован в #388, stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`; author checks и CI прошли. Мира проводит coordinator checkpoint первой stacked-ступени. AUTH-02+ не начаты; intermediate merge отсутствует. Evidence/ограничения — stages/AUTH-01/RESULT.md.
+AUTH-01 checkpoint PASS; AUTH-02a у Лены в #389 на head `ab2f09fc916279455d78bc2ca8a78c27eca72128`. Лёва разрешил переданную storage эскалацию и исправил PLAN/stage PLAN; Лена продолжает correction A-01–A-04 и диагностику sequencing risk по stages/AUTH-02a/STORAGE-DECISION.md. Author/coordinator PASS ещё нет; AUTH-02b/merge/external activation не начинать. Актуальный маршрут — WORKFLOW.md.
 
 ## Coordinator review — PASS
 
@@ -55,3 +55,9 @@ PR #388, stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
 5. Implementation PR должен иметь base на `feat/auth-01-mail-foundation`; intermediate merge отсутствует.
 
 6. Поскольку Лена участвует в AUTH-02a implementation, она не является независимым final reviewer собранной feature.
+
+## AUTH-02a — storage technical-plan correction
+
+Лёва независимо подтвердил blanket cleanup Better Auth 1.7.7 и воспроизвёл удаление live 600 s Vico row на +120 s с truthful lastRequest (unmodified native code, controlled-clock/in-memory adapter diagnostic, не PG race test). Требование общего rate_limit было ошибкой технического плана. Common AuthLifecycleBudget получает отдельную `auth_lifecycle_budget` с key PK/count/finite expires_at и indexed bounded cleanup; native limiter/rules/configuration сохраняются. Это изменение storage existing service, без нового policy engine, native customStorage или внешнего backend.
+
+PLAN §2/7/8 и stage PLAN исправлены; точный schema/migration/runtime capability/acceptance contract и исключённые альтернативы — [stages/AUTH-02a/STORAGE-DECISION.md](stages/AUTH-02a/STORAGE-DECISION.md). Storage blocker для начала исправления снят, реализация остаётся у Лены. A-02–A-04 и sequencing diagnostics остаются обязательными до нового stable head/author checks и checkpoint Миры; прежний green CI не принимает новое решение. Лёва application code/CI/external state не менял.

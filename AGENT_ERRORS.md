@@ -46,3 +46,15 @@
 **Как предотвращать:** при установленном конфликте контракта с native behavior остановить конкретное решение, проверить штатные альтернативы, при необходимости вернуть вопрос технического плана; перед запуском очередного CI проверить весь изменённый scope и не закреплять обходы ради green checks.
 
 **Общий лог:** строка подготовлена в service branch AGENT_LOGIC_ERRORS.md для переноса через разрешённый документационный маршрут Миры, как для E-03/E-04; main напрямую не изменён.
+
+## E-06 — общий storage признан совместимым без проверки владельца очистки
+
+**Что произошло:** Лёва в исходном полном PLAN потребовал дополнительные 600 s Vico budgets в existing rate_limit одновременно с сохранением native Better Auth rules. Из достаточности колонок и atomic unique-key consume сделан вывод о пригодности общего storage; существенный native sweep проверен не был.
+
+**Почему это ошибка:** cleanup — часть storage contract. Better Auth 1.7.7 удаляет строки всей модели по longest native window, без знания отдельного Vico TTL. Правильная атомарность consume не доказывает сохранение счётчика до его срока. Это «скрытая посылка» исходного плана, отдельная от workaround implementation E-05.
+
+**Как предотвращать:** до требования reuse shared storage проверить всех writers/consumers и TTL/cleanup ownership, per-row expiry и совместимость policy windows. Подтвердить полный contract, затем выбирать минимальное решение.
+
+**Исправлено:** PLAN §2/7/8 и AUTH-02a PLAN задают отдельный explicit-expiry auth_lifecycle_budget; причина/альтернативы/acceptance — stages/AUTH-02a/STORAGE-DECISION.md. Реализацию продолжает Лена; новый код не принят заранее.
+
+**Общий лог:** строка подготовлена в service branch AGENT_LOGIC_ERRORS.md; перенос в main — через разрешённый documentation route Миры, как для E-03–E-05. Прямого commit/merge main или отдельного незапрошенного docs PR нет.

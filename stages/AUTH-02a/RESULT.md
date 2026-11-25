@@ -1,6 +1,10 @@
 # stages/AUTH-02a/RESULT.md — реализация и проверяемое состояние bounded-ступени AUTH-02a
 
-## Статус: implementation written, CI/acceptance pending
+## Текущий статус: HOLD — согласованный correction pass у Лены
+
+Последний implementation head #389: `ab2f09fc916279455d78bc2ca8a78c27eca72128`; CI 45583502311 и 18/18 applicable acceptance workflows прошли на нём, но author design self-check выявил A-01–A-04 и sequencing risk. 2026-11-25 Лёва исправил storage clause плана: [STORAGE-DECISION.md](STORAGE-DECISION.md). Storage blocker для начала исправления снят; код ещё не исправлен, author/coordinator PASS отсутствуют. Лена остаётся исполнителем. Ниже сохранены значимые implementation/CI/design checkpoints; старые pending/next формулировки относятся к указанным historical heads.
+
+## Исходная реализация и CI correction evidence
 
 Implementation PR #389, head `0e9e25a7302ba92ae7973854332da1e431d9af2d`, base AUTH-01 branch `feat/auth-01-mail-foundation` / `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`. Compare: 49 commits ahead, 0 behind, 28 файлов. Ни merge в main, ни AUTH-02b не начаты.
 
@@ -64,3 +68,9 @@ Pinned Better Auth 1.7.7 session.ts revokeOtherSessions uses Promise.all over in
 - Evidence staging is required by actual native multi-write transaction semantics and existing SA02 proof contract; retained existing receipt/postcondition collectors rather than introducing a second fact store. Existing SQL recognition for native observation predates AUTH-02a; transaction ownership itself is explicit. Independent UUID counter row IDs, inferred runtime crypto type and preserved exception causes address confirmed causes, not workarounds.
 
 This author review is static; it does not establish absence of all defects or independent acceptance. Do not start AUTH-02b. Resolve A-01 through the technical-plan correction; then author implements the agreed correction and confirmed local simplifications as one coherent package, diagnoses sequencing risk, and checks on the resulting stable head. No more CI-driven patching before the design issue is resolved.
+
+## Technical-plan correction Лёвы — A-01 decision delivered
+
+Native 1.7.7 source/config и локальный controlled-clock вызов unmodified onRequestRateLimit подтвердили blanket sweep: на +120 s удалён ещё живой 600 s Vico bucket с обычным lastRequest. Исходный PLAN ошибочно требовал общий storage без совместимого per-row expiry contract. PLAN §2/7/8 и stage PLAN исправлены: common AuthLifecycleBudget переносится в `auth_lifecycle_budget` (key PK/count/finite expires_at/index), native rate_limit/configuration сохраняются. Новая forward migration и exact web capability/schema probes входят в тот же correction pass. Причина, исключённые альтернативы, failure/cleanup/atomicity и обязательные tests — STORAGE-DECISION.md.
+
+Лена реализует решение вместе с A-02–A-04 и отдельно диагностирует sequencing risk. Это не PASS существующего head, не реализация исправления и не независимая whole-PR review. CI не повторялся, новая PostgreSQL acceptance не заявляется. После коррекции требуется новый stable exact head с author checks/применимыми CI/acceptance, затем checkpoint Миры; AUTH-02b/merge/Stage 6 не активированы.

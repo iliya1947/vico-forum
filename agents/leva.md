@@ -1,11 +1,13 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Текущий контекст
+## Текущий результат
 
-1. AUTH-01 реализован Лёвой в PR #388 и прошёл coordinator checkpoint Миры.
-2. AUTH-02a активирован; стандартным исполнителем назначена Лира.
-3. Активного implementation назначения у Лёвы нет.
+AUTH-01 реализован Лёвой в #388 и принят coordinator checkpoint. AUTH-02a реализует Лена / GPT-6.2 в #389 на базе AUTH-01; независимую final review всей feature Лёва не выполняет из-за участия в AUTH-01.
 
-## Роль на текущем этапе
+2026-11-25 разрешён переданный вопрос технического плана A-01 на #389 head `ab2f09fc916279455d78bc2ca8a78c27eca72128`: native rate_limit cleanup несовместим с независимыми длинными Vico windows при обычном lastRequest. Исходное требование общего storage было ошибкой плана; введён explicit-expiry `auth_lifecycle_budget`, native limiter сохраняется. PLAN и stage PLAN исправлены. Полное bounded решение/основания/acceptance — `stages/AUTH-02a/STORAGE-DECISION.md`.
 
-Не дублировать реализацию AUTH-02a. Если Лира установит дефект технического плана или необходимость технической эскалации, вопрос возвращается Лёве по WORKFLOW. Поскольку Лёва участвовал в AUTH-01 implementation, независимую final technical review всей собранной feature он не выполняет.
+Это plan correction, не implementation или независимая acceptance. Native cleanup воспроизведён локально на unmodified 1.7.7 с controlled clock/in-memory adapter; PostgreSQL tests нового решения ещё не запускались. Реализация #389 не изменена, CI не повторялся.
+
+## Продолжение
+
+Лена продолжает своё назначение: A-01–A-04 единым пакетом и воспроизводимая диагностика preimage-read sequencing risk, затем stable head/author checks и checkpoint Миры. AUTH-02b/merge/external resources не разрешены. При новой технической эскалации нужен конкретный reproducer; не продолжать workaround chain и не подменять цель green CI.
