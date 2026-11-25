@@ -80,12 +80,12 @@ describe("request-local auth lifecycle transaction ownership", () => {
     const ready = new Promise<void>(resolve => { entered = resolve; });
     const wait = new Promise<void>(resolve => { release = resolve; });
     const order: string[] = [];
-    const writing = scope.runAdapterOperation(() => scope.run(async () => {
+    const writing = scope.runAdapterOperation(async () => {
       await scope.runAdapterOperation(async () => { order.push("owned read"); });
       entered();
       await wait;
       order.push("write");
-    }));
+    }, true);
     await ready;
     const reading = scope.runAdapterOperation(async () => {
       expect(scope.ownsCurrentWork()).toBe(false);
@@ -104,11 +104,45 @@ describe("request-local auth lifecycle transaction ownership", () => {
   it("propagates failed adapter operations and does not poison later independent work", async () => {
     const { scope, controls } = fixture();
     const failure = new Error("first operation failed");
-    const first = scope.runAdapterOperation(() => scope.run(async () => { throw failure; }));
-    const next = scope.runAdapterOperation(() => scope.run(async () => "next"));
+    const first = scope.runAdapterOperation(async () => { throw failure; }, true);
+    const next = scope.runAdapterOperation(async () => "next", true);
     await expect(first).rejects.toBe(failure);
     await expect(next).resolves.toBe("next");
     expect(controls()).toEqual(["BEGIN","ROLLBACK","BEGIN","COMMIT"]);
+  });
+
+  it("makes a caught nested adapter read failure rollback-only", async () => {
+    const { scope, controls } = fixture();
+    const failure = new Error("native read failed");
+    await expect(scope.run(async () => {
+      await scope.runAdapterOperation(async () => { throw failure; }).catch(() => undefined);
+    })).rejects.toBe(failure);
+    expect(controls()).toEqual(["BEGIN", "ROLLBACK"]);
+  });
+
+  it("tracks pending nested adapter operations before ending the transaction", async () => {
+    const { scope, query, controls, commands } = fixture();
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>(resolve => { entered = resolve; });
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    let nested: Promise<unknown> | undefined;
+    const transaction = scope.run(async () => {
+      nested = scope.runAdapterOperation(async () => {
+        entered();
+        await wait;
+        return query("pending native read");
+      });
+      await ready;
+    });
+    await ready;
+    await Promise.resolve();
+    try { expect(controls()).toEqual(["BEGIN"]); }
+    finally { release(); }
+    await expect(transaction).rejects.toMatchObject({code:"unawaited"});
+    await nested;
+    expect(controls()).toEqual(["BEGIN", "ROLLBACK"]);
+    expect(commands().indexOf("pending native read")).toBeLessThan(commands().indexOf("ROLLBACK"));
   });
 
   it("never retries a lost COMMIT acknowledgement or publishes success", async () => {
