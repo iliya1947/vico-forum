@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { Client } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { createAuth } from "../../app/auth/auth.server";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AuthLifecycleBudget, LifecycleBudgetExceededError, LifecycleBudgetInvariantError,
   type LifecycleBudgetIntent } from "../../app/auth/lifecycle-budget.server";
@@ -19,15 +21,17 @@ const budget = (client = first, ingress = source, key = secret) =>
 const mail = (email = "member@example.test"): LifecycleBudgetIntent =>
   ({kind:"mail",purpose:"email-verification",email});
 const ok = async () => "ok";
-const persisted = async () => (await first.query<{ key:string; count:number; last_request:string }>(
-  "select key,count,last_request from rate_limit order by key")).rows;
+const persisted = async () => (await first.query<{ key:string; count:number; expires_at:Date }>(
+  "select key,count,expires_at from auth_lifecycle_budget order by key")).rows;
 beforeAll(async () => {
   await first.connect(); await second.connect();
   await first.query("drop schema if exists "+schema+" cascade; create schema "+schema);
   await first.query((await readFile("drizzle/0003_gorgeous_donald_blake.sql","utf8"))
     .replaceAll('"public".','"'+schema+'".'));
+  await first.query(await readFile("drizzle/0073_auth_account_uniqueness.sql","utf8"));
+  await first.query(await readFile("drizzle/0074_auth_lifecycle_budget.sql","utf8"));
 });
-beforeEach(async () => { await first.query("truncate rate_limit"); });
+beforeEach(async () => { await first.query("truncate auth_lifecycle_budget,rate_limit"); });
 afterAll(async () => {
   await first.query("drop schema if exists "+schema+" cascade");
   await first.end(); await second.end();
@@ -74,8 +78,7 @@ describe("AUTH-02a shared private lifecycle budget", () => {
       expect(denied).toHaveLength(5);
       expect(denied.map(r=>r.reason)).toEqual(Array(5).fill(expect.any(LifecycleBudgetExceededError)));
       expect((await persisted()).map(r=>r.count)).toEqual([5]);
-      const stored = (await first.query<{ id: string; key: string }>("select id,key from rate_limit")).rows[0];
-      expect(stored.id).not.toBe(stored.key);
+      expect((await persisted())[0]?.key).toMatch(/^vico-auth-budget:v1:[a-f0-9]{64}$/);
     } finally { await Promise.all(clients.map(c=>c.end())); }
   });
 
@@ -107,21 +110,76 @@ describe("AUTH-02a shared private lifecycle budget", () => {
       .rejects.toBeInstanceOf(LifecycleBudgetExceededError);
   });
 
-  it("resets expired windows, survives native rate-limit sweep and only prunes its namespace", async () => {
+  it("keeps a fixed DB window across allowed and denied attempts, resetting only on expiry", async () => {
     const runtime=budget();
     await runtime.run(mail(),ok);
     const initial=await persisted();
-    expect(initial).toHaveLength(2);
-    await first.query("insert into rate_limit(id,key,count,last_request) values('native','native',1,1)");
-    // Better Auth v1.7.7's native sweep deletes old last_request timestamps.
-    await first.query("delete from rate_limit where last_request < floor(extract(epoch from clock_timestamp())*1000)::bigint-60000");
-    expect(await persisted()).toEqual(initial);
-    await first.query("update rate_limit set last_request=1");
-    await first.query("insert into rate_limit(id,key,count,last_request) values('native','native',1,1)");
-    await runtime.run({kind:"signup"},ok);
-    expect((await persisted()).map(r=>r.key)).toEqual([ "native",expect.stringMatching(/^vico-auth-budget:v1:/)]);
     await runtime.run(mail(),ok);
-    expect((await persisted()).filter(r=>r.key!=="native").map(r=>r.count)).toEqual([1,1,1]);
+    await runtime.run(mail(),ok);
+    await expect(runtime.run(mail(),ok)).rejects.toMatchObject({retryAfterSeconds:expect.any(Number)});
+    const current=await persisted();
+    expect(current.map(r=>r.expires_at)).toEqual(initial.map(r=>r.expires_at));
+    expect(current.map(r=>r.count).sort((a,b)=>a-b)).toEqual([3,4]);
+    await first.query("update auth_lifecycle_budget set expires_at=clock_timestamp()-interval '1 second'");
+    await runtime.run(mail(),ok);
+    const reset=await persisted();
+    expect(reset.map(r=>r.count)).toEqual([1,1]);
+    expect(reset.every(r=>r.expires_at.getTime()>Date.now())).toBe(true);
+  });
+
+  it("runs actual native HTTP reset/sweep without touching live Vico target limits", async () => {
+    const runtime=budget();
+    for(let i=0;i<3;i++) await runtime.run(mail(),ok);
+    const original=await persisted();
+    const auth=createAuth(drizzle(first),{
+      BETTER_AUTH_SECRET:secret, BETTER_AUTH_URL:"http://localhost:3000",
+      GOOGLE_CLIENT_ID:"unused-google-client", GOOGLE_CLIENT_SECRET:"unused-google-secret",
+    });
+    const request=()=>new Request("http://localhost:3000/api/auth/get-session",{
+      headers:{"cf-connecting-ip":"203.0.113.100"},
+    });
+    expect((await auth.handler(request())).status).toBe(200);
+    const native=(await first.query<{id:string}>("select id from rate_limit")).rows;
+    expect(native).toHaveLength(1);
+    await first.query("update rate_limit set last_request=$1",[Date.now()-120000]);
+    await first.query("insert into rate_limit(id,key,count,last_request) values('expired-probe','expired-probe',1,$1)",[Date.now()-120000]);
+    expect((await auth.handler(request())).status).toBe(200);
+    expect((await first.query("select id,count from rate_limit")).rows).toEqual([{id:native[0].id,count:1}]);
+    expect(await persisted()).toEqual(original);
+    await expect(runtime.run(mail(),ok)).rejects.toBeInstanceOf(LifecycleBudgetExceededError);
+    expect((await persisted()).find(row=>row.count===3)?.expires_at).toEqual(original.find(row=>row.count===3)?.expires_at);
+  });
+
+  it("enforces finite expiry, valid HMAC key and positive count on the forward schema", async () => {
+    const key="vico-auth-budget:v1:"+"a".repeat(64);
+    for(const [candidate,count,expiry] of [
+      ["raw@example.test",1,"2030-01-01"], [key,0,"2030-01-01"],[key,1,"infinity"],
+    ]) await expect(first.query("insert into auth_lifecycle_budget(key,count,expires_at) values($1,$2,$3)",
+      [candidate,count,expiry])).rejects.toMatchObject({code:"23514"});
+    expect(await persisted()).toEqual([]);
+  });
+
+  it("cleans at most 64 expired rows, skips locks and leaves native/live rows unchanged", async () => {
+    const prefix="vico-auth-budget:v1:";
+    await first.query("insert into auth_lifecycle_budget(key,count,expires_at) select $1||lpad(to_hex(n),64,'0'),1,clock_timestamp()-interval '1 minute' from generate_series(1,70)n",[prefix]);
+    const lockedKey=prefix+"1".padStart(64,"0");
+    const liveKey=prefix+"f".repeat(64);
+    await first.query("insert into auth_lifecycle_budget(key,count,expires_at) values($1,2,clock_timestamp()+interval '10 minutes')",[liveKey]);
+    await first.query("insert into rate_limit(id,key,count,last_request) values('native','native',1,1)");
+    await second.query("begin");
+    try {
+      await second.query("select key from auth_lifecycle_budget where key=$1 for update",[lockedKey]);
+      await budget().run({kind:"signup"},ok);
+      expect((await persisted()).filter(r=>r.expires_at.getTime()<Date.now())).toHaveLength(6);
+      expect((await persisted()).some(r=>r.key===lockedKey)).toBe(true);
+      // Renew the locked expired row before allowing another cleanup.
+      await second.query("update auth_lifecycle_budget set expires_at=clock_timestamp()+interval '10 minutes' where key=$1",[lockedKey]);
+      await second.query("commit");
+    } catch (error) { await second.query("rollback"); throw error; }
+    await budget().run({kind:"signup"},ok);
+    expect((await persisted()).map(r=>r.key)).toEqual(expect.arrayContaining([lockedKey,liveKey]));
+    expect((await persisted()).filter(r=>r.expires_at.getTime()<Date.now())).toHaveLength(0);
+    expect((await first.query("select id,key,count,last_request from rate_limit")).rows).toEqual([{id:"native",key:"native",count:1,last_request:"1"}]);
   });
 
   it("uses separate HMAC keys on secret rotation and leaves old windows bounded", async () => {
@@ -130,7 +188,7 @@ describe("AUTH-02a shared private lifecycle budget", () => {
     await budget(first,source,secret+"-rotated").run(mail(),ok);
     expect(await persisted()).toHaveLength(4);
     expect((await persisted()).filter(r=>old.some(o=>o.key===r.key))).toEqual(old);
-    await first.query("update rate_limit set last_request=1");
+    await first.query("update auth_lifecycle_budget set expires_at=clock_timestamp()-interval '1 second'");
     await budget(first,source,secret+"-rotated").run(mail(),ok);
     expect(await persisted()).toHaveLength(2);
   });
@@ -142,9 +200,9 @@ describe("AUTH-02a shared private lifecycle budget", () => {
     const transaction=new AuthLifecycleTransaction(first);
     const scoped=new AuthLifecycleBudget(first,transaction,secret,source);
     await expect(transaction.run(()=>scoped.run(mail(),work))).rejects.toBeInstanceOf(LifecycleBudgetInvariantError);
-    await first.query("alter table rate_limit rename to unavailable_rate_limit");
+    await first.query("alter table auth_lifecycle_budget rename to unavailable_auth_lifecycle_budget");
     try { await expect(budget().run(mail(),work)).rejects.toBeTruthy(); }
-    finally { await first.query("alter table unavailable_rate_limit rename to rate_limit"); }
+    finally { await first.query("alter table unavailable_auth_lifecycle_budget rename to auth_lifecycle_budget"); }
     expect(called).toBe(0);
   });
 });
