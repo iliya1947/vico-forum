@@ -10,7 +10,8 @@ import {
  */
 export function isGuestEmailVerificationRequest(request: Request): boolean {
   const path = new URL(request.url).pathname;
-  return path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
+  return /^\/[^/]+\/verify-email(?:\.data)?\/?$/.test(path) ||
+    path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
     path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification";
 }
 

@@ -30,7 +30,7 @@ import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-con
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
 import { authMailRuntimeContext, type AuthMailEnvironment } from "../app/auth/auth-mail.server";
 import { createRequestAuthMailRuntime } from "./auth-mail";
-import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
+import { initializeAuthContext, withAuthSessionCookies, isGuestEmailVerificationRequest } from "../app/auth/session-context";
 import { AuthSessionUnavailableError, authSessionForRequest } from "../app/auth/request-context";
 import { captureAttemptIngressSource } from "../app/observability/attempt-source";
 import {
@@ -184,6 +184,14 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     if (response.status >= 500 && response.status <= 599 && executionContext?.waitUntil) {
       executionContext.waitUntil(ownerMonitoring.recordRequestFailure(response.status, performance.now() - requestStarted)
         .catch(() => undefined));
+    }
+    // Protect the initial token-bearing document, including locale redirects
+    // and framework errors, before the client removes the query from history.
+    if (isGuestEmailVerificationRequest(request)) {
+      const headers = new Headers(finalResponse.headers);
+      headers.set("Cache-Control", "private, no-store");
+      headers.set("Referrer-Policy", "no-referrer");
+      return new Response(finalResponse.body, { status: finalResponse.status, statusText: finalResponse.statusText, headers });
     }
     return withAuthSessionCookies(finalResponse, authHeaders);
     } finally {
