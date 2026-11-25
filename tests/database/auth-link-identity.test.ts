@@ -5,6 +5,7 @@ import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { betterAuthOptions } from "../../app/auth/auth.server";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { installAuthLifecycleFixture, markVerifiedCredentialFixture } from "./verified-credential-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -28,9 +29,10 @@ beforeAll(async () => {
     .replaceAll("--> statement-breakpoint", "");
   await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
+  await installAuthLifecycleFixture(client);
 });
 beforeEach(async () => {
-  await client.query('truncate "user", account, "session", verification, rate_limit cascade');
+  await client.query('truncate "user", account, "session", verification, rate_limit, auth_lifecycle_budget cascade');
 });
 afterAll(async () => {
   await client.query("set search_path to public");
@@ -73,8 +75,14 @@ it.each([
   for (const name of ["A", "B"]) {
     const signup = await call("sign-up/email", { name, email: `${name.toLowerCase()}@example.test`, password: "local-link-password-123" });
     expect(signup.status).toBe(200);
-    const value = await signup.json() as { user: { id: string } };
-    users[name] = { id: value.user.id, cookie: signup.headers.getSetCookie().find((cookie) => cookie.includes("session_token="))!.split(";", 1)[0] };
+    expect(await signup.json()).toEqual({status:true,token:null});
+    expect(signup.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+    const email = `${name.toLowerCase()}@example.test`;
+    const id = await markVerifiedCredentialFixture(client,email);
+    const login = await call("sign-in/email", {email,password:"local-link-password-123"});
+    expect(login.status).toBe(200);
+    expect((await login.json() as {user:{id:string}}).user.id).toBe(id);
+    users[name] = { id, cookie: login.headers.getSetCookie().find((cookie) => cookie.includes("session_token="))!.split(";", 1)[0] };
   }
   const callbackURL = `/en/users/${users.A.id}`;
   const headers: Record<string, string> = {};

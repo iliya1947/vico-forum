@@ -5,6 +5,7 @@ import {
   createHyperdriveAuthRuntime, type AuthCreationObserver, type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { signupVerifiedSession } from "./verified-credential-fixture";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
@@ -43,7 +44,7 @@ function authRequest(path: string, body: object, cookie?: string) {
 }
 async function createActor(email: string, events: AuthTransitionFact[]) {
   const auth = createHyperdriveAuthRuntime(url, env, connected, undefined, observer(events));
-  const response = await auth.handle(authRequest("sign-up/email", {
+  const response = await signupVerifiedSession(client, request => auth.handle(request), authRequest("sign-up/email", {
     name: "Password actor", email, password: oldPassword,
   }));
   expect(response.status).toBe(200);
@@ -75,7 +76,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Preserve actual Better Auth rate limiting within each independent test.
   // Avoid sharing a synthetic IP rate-limit budget across separate cases.
-  await client.query("truncate rate_limit");
+  await client.query("truncate rate_limit, auth_lifecycle_budget");
 });
 afterAll(async () => {
   await pool.end();

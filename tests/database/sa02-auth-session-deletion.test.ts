@@ -10,6 +10,7 @@ import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransition
 import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
 import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
 import { SessionDeletionEvidence } from "../../app/auth/session-deletion-evidence";
+import { signupVerifiedSession } from "./verified-credential-fixture";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
@@ -60,7 +61,7 @@ async function login(email:string, ip:string) {
   return {cookie,userId:resolved!.user.id,sessionId:resolved!.session.id};
 }
 async function register(email:string,ip:string) {
-  const cookie=await sessionCookie(await auth.handle(request("sign-up/email",{
+  const cookie=await sessionCookie(await signupVerifiedSession(admin, req=>auth.handle(req), request("sign-up/email",{
     email,name:"Session proof actor",password,
   },undefined,ip)));
   const resolved=(await auth.getSession(new Headers({Cookie:cookie}))).session;
@@ -87,7 +88,7 @@ beforeAll(async()=>{
   }
 });
 beforeEach(async()=>{
-  await admin.query("truncate rate_limit");
+  await admin.query("truncate rate_limit, auth_lifecycle_budget");
   events.length=0; gaps.length=0;
 });
 afterAll(async()=>{

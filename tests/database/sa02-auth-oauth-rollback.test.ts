@@ -10,6 +10,7 @@ import {
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
 import { AuthCreationEvidence } from "../../app/auth/auth-creation-evidence";
 import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
+import { signupVerifiedSession } from "./verified-credential-fixture";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -122,7 +123,8 @@ async function callback(auth:Awaited<ReturnType<typeof authFactory>>,
     encodeURIComponent(state),{headers:{Cookie:cookie}}));
 }
 async function registerEmail(email:string) {
-  const response=await (await authFactory()).handler(post("sign-up/email",{
+  const auth=await authFactory();
+  const response=await signupVerifiedSession(client,req=>auth.handler(req),post("sign-up/email",{
     name:"Local member",email,password,
   }));
   expect(response.status).toBe(200);
@@ -156,7 +158,7 @@ beforeAll(async()=>{
   }
 });
 beforeEach(async()=>{
-  await client.query('truncate "user",account,session,verification,rate_limit,owner_events cascade');
+  await client.query('truncate "user",account,session,verification,rate_limit,auth_lifecycle_budget,owner_events cascade');
   await client.query("update forum_registration_settings set "+
     "google_registration_enabled=true,email_registration_enabled=true where id=1");
   events.length=0;identityEmail="";identitySub="";identityVerified=true;

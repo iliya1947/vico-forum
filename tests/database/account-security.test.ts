@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
 import { AccountSecurityError, authRuntimeForRequest, authSessionForRequest, type AccountSecurityIdentity } from "../../app/auth/request-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { installAuthLifecycleFixture, markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import { initializeAuthContext } from "../../app/auth/session-context";
 
 const url = process.env.DATABASE_URL;
@@ -55,9 +56,12 @@ async function resolvedActor(response: Response): Promise<SessionActor> {
 }
 
 async function signUp(email: string): Promise<SessionActor> {
-  return resolvedActor(await authRequest("sign-up/email", {
-    name: email.split("@")[0], email, password,
-  }));
+  const pending = await authRequest("sign-up/email", { name: email.split("@")[0], email, password });
+  expect(pending.status).toBe(200);
+  expect(await pending.json()).toEqual({status:true,token:null});
+  expect(pending.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+  await markVerifiedCredentialFixture(client,email);
+  return resolvedActor(await signIn(email));
 }
 async function signIn(email: string, secret = password): Promise<Response> {
   return authRequest("sign-in/email", { email, password: secret });
@@ -79,9 +83,10 @@ beforeAll(async () => {
     .replaceAll("--> statement-breakpoint", "");
   await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
+  await installAuthLifecycleFixture(client);
 });
 beforeEach(async () => {
-  await client.query('truncate "user", account, "session", verification, rate_limit cascade');
+  await client.query('truncate "user", account, "session", verification, rate_limit, auth_lifecycle_budget cascade');
 });
 afterAll(async () => {
   await client.query("set search_path to public");

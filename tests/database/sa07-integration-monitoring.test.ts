@@ -1,3 +1,4 @@
+import { markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import {readFile,readdir} from "node:fs/promises";
 import {Client,Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
@@ -56,7 +57,10 @@ it('keeps real password session creation generic for a dual-method account and p
   const env={BETTER_AUTH_SECRET:'SA07_I_PRIVATE_SECRET_0123456789abcdef0123456789abcdef',BETTER_AUTH_URL:'http://localhost:3000',GOOGLE_CLIENT_ID:'SA07_I_PRIVATE_GOOGLE_ID',GOOGLE_CLIENT_SECRET:'SA07_I_PRIVATE_GOOGLE_SECRET'};
   const captured:Array<{fact:AuthTransitionFact;at:Date}>=[],capture=(fact:AuthTransitionFact,at=new Date())=>{captured.push({fact,at});},writer=new PostgresAuthFactWriter(pool);
   const auth=createAuth(db,env,undefined,undefined,undefined,{capture,trustedActorFor:()=>null}),email='dual-'+crypto.randomUUID()+'@test.invalid',password='Native-password-only-12345';
-  const signed=await auth.api.signUpEmail({body:{name:'Dual method',email,password}});const member=signed.user.id;
+  const signed=await auth.api.signUpEmail({body:{name:'Dual method',email,password}});
+  expect(signed).toEqual({status:true,token:null});
+  const member=await markVerifiedCredentialFixture(c,email);
+  expect((await auth.api.signInEmail({body:{email,password}})).user.id).toBe(member);
   async function flush(){for(const {fact,at}of captured.splice(0))await writer.append(fact,at);}
   await flush();const googleId=crypto.randomUUID();
   await db.insert(account).values({id:googleId,userId:member,accountId:'SA07_I_PRIVATE_EXTERNAL_ACCOUNT',providerId:'google'});
