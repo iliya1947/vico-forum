@@ -1,4 +1,4 @@
-import { credentialSignIn } from "./credential-sign-in.server";
+import { credentialChangePassword, credentialSignIn } from "./credential-auth-endpoints.server";
 import { AuthCredentialLifecycle, type CredentialTransition } from "./credential-lifecycle.server";
 import { credentialLifecycleEndpoints, type CredentialLifecycleEndpoints } from "./credential-lifecycle-endpoints.server";
 import type { BetterAuthPlugin } from "better-auth";
@@ -27,7 +27,10 @@ export type AuthLifecycleDependencies = Readonly<{
 
 type LifecyclePlugin = {
   id: "vico-auth-lifecycle";
-  endpoints: EmailVerificationEndpoints & CredentialLifecycleEndpoints & { signInEmail: ReturnType<typeof credentialSignIn> };
+  endpoints: EmailVerificationEndpoints & CredentialLifecycleEndpoints & {
+    signInEmail: ReturnType<typeof credentialSignIn>;
+    changePassword: ReturnType<typeof credentialChangePassword>;
+  };
   init: () => { context: {
     vicoAuthLifecycle: AuthLifecycleState;
     vicoAuthBudget: AuthLifecycleBudget;
@@ -53,6 +56,7 @@ export function authLifecyclePlugin(client: Pick<Client, "query">,
     id: "vico-auth-lifecycle",
     endpoints: {
       signInEmail: credentialSignIn(client, transaction, onActorStateError),
+      changePassword: credentialChangePassword(client, transaction, onActorStateError),
       ...emailVerificationEndpoints(emailVerification, budget, transaction, evidence, unavailable,
         dependencies?.observeVerificationDirectFailure),
       ...credentialLifecycleEndpoints(credentials, unavailable, dependencies?.mail, dependencies?.observeCredential,

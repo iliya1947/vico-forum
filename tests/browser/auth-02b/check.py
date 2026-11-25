@@ -303,6 +303,9 @@ def run():
         assert call(second, "sign-in/email", {"email": en, "password": password}).status == 401
         assert call(second, "sign-in/email", {"email": en, "password": new_password}).status == 200
         record("reset-revokes-sessions-and-requires-separate-sign-in")
+        # Keep the native limiter active. This separate fixture signs in after
+        # the guest reset's two sign-in assertions have left the shared bucket.
+        time.sleep(10.1)
         record("google-only-browser-password-create")
         assert call(third, "sign-in/email", {"email": ru, "password": password}).status == 200
         current_ru = call(third, "get-session").json()

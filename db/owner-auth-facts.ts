@@ -76,7 +76,10 @@ function encode(fact: AuthTransitionFact): Encoded {
       entityType = "account"; entityId = checkedId(f.accountId);
       payload = { method: pick(f.method, ["password","google"]),
         linkContext: pick(f.linkContext, ["registration","explicit-link","unknown","password-create"]) };
-      identity = [kind,entityId]; break;
+      if (f.linkContext === "password-create" && (f.method !== "password" || actor !== target)) {
+        throw new Error("Invalid own password creation fact");
+      }
+      identity = f.linkContext === "password-create" ? [kind,entityId,f.linkContext] : [kind,entityId]; break;
     }
     case "auth.sessionCreated": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.sessionCreated"}>;
@@ -103,7 +106,10 @@ function encode(fact: AuthTransitionFact): Encoded {
       if (typeof f.operationId !== "string" || !OPERATION_ID.test(f.operationId)) {
         throw new Error("Invalid auth fact operation ID");
       }
-      if (f.context !== undefined) payload = { context: pick(f.context, ["reset"]) };
+      if (f.context !== undefined) {
+        if (actor !== null) throw new Error("Invalid guest password reset fact");
+        payload = { context: pick(f.context, ["reset"]) };
+      }
       correlation = f.operationId;
       identity = [kind,correlation,entityId]; break;
     }

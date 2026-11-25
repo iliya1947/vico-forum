@@ -14,7 +14,7 @@
     "app/auth/lifecycle-state.server.ts",
     "app/auth/lifecycle-plugin.server.ts",
     "app/auth/credential-lifecycle.server.ts",
-    "app/auth/credential-sign-in.server.ts",
+    "app/auth/credential-auth-endpoints.server.ts",
     "app/auth/credential-lifecycle-endpoints.server.ts",
     "app/auth/credential-lifecycle-proof.server.ts",
     "app/auth/email-verification-endpoints.server.ts",

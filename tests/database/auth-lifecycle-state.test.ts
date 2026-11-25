@@ -631,7 +631,7 @@ describe("AUTH-03 credential lifecycle domain", () => {
   });
 
 
-  it("denies sign-in already checking a password when a concurrent reset wins the subject lock", async () => {
+  it.each(["sign-in", "change-password"] as const)("denies %s using the old password when a concurrent reset wins the subject lock", async operation => {
     await installMethod("credential");
     const reset = makeService();
     const issued = await reset.requestReset(email);
@@ -645,6 +645,14 @@ describe("AUTH-03 credential lifecycle domain", () => {
       BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
       GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
     });
+    const credentials = { email, password: "fixture-only-old-credential" };
+    let actorHeaders: Headers | undefined;
+    if (operation === "change-password") {
+      const initial = await auth.api.signInEmail({ body: credentials, asResponse: true });
+      expect(initial.status).toBe(200);
+      const cookie = initial.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+      actorHeaders = new Headers({ cookie });
+    }
     await first.query(`
       create function wait_for_credential_reset() returns trigger language plpgsql as $$
         begin perform pg_advisory_xact_lock(32796013); return new; end;
@@ -667,13 +675,15 @@ describe("AUTH-03 credential lifecycle domain", () => {
       committed = reset.reset(issued!.token, newPassword, hashPassword);
       void committed.catch(() => {});
       await waitBlockedBy(resetPid, await backend(latch));
-      signIn = auth.api.signInEmail({ body: { email, password: "fixture-only-old-credential" }, asResponse: true });
+      signIn = operation === "sign-in" ? auth.api.signInEmail({ body: credentials, asResponse: true })
+        : auth.api.changePassword({ headers: actorHeaders!, asResponse: true,
+            body: { currentPassword: credentials.password, newPassword: "fixture-only-racing-change", revokeOtherSessions: false } });
       void signIn.catch(() => {});
       await waitBlockedBy(signInPid, resetPid);
       await latch.query("select pg_advisory_unlock(32796013)");
       await committed;
       const denied = await signIn;
-      expect(denied.status).toBe(401);
+      expect(denied.status).toBe(operation === "sign-in" ? 401 : 400);
       expect(denied.headers.getSetCookie()).toHaveLength(0);
       expect((await second.query("select id from session")).rows).toEqual([{ id: otherSessionId }]);
     } finally {
