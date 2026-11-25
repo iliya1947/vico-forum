@@ -29,7 +29,7 @@ import {
 } from "../../db/schema";
 import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
-import { AccountStateUnavailableError, readAccountState } from "../../db/account-state";
+import { AccountStateUnavailableError, AccountStateUnexpectedError, readAccountState } from "../../db/account-state";
 
 export interface BetterAuthEnvironment {
   readonly BETTER_AUTH_SECRET: string;
@@ -387,7 +387,10 @@ function isUncertainLifecycleControl(error: unknown): boolean {
 
 function translateSecurityError(error: unknown): never {
   if (error instanceof AccountSecurityError) throw error;
-  if (isUncertainLifecycleControl(error)) throw new AccountSecurityError("unavailable");
+  if (error instanceof AuthLifecycleTransactionError) {
+    if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
+    throw new AccountStateUnexpectedError({ cause: error });
+  }
   if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
   switch (betterAuthErrorCode(error)) {
     case "SESSION_NOT_FRESH": throw new AccountSecurityError("not-fresh");
@@ -628,8 +631,10 @@ export function createHyperdriveAuthRuntime(
         if (error instanceof InactiveSessionWriteError) {
           return { session: null, headers: new Headers() };
         }
-        if (error instanceof AccountStateUnavailableError || isUncertainLifecycleControl(error) ||
-          sessionStorageUnavailable(error)) {
+        if (error instanceof AuthLifecycleTransactionError && !sessionStorageUnavailable(error)) {
+          throw new AccountStateUnexpectedError({ cause: error });
+        }
+        if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
           throw new AuthSessionUnavailableError({ cause: error });
         }
         throw error;
@@ -652,8 +657,11 @@ export function createHyperdriveAuthRuntime(
           throw admission.failure.error;
         }, false, (error) => { admission.failure ??= { error }; });
       } catch (error) {
-        if (isUncertainLifecycleControl(error)) {
-          return new Response("Authentication outcome could not be confirmed.", {
+        if (error instanceof AuthLifecycleTransactionError) {
+          if (!sessionStorageUnavailable(error)) throw new AccountStateUnexpectedError({ cause: error });
+          return new Response(isUncertainLifecycleControl(error)
+            ? "Authentication outcome could not be confirmed."
+            : "Service unavailable. Please try again.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
           });
