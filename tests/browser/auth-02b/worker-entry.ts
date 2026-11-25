@@ -11,7 +11,7 @@ import type { AuthMailTransport } from "../../../app/auth/auth-mail-contract.ser
 
 const localOrigin = "http://127.0.0.1:4242";
 export default createApplication((env, context) => {
-  const connectionString = resolveRuntimeDatabaseConnectionStrings(env as Env).webConnectionString;
+  const connectionString = resolveRuntimeDatabaseConnectionStrings(env).webConnectionString;
   const fakeTransport: AuthMailTransport = {
     async send(message) {
       if (env.BETTER_AUTH_URL !== localOrigin || env.AUTH_MAIL_MODE !== "fake" ||

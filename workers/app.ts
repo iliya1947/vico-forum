@@ -89,8 +89,11 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
+type RequestMailFactory = (env: Env & AuthMailEnvironment, context: RouterContextProvider,
+  execution: Parameters<typeof createRequestAuthMailRuntime>[2]) => ReturnType<typeof createRequestAuthMailRuntime>;
+
 async function applicationFetch(request: Request, env: Env, executionContext: ExecutionContext | undefined,
-  createMailRuntime: typeof createRequestAuthMailRuntime): Promise<Response> {
+  createMailRuntime: RequestMailFactory): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     context.set(authMailRuntimeContext, createMailRuntime(
@@ -212,27 +215,25 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
 
 /** The default entrypoint never supplies local mail fixtures. A separate CI-only
  * entrypoint can inject the existing request-local mail boundary. */
-export function createApplication(createMailRuntime = createRequestAuthMailRuntime): ExportedHandler<Env> & {
-  fetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response>;
-} {
+export function createApplication(createMailRuntime: RequestMailFactory = createRequestAuthMailRuntime) {
   return {
-  async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
-    const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
-      || isOwnerMonitoringPath(new URL(request.url).pathname)
-      || isPrivateForumReadPath(new URL(request.url).pathname);
-    try {
-      const response = await applicationFetch(request, env, executionContext, createMailRuntime);
-      return privateBoundary ? protectFrameworkFailure(request, response) : response;
-    } catch (error) {
-      if (!privateBoundary) throw error;
-      if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
-      const status = error instanceof Response ? error.status : 500;
-      return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
-        status, headers: { "Content-Type": "text/plain; charset=utf-8" },
-      }));
-    }
-  },
-  };
+    async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
+      const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+        || isOwnerMonitoringPath(new URL(request.url).pathname)
+        || isPrivateForumReadPath(new URL(request.url).pathname);
+      try {
+        const response = await applicationFetch(request, env, executionContext, createMailRuntime);
+        return privateBoundary ? protectFrameworkFailure(request, response) : response;
+      } catch (error) {
+        if (!privateBoundary) throw error;
+        if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
+        const status = error instanceof Response ? error.status : 500;
+        return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
+          status, headers: { "Content-Type": "text/plain; charset=utf-8" },
+        }));
+      }
+    },
+  } satisfies ExportedHandler<Env>;
 }
 
 export default createApplication();
