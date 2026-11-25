@@ -90,3 +90,8 @@
 - F7 docs #387 passed Lira author-check and Mira docs review after F7-DOC-01/02 correction, then owner merged exact `0d4d5ba021ddb256580596d16fc81ff26d9e7d5b`; merge commit/current main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
 - Final closeout verified every implementation/docs PR owned by #342 as closed+merged, with no remaining current-task finding or docs debt.
 - All TASK.md completion criteria are satisfied; #342 is complete and closes without merge. Next route check is the pre-existing #320 service task.
+
+
+## 2026-11-25 — stale/legacy audit moved out
+
+По прямой команде владельца весь systematic stale/legacy audit и дальнейший cleanup перенесены в dedicated service PR #390. Research registry/handoff удалены из #342; этот завершённый service PR больше не является рабочим каналом аудита.
