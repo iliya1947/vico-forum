@@ -83,11 +83,17 @@ export class AuthLifecycleTransaction {
 
   /** Observations outside an owned transaction retain their original behavior. */
   stageEvidence(effect: () => void): void {
-    if (!this.ownsCurrentWork()) {
+    // A completed standalone write's after-hook can run while the next
+    // serialized deletion owns the connection. It has no transaction frame
+    // and may retain its preimage; matching a committed receipt is still
+    // required at flush. Never attach it to that other transaction.
+    const frame = this.context.getStore();
+    if (!frame) {
+      if (this.unusable) { this.gap(1); return; }
       this.publish(effect);
       return;
     }
-    const frame = this.context.getStore()!;
+    this.ownsCurrentWork();
     if (frame.evidence.length < MAX_STAGED_EVIDENCE) frame.evidence.push(effect);
     else frame.omitted++;
   }
@@ -178,7 +184,7 @@ export class AuthLifecycleTransaction {
         } catch (rollbackCause) {
           this.unusable = true;
           this.gap(frame.evidence.length + frame.omitted);
-          throw this.failure = new AuthLifecycleTransactionError("rollback-uncertain", { cause: rollbackCause });
+          throw this.failure = new AuthLifecycleTransactionError("rollback-uncertain", { cause: new AggregateError([cause, rollbackCause], "Rollback acknowledgement failed") });
         }
       }
       throw cause;
