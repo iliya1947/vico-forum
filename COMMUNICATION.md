@@ -51,5 +51,7 @@ PR #388, stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
 1. AUTH-01 checkpoint PASS разрешил следующую stacked-ступень.
 2. AUTH-02a ограничен foundation: transaction composition, canonical plugin/service seam, lifecycle state, необходимые concurrency constraints и shared abuse primitives.
 3. User-visible verification/signup/session behavior остаётся неизменным до AUTH-02b.
-4. Исполнитель по стандартному workflow — Лира. Прямое назначение Лёвы завершилось вместе с AUTH-01.
+4. По прямому решению владельца исполнитель AUTH-02a — Лена / GPT-6.2. Предыдущее назначение Лиры снято до начала implementation.
 5. Implementation PR должен иметь base на `feat/auth-01-mail-foundation`; intermediate merge отсутствует.
+
+6. Поскольку Лена участвует в AUTH-02a implementation, она не является независимым final reviewer собранной feature.
