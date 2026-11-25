@@ -32,4 +32,4 @@
 
 ## Текущий checkpoint
 
-Branch `feat/auth-02b-email-verification` / `cdb5fa15b82ce6b68295a84d8bc480e12e604679` от accepted #389. Verification proof/state, service, canonical server endpoints/mandatory config/Worker mail and localized pending/verify/resend UI written. Target HTTP/direct and UI tests written, not run. Next: verification observability (committed facts, attempts, safe projections/migration), then unrelated fixture migration and connected acceptance. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no external activation.
+Branch `feat/auth-02b-email-verification` / `325c6799d5526d8dcb8823a891357afc475c908b` от accepted #389. Verification proof/state, service, canonical server endpoints/mandatory config/Worker mail, localized pending/verify/resend UI and verification observability written. Target HTTP/direct/UI/obs tests written, not run. Next: unrelated fixture inventory/migration to verified fixture helper; connected acceptance, self-check and stable-head applicable checks. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no external activation.
