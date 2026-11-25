@@ -8,12 +8,12 @@
 4. AUTH-02a: PR #389, stable exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`; author PASS + coordinator PASS, 0 confirmed current-scope defects.
 5. AUTH-01 и AUTH-02a остаются intermediate stacked PRs: без merge в main и без independent intermediate review.
 6. Активный bounded-этап: **AUTH-02b — mandatory email verification + resend + UI**.
-7. По прямому решению владельца Лёва завершил полную техническую проверку AUTH-02b и теперь активирован как исполнитель отдельного correction/finalization этапа. Review завершён HOLD: три подтверждённых current-scope finding в `stages/AUTH-02b/RESULT.md`.
-8. AUTH-02b #391 (draft), current head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Пакет трёх исправлений опубликован. Локально прошли typecheck, PG17 migrations, ownership probe, P7, SA04-J12 и SA05-2. Exact-head CI #45710166025 и acceptance #45710173292 запущены. AUTHOR PASS ожидает итогов.
+7. Лёва завершил отдельную фазу исправления трёх замечаний и author self-check. AUTH-02b **AUTHOR PASS**, ожидается coordinator checkpoint Миры.
+8. AUTH-02b #391 (draft), stable exact head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Exact-head CI #45710166025 PASS (checks + database + Worker smoke); 19/19 применимых acceptance workflows PASS, включая AUTH-02b #45710173292 и AP-10 #45710173538. Evidence — `stages/AUTH-02b/RESULT.md`.
 9. Scope AUTH-02b: обязательная verification email/password, no-session signup, explicit POST confirmation, resend и пользовательская presentation; recovery/password-create/email-change/unlink остаются последующими ступенями.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 11. Лёва участвовал в AUTH-01, Лена в AUTH-02a/02b; оба исключены из independent final whole-feature review. По прямому решению владельца Лёва теперь ведёт дальнейшую реализацию authentication lifecycle: сначала полная техническая проверка текущего AUTH-02b, затем отдельным implementation-этапом его исправления/доведение, а после принятия AUTH-02b — последующие AUTH-03 → AUTH-06.
 
 ## Следующий переход
 
-**Лёва — ACTIVE: завершить проверки AUTH-02b #391 на `4fbf8e829fd18c7190a540eade17bdf543a406d3`.** Результат и evidence — `stages/AUTH-02b/RESULT.md`. По результатам author self-check и exact-head CI/acceptance остановиться для coordinator checkpoint Миры. AUTH-03 ждёт coordinator PASS.
+**Мира — coordinator checkpoint AUTH-02b #391 на stable exact head `4fbf8e829fd18c7190a540eade17bdf543a406d3`.** Лёва остановился после AUTHOR PASS. AUTH-03 ждёт coordinator PASS AUTH-02b. Stacked PR остаётся draft до решения по workflow.
