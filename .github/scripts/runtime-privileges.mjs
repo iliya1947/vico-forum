@@ -23,6 +23,7 @@ export const runtimeCapabilityContracts = Object.freeze({
       owner_events: Object.freeze(["INSERT", "SELECT"]),
       owner_monitor_observations: Object.freeze(["INSERT", "SELECT"]),
       account: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
+      auth_lifecycle_budget: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
       authz_mutation_lock: Object.freeze(["SELECT", "UPDATE"]),
       authz_role_permissions: Object.freeze(["DELETE", "INSERT", "SELECT"]),
       authz_roles: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
