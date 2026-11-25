@@ -21,6 +21,7 @@ import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./sessi
 import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
 import { authLifecyclePlugin, type AuthLifecycleDependencies } from "./lifecycle-plugin.server";
 import { SignupVerificationEvidence } from "./signup-verification-evidence.server";
+import { isGuestEmailVerificationRequest } from "./session-context";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -157,13 +158,17 @@ export const betterAuthIpAddressOptions = {
 };
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
+type CanonicalBetterAuthOptions = Omit<BetterAuthOptions, "plugins"> & {
+  plugins: [ReturnType<typeof authLifecyclePlugin>];
+};
+
 export function betterAuthOptions(
   database: NodePgDatabase & { $client: Client }, env: BetterAuthEnvironment,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
   lifecycle = new AuthLifecycleTransaction(database.$client),
   dependencies?: AuthLifecycleDependencies,
-): BetterAuthOptions {
+): CanonicalBetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
   const ownSignOutTokens = new Set<string>();
@@ -678,9 +683,16 @@ export function createHyperdriveAuthRuntime(
       }
     },
     handle: async (request) => {
+      const protectGuestResponse = (response: Response): Response => {
+        if (!isGuestEmailVerificationRequest(request)) return response;
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Referrer-Policy", "no-referrer");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      };
       const admission = { failure: undefined as { error: unknown } | undefined };
       try {
-        return await useAuth(async (auth) => {
+        return protectGuestResponse(await useAuth(async (auth) => {
           const response = await auth.handler(request);
           if (!admission.failure) return response;
           if (sessionStorageUnavailable(admission.failure.error)) {
@@ -692,22 +704,22 @@ export function createHyperdriveAuthRuntime(
           // Missing policy singleton, unexpected schema/configuration and programming errors
           // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
           throw admission.failure.error;
-        }, false, (error) => { admission.failure ??= { error }; });
+        }, false, (error) => { admission.failure ??= { error }; }));
       } catch (error) {
         if (error instanceof AuthLifecycleTransactionError) {
           if (!sessionStorageUnavailable(error)) throw new AccountStateUnexpectedError({ cause: error });
-          return new Response(error.code === "commit-uncertain"
+          return protectGuestResponse(new Response(error.code === "commit-uncertain"
             ? "Authentication outcome could not be confirmed."
             : "Service unavailable. Please try again.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
-          });
+          }));
         }
         if (error instanceof AccountStateUnavailableError) {
-          return new Response("Service unavailable. Please try again.", {
+          return protectGuestResponse(new Response("Service unavailable. Please try again.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
-          });
+          }));
         }
         throw error;
       }
