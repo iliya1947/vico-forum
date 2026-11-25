@@ -6,10 +6,10 @@ const PREFIX = "vico-auth-lifecycle:v1:";
 export const lifecyclePurposes = ["email-verification", "password-reset", "password-create", "email-change"] as const;
 export type LifecyclePurpose = typeof lifecyclePurposes[number];
 type Phase = "pending" | "old-address" | "new-address";
-const TTL: Record<LifecyclePurpose, number> = {
+export const lifecycleProofTtlSeconds: Readonly<Record<LifecyclePurpose, number>> = Object.freeze({
   "email-verification": 3600, "password-reset": 1800,
   "password-create": 1800, "email-change": 3600,
-};
+});
 const idPattern = /^[A-Za-z0-9._:-]{1,200}$/;
 const generationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const digestPattern = /^[0-9a-f]{64}$/;
@@ -102,6 +102,8 @@ type Stored = { identifier: string; value: string; live: boolean };
 
 export interface LockedLifecycleSubject {
   issue(intent: LifecycleIntent, createToken: TokenFactory): Promise<IssuedLifecycleProof>;
+  /** Non-consuming validation for a landing page; terminal must recheck. */
+  inspect(proof: LifecycleProof): Promise<void>;
   consume(proof: LifecycleProof): Promise<Readonly<Omit<State, "tokenDigest">>>;
   advanceEmailChange(proof: LifecycleProof, createToken: TokenFactory): Promise<IssuedLifecycleProof>;
   invalidate(purposes: readonly LifecyclePurpose[]): Promise<void>;
@@ -131,6 +133,7 @@ export class AuthLifecycleState {
       };
       const capability: LockedLifecycleSubject = {
         issue: (intent, createToken) => scoped(() => this.issue(userId, intent, createToken)),
+        inspect: proof => scoped(async () => { await this.match(userId, proof); }),
         consume: proof => scoped(async () => {
           const state = await this.consume(userId, proof);
           // An old-address confirmation must use the atomic phase transition.
@@ -227,12 +230,12 @@ export class AuthLifecycleState {
       on conflict (id) do update set value=excluded.value, expires_at=excluded.expires_at,
         updated_at=excluded.updated_at where verification.identifier=excluded.identifier
       returning expires_at at time zone 'UTC' as expires_at
-    `, [id, JSON.stringify(state), TTL[intent.purpose]]);
+    `, [id, JSON.stringify(state), lifecycleProofTtlSeconds[intent.purpose]]);
     if (result.rowCount !== 1 || !result.rows[0]) throw new LifecycleStateInvariantError();
     return { claims, token, expiresAt: result.rows[0].expires_at, recipient };
   }
 
-  private async consume(userId: string, proof: LifecycleProof): Promise<State> {
+  private async match(userId: string, proof: LifecycleProof): Promise<{ id: string; row: Stored; state: State }> {
     if (proof.userId !== userId || !validPurpose(proof.purpose) ||
       !validPhase(proof.purpose, proof.phase) || typeof proof.generation !== "string" ||
       !generationPattern.test(proof.generation) ||
@@ -245,6 +248,11 @@ export class AuthLifecycleState {
       state.email !== await this.currentEmail(userId) || state.tokenDigest !== await digest(proof.token) ||
       state.sessionId !== proof.sessionId) throw new InvalidLifecycleProofError();
     if (state.sessionId) await this.assertSession(userId, proof.sessionId);
+    return { id, row, state };
+  }
+
+  private async consume(userId: string, proof: LifecycleProof): Promise<State> {
+    const { id, row, state } = await this.match(userId, proof);
     // Compare the complete previously read state and authoritative expiry at
     // deletion, not only identifier or a stale read-time validity check.
     const consumed = await this.client.query(
