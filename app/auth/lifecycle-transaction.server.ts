@@ -43,6 +43,10 @@ export class AuthLifecycleTransaction {
     private readonly onEvidenceGap?: (count: number) => void,
   ) {}
 
+  assertConnection(client: Pick<Client, "query">): void {
+    if (client !== this.client) throw new AuthLifecycleTransactionError("closed");
+  }
+
   /** False after an uncertain control outcome; the caller must discard Client. */
   get connectionUsable(): boolean { return !this.unusable; }
 
