@@ -47,3 +47,5 @@
 23. **2026-11-25:** после coordinator PASS AUTH-02a активирован AUTH-02b — mandatory email verification + resend + UI. По прямому решению владельца implementation назначена Лёве / Codex-6.1 Sol; новый stacked PR должен базироваться на `feat/auth-02a-lifecycle-foundation` exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Recovery/password-create/email-change/unlink и external activation не входят.
 
 24. **2026-11-25:** по прямому решению владельца AUTH-02b переназначен с Лёвы / Codex-6.1 Sol на Лену / GPT-6.2. На момент переназначения на GitHub не было сохранённой AUTH-02b implementation-ветки, PR или commit; accepted base и bounded scope не изменены.
+
+25. **2026-11-25:** владелец назначил Лёве полную техническую проверку незавершённого AUTH-02b #391 и всю последующую auth-реализацию. Review и исправления остаются раздельными фазами: сначала Лёва фиксирует findings без изменения implementation, затем сам исправляет/доводит AUTH-02b; после coordinator PASS реализует AUTH-03 → AUTH-06. Final independent whole-feature reviewer будет другим агентом.
