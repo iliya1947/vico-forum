@@ -170,6 +170,9 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
   if(name==="operation"&&value==="email-verification")return <span>{t("authVerificationHeading")}</span>;
   if(name==="operation"&&value==="verification-send")return <span>{t("authVerificationResend")}</span>;
+  if(name==="operation"&&value==="password-reset-request")return <span>{t("authCredentialSendLink")}</span>;
+  if((name==="operation"||name==="reason")&&value==="password-reset")return <span>{t("authCredentialReset")}</span>;
+  if((name==="operation"||name==="reason")&&value==="password-create")return <span>{t("authCredentialCreate")}</span>;
   if(typeof value==="string"&&nativeLabels[value])return <span>{t(nativeLabels[value])}</span>;
   return <bdi>{String(value)}</bdi>;
 }

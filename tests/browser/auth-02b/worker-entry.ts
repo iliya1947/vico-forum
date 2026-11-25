@@ -15,7 +15,7 @@ export default createApplication((env, context) => {
   const fakeTransport: AuthMailTransport = {
     async send(message) {
       if (env.BETTER_AUTH_URL !== localOrigin || env.AUTH_MAIL_MODE !== "fake" ||
-          message.purpose !== "email-verification" || !message.recipient.endsWith("@auth02b.test.invalid"))
+          !["email-verification", "password-reset", "password-create"].includes(message.purpose) || !message.recipient.endsWith("@auth02b.test.invalid"))
         return { status: "rejected" };
       const client = new Client({ connectionString });
       await client.connect();
@@ -29,14 +29,24 @@ export default createApplication((env, context) => {
           insert into auth02b_test_mail(recipient,operation_id,subject,html,body_text)
           select $1,$2,$3,$4,$5
           where exists (
-            select 1 from "user" u join account a on a.user_id=u.id
-              join verification v on v.id='vico-auth-lifecycle:v1:email-verification:' || encode(sha256(convert_to(u.id,'UTF8')),'hex')
-            where u.email=$1 and not u.email_verified and a.provider_id='credential'
-              and a.password is not null and a.password<>''
-              and v.value::jsonb->>'generation'=$2
-              and not exists(select 1 from session s where s.user_id=u.id)
+            select 1 from "user" u
+              join verification v on v.id='vico-auth-lifecycle:v1:' || $6 || ':' || encode(sha256(convert_to(u.id,'UTF8')),'hex')
+            where u.email=$1 and v.value::jsonb->>'generation'=$2
+              and (
+                ($6 in ('email-verification','password-reset') and
+                  exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential'
+                    and a.password is not null and a.password<>'')
+                  and (($6='email-verification' and not u.email_verified
+                    and not exists(select 1 from session s where s.user_id=u.id))
+                    or ($6='password-reset' and u.email_verified)))
+                or ($6='password-create' and u.email_verified
+                  and exists(select 1 from account a where a.user_id=u.id and a.provider_id='google')
+                  and not exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential'
+                    and a.password is not null and a.password<>'')
+                  and exists(select 1 from session s where s.user_id=u.id and s.id=v.value::jsonb->>'sessionId'))
+              )
           ) returning operation_id
-        `, [message.recipient,message.operationId,message.subject,message.html,message.text]);
+        `, [message.recipient,message.operationId,message.subject,message.html,message.text,message.purpose]);
         return { status: result.rowCount === 1 ? "accepted" : "rejected" };
       } finally { await client.end(); }
     },

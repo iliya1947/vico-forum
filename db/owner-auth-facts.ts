@@ -10,16 +10,16 @@ export type AuthTransitionFact =
   | ({ readonly kind: "account.created"; readonly userId: string } & Actor)
   | ({ readonly kind: "auth.methodLinked"; readonly userId: string;
       readonly accountId: string; readonly method: "password" | "google";
-      readonly linkContext: "registration" | "explicit-link" | "unknown" } & Actor)
+      readonly linkContext: "registration" | "explicit-link" | "unknown" | "password-create" } & Actor)
   | ({ readonly kind: "auth.sessionCreated"; readonly userId: string;
       readonly sessionId: string } & Actor)
   | ({ readonly kind: "auth.sessionDeleted"; readonly userId: string;
       readonly sessionId: string;
-      readonly reason: "revoke-one" | "revoke-others" | "revoke-all" | "sign-out" } & Actor)
+      readonly reason: "revoke-one" | "revoke-others" | "revoke-all" | "sign-out" | "password-reset" | "password-create" } & Actor)
   | { readonly kind: "auth.emailVerified"; readonly userId: string;
       readonly operationId: string; readonly actorUserId?: null }
   | ({ readonly kind: "auth.passwordChanged"; readonly userId: string;
-      readonly accountId: string; readonly operationId: string } & Actor);
+      readonly accountId: string; readonly operationId: string; readonly context?: "reset" } & Actor);
 
 /** Upper bound per trusted Worker request, including bulk session revocation. */
 export const MAX_AUTH_FACTS_PER_REQUEST = 32;
@@ -40,7 +40,7 @@ const FIELDS: Record<Sa02FactKind, readonly string[]> = {
   "auth.methodLinked": ["kind","userId","accountId","method","linkContext","actorUserId"],
   "auth.sessionCreated": ["kind","userId","sessionId","actorUserId"],
   "auth.sessionDeleted": ["kind","userId","sessionId","reason","actorUserId"],
-  "auth.passwordChanged": ["kind","userId","accountId","operationId","actorUserId"],
+  "auth.passwordChanged": ["kind","userId","accountId","operationId","context","actorUserId"],
   "auth.emailVerified": ["kind","userId","operationId","actorUserId"],
 };
 type Encoded = { kind: Sa02FactKind; monitor: string; entityType: string;
@@ -75,7 +75,7 @@ function encode(fact: AuthTransitionFact): Encoded {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.methodLinked"}>;
       entityType = "account"; entityId = checkedId(f.accountId);
       payload = { method: pick(f.method, ["password","google"]),
-        linkContext: pick(f.linkContext, ["registration","explicit-link","unknown"]) };
+        linkContext: pick(f.linkContext, ["registration","explicit-link","unknown","password-create"]) };
       identity = [kind,entityId]; break;
     }
     case "auth.sessionCreated": {
@@ -86,7 +86,7 @@ function encode(fact: AuthTransitionFact): Encoded {
     case "auth.sessionDeleted": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.sessionDeleted"}>;
       entityType = "session"; entityId = checkedId(f.sessionId);
-      payload = { reason: pick(f.reason, ["revoke-one","revoke-others","revoke-all","sign-out"]) };
+      payload = { reason: pick(f.reason, ["revoke-one","revoke-others","revoke-all","sign-out","password-reset","password-create"]) };
       identity = [kind,entityId]; break;
     }
     case "auth.emailVerified": {
@@ -103,6 +103,7 @@ function encode(fact: AuthTransitionFact): Encoded {
       if (typeof f.operationId !== "string" || !OPERATION_ID.test(f.operationId)) {
         throw new Error("Invalid auth fact operation ID");
       }
+      if (f.context !== undefined) payload = { context: pick(f.context, ["reset"]) };
       correlation = f.operationId;
       identity = [kind,correlation,entityId]; break;
     }

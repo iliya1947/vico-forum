@@ -35,6 +35,8 @@ describe("localized route shape", () => {
       expect.objectContaining({ path: "account/measures/:measureId", file: "routes/account-measure.tsx" }),
       expect.objectContaining({ path: "sign-in", file: "routes/credential-sign-in.tsx" }),
       expect.objectContaining({ path: "sign-up", file: "routes/credential-sign-up.tsx" }),
+      expect.objectContaining({ path: "forgot-password", file: "routes/forgot-password.tsx" }),
+      expect.objectContaining({ path: "reset-password", file: "routes/reset-password.tsx" }),
       expect.objectContaining({ path: "verify-email", file: "routes/verify-email.tsx" }),
       expect.objectContaining({ path: "resend-verification", file: "routes/resend-verification.tsx" }),
       expect.objectContaining({ path: "settings", file: "routes/settings.tsx" }),

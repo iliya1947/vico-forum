@@ -72,7 +72,7 @@ describe("credential registration and sign-in", () => {
     await user.type(screen.getByRole("textbox", { name: "Display name" }), "  Alice  ");
     await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
     await user.type(screen.getByLabelText("Password"), "correct horse");
-    expect(screen.getByText("Confirm your email before signing in. Password recovery is not available yet.")).toBeInTheDocument();
+    expect(screen.getByText("Confirm your email before signing in.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create account" }));
     await waitFor(() => expect(a.emailActions.signUpWithEmail).toHaveBeenCalledWith("Alice", "alice@example.org", "correct horse", "/en/topics/welcome"));
     expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument();

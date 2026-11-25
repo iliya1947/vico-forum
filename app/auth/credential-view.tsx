@@ -128,7 +128,10 @@ export function CredentialView({
           </Link>
         </div>
         <Link to={verificationPagePath(locale, "resend-verification", returnTo)}>{t("authVerificationResend")}</Link>
-        {emailAllowed ? <p className="credential-hint">{t("authVerificationRequired")}</p> : null}
+        {!registration ? <Link to={`/${encodeURIComponent(locale)}/forgot-password?returnTo=${encodeURIComponent(verificationReturnPath(locale, returnTo))}`}>
+          {t("authCredentialForgot")}
+        </Link> : null}
+        {emailAllowed && registration ? <p className="credential-hint">{t("authVerificationRequired")}</p> : null}
         <p className="credential-hint">{t("authLinkGoogleHint")}</p>
       </section>
     </ForumShell>

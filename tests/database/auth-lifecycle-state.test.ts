@@ -534,4 +534,157 @@ describe("AUTH-03 credential lifecycle domain", () => {
     expect(await rows()).toEqual([]);
   });
 
+
+  it("uses canonical HTTP request and direct reset against the same mail proof and budget", async () => {
+    await installMethod("credential");
+    const sent: string[] = [];
+    const env = {
+      BETTER_AUTH_URL: "http://localhost:3000",
+      BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google",
+      GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    };
+    const mail: AuthMailRuntime = {
+      async buildActionURL(input) {
+        expect(input.purpose).toBe("password-reset");
+        expect((await rows()).some(row => row.id.includes(":password-reset:"))).toBe(true);
+        return "http://localhost:3000/en/reset-password#token=" + input.token;
+      },
+      async sendAuthMail(input) {
+        sent.push(new URLSearchParams(new URL(input.actionURL).hash.slice(1)).get("token")!);
+        return { status: "accepted" };
+      },
+    };
+    const auth = createAuth(drizzle(first), env, undefined, undefined, undefined,
+      undefined, undefined, undefined, undefined, false, undefined, { mail });
+    const request = (address: string) => auth.handler(new Request("http://localhost:3000/api/auth/request-password-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "http://localhost:3000" },
+      body: JSON.stringify({ email: address }),
+    }));
+
+    const eligible = await request(email);
+    const unknown = await request("not-a-user@example.test");
+    expect(eligible.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(await eligible.json()).toEqual(await unknown.json());
+    expect(sent).toHaveLength(1);
+    await expect(auth.api.resetPassword({ body: { token: sent[0], newPassword } })).resolves.toEqual({ status: true });
+    await expect(auth.api.resetPassword({ body: { token: sent[0], newPassword } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    expect((await second.query("select id from session")).rows).toEqual([{ id: otherSessionId }]);
+  });
+
+
+  it("requires exact current session and mail proof for Google-only creation through the canonical API", async () => {
+    await installMethod("credential");
+    const sent: string[] = [];
+    const facts: AuthTransitionFact[] = [];
+    const auth = createAuth(drizzle(first), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    }, undefined, undefined, undefined, {
+      capture(fact) { facts.push(fact); },
+      trustedActorFor() { return null; },
+    }, undefined, undefined, undefined, false, undefined, {
+      mail: {
+        async buildActionURL(input) {
+          expect(input.purpose).toBe("password-create");
+          return "http://localhost:3000/en/settings/account#token=" + input.token;
+        },
+        async sendAuthMail(input) {
+          sent.push(new URLSearchParams(new URL(input.actionURL).hash.slice(1)).get("token")!);
+          return { status: "accepted" };
+        },
+      },
+    });
+    const signIn = await auth.api.signInEmail({
+      body: { email, password: "fixture-only-old-credential" }, asResponse: true,
+    });
+    expect(signIn.status).toBe(200);
+    const cookie = signIn.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    const current = await auth.api.getSession({ headers: new Headers({ cookie }) });
+    expect(current?.user.id).toBe(userId);
+
+    // Use an already authenticated test session. The fixture swaps the provider
+    // to Google so no real OAuth access is needed to exercise password creation.
+    await first.query("delete from account where user_id=$1", [userId]);
+    await installMethod("google");
+    const expected = new Headers({
+      cookie, "x-vico-credential-user": userId, "x-vico-credential-session": current!.session.id,
+    });
+    await expect(auth.api.setPassword({ headers: expected, body: { newPassword } }))
+      .rejects.toMatchObject({ status: "UNAUTHORIZED", message: "Password creation requires confirmation" });
+    await expect(auth.api.createCredential({ headers: expected, body: { newPassword } }))
+      .rejects.toMatchObject({ status: "BAD_REQUEST" });
+    await expect(auth.api.requestCredentialCreation({ headers: new Headers({ cookie }), body: {} }))
+      .rejects.toMatchObject({ status: "CONFLICT" });
+    await expect(auth.api.requestCredentialCreation({ headers: expected, body: {} })).resolves.toEqual({ status: true });
+    expect(sent).toHaveLength(1);
+    await expect(auth.api.createCredential({ headers: expected, body: { newPassword, token: sent[0] } }))
+      .resolves.toEqual({ status: true });
+    expect(facts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "auth.methodLinked", userId, linkContext: "password-create" }),
+      expect.objectContaining({ kind: "auth.sessionDeleted", userId, sessionId, reason: "password-create" }),
+    ]));
+    expect((await second.query("select id from session order by id")).rows.map(row => row.id).sort())
+      .toEqual([current!.session.id, otherSessionId].sort());
+  });
+
+
+  it("denies sign-in already checking a password when a concurrent reset wins the subject lock", async () => {
+    await installMethod("credential");
+    const reset = makeService();
+    const issued = await reset.requestReset(email);
+    expect(issued).not.toBeNull();
+    const latch = connection();
+    await latch.connect();
+    const backend = async (client: Client): Promise<number> =>
+      (await client.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0].pid;
+    const [resetPid, signInPid] = await Promise.all([backend(first), backend(second)]);
+    const auth = createAuth(drizzle(second), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    });
+    await first.query(`
+      create function wait_for_credential_reset() returns trigger language plpgsql as $$
+        begin perform pg_advisory_xact_lock(32796013); return new; end;
+      $$;
+      create trigger wait_for_credential_reset before update of password on account
+        for each row execute function wait_for_credential_reset()
+    `);
+    const waitBlockedBy = async (pid: number, holder: number) => {
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const result = await latch.query("select 1 where $2::int = any(pg_blocking_pids($1))", [pid, holder]);
+        if (result.rowCount) return;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      throw new Error("Expected a credential operation to wait for the other transaction");
+    };
+    let committed: ReturnType<typeof reset.reset> | undefined;
+    let signIn: Promise<Response> | undefined;
+    try {
+      await latch.query("select pg_advisory_lock(32796013)");
+      committed = reset.reset(issued!.token, newPassword, hashPassword);
+      void committed.catch(() => {});
+      await waitBlockedBy(resetPid, await backend(latch));
+      signIn = auth.api.signInEmail({ body: { email, password: "fixture-only-old-credential" }, asResponse: true });
+      void signIn.catch(() => {});
+      await waitBlockedBy(signInPid, resetPid);
+      await latch.query("select pg_advisory_unlock(32796013)");
+      await committed;
+      const denied = await signIn;
+      expect(denied.status).toBe(401);
+      expect(denied.headers.getSetCookie()).toHaveLength(0);
+      expect((await second.query("select id from session")).rows).toEqual([{ id: otherSessionId }]);
+    } finally {
+      await latch.query("select pg_advisory_unlock_all()");
+      await Promise.allSettled([committed, signIn]);
+      await first.query(`
+        drop trigger wait_for_credential_reset on account;
+        drop function wait_for_credential_reset()
+      `);
+      await latch.end();
+    }
+  });
+
 });

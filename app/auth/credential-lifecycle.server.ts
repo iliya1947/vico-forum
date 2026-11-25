@@ -20,8 +20,13 @@ export type CredentialTransition = Readonly<{
   purpose: CredentialProofPurpose;
   userId: string;
   generation: string;
+  accountId: string;
   revokedSessionIds: readonly string[];
 }>;
+
+export class CredentialAlreadySetError extends Error {
+  constructor() { super("A password is already set"); this.name = "CredentialAlreadySetError"; }
+}
 
 type Identity = {
   email: string;
@@ -157,29 +162,33 @@ export class AuthCredentialLifecycle {
       return await this.state.withSubject(proof.userId, async subject => {
         if (session) await this.assertFresh(session);
         const identity = await this.identity(proof.userId);
-        if (!identity.email_verified || (session ? identity.has_password || !identity.has_google : !identity.has_password)) {
+        if (!identity.email_verified || (session ? !identity.has_google : !identity.has_password)) {
           throw new InvalidLifecycleProofError();
         }
+        if (session && identity.has_password) throw new CredentialAlreadySetError();
         await subject.consume(proof);
         const changed = identity.credential_id
-          ? await this.client.query(`
+          ? await this.client.query<{ id: string }>(`
               update account set password=$1, updated_at=timezone('UTC', clock_timestamp())
               where id=$2 and user_id=$3 and provider_id='credential'
-                and coalesce(password <> '', false)=$4
+                and coalesce(password <> '', false)=$4 returning id
             `, [hashed, identity.credential_id, proof.userId, !session])
-          : await this.client.query(`
+          : await this.client.query<{ id: string }>(`
               insert into account (id, account_id, provider_id, user_id, password, updated_at)
               values ($1, $2, 'credential', $2, $3, timezone('UTC', clock_timestamp()))
-              on conflict do nothing
+              on conflict do nothing returning id
             `, [crypto.randomUUID(), proof.userId, hashed]);
-        if (changed.rowCount !== 1) throw new InvalidLifecycleProofError();
+        if (changed.rowCount !== 1 || !changed.rows[0]) {
+          if (session) throw new CredentialAlreadySetError();
+          throw new InvalidLifecycleProofError();
+        }
 
         await subject.invalidate(["password-reset", "password-create", "email-change"]);
         const revoked = await this.client.query<{ id: string }>(`
           delete from session where user_id=$1 and ($2::text is null or id <> $2)
           returning id
         `, [proof.userId, session?.sessionId ?? null]);
-        return { userId: proof.userId, generation: proof.generation,
+        return { userId: proof.userId, generation: proof.generation, accountId: changed.rows[0].id,
           purpose: session ? "password-create" : "password-reset", revokedSessionIds: revoked.rows.map(row => row.id) };
       });
     } catch (error) {

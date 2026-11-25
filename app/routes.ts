@@ -36,6 +36,8 @@ export default [
     route("account/measures/:measureId", "routes/account-measure.tsx"),
     route("sign-in", "routes/credential-sign-in.tsx"),
     route("sign-up", "routes/credential-sign-up.tsx"),
+    route("forgot-password", "routes/forgot-password.tsx"),
+    route("reset-password", "routes/reset-password.tsx"),
     route("verify-email", "routes/verify-email.tsx"),
     route("resend-verification", "routes/resend-verification.tsx"),
     route("settings", "routes/settings.tsx"),

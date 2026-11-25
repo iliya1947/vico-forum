@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0075_auth_verification_observation",
+  "targetMigration": "0076_auth_credential_observation",
   "tables": {
     "account": {
       "columns": [
@@ -7525,7 +7525,7 @@
             "outcome",
             "surface"
           ],
-          "definitionSha256": "8871be12d3919941ab0c1f388c0c45e1c746f17698c3fbac79dcf4eaca409272"
+          "definitionSha256": "904f91416fbfd9ba7b46e869f49994aabf1dc2a81081ad01cfa4625f9797bd78"
         },
         {
           "name": "owner_attempt_patterns_network_check",

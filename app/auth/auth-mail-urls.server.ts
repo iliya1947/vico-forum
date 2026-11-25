@@ -101,23 +101,23 @@ export function buildAuthMailActionURL(
   if (!isMailPurpose(action.purpose) || typeof action.token !== "string"
     || !/^[A-Za-z0-9._~-]{1,2048}$/.test(action.token)) throw new AuthMailValidationError();
   const locale = authMailLocale(action.locale, registry).translationLocale;
-  // Verification mail opens a read-only locale page. The bearer is never
-  // submitted to the native state-changing GET endpoint.
-  if (action.purpose === "email-verification") {
+  if (action.purpose !== "email-change-confirmation" && action.purpose !== "email-change-verification") {
     const requested = returnPath(origin, action.locale, action.returnTo);
     const destination = locale === action.locale ? requested : returnPath(origin, locale);
-    const url = new URL(`/${locale}/verify-email`, origin);
-    url.searchParams.set("token", action.token);
+    const page = action.purpose === "email-verification" ? "verify-email"
+      : action.purpose === "password-reset" ? "reset-password" : "settings/account";
+    const url = new URL(`/${locale}/${page}`, origin);
+    if (action.purpose === "email-verification") url.searchParams.set("token", action.token);
+    else url.hash = new URLSearchParams({ token: action.token }).toString();
     url.searchParams.set("returnTo", destination);
     if (url.href.length > 8192) throw new AuthMailValidationError();
     return url.href;
   }
   const destination = returnPath(origin, locale, action.returnTo);
-  const reset = action.purpose === "password-reset" || action.purpose === "password-create";
-  const callback = new URL(reset ? `/${locale}/reset-password` : `/${locale}/sign-in`, origin);
+  const callback = new URL(`/${locale}/sign-in`, origin);
   callback.searchParams.set("returnTo", destination);
-  const url = new URL(reset ? `/api/auth/reset-password/${action.token}` : "/api/auth/verify-email", origin);
-  if (!reset) url.searchParams.set("token", action.token);
+  const url = new URL("/api/auth/verify-email", origin);
+  url.searchParams.set("token", action.token);
   url.searchParams.set("callbackURL", callback.href);
   if (url.href.length > 8192) throw new AuthMailValidationError();
   return url.href;
@@ -130,9 +130,10 @@ export function validateAuthMailActionURL(
   try {
     inspectURLText(supplied);
     const url = new URL(supplied);
-    if (url.origin !== origin || url.username || url.password || url.hash) throw new AuthMailValidationError();
-    if (purpose === "email-verification") {
-      const tokenValues = url.searchParams.getAll("token");
+    if (url.origin !== origin || url.username || url.password) throw new AuthMailValidationError();
+    if (purpose !== "email-change-confirmation" && purpose !== "email-change-verification") {
+      const tokenSource = purpose === "email-verification" ? url.searchParams : new URLSearchParams(url.hash.slice(1));
+      const tokenValues = tokenSource.getAll("token");
       const returnValues = url.searchParams.getAll("returnTo");
       if (tokenValues.length !== 1 || returnValues.length !== 1) throw new AuthMailValidationError();
       const expected = buildAuthMailActionURL(origin, registry, {
@@ -147,8 +148,7 @@ export function validateAuthMailActionURL(
     const callback = new URL(callbackValues[0]);
     const returnValues = callback.searchParams.getAll("returnTo");
     if (returnValues.length !== 1) throw new AuthMailValidationError();
-    const reset = purpose === "password-reset" || purpose === "password-create";
-    const token = reset ? url.pathname.slice("/api/auth/reset-password/".length) : url.searchParams.get("token");
+    const token = url.searchParams.get("token");
     const expected = buildAuthMailActionURL(origin, registry, {
       purpose, locale, token: token ?? "", returnTo: returnValues[0],
     });

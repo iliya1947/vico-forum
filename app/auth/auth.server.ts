@@ -1,3 +1,4 @@
+import type { CredentialTransition } from "./credential-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx, isAPIError } from "better-auth/api";
@@ -88,8 +89,11 @@ export function createBetterAuthRequestHooks(
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
       // Pathless server-only methods are keyed by operationId in Better Auth's
       // common direct-API dispatcher (e.g. setPassword), not a routed URL.
-      const protectedActorOperation = (ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path))
-        || (ctx as typeof ctx & { operationId?: string }).operationId === "setPassword";
+      if ((ctx as typeof ctx & { operationId?: string }).operationId === "setPassword") {
+        throw new APIError("UNAUTHORIZED", { message: "Password creation requires confirmation" },
+          { "Cache-Control": "private, no-store" });
+      }
+      const protectedActorOperation = ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path);
       if (protectedActorOperation && ctx.headers
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
@@ -240,7 +244,8 @@ export function betterAuthOptions(
       if (!isAPIError(error)) throw new APIError("INTERNAL_SERVER_ERROR", { message: "Authentication failed" });
     } },
     plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
-      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error), dependencies)],
+      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error), dependencies,
+      onActorStateError)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
@@ -271,7 +276,25 @@ export function createAuth(
 ) {
   const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
     ...dependencies,
-    ...(onCreatedFact ? { observeVerified: (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, at: Date) => onCreatedFact.capture(fact, at) } : {}),
+    ...(onCreatedFact ? {
+      observeVerified: (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, at: Date) => onCreatedFact.capture(fact, at),
+      observeCredential: (transition: CredentialTransition) => {
+        const { userId, accountId, generation, purpose, revokedSessionIds } = transition;
+        const occurredAt = new Date();
+        const actorUserId = purpose === "password-create" ? userId : null;
+        if (purpose === "password-create") {
+          onCreatedFact.capture({ kind: "auth.methodLinked", userId, accountId,
+            method: "password", linkContext: "password-create", actorUserId }, occurredAt);
+        } else {
+          onCreatedFact.capture({ kind: "auth.passwordChanged", userId, accountId,
+            operationId: generation, context: "reset", actorUserId }, occurredAt);
+        }
+        for (const sessionId of revokedSessionIds) {
+          onCreatedFact.capture({ kind: "auth.sessionDeleted", userId, sessionId,
+            reason: purpose, actorUserId }, occurredAt);
+        }
+      },
+    } : {}),
   });
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.

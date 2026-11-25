@@ -208,6 +208,7 @@ def run():
         record("read-only-GET-and-token-scrub")
 
         p.get_by_role("link", name="Request another confirmation link").click()
+        p.wait_for_load_state("networkidle")
         p.locator('input[name="email"]').fill(en)
         p.locator("form.credential-form button[type=submit]").click()
         expect(p.get_by_role("heading", name="Check your email")).to_be_visible()
@@ -279,6 +280,55 @@ def run():
         assert all(o["transport"] == "fake" and o["outcome"] == "accepted" for o in outcomes)
         assert not external and not errors
         record("committed-verification-and-mail-facts-no-egress-or-page-errors")
+        record("recovery-request-and-browser-reset")
+        recovery_page = new_page(second)
+        recovery_page.goto(base + "/en/forgot-password")
+        recovery_page.locator('input[name="email"]').fill(en)
+        with recovery_page.expect_response(lambda response: response.url == base + "/api/auth/request-password-reset") as requested:
+            recovery_page.locator("form.credential-form button[type=submit]").click()
+        assert private(requested.value).status == 200
+        expect(recovery_page.get_by_role("status")).to_contain_text("check your email")
+        latest = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [en])[0]
+        reset_link = latest["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert urlparse(reset_link).path == "/en/reset-password" and "token=" in urlparse(reset_link).fragment
+        landing = recovery_page.goto(reset_link)
+        assert private(landing).status == 200
+        expect(recovery_page.locator('input[name="newPassword"]')).to_be_visible()
+        assert "token=" not in recovery_page.url and sessions(en_id) == old_sessions
+        new_password = "browser-test-only-replaced-credential"
+        recovery_page.locator('input[name="newPassword"]').fill(new_password)
+        recovery_page.get_by_role("button", name="Reset password", exact=True).click()
+        expect(recovery_page.get_by_role("status")).to_contain_text("Password changed.")
+        assert not sessions(en_id) and not session_cookie(second)
+        assert call(second, "sign-in/email", {"email": en, "password": password}).status == 401
+        assert call(second, "sign-in/email", {"email": en, "password": new_password}).status == 200
+        record("reset-revokes-sessions-and-requires-separate-sign-in")
+        record("google-only-browser-password-create")
+        assert call(third, "sign-in/email", {"email": ru, "password": password}).status == 200
+        current_ru = call(third, "get-session").json()
+        ru_session_id = current_ru["session"]["id"]
+        # Provision the method fixture without reaching a real Google resource.
+        sql("update account set provider_id='google',account_id='google-fixture-'||user_id,password=null where user_id=$1 and provider_id='credential'", [ru_id])
+        create_page = new_page(third)
+        create_page.goto(base + "/en/settings/account")
+        with create_page.expect_response(lambda response: response.url == base + "/api/auth/request-password-create") as requested:
+            create_page.get_by_role("button", name="Send a recovery link").click()
+        assert private(requested.value).status == 200
+        expect(create_page.get_by_role("status")).to_contain_text("Open the link in this browser")
+        latest = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
+        create_link = latest["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert urlparse(create_link).path == "/en/settings/account"
+        assert "token=" in urlparse(create_link).fragment
+        assert create_page.goto(create_link).status == 200
+        expect(create_page.locator('input[name="newPassword"]')).to_be_visible()
+        assert "token=" not in create_page.url
+        create_page.locator('input[name="newPassword"]').fill("browser-test-only-new-own-password")
+        create_page.get_by_role("button", name="Add a password", exact=True).click()
+        expect(create_page.get_by_role("status")).to_contain_text("Password changed.")
+        assert call(third, "get-session").json()["session"]["id"] == ru_session_id
+        assert sql("select provider_id from account where user_id=$1 order by provider_id", [ru_id]) == [
+            {"provider_id": "credential"}, {"provider_id": "google"}]
+        record("google-method-and-initial-session-preserved")
         browser.close()
 
 

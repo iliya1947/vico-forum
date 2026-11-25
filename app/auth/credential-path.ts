@@ -53,7 +53,7 @@ export function verificationReturnPath(locale: string, requested: string | null)
       if (next === decoded) {
         if (decoded !== root && !decoded.startsWith(root + "/")) return root;
         const first = decoded.slice(root.length + 1).split("/")[0];
-        if (["sign-in", "sign-up", "verify-email", "resend-verification"].includes(first)) return root;
+        if (["sign-in", "sign-up", "verify-email", "resend-verification", "forgot-password", "reset-password"].includes(first)) return root;
         return new URL(original, "https://forum.invalid").pathname;
       }
       decoded = next;

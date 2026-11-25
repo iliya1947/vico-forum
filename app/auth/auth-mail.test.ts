@@ -41,9 +41,15 @@ describe("AUTH-01 URL boundary", () => {
     });
     expect(validateAuthMailActionURL(origin, localeRegistry, purpose, "ru", url)).toBe(url);
     const target = new URL(url);
-    if (purpose === "email-verification") {
-      expect(target.pathname).toBe("/ru/verify-email");
-      expect(target.searchParams.get("token")).toBe("eyJhb.opaque-token_123.signature");
+    if (purpose === "email-verification" || purpose === "password-reset" || purpose === "password-create") {
+      const page = {
+        "email-verification": "/ru/verify-email",
+        "password-reset": "/ru/reset-password",
+        "password-create": "/ru/settings/account",
+      }[purpose];
+      expect(target.pathname).toBe(page);
+      const tokenSource = purpose === "email-verification" ? target.searchParams : new URLSearchParams(target.hash.slice(1));
+      expect(tokenSource.get("token")).toBe("eyJhb.opaque-token_123.signature");
       expect(target.searchParams.get("callbackURL")).toBeNull();
       expect(target.searchParams.get("returnTo")).toBe("/ru/topics/example");
     } else {

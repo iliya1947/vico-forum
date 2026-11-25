@@ -9,6 +9,7 @@ import type { AttemptIngressSource } from "./attempt-source";
 const MAX_REQUEST_ATTEMPTS = 4;
 type DirectOperation = "password-change" | "session-revoke" | "session-revoke-all";
 export type VerificationAttemptOperation = "email-verification" | "verification-send";
+export type CredentialAttemptOperation = "password-reset-request" | "password-reset" | "password-create";
 export type VerificationAttemptCode = "invalid" | "rate-limited" | "unavailable" | "gap";
 type Sink = AttemptTelemetryWriter & { close(): Promise<void> };
 type WriterFactory = () => Sink;
@@ -36,7 +37,7 @@ export class RequestAttemptCollector {
     }
     this.pending.push({
       ...input, networkIp: this.source.networkIp, networkQuality: this.source.networkQuality,
-      actorUserId: input.operation === "email-verification" || input.operation === "verification-send"
+      actorUserId: ["email-verification", "verification-send", "password-reset-request", "password-reset"].includes(input.operation)
         ? null : this.actorId, occurredAt: new Date(),
     });
   }
@@ -82,7 +83,7 @@ export class RequestAttemptCollector {
 
   /** Direct canonical calls without an HTTP request have no HTTP status.
    * Verification is guest authority even when another session is present. */
-  recordVerificationDirectFailure(operation: VerificationAttemptOperation, code: VerificationAttemptCode): void {
+  recordVerificationDirectFailure(operation: VerificationAttemptOperation | CredentialAttemptOperation, code: VerificationAttemptCode): void {
     if (code === "gap") { this.recordGap("auth"); return; }
     this.add({ surface: "auth", operation, directCode: code,
       outcome: code === "invalid" ? "denied" : code });
@@ -147,6 +148,10 @@ const AUTH_HTTP_OPERATIONS: Readonly<Record<string, AttemptOperation>> = {
   "/sign-out": "sign-out",
   "/verify-email": "email-verification",
   "/send-verification-email": "verification-send",
+  "/request-password-reset": "password-reset-request",
+  "/reset-password": "password-reset",
+  "/request-password-create": "password-create",
+  "/create-password": "password-create",
 };
 
 function httpOperation(request: Request): AttemptOperation | null {

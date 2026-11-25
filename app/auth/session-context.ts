@@ -19,7 +19,9 @@ export function isGuestEmailVerificationRequest(request: Request): boolean {
   catch { return false; }
   return /^\/[^/]+\/verify-email(?:\.data)?$/.test(path) ||
     path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
-    path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification";
+    path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification" ||
+    path === "/api/auth/request-password-reset" || path === "/api/auth/reset-password" ||
+    /^\/[^/]+\/(?:forgot-password|reset-password)(?:\.data)?$/.test(path);
 }
 
 /** Resolves Better Auth exactly once before React Router handles ordinary requests. */
