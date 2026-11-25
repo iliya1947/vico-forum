@@ -31,8 +31,7 @@ export async function decodeEmailVerificationProof(secret: string, token: unknow
   if (!claims || claims.proofType !== proofType || claims.purpose !== "email-verification" ||
       claims.phase !== "pending" || typeof claims.userId !== "string" ||
       typeof claims.generation !== "string" ||
-      !Number.isSafeInteger(claims.iat) || !Number.isSafeInteger(claims.exp) ||
-      Number(claims.exp) - Number(claims.iat) !== lifecycleProofTtlSeconds["email-verification"]) {
+      !Number.isSafeInteger(claims.exp)) {
     throw new InvalidLifecycleProofError();
   }
   return { token, userId: claims.userId, purpose: "email-verification",
