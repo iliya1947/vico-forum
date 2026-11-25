@@ -18,6 +18,7 @@ import {
 import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
+import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -157,6 +158,7 @@ export function betterAuthOptions(
   database: NodePgDatabase, env: BetterAuthEnvironment,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
+  lifecycle?: AuthLifecycleTransaction,
 ): BetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
@@ -167,7 +169,7 @@ export function betterAuthOptions(
     database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
       schema: betterAuthSchema,
-    }), onActorStateError, token => ownSignOutTokens.delete(token)),
+    }), onActorStateError, token => ownSignOutTokens.delete(token), lifecycle),
     // This gate belongs to the canonical Better Auth configuration, not to
     // optional SA-02 observers or only the HTTP request handler.
     databaseHooks: {
