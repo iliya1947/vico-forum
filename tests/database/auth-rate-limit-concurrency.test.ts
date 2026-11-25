@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { betterAuth } from "better-auth";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client, Pool } from "pg";
+import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { betterAuthOptions } from "../../app/auth/auth.server";
 
@@ -16,16 +16,12 @@ const schema = "auth_rate_limit_concurrency_test";
 const applicationName = "vico-auth-rate-limit-regression";
 const setup = new Client({ connectionString: databaseUrl });
 const blocker = new Client({ connectionString: databaseUrl });
-const pool = new Pool({
-  connectionString: databaseUrl,
-  options: `-c search_path=${schema}`,
-  application_name: applicationName,
-  max: 4,
-});
-// Each real HTTP call owns one checked-out PostgreSQL client, matching the
+// Each real HTTP call owns one PostgreSQL client, matching the
 // canonical runtime instead of treating a Pool as a transaction connection.
 async function handle(request: Request): Promise<Response> {
-  const client = await pool.connect();
+  const client = new Client({ connectionString: databaseUrl,
+    options: `-c search_path=${schema}`, application_name: applicationName });
+  await client.connect();
   try {
     const baseOptions = betterAuthOptions(drizzle(client), {
       BETTER_AUTH_SECRET: "local-rate-limit-regression-secret-at-least-32-characters",
@@ -42,7 +38,7 @@ async function handle(request: Request): Promise<Response> {
     });
     return await auth.handler(request);
   } finally {
-    client.release();
+    await client.end();
   }
 }
 
@@ -64,7 +60,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await blocker.end();
-  await pool.end();
   await setup.query(`drop schema if exists ${schema} cascade`);
   await setup.end();
 });
