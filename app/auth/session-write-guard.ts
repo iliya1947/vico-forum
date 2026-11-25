@@ -57,15 +57,10 @@ export function guardBetterAuthSessionWrites(
         const method = Reflect.get(target, property, receiver);
         if (property === "transaction" && typeof method === "function") {
           return <T>(fn: (trx: typeof adapter) => Promise<T>): Promise<T> =>
-            lifecycle.runAdapterOperation(() => lifecycle.run(() => fn(wrap(current))));
+            lifecycle.runAdapterOperation(() => fn(wrap(current)), true);
         }
         if (typeof method !== "function") return method;
-        if (property !== "create" && property !== "update" && property !== "updateMany" &&
-          property !== "delete" && property !== "deleteMany") {
-          return (...args: unknown[]) =>
-            lifecycle.runAdapterOperation(() => Reflect.apply(method, target, args));
-        }
-        return (...args: unknown[]) => lifecycle.runAdapterOperation(async () => {
+        return (...args: unknown[]) => {
           const command = args[0] as {
             model?: unknown;
             data?: { userId?: unknown };
@@ -82,9 +77,7 @@ export function guardBetterAuthSessionWrites(
           const sessionDelete = command?.model === "session" &&
             (property === "delete" || property === "deleteMany");
           if (!sessionWrite && !userWrite && !accountWrite && !sessionDelete) {
-            return lifecycle.ownsCurrentWork()
-              ? lifecycle.run(() => Reflect.apply(method, target, args))
-              : Reflect.apply(method, target, args);
+            return lifecycle.runAdapterOperation(() => Reflect.apply(method, target, args));
           }
 
           // Only wrapper-owned SQL is classified here. Adapter/BA errors
@@ -93,8 +86,8 @@ export function guardBetterAuthSessionWrites(
             try { return await connection.query<T>(sql, params); }
             catch (error) { throw classifySessionWriteSqlError(error); }
           };
-          try {
-            return await lifecycle.run(async () => {
+          return lifecycle.runAdapterOperation(async () => {
+            try {
               if (accountWrite) {
                 if (property === "create") {
                   // BA createAccount/linkAccount and both registration paths
@@ -252,22 +245,24 @@ export function guardBetterAuthSessionWrites(
                 await assertActiveAccountForMutation(connection, rows[0].user_id);
               }
 
-              return Reflect.apply(method, target, args);
-            });
-          } catch (failure) {
-            if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
-              if (userWrite || accountWrite) {
-                throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
+              return await Reflect.apply(method, target, args);
+            } catch (failure) {
+              // Classify inside the owned callback so rollback-only preserves
+              // the same public error even if the nested caller catches it.
+              if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {
+                if (userWrite || accountWrite) {
+                  throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, { "Cache-Control": "private, no-store" });
+                }
+                throw new InactiveSessionWriteError();
               }
-              throw new InactiveSessionWriteError();
+              if (failure instanceof AccountStateUnavailableError ||
+                failure instanceof AccountStateUnexpectedError) {
+                onAccountStateError?.(failure);
+              }
+              throw failure;
             }
-            if (failure instanceof AccountStateUnavailableError ||
-              failure instanceof AccountStateUnexpectedError) {
-              onAccountStateError?.(failure);
-            }
-            throw failure;
-          }
-        });
+          }, true);
+        };
       },
     });
     return wrap(adapter);
