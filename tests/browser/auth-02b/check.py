@@ -89,6 +89,7 @@ def mail(email):
 
 
 def credentials(page, email, signup=False):
+    page.wait_for_load_state("networkidle")
     if signup:
         page.locator('input[name="name"]').fill("Connected synthetic account")
     page.locator('input[name="email"]').fill(email)

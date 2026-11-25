@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { credentialRequest, takeCredentialProof, type CredentialRequestResult } from "./credential-recovery-client";
 
-export function CredentialCreationView({ locale, userId, sessionId }: {
-  locale: string; userId: string; sessionId: string;
+export function CredentialCreationView({ enabled, locale, userId, sessionId }: {
+  enabled: boolean; locale: string; userId: string; sessionId: string;
 }) {
   const { t } = useTranslation("common");
   const proof = useRef<string | null | undefined>(undefined);
@@ -14,13 +14,16 @@ export function CredentialCreationView({ locale, userId, sessionId }: {
   const [result, setResult] = useState<CredentialRequestResult | null>(null);
   const [created, setCreated] = useState(false);
   useEffect(() => {
-    proof.current ??= takeCredentialProof();
+    if (proof.current === undefined) {
+      const candidate = takeCredentialProof();
+      proof.current = enabled ? candidate : null;
+    }
     setCanSubmit(!!proof.current);
     setHydrated(true);
-  }, []);
+  }, [enabled]);
   async function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy.current) return;
+    if (!enabled || busy.current) return;
     const newPassword = String(new FormData(event.currentTarget).get("newPassword") ?? "");
     const identity = { userId, sessionId };
     const token = proof.current;
@@ -38,6 +41,7 @@ export function CredentialCreationView({ locale, userId, sessionId }: {
     setPending(false);
     busy.current = false;
   }
+  if (!enabled) return null;
   return <>
     {result === "ok" ? <p role="status">{t(created ? "settingsSecurityPasswordSaved" : "authCredentialCreateSent")}</p> : null}
     {result && result !== "ok" ? <p role="alert">{t(result === "rate-limited" ? "authVerificationRateLimited" : "authCredentialInvalid")}</p> : null}

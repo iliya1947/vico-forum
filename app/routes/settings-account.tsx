@@ -155,6 +155,7 @@ export default function SettingsAccountRoute() {
   const currentAccount = header?.id === state.accountId;
   const busy = navigation.state !== "idle";
   const otherSessions = state.sessions.filter(session => !session.current);
+  const mayCreatePassword = !state.hasPassword && state.linkedMethods.includes("google") && state.sessionAccess === "ready";
   const identityFields = <>
     <input type="hidden" name="expectedUserId" value={state.accountId} />
     <input type="hidden" name="expectedSessionId" value={state.sessionId} />
@@ -177,9 +178,9 @@ export default function SettingsAccountRoute() {
           {!state.linkedMethods.includes("google")
             ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)} expectedUserId={state.accountId} />
             : null}
-          {!state.hasPassword && state.linkedMethods.includes("google") && state.sessionAccess === "ready"
-            ? <CredentialCreationView key={state.sessionId} locale={state.locale} userId={state.accountId} sessionId={state.sessionId} />
-            : !state.hasPassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
+          <CredentialCreationView key={state.sessionId} enabled={mayCreatePassword} locale={state.locale}
+            userId={state.accountId} sessionId={state.sessionId} />
+          {!state.hasPassword && !mayCreatePassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
         {state.hasPassword ? <section className="settings-account-section" aria-labelledby="settings-account-password">
           <h3 id="settings-account-password">{t("settingsSecurityPasswordHeading")}</h3>
