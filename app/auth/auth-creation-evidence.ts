@@ -16,11 +16,10 @@ const safeId = (value:unknown):value is string => typeof value==="string" && ID.
 const key = (kind:Created["kind"],id:string) => kind+":"+id;
 
 /**
- * Better Auth 1.7.7 may discard deferred create.after hooks when an operation
- * subsequently fails, even though the default transaction:false PostgreSQL
- * adapter has already committed a preceding insert. Capture only adapter
- * confirmed create IDs and recheck their committed rows after the operation.
- * In a true rollback no row remains, so no success fact can be emitted.
+ * Better Auth 1.7.7 can discard deferred create.after hooks on failure.
+ * Outside an owned scope, retain only adapter-confirmed IDs and recheck
+ * their persisted rows. Inside an owned scope, even native insert receipts
+ * are staged until the explicit transaction owner proves COMMIT.
  */
 export class AuthCreationEvidence {
   private readonly receipts = new Map<string,Receipt>();
