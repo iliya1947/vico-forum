@@ -47,10 +47,8 @@ function networkIdentity(ingress: AttemptIngressSource): string {
 
 /**
  * Server-only common admission for future HTTP/direct lifecycle commands.
- * In this namespace last_request stores the absolute window deadline (ms).
- * Better Auth 1.7.7 sweeps OLD last_request values across its native table;
- * a live Vico deadline is in the future and cannot be swept prematurely.
- * No change to native keys, rate rules or native storage configuration.
+ * Independent explicit-expiry storage; Better Auth owns its native rate_limit.
+ * No native cleanup or configuration override.
  */
 export class AuthLifecycleBudget {
   private readonly admission = new AsyncLocalStorage<Admission>();
@@ -109,41 +107,40 @@ export class AuthLifecycleBudget {
   }
 
   private async spend(bucket: Bucket): Promise<number> {
-    // Atomic row insert/update; only the unique budget key is the conflict arbiter.
-    // Independent row IDs prevent concurrent first inserts conflicting on a
-    // second unique index (the primary key) outside ON CONFLICT (key).
+    // The conflicting row is locked by PostgreSQL before the UPDATE predicate
+    // is evaluated. Use the DB clock after lock acquisition, not a stale
+    // pre-lock timestamp, for reset and admission.
     const result = await this.client.query(`
-      with t as (select floor(extract(epoch from clock_timestamp()) * 1000)::bigint as now_ms)
-      insert into rate_limit (id,key,count,last_request)
-      select $4,$1,1,t.now_ms+$2::bigint from t
+      insert into auth_lifecycle_budget (key,count,expires_at)
+      values ($1,1,clock_timestamp()+$2::int*interval '1 second')
       on conflict (key) do update
-        set count=case when rate_limit.last_request <= (select now_ms from t)
-            then 1 else rate_limit.count+1 end,
-          last_request=case when rate_limit.last_request <= (select now_ms from t)
-            then (select now_ms from t)+$2::bigint else rate_limit.last_request end
-      where rate_limit.last_request <= (select now_ms from t)
-        or (rate_limit.count >= 1 and rate_limit.count < $3::int)
-      returning id
-    `, [bucket.key, bucket.windowMs, bucket.max, crypto.randomUUID()]);
+        set count=case when auth_lifecycle_budget.expires_at <= clock_timestamp()
+            then 1 else auth_lifecycle_budget.count+1 end,
+          expires_at=case when auth_lifecycle_budget.expires_at <= clock_timestamp()
+            then clock_timestamp()+$2::int*interval '1 second' else auth_lifecycle_budget.expires_at end
+      where auth_lifecycle_budget.expires_at <= clock_timestamp()
+        or auth_lifecycle_budget.count < $3::int
+      returning key
+    `, [bucket.key, bucket.windowMs / 1000, bucket.max]);
     if (result.rowCount === 1) return 0;
     const row = (await this.client.query<{ retry: number }>(`
       select greatest(1,least($2::int,
-        ceil((last_request-extract(epoch from clock_timestamp())*1000)/1000)::int)) as retry
-      from rate_limit where key=$1
+        ceil(extract(epoch from (expires_at-clock_timestamp())))::int)) as retry
+      from auth_lifecycle_budget where key=$1
     `, [bucket.key, bucket.windowMs / 1000])).rows[0];
     if (!row || !Number.isSafeInteger(row.retry) || row.retry < 1) throw new LifecycleBudgetInvariantError();
     return row.retry;
   }
 
   private async prune(): Promise<void> {
-    // Bounded removal only in this private namespace. Native buckets retain
-    // their own cleanup semantics. Skip rows used by concurrent requests.
     await this.client.query(`
-      delete from rate_limit where key in (
-        select key from rate_limit where key like 'vico-auth-budget:v1:%'
-          and last_request <= floor(extract(epoch from clock_timestamp())*1000)::bigint
-        order by key limit 64 for update skip locked
-      )
+      delete from auth_lifecycle_budget as budget
+      using (
+        select key from auth_lifecycle_budget
+        where expires_at <= clock_timestamp()
+        order by expires_at,key limit 64 for update skip locked
+      ) as expired
+      where budget.key=expired.key and budget.expires_at <= clock_timestamp()
     `);
   }
 
