@@ -4,12 +4,12 @@
 
 1. AUTH-01: coordinator PASS.
 2. AUTH-02a: coordinator PASS.
-3. AUTH-02b #391: AUTHOR PASS был на `4fbf8e829fd18c7190a540eade17bdf543a406d3`.
-4. Coordinator checkpoint полного bounded AUTH-02b завершён **HOLD**.
-5. Confirmed current-scope defect: credential sign-in/sign-up form в `app/auth/credential-view.tsx` без явного POST; pre-hydration/no-JS default GET может положить email/password в URL.
-6. Предыдущие три findings Лёвы на этом exact head закрыты; остальные проверенные AUTH-02b runtime/observability/migration boundaries новых confirmed defects не дали.
-7. Лёва исправляет coordinator finding; AUTH-03 заблокирован до нового PASS.
+3. AUTH-02b #391: coordinator PASS на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
+4. Последний credential transport finding закрыт; no-JS/pre-hydration regression подтверждает POST без credentials в URL.
+5. Exact-head CI и 19/19 applicable acceptance PASS использованы как supporting evidence после самостоятельной проверки.
+6. Следующая stacked-ступень — AUTH-03, исполнитель по прямому решению владельца Лёва; пока не активирована.
+7. Final independent whole-feature reviewer определяется отдельно.
 
 ## Следующий переход
 
-После нового stable exact head провести повторный coordinator checkpoint изменённого AUTH-02b, включая regression credential transport и отсутствие регрессий signup/verification flow.
+При следующем продолжении активировать AUTH-03 поверх принятого AUTH-02b head. Не merge intermediate PRs и не начинать final review.
