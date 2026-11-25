@@ -156,10 +156,10 @@ export const betterAuthIpAddressOptions = {
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
 export function betterAuthOptions(
-  database: NodePgDatabase, env: BetterAuthEnvironment,
+  database: NodePgDatabase & { $client: Client }, env: BetterAuthEnvironment,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
-  lifecycle?: AuthLifecycleTransaction,
+  lifecycle = new AuthLifecycleTransaction(database.$client),
   dependencies?: AuthLifecycleDependencies,
 ): BetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
@@ -191,9 +191,7 @@ export function betterAuthOptions(
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    ...(lifecycle ? { plugins: [authLifecyclePlugin(
-      (database as NodePgDatabase & { $client: Client }).$client, lifecycle,
-      env.BETTER_AUTH_SECRET, dependencies)] } : {}),
+    plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET, dependencies)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
@@ -208,7 +206,7 @@ export function betterAuthOptions(
 }
 
 export function createAuth(
-  database: NodePgDatabase,
+  database: NodePgDatabase & { $client: Client },
   env: BetterAuthEnvironment,
   onDatabaseError?: (error: unknown) => void,
   onAdmissionError?: (error: unknown) => void,
@@ -218,7 +216,7 @@ export function createAuth(
   onCreatedProof?: AuthCreationEvidence,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
-  lifecycle = new AuthLifecycleTransaction((database as NodePgDatabase & { $client: Client }).$client,
+  lifecycle = new AuthLifecycleTransaction(database.$client,
     count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
   dependencies?: AuthLifecycleDependencies,
 ) {
