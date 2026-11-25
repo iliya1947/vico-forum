@@ -1,10 +1,11 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Результат AUTH-01
+## Текущий контекст
 
-AUTH-01 реализован в PR #388, stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
-Author self-check/checks: PASS. Coordinator checkpoint Миры: **PASS, 0 confirmed current-scope defects**.
+1. AUTH-01 реализован Лёвой в PR #388 и прошёл coordinator checkpoint Миры.
+2. AUTH-02a активирован; стандартным исполнителем назначена Лира.
+3. Активного implementation назначения у Лёвы нет.
 
-PR #388 остаётся первой нижней ступенью stack и не merge в main. AUTH-02a ещё не активирован; самостоятельно следующую ступень не начинать.
+## Роль на текущем этапе
 
-Поскольку Лёва участвовал в implementation, независимую final technical review всей собранной feature он не выполняет.
+Не дублировать реализацию AUTH-02a. Если Лира установит дефект технического плана или необходимость технической эскалации, вопрос возвращается Лёве по WORKFLOW. Поскольку Лёва участвовал в AUTH-01 implementation, независимую final technical review всей собранной feature он не выполняет.
