@@ -28,4 +28,4 @@
 
 ## Текущее продолжение AUTH-02a
 
-Implementation PR #389, exact head `bf219088039eb6a4d3a5262d2ffe3f411bbe6fee`, base #388 accepted head unchanged. Все foundation components написаны; подробности и проверки в stages/AUTH-02a/RESULT.md. First CI findings corrected; run:ci/run:acceptance reapplied on new head; actual correction outcomes pending. Следующий шаг — exact-head CI/acceptance, author corrections if needed, затем coordinator checkpoint Миры. Не начинать AUTH-02b. Не считать код протестированным до фактических результатов.
+Implementation PR #389, exact head `ce1138d71a3706f6b152fd8d1861b36ea0fb637e`, base #388 accepted head unchanged. Все foundation components написаны; подробности и проверки в stages/AUTH-02a/RESULT.md. Second CI database and 18 acceptance workflows PASS; exact remaining lint location corrected, new-head run:ci/run:acceptance applied, actual outcomes pending. Следующий шаг — exact-head CI/acceptance, author corrections if needed, затем coordinator checkpoint Миры. Не начинать AUTH-02b. Не считать код протестированным до фактических результатов.
