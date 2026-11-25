@@ -240,3 +240,78 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
     expect(keys.every(key=>key?.startsWith("system."))).toBe(true);
   });
 });
+
+describe("AUTH-02a production runtime transaction and observation boundary", () => {
+  it("rolls back new signup identity, credential and session without success facts", async () => {
+    const email = "auth02a-runtime-session-failure@example.test";
+    const queued: AuthTransitionFact[] = [];
+    let injected = false;
+    const runtime = createHyperdriveAuthRuntime(url, env, value => {
+      const connection = connected(value);
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        const statement = args[0];
+        const sql = typeof statement === "string" ? statement :
+          statement && typeof statement === "object" && "text" in statement ? statement.text : null;
+        if (!injected && typeof sql === "string" && /^insert into "session"\s/i.test(sql)) {
+          injected = true;
+          return Promise.reject(new Error("test-only final session insertion failure"));
+        }
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    }, undefined, { capture: fact => queued.push(fact), trustedActorFor: () => null });
+
+    const result = await runtime.handle(submit("sign-up/email", { email, name: "Atomic failure", password }));
+    expect(injected).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+    expect(queued).toEqual([]);
+    expect((await client.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+  });
+
+  it("discards HTTP success, session cookies and evidence when a real COMMIT acknowledgement is lost", async () => {
+    const email = "auth02a-runtime-uncertain@example.test";
+    const queued: AuthTransitionFact[] = [], gaps: number[] = [];
+    let committed = false;
+    let controlsAfterCommit = 0;
+    const runtime = createHyperdriveAuthRuntime(url, env, value => {
+      const connection = connected(value);
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        if (committed && typeof args[0] === "string" &&
+          /^(BEGIN|COMMIT|ROLLBACK)$/.test(args[0])) controlsAfterCommit++;
+        if (!committed && args[0] === "COMMIT") {
+          // The real PostgreSQL commit succeeds; only its acknowledgement to
+          // the lifecycle owner is lost. Do not replace it with a fake commit.
+          return Promise.resolve(Reflect.apply(original, connection, args)).then(() => {
+            committed = true;
+            throw Object.assign(new Error("test-only lost COMMIT acknowledgement"), { code: "ECONNRESET" });
+          });
+        }
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    }, undefined, { capture: fact => queued.push(fact), trustedActorFor: () => null,
+      recordGap: count => gaps.push(count) });
+
+    const result = await runtime.handle(submit("sign-up/email", { email, name: "Uncertain", password }));
+    expect(committed).toBe(true);
+    expect(result.status).toBe(503);
+    expect(result.headers.get("Cache-Control")).toBe("no-store");
+    expect(result.headers.getSetCookie()).toEqual([]);
+    expect(await result.text()).not.toContain("test-only");
+    expect(controlsAfterCommit).toBe(0);
+    expect(queued).toEqual([]);
+    expect(gaps.reduce((sum, count) => sum + count, 0)).toBeGreaterThan(0);
+
+    // Independently prove the durable state; an uncertain caller must not
+    // manufacture a rollback, retry the mutation, or emit a success fact.
+    const row = (await client.query<{ id: string }>(
+      'select id from "user" where email=$1', [email],
+    )).rows[0];
+    expect(row?.id).toBeTruthy();
+    expect((await client.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
+    expect((await client.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(1);
+  });
+});
