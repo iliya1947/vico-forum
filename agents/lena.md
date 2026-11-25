@@ -28,4 +28,4 @@
 
 ## Текущее продолжение AUTH-02a
 
-Implementation PR #389, head `0d803d705c8ee7b85c0ab22f8ea694a1e0269c33`, accepted #388 base unchanged. A-01 storage plan resolved by Лёва and implemented with 0074, separate explicit-expiry table, web-only CRUD and native regression coverage; not runtime-verified. Next A-02–A-04 transaction/guard simplification and native sequencing diagnostic, then coherent correction author self-check and applicable CI/acceptance. Details in stages/AUTH-02a/RESULT.md and STORAGE-DECISION.md. No PASS yet; old green CI belongs to pre-correction head. AUTH-02b not started.
+Implementation PR #389, head `4d6df370c56cef0a7c94090e991b44400c765fed`, accepted #388 base unchanged. Coherent A-01–A-04 correction written and author static check complete; isolated scheduling diagnosis reproduced introduced busy/preimage skip, native regression still pending. run:ci/run:acceptance applied. Next inspect actual exact-head results and native evidence; only after author PASS transfer to Мира for coordinator checkpoint. Details in stages/AUTH-02a/RESULT.md. No AUTH-02b, merge or external activation.
