@@ -1,19 +1,29 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Завершённый результат
+## Текущее назначение
 
-AUTH-02b в PR #391 принят coordinator checkpoint Миры на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: PASS, 0 confirmed current-scope blocking defects.
+По прямому решению владельца реализовать **AUTH-03 — recovery/reset + password creation для Google-only** по root `PLAN.md` и `stages/AUTH-03/PLAN.md`.
 
-Coordinator finding по credential form закрыт явным POST и no-JS/pre-hydration regression. Предыдущие три review findings также закрыты.
+## Основание stack
 
-## Текущее состояние
+1. AUTH-02b принят на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
+2. Новый implementation PR создаётся с base `feat/auth-02b-email-verification`, не от main.
+3. Показывать только bounded diff AUTH-03.
 
-Активной implementation-задачи сейчас нет. AUTH-03 ещё не активирован.
+## Ключевые границы
 
-По прямому решению владельца следующая stacked-ступень после активации — **AUTH-03 — recovery + password creation**, исполнитель Лёва. Base — принятый AUTH-02b head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
+1. Guest recovery обслуживает только existing active verified credential; missing/inactive/Google-only/unverified получают neutral public behavior.
+2. Reset не подтверждает email, не создаёт automatic session и после commit отзывает все target sessions.
+3. Google-only password creation — только own Account & security: active fresh session + current email mail proof + explicit password submit.
+4. Anonymous forgot/reset не может создать credential Google-only account.
+5. Shared credential service должен сохранять transaction/state/budget boundaries AUTH-02a/02b; HTTP/direct/Settings не имеют bypass.
+6. Existing SET-05 change-password сохраняет current-password contract и `revokeOtherSessions:false`.
+7. Email change и unlink не реализовывать — это AUTH-04.
+8. New facts/attempts/projections добавлять только под фактические AUTH-03 producers; sensitive values не логировать/не сериализовать.
+9. Реальные external providers/Stage-6 resources не активировать.
 
-До отдельного handoff AUTH-03 не начинать. Реальные external providers/Stage-6 resources не активировать.
+## Завершение
 
-## Final review eligibility
+После implementation выполнить полный author self-check bounded AUTH-03, применимые exact-head checks/acceptance, зафиксировать stable head/evidence в `stages/AUTH-03/RESULT.md` и остановиться для coordinator checkpoint Миры. AUTH-04 самостоятельно не начинать.
 
-Лёва участвовал в implementation AUTH-01 и AUTH-02b и будет реализовывать следующие auth stages, поэтому независимую final whole-feature review собранной authentication feature не выполняет.
+Лёва не является independent final whole-feature reviewer этой authentication сборки.
