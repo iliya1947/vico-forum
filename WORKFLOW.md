@@ -7,7 +7,7 @@
 3. AUTH-01: PR #388, stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`; author checks/CI PASS; coordinator checkpoint Миры PASS.
 4. Активный bounded-этап: **AUTH-02a — transaction/plugin/state/limits/constraints foundation**.
 5. По прямому назначению владельца текущий исполнитель: **Лена / GPT-6.2**. Предыдущее назначение Лиры снято до начала implementation.
-6. AUTH-02a implementation PR **#389**, exact head `bf219088039eb6a4d3a5262d2ffe3f411bbe6fee`, base accepted AUTH-01. All foundation code written; first CI failed, connected acceptance passed; correction head submitted, run:ci/run:acceptance reapplied, actual correction checks pending. Author acceptance NOT PASS; no coordinator handoff. Evidence: stages/AUTH-02a/RESULT.md.
+6. AUTH-02a implementation PR **#389**, exact head `ce1138d71a3706f6b152fd8d1861b36ea0fb637e`, base accepted AUTH-01. Second CI: database and all 18 applicable acceptance workflows PASS; checks failed only at lint. Exact lint location corrected; run:ci/run:acceptance reapplied on new head, outcomes pending. Author acceptance NOT PASS; no coordinator handoff. Evidence: stages/AUTH-02a/RESULT.md.
 7. User-visible mandatory verification / signup/session contract на AUTH-02a не включается; это AUTH-02b.
 8. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 9. Лёва участвовал в AUTH-01 implementation, Лена участвует в AUTH-02a implementation; оба не могут быть независимыми final reviewers всей собранной feature. Final reviewer определяется отдельно.
