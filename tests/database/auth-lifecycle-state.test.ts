@@ -118,6 +118,13 @@ describe("AUTH-02a server-only lifecycle state", () => {
     await expect(consume(proof(reset))).rejects.toBeInstanceOf(InvalidLifecycleProofError);
     await first.query("insert into verification(id,identifier,value,expires_at,updated_at) values " +
       "('native-state','native-state','native-opaque-value',now()+interval '1 hour',now())");
+    const fresh = await state.withSubject(userId, subject =>
+      subject.issue({ purpose: "email-verification" }, context => {
+        expect(context.email).toBe("changed@example.test");
+        expect(context.recipient).toBe("changed@example.test");
+        return testToken();
+      }));
+    expect(fresh.recipient).toBe("changed@example.test");
     await state.withSubject(userId, subject => subject.invalidate(["email-verification"]));
     expect((await rows()).map(row => row.id)).toEqual(expect.arrayContaining([
       "native-state", expect.stringContaining("password-reset:"),
@@ -130,12 +137,14 @@ describe("AUTH-02a server-only lifecycle state", () => {
       .rejects.toBeInstanceOf(InvalidLifecycleProofError);
     const old = await issue({ purpose: "email-change", sessionId, newEmail: "new@example.test" });
     expect(old.claims.phase).toBe("old-address");
+    expect(old.recipient).toBe("member@example.test");
     await expect(consume(proof(old, sessionId))).rejects.toBeInstanceOf(InvalidLifecycleProofError);
     await expect(state.withSubject(userId, subject =>
       subject.advanceEmailChange(proof(old, otherSessionId), testToken))).rejects.toBeInstanceOf(InvalidLifecycleProofError);
     const next = await state.withSubject(userId, subject =>
       subject.advanceEmailChange(proof(old, sessionId), testToken));
     expect(next.claims.phase).toBe("new-address");
+    expect(next.recipient).toBe("new@example.test");
     expect(next.claims.generation).not.toBe(old.claims.generation);
     expect(await rows()).toHaveLength(1);
     await expect(state.withSubject(userId, subject =>
