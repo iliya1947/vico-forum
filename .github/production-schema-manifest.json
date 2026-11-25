@@ -155,6 +155,80 @@
         }
       ]
     },
+    "auth_lifecycle_budget": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "auth_lifecycle_budget_pkey",
+          "columns": [
+            "key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "auth_lifecycle_budget_count_check",
+          "columns": [
+            "count"
+          ],
+          "definitionSha256": "4dfacda1689baec36b69b29a3577f01382c22f7f226226c8abe143c26860ea21"
+        },
+        {
+          "name": "auth_lifecycle_budget_expiry_check",
+          "columns": [
+            "expires_at"
+          ],
+          "definitionSha256": "b8a80ac615c2d9c519b94dd43595fc01e2f145451265573cc9237a3022725bcb"
+        },
+        {
+          "name": "auth_lifecycle_budget_key_check",
+          "columns": [
+            "key"
+          ],
+          "definitionSha256": "c2bd5bdaee88b584a180290109519f9fe56298e759790755f1edfc7071089753"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "auth_lifecycle_budget_cleanup_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "expires_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "key",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        }
+      ]
+    },
     "admin_history": {
       "columns": [
         {
@@ -374,80 +448,6 @@
             }
           ],
           "predicateSha256": null
-        }
-      ]
-    },
-    "auth_lifecycle_budget": {
-      "columns": [
-        {
-          "name": "key",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "count",
-          "type": "integer",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "auth_lifecycle_budget_pkey",
-          "columns": [
-            "key"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [],
-      "checks": [
-        {
-          "name": "auth_lifecycle_budget_count_check",
-          "columns": [
-            "count"
-          ],
-          "definitionSha256": "4dfacda1689baec36b69b29a3577f01382c22f7f226226c8abe143c26860ea21"
-        },
-        {
-          "name": "auth_lifecycle_budget_expiry_check",
-          "columns": [
-            "expires_at"
-          ],
-          "definitionSha256": "b8a80ac615c2d9c519b94dd43595fc01e2f145451265573cc9237a3022725bcb"
-        },
-        {
-          "name": "auth_lifecycle_budget_key_check",
-          "columns": [
-            "key"
-          ],
-          "definitionSha256": "c2bd5bdaee88b584a180290109519f9fe56298e759790755f1edfc7071089753"
-        }
-      ],
-      "indexes": [
-        {
-          "name": "auth_lifecycle_budget_cleanup_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "expires_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "key",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
         }
       ]
     },
@@ -6016,49 +6016,6 @@
         }
       ]
     },
-    "forum_structure_state": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "version",
-          "type": "bigint",
-          "nullable": false,
-          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_structure_state_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [],
-      "checks": [
-        {
-          "name": "forum_structure_state_singleton_check",
-          "columns": [
-            "id"
-          ],
-          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
-        },
-        {
-          "name": "forum_structure_state_version_check",
-          "columns": [
-            "version"
-          ],
-          "definitionSha256": "13dfe986143b3d433922f5bf0e149e3944ea5f5a5b9b0f428b4e969abdb1e192"
-        }
-      ],
-      "indexes": []
-    },
     "forum_tags": {
       "columns": [
         {
@@ -10076,6 +10033,49 @@
           ]
         }
       ]
+    },
+    "forum_structure_state": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_structure_state_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_structure_state_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
+        },
+        {
+          "name": "forum_structure_state_version_check",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "13dfe986143b3d433922f5bf0e149e3944ea5f5a5b9b0f428b4e969abdb1e192"
+        }
+      ],
+      "indexes": []
     }
   },
   "triggerFunctions": [
