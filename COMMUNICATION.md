@@ -17,7 +17,7 @@
    - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
    - единый transaction owner и sequencing correction приняты;
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — coordinator HOLD.** Лёва закрыл прежние три findings и получил AUTHOR PASS на `4fbf8e829fd18c7190a540eade17bdf543a406d3`, но coordinator review подтвердил ещё один current-scope security defect: credential sign-in/sign-up form без явного POST допускает default GET до hydration и утечку email/password в URL. Лёва исправляет этот finding; AUTH-03 ждёт PASS.
+3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST. Следующая ступень AUTH-03 назначена Лёве, но ещё не активирована.
 
 ## Существенные технические зависимости следующих этапов
 
