@@ -12,7 +12,7 @@ type Frame = {
 
 export class AuthLifecycleTransactionError extends Error {
   constructor(readonly code: "busy" | "closed" | "begin-uncertain" | "rollback-uncertain" |
-    "commit-uncertain" | "rolled-back" | "unawaited", options?: ErrorOptions) {
+    "commit-uncertain" | "rolled-back" | "unawaited" | "setup-failed", options?: ErrorOptions) {
     super("Authentication lifecycle transaction failed", options);
     this.name = "AuthLifecycleTransactionError";
   }
@@ -118,7 +118,11 @@ export class AuthLifecycleTransaction {
         this.unusable = true;
         throw this.failure = new AuthLifecycleTransactionError("begin-uncertain", { cause });
       }
-      for (const statement of DEADLINES) await this.client.query(statement);
+      try {
+        for (const statement of DEADLINES) await this.client.query(statement);
+      } catch (cause) {
+        throw this.failure = new AuthLifecycleTransactionError("setup-failed", { cause });
+      }
       const value = await this.context.run(frame, async () => {
         const result = await work();
         if (frame.pending !== 0) {
