@@ -72,6 +72,16 @@ describe("request-scoped auth session", () => {
     },
   );
 
+  it.each(["/en/verify-email?token=private", "/he/verify-email.data", "/ru/verify-email/"])(
+    "does not refresh ambient sessions on confirmation documents or data requests: %s", async path => {
+      const context = new RouterContextProvider();
+      const auth = runtime(authenticatedSession);
+      const result = await initializeAuthContext(context, new Request("https://vico.test" + path), auth);
+      expect(auth.getSession).not.toHaveBeenCalled();
+      expect(authSessionForRequest(context)).toBeNull();
+      expect(result.getSetCookie()).toEqual([]);
+    });
+
   it("propagates Better Auth Set-Cookie values without copying get-session cache headers", async () => {
     const authHeaders = new Headers({
       "Cache-Control": "no-store",

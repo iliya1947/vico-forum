@@ -117,7 +117,7 @@ describe("credential registration and sign-in", () => {
         serverUser = { id: "alice", name: "Alice" };
         return true;
       });
-       function Boundary() {
+      function Boundary() {
         const data = useLoaderData() as { authUser: { id: string; name: string } | null };
         return <HeaderAuthProvider initialUser={data.authUser}><Outlet /></HeaderAuthProvider>;
       }
@@ -138,7 +138,7 @@ describe("credential registration and sign-in", () => {
       }], { initialEntries: [`/en/${mode}`] });
       render(<I18nextProvider i18n={runtime()}><RouterProvider router={router} /></I18nextProvider>);
       const user = userEvent.setup();
-       await user.type(await screen.findByRole("textbox", { name: "Email" }), "alice@example.org");
+      await user.type(await screen.findByRole("textbox", { name: "Email" }), "alice@example.org");
       await user.type(screen.getByLabelText("Password"), "correct horse");
       await user.click(screen.getByRole("button", { name: "Sign in with email" }));
       expect(await screen.findByText("Signed in as Alice")).toBeInTheDocument();

@@ -69,9 +69,10 @@ describe("SET-02 Google sign-in callback error presentation", () => {
       request: new Request("https://vico.test/en/sign-in?returnTo=%2Fen%2Ftopics%2Fone&error=internal-token&error_description=PRIVATE"),
       params: { locale: "en" }, context: ctx.instance,
     });
-    expect(response).toEqual({
+    expect(response.data).toEqual({
       locale: "en", returnTo: "/en/topics/one", callbackError: "authentication",
     });
+    expect(response.init?.headers).toEqual({ "Cache-Control": "private, no-store" });
     expect(JSON.stringify(response)).not.toContain("PRIVATE");
     expect(JSON.stringify(response)).not.toContain("internal-token");
     expect(ctx.read).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { credentialLocaleSearch, credentialReturnPath } from "./credential-path";
+import { credentialLocaleSearch, credentialReturnPath, verificationReturnPath } from "./credential-path";
 
 describe("credential language switching", () => {
   it("preserves a safe nested destination, query, fragment and other parameters", () => {
@@ -16,4 +16,16 @@ describe("credential language switching", () => {
       expect(remapped.get("returnTo")).toBe("/he");
     },
   );
+});
+
+describe("verification return destinations", () => {
+  it("keeps a locale-local path but never a nested callback, query or token-bearing fragment", () => {
+    expect(verificationReturnPath("he", "/he/topics/one?token=private#post-1")).toBe("/he/topics/one");
+    expect(verificationReturnPath("he", "/he")).toBe("/he");
+  });
+  it.each(["https://evil.test/en", "//evil.test/en", "/ru/topics/one", "/en/../outside",
+    "/en/%2e%2e/outside", "/en/%252foutside", "/en/verify-email?token=private",
+    "/en/sign-in?returnTo=/en/topics/one", "/en/resend-verification"])("rejects unsafe return %s", value => {
+    expect(verificationReturnPath("en", value)).toBe("/en");
+  });
 });

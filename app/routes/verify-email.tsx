@@ -21,6 +21,7 @@ export default function VerifyEmailPage() {
   const token = useRef<string | null | undefined>(undefined);
   const [state, setState] = useState<State>("loading");
   const busy = useRef(false);
+  const inspection = useRef<Promise<VerificationResult> | null>(null);
   useEffect(() => {
     let active = true;
     if (token.current === undefined) {
@@ -34,7 +35,8 @@ export default function VerifyEmailPage() {
       } catch { token.current = null; }
     }
     if (!token.current) { setState("invalid"); return; }
-    void verificationClientActions.inspect(token.current).then(result => {
+    inspection.current ??= verificationClientActions.inspect(token.current);
+    void inspection.current.then(result => {
       if (active) {
         setState(result === "ok" ? "ready" : result);
         if (result !== "ok") token.current = null;

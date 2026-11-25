@@ -1662,7 +1662,7 @@ export const canonicalEnglishCatalog = {
     authRegisterFailure: message("authRegisterFailure", "Unable to create account. Check your details or use a different email.", "Generic safe email registration error."),
     authVerificationRequired: message("authVerificationRequired", "Confirm your email before signing in. Password recovery is not available yet.", "Email credential verification requirement."),
     authVerificationPending: message("authVerificationPending", "Check your email", "Neutral registration and resend acknowledgement heading."),
-    authVerificationPendingBody: message("authVerificationPendingBody", "If your account is eligible, a confirmation link will be sent to your email. Open it to confirm your address, then sign in.", "Neutral verification mail acknowledgement without claiming delivery."),
+    authVerificationPendingBody: message("authVerificationPendingBody", "If your account needs verification, look for a confirmation link in your email. If it does not arrive, request another link. Confirm the address, then sign in.", "Neutral verification mail acknowledgement without claiming delivery."),
     authVerificationResend: message("authVerificationResend", "Request another confirmation link", "Email verification resend action and navigation."),
     authVerificationHeading: message("authVerificationHeading", "Confirm your email", "Email verification landing heading."),
     authVerificationConfirm: message("authVerificationConfirm", "Confirm email", "Explicit verification confirmation action."),

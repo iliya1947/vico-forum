@@ -1677,7 +1677,7 @@ export const reviewedCommonFingerprints = {
   authRegisterFailure: "8195814763b7f38cc21179e8d87ce892146606eab5cd3a6f987c71cfb5d9dc3c",
   authVerificationRequired: "7760b14a62d60c2afe96185f667ac24b02c253d7977666edeea8924bda6bdc44",
   authVerificationPending: "62f60ca12d774af88de20cc11764a332d40ca9886020428ec193c42e0208f5d2",
-  authVerificationPendingBody: "67020edb1a7eefadcfe5addcd3e178a4ed8d5523efdcaab3527b2b4bba0064e0",
+  authVerificationPendingBody: "0c2209478d53fe66bb07c907bdf53cc20b9a48624ee220bf8bf6c4355169beb8",
   authVerificationResend: "84e75129b5f93967d24b510c3979747e8dfacbc0f85859c55afc1aa82d395778",
   authVerificationHeading: "9ebc4f51549ad7bee722c63af6a5a2dd99fa12457771674161e12506bce83318",
   authVerificationConfirm: "c98a65cf42998d57bf1f47ce5e3b513be77cbdc34710f41148631d31a6932ca4",
