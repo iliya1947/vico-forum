@@ -4,7 +4,7 @@ import { betterAuth } from "better-auth";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { RouterContextProvider } from "react-router";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   betterAuthOptions,
   createHyperdriveAuthRuntime,
@@ -15,6 +15,7 @@ import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/se
 import { RegistrationSettingsInvariantError } from "../../db/registration-settings";
 import { AccountStateUnexpectedError } from "../../db/account-state";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { installAuthLifecycleFixture, markVerifiedCredentialFixture, signupVerifiedSession } from "./verified-credential-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -60,7 +61,9 @@ beforeAll(async () => {
     .replaceAll("--> statement-breakpoint", "");
   await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
+  await installAuthLifecycleFixture(client);
 });
+beforeEach(async()=>{ await client.query("truncate auth_lifecycle_budget"); });
 
 afterAll(async () => {
   await client.query("set search_path to public");
@@ -82,7 +85,16 @@ describe("Better Auth PostgreSQL runtime", () => {
       }),
     }));
     expect(signup.status).toBe(200);
-    const account = await signup.json() as { user: { id: string } };
+    const acknowledgement = await signup.json();
+    expect(acknowledgement).toEqual({status:true,token:null});
+    expect(signup.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+    const id = await markVerifiedCredentialFixture(client,"sa04-auth-public@example.test");
+    const login = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-in/email`,{
+      method:"POST",headers,body:JSON.stringify({email:"sa04-auth-public@example.test",password:"integration-password-123"}),
+    }));
+    expect(login.status).toBe(200);
+    const account=await login.json() as {user:{id:string}};
+    expect(account.user.id).toBe(id);
     const assertPublic = (payload: unknown) => {
       const serialized = JSON.stringify(payload);
       for (const name of [
@@ -90,8 +102,9 @@ describe("Better Auth PostgreSQL runtime", () => {
         "deactivated_at", "deactivated_by_user_id", "retain_at_least_until",
       ]) expect(serialized).not.toContain(name);
     };
+    assertPublic(acknowledgement);
     assertPublic(account);
-    const cookie = signup.headers.getSetCookie()
+    const cookie = login.headers.getSetCookie()
       .find((entry) => entry.includes("session_token="))?.split(";", 1)[0];
     if (!cookie) throw new Error("No Better Auth session cookie in SA04 test");
 
@@ -140,7 +153,7 @@ describe("Better Auth PostgreSQL runtime", () => {
 
   it("SA04-I1 refuses persisted inactive account identity during real pre-routing session resolution", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
-    const signup = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signup = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST",
       headers: { "content-type": "application/json", Origin: env.BETTER_AUTH_URL,
         "cf-connecting-ip": "203.0.113.91" },
@@ -186,8 +199,8 @@ describe("Better Auth PostgreSQL runtime", () => {
   });
 
   it("SA04-I1 classifies lifecycle-read outages while propagating unexpected state errors", async () => {
-    const cookieResponse = await createHyperdriveAuthRuntime(databaseUrl, env, () => authClient())
-      .handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const fixtureRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
+    const cookieResponse = await signupVerifiedSession(client,req=>fixtureRuntime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
         method: "POST",
         headers: { "content-type": "application/json", Origin: env.BETTER_AUTH_URL,
           "cf-connecting-ip": "203.0.113.92" },
@@ -230,7 +243,7 @@ describe("Better Auth PostgreSQL runtime", () => {
   it("SA04-I2 rejects inactive actor HTTP and direct Better Auth operations, but allows own sign-out", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const signUp = async (email: string, name: string, ip: string) => {
-      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      const response = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
         method: "POST", headers: { "content-type": "application/json",
           Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": ip },
         body: JSON.stringify({ email, name, password: "integration-password-123" }),
@@ -334,7 +347,7 @@ describe("Better Auth PostgreSQL runtime", () => {
   it("SA04-I2 does not refresh a due inactive session during protected HTTP preflight", async () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const signup = async (email: string, ip: string) => {
-      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      const response = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
         method: "POST", headers: { "content-type": "application/json",
           Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": ip },
         body: JSON.stringify({ name: "I2 due session", email, password: "integration-password-123" }),
@@ -387,7 +400,7 @@ describe("Better Auth PostgreSQL runtime", () => {
 
   it("SA04-I2 maps authenticated auth HTTP state outages to 503 and keeps unexpected failures", async () => {
     const baseRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
-    const signup = await baseRuntime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signup = await signupVerifiedSession(client,req=>baseRuntime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST", headers: { "content-type": "application/json",
         Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.98" },
       body: JSON.stringify({
@@ -430,7 +443,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const email = "i3-returning-password@example.test";
     const password = "integration-password-123";
-    const signup = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signup = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
         "content-type": "application/json", "cf-connecting-ip": "203.0.113.110" },
       body: JSON.stringify({ name: "I3 original name", email, password }),
@@ -485,7 +498,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     const normal = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const email = "i3-session-state-error@example.test";
     const password = "integration-password-123";
-    const signup = await normal.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signup = await signupVerifiedSession(client,req=>normal.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST", headers: { Origin: env.BETTER_AUTH_URL,
         "content-type": "application/json", "cf-connecting-ip": "203.0.113.112" },
       body: JSON.stringify({ name: "I3 storage", email, password }),
@@ -532,7 +545,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     const runtime = createHyperdriveAuthRuntime(databaseUrl, env, () => authClient());
     const headers = { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.40" };
     const body = { name: "Cookie ordering", email: "cookie-order@example.test", password: "integration-password-123" };
-    const signup = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signup = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST", headers, body: JSON.stringify(body),
     }));
     expect(signup.status).toBe(200);
@@ -579,7 +592,7 @@ describe("Better Auth PostgreSQL runtime", () => {
     });
     try {
       const email = `cleanup-${synchronous}@example.test`;
-      const response = await runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+      const response = await signupVerifiedSession(client,req=>runtime.handle(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
         method: "POST", headers: { "content-type": "application/json", Origin: env.BETTER_AUTH_URL, "cf-connecting-ip": "203.0.113.56" },
         body: JSON.stringify({ name: "Cleanup", email, password: "integration-password-123" }),
       }));
@@ -614,6 +627,7 @@ describe("Better Auth PostgreSQL runtime", () => {
 
     const returningEmail = "admission-existing@example.test";
     expect((await runtime.handle(request("sign-up/email", returningEmail))).status).toBe(200);
+    await markVerifiedCredentialFixture(client,returningEmail);
 
     // This is a genuine PostgreSQL lock, not a mocked repository rejection.
     const locker = authClient();
@@ -687,9 +701,14 @@ describe("Better Auth PostgreSQL runtime", () => {
     }));
     const signup = await call("sign-up/email", { name: "Local owner", email, password: "integration-password-123" });
     expect(signup.status).toBe(200);
-    const local = await signup.json() as { user: { id: string; emailVerified: boolean } };
-    expect(local.user.emailVerified).toBe(false);
-    const cookie = signup.headers.getSetCookie().find((entry) => entry.includes("session_token="))!.split(";", 1)[0];
+    expect(await signup.json()).toEqual({status:true,token:null});
+    expect(signup.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+    const localId=await markVerifiedCredentialFixture(client,email);
+    const login=await call("sign-in/email",{email,password:"integration-password-123"});
+    expect(login.status).toBe(200);
+    const local=await login.json() as {user:{id:string;emailVerified:boolean}};
+    expect(local.user).toMatchObject({id:localId,emailVerified:true});
+    const cookie=login.headers.getSetCookie().find(entry=>entry.includes("session_token="))!.split(";",1)[0];
     const social = { provider: "google", idToken: { token: "synthetic-provider-token" } };
     const implicit = await call("sign-in/social", social);
     expect(implicit.ok).toBe(false);
@@ -698,8 +717,12 @@ describe("Better Auth PostgreSQL runtime", () => {
     expect((await call("link-social", social)).status).toBe(401);
     // A different authenticated account cannot link this Google email either.
     const other = await call("sign-up/email", { name: "Other", email: "other-google@example.test", password: "integration-password-123" });
-    const otherUser = await other.json() as { user: { id: string } };
-    const otherCookie = other.headers.getSetCookie().find((entry) => entry.includes("session_token="))!.split(";", 1)[0];
+    expect(other.status).toBe(200);
+    await markVerifiedCredentialFixture(client,"other-google@example.test");
+    const otherLogin=await call("sign-in/email",{email:"other-google@example.test",password:"integration-password-123"});
+    expect(otherLogin.status).toBe(200);
+    const otherUser=await otherLogin.json() as {user:{id:string}};
+    const otherCookie=otherLogin.headers.getSetCookie().find(entry=>entry.includes("session_token="))!.split(";",1)[0];
     const mismatchedEmail = await call("link-social", social, otherCookie, otherUser.user.id);
     expect(mismatchedEmail.status).toBe(401);
     expect((await mismatchedEmail.json() as { code: string }).code).toBe("LINKING_DIFFERENT_EMAILS_NOT_ALLOWED");
@@ -717,10 +740,9 @@ describe("Better Auth PostgreSQL runtime", () => {
   it("preserves sliding-session Set-Cookie through the application request boundary", async () => {
     const auth = betterAuth({
       ...betterAuthOptions(drizzle(client), env),
-      emailAndPassword: { enabled: true },
     });
 
-    const signUp = await auth.handler(new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
+    const signUp = await signupVerifiedSession(client,req=>auth.handler(req),new Request(`${env.BETTER_AUTH_URL}/api/auth/sign-up/email`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

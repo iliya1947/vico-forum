@@ -10,6 +10,7 @@ import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.s
 import { authSessionForRequest } from "../../app/auth/request-context";
 import { initializeAuthContext, withAuthSessionCookies } from "../../app/auth/session-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { installAuthLifecycleFixture, signupVerifiedSession } from "./verified-credential-fixture";
 
 const url = process.env.DATABASE_URL;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -60,7 +61,7 @@ function pauseNativeQuery(client: Client, matches: (text: string) => boolean) {
 }
 
 async function signUp(suffix: string) {
-  const response = await auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
+  const response = await signupVerifiedSession(writer,req=>auth.handler(req),new Request(`${origin}/api/auth/sign-up/email`, {
     method: "POST",
     headers: { Origin: origin, "content-type": "application/json",
       "cf-connecting-ip": `203.0.113.${ip++}` },
@@ -88,9 +89,10 @@ beforeAll(async () => {
   await writer.query((await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"))
     .replaceAll("--> statement-breakpoint", ""));
   await installRegistrationPolicyFixture(writer);
+  await installAuthLifecycleFixture(writer);
 });
 beforeEach(async () => {
-  await writer.query('truncate "user", account, session, verification, rate_limit cascade');
+  await writer.query('truncate "user", account, session, verification, rate_limit, auth_lifecycle_budget cascade');
 });
 afterAll(async () => {
   await deactivator.query("ROLLBACK").catch(() => undefined);
@@ -112,11 +114,11 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
   it("keeps native user and credential inserts invisible until the single outer signup commit", async () => {
     const instance = auth;
     const email = "auth02a-atomic-signup@example.test";
-    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\s/i.test(sql));
+    const paused = pauseNativeQuery(writer, sql => /^insert into "account"\s/i.test(sql));
     const signing = instance.handler(signupRequest(email));
     try {
       await Promise.race([paused.entered, signing.then(() => {
-        throw new Error("Signup completed before reaching the native session write");
+        throw new Error("Signup completed before reaching the native credential write");
       })]);
       expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
       expect((await deactivator.query("select id from account")).rowCount).toBe(0);
@@ -124,13 +126,13 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
       paused.resume();
       const response = await signing;
       expect(response.status).toBe(200);
-      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
       const row = (await deactivator.query<{ id: string }>(
         'select id from "user" where email=$1', [email],
       )).rows[0];
       expect(row?.id).toBeTruthy();
       expect((await deactivator.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
-      expect((await deactivator.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(1);
+      expect((await deactivator.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(0);
     } finally {
       paused.resume();
       await signing.catch(() => undefined);
@@ -138,15 +140,15 @@ describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
     }
   }, 30_000);
 
-  it("rolls back native signup user and credential when the final session insert fails", async () => {
+  it("rolls back native signup user and credential when the credential insert fails", async () => {
     const instance = auth;
     const email = "auth02a-atomic-failure@example.test";
     const original = writer.query;
     let injected = false;
     writer.query = ((...args: unknown[]) => {
-      if (!injected && /^insert into "session"\s/i.test(nativeSql(args[0]))) {
+      if (!injected && /^insert into "account"\s/i.test(nativeSql(args[0]))) {
         injected = true;
-        return Promise.reject(new Error("test-only native session insert failure"));
+        return Promise.reject(new Error("test-only native credential insert failure"));
       }
       return Reflect.apply(original, writer, args);
     }) as typeof writer.query;
