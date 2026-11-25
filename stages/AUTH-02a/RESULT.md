@@ -1,133 +1,115 @@
-# stages/AUTH-02a/RESULT.md — реализация и проверяемое состояние bounded-ступени AUTH-02a
+# stages/AUTH-02a/RESULT.md — итог реализации и проверки bounded-ступени AUTH-02a
 
-## Текущий статус: HOLD — согласованный correction pass у Лены
+## Итоговый статус
 
-Последний implementation head #389: `ab2f09fc916279455d78bc2ca8a78c27eca72128`; CI 45583502311 и 18/18 applicable acceptance workflows прошли на нём, но author design self-check выявил A-01–A-04 и sequencing risk. 2026-11-25 Лёва исправил storage clause плана: [STORAGE-DECISION.md](STORAGE-DECISION.md). Storage blocker для начала исправления снят; код ещё не исправлен, author/coordinator PASS отсутствуют. Лена остаётся исполнителем. Ниже сохранены значимые implementation/CI/design checkpoints; старые pending/next формулировки относятся к указанным historical heads.
+**COORDINATOR PASS.**
 
-## Исходная реализация и CI correction evidence
+Implementation PR #389, stable exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
 
-Implementation PR #389, head `0e9e25a7302ba92ae7973854332da1e431d9af2d`, base AUTH-01 branch `feat/auth-01-mail-foundation` / `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`. Compare: 49 commits ahead, 0 behind, 28 файлов. Ни merge в main, ни AUTH-02b не начаты.
+Base: accepted AUTH-01 PR #388 head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
 
-1. Explicit same-client transaction owner, guarded adapter composition, canonical runtime, staged committed evidence; nested pending work drained before rollback. Tests added for native signup/OAuth rollback, uncertain real COMMIT, session deletion receipts, AccountState races.
-2. Server-only plugin `vico-auth-lifecycle` registered in canonical createAuth. Existing verification table: deterministic purpose/user PK, generation, digest, immutable email snapshot, phase, DB expiry, CAS consume, own session expectation. No new user-visible endpoints or mandatory verification.
-3. Forward migration `0073_auth_account_uniqueness` — duplicate preflight, unique provider/account and partial unique credential/user indexes; schema/journal/snapshot and structural manifest extended. Existing deliberately duplicate credential fixture SA02 adjusted to new invariant while multiple distinct Google rows retained. Native tests for pre-existing rows, duplicate failure/no data loss, concurrency, catalog predicate hash. Manifest predicate hash calculated from expected PG17 deparse, actual parity pending CI. Accepted migrations untouched.
-4. Shared server-owned budgets in existing rate_limit table: domain-separated HMAC keys, atomic upsert, fixed window deadline in last_request for Vico namespace (native BA 1.7.7 cleanup otherwise removes active longer-window rows), bounded own cleanup, receipt for nested identical admission, qualified/unknown ingress, fail-closed before domain work. Policy matches PLAN §5. No new public flows wired. Provider-neutral challenge injected into plugin; disabled distinct from passed, required without verifier fails closed. No real provider/SDK/resources. Tests for concurrency, nested admission, spoofed/unknown network, TTL/rotation, failure, fake challenge binding and replay.
-5. Static author inspection performed while implementing, but no successful executed test claim. Local Node/toolchain and checkout limitations previously recorded. GitHub #389 labels run:ci and run:acceptance successfully applied; first exact-head workflow query returned no runs yet. Need confirm actual applicable checks and resolve failures before coordinator checkpoint. No PASS, no handoff yet.
+Confirmed current-scope defects после coordinator checkpoint: **0**.
 
-Next: inspect actual exact-head checks/workflow runs; correct confirmed AUTH-02a findings; record successful author self-check/CI evidence, then transfer result to Мира for checkpoint. Stage 6 remains blocked.
+AUTH-02a остаётся intermediate stacked PR: без merge в `main` и без independent intermediate review.
 
-## First CI correction cycle
+## Что реализовано
 
-Original head `0e9e25a7302ba92ae7973854332da1e431d9af2d`: all 17 connected/browser acceptance workflows succeeded. CI run 45534883647 failed: checks job 138938934194 lint (preserve-caught-error); database job 138938934488 (1842 passed, 4 failed, 14 skipped; one additional suite setup failure). Correction head `bf219088039eb6a4d3a5262d2ffe3f411bbe6fee`.
+1. **Единый request-local transaction owner**
+   - один `AuthLifecycleTransaction` владеет BEGIN/COMMIT/ROLLBACK для lifecycle/guarded Better Auth writes;
+   - nested work присоединяется к owner;
+   - independent root adapter operations на одном client сериализуются;
+   - rollback-only, uncertain COMMIT и staged evidence сохраняют честную семантику;
+   - самостоятельного второго transaction controller в session-write guard не осталось.
 
-1. Two new signup fault-injection cases never reached injected SQL because the shared unknown-network native rate-limit fixture had been exhausted by earlier tests. Reset only the disposable test rate_limit before those cases.
-2. Existing structure migration test incorrectly treated 0072 as forever last. Keep the historical upgrade boundary at named 0072, then apply that and later migrations; clean path still applies all.
-3. Registration policy query timeout can leave rollback acknowledgement unknown with a still-blocked native statement. Preserve existing safe generic 503 for pre-COMMIT storage failure; only uncertain COMMIT gets uncertain-outcome wording. Retain both original failure and rollback cause with cause chain for storage classification.
-4. Revoke-other-sessions concurrent after-hook can run outside its own transaction while the next serialized delete owns the connection. Evidence retention now distinguishes async transaction frame from merely busy connection; unrelated after-hook can retain preimage independently, still requiring matching committed receipt and absent-row proof. Added unit test; existing native regression retained unchanged.
-5. Reapplied run:ci and run:acceptance on correction head. No results claimed yet; checks job had stopped at lint on previous head, so later checks still require actual success. Author PASS and coordinator handoff remain pending.
+2. **Canonical lifecycle foundation**
+   - server-only Vico Better Auth plugin/service seam зарегистрирован в canonical auth runtime;
+   - user-visible verification/recovery endpoints на этой ступени не открывались;
+   - existing successful signup/session contract AUTH-01 сохранён до AUTH-02b.
 
-## Second CI correction cycle
+3. **Lifecycle state**
+   - private state использует purpose, immutable user subject/email snapshot, current generation, digest, phase и expiry;
+   - deterministic current operation и conditional consume/CAS;
+   - raw token/password/session bearer/provider payload не сохраняются в Vico lifecycle metadata.
 
-Head `bf219088039eb6a4d3a5262d2ffe3f411bbe6fee`: database job 139092867861 SUCCESS (including PostgreSQL tests, manifest parity, privileges and Worker smoke); all 18 applicable browser/connected acceptance workflows SUCCESS. Only checks job 139092867417 failed at lint: preserve-caught-error, line 183, plain Error thrown inside outer catch when ROLLBACK returns unexpected command. Previous correction preserved the errors in AggregateError but missed the actual lint location. Verified exact source of ESLint v10.10.0 rule and numbered file line. Local one-line fix attaches original caught cause to this Error; no suppression or changed control flow. New head `ce1138d71a3706f6b152fd8d1861b36ea0fb637e`; run:ci/run:acceptance applied. Typecheck/unit/build/schema parity checks in checks job still need executed success. No PASS or handoff yet.
+4. **Account concurrency constraints**
+   - migration `0073_auth_account_uniqueness`;
+   - unique provider/account identity;
+   - один credential row на user;
+   - duplicate preflight прекращает migration без автоматического merge/delete identities;
+   - accepted migration history не переписана.
 
-## Third CI correction cycle
+5. **Server-owned lifecycle budgets**
+   - исходное требование использовать native Better Auth `rate_limit` для длинных Vico windows признано дефектом плана;
+   - correction вынес Vico budgets в отдельную `auth_lifecycle_budget`;
+   - schema: HMAC key PK, positive count, finite explicit `expires_at`, cleanup index;
+   - fixed DB-clock expiry не сдвигается повторными consume/denial;
+   - bounded opportunistic cleanup использует locked expired rows и не затрагивает native `rate_limit`;
+   - Better Auth limiter/configuration и его native windows не переопределены;
+   - полный технический contract и установленная причина: `STORAGE-DECISION.md`.
 
-Head `ce1138d71a3706f6b152fd8d1861b36ea0fb637e`: lint SUCCESS, all 18 applicable acceptance workflows SUCCESS; checks stopped at Typecheck TS2304 (CryptoKey not globally declared in Node-only tsconfig); database 1859/1860, one native concurrency failure. PostgreSQL log for job 139095725077 explicitly shows duplicate key on rate_limit_pkey, not the ON CONFLICT(key) arbiter. Initial concurrent insert used same deterministic id and key, leaving a competing unique index outside the conflict arbiter. PostgreSQL 17 INSERT documentation confirms exact conflict-target inference. Fix: independent random row ID and unchanged HMAC key/atomic upsert; regression asserts distinct ID/key and exact denial types. Crypto key cache type now inferred from runtime crypto.subtle.importKey return type, without changing tsconfig or runtime crypto. New head `ab2f09fc916279455d78bc2ca8a78c27eca72128`; run:ci/run:acceptance applied; actual outcomes pending. No coordinator handoff yet.
+6. **Abuse/challenge foundation**
+   - domain-separated HMAC keys без plaintext email/IP/token;
+   - HTTP/direct используют общий server-owned budget path без client bypass/double count;
+   - trusted/unknown ingress остаётся bounded;
+   - storage/control failure fail closed;
+   - provider-neutral challenge injection существует только как foundation; реальный provider/widget/secret не активирован.
 
-## Author design follow-up: shared rate_limit storage semantics
+7. **Evidence/AccountState compatibility**
+   - existing auth facts/session-deletion evidence публикуются только после доказанного commit;
+   - rollback/zero-row/uncertain outcome не создаёт ложный success;
+   - protected AccountState checks сохраняют authoritative locking/order;
+   - future AUTH-02b/03/04 fact/attempt kinds заранее не добавлены.
 
-Developer explicitly questioned whether the corrective chain accumulated workarounds. Confirmed design compromise on implementation head ab2f09fc916279455d78bc2ca8a78c27eca72128: Vico budget namespace stores absolute window deadline in last_request, unlike native Better Auth last-request timestamp. Pinned BA 1.7.7 rate-limiter index.ts:227–260 global cleanup deletes by lastRequest < now - longestObservedWindow, without namespace filter. This is an intentional compatibility workaround for 600-second custom budgets under shorter native windows, not a root-cause removal. PLAN §7 requires existing rate_limit storage and preserved native buckets. Public customStorage exists but replacing native implementation is broader than this task; a separate table changes plan. Before author PASS, assess whether a simpler compatible namespace-safe cleanup or native extension can preserve both semantics without new compensating layers. Do not unilaterally change accepted architecture or claim whole implementation workaround-free. Recent independent UUID row ID, inferred crypto type and error-cause fixes address actual causes; not workarounds. Full design self-check still pending.
+## Существенная correction-цепочка
 
-## Root cause / technical-plan issue — HOLD
+1. Первоначальная реализация Vico budgets в native `rate_limit.last_request` использовала несовместимую expiry-семантику.
+2. Лёва подтвердил причину по Better Auth 1.7.7: native blanket cleanup не знает независимый Vico 600-second expiry и может удалить ещё активный Vico counter.
+3. План исправлен на отдельную `auth_lifecycle_budget`; deadline-in-`last_request`, dummy native rule, private SQL interception и replacement native storage исключены.
+4. В том же correction package устранены:
+   - дублирующий transaction control;
+   - дублирующая protected-write classification;
+   - неиспользуемый `markFailed`;
+   - late-preimage sequencing risk при concurrent native session deletion — root adapter operations сериализованы, ошибки не подавляются.
+5. История промежуточных heads/CI cycles сохранена Git history и `HISTORY.md`; этот RESULT фиксирует только принятый итог.
 
-Exact head ab2f09fc916279455d78bc2ca8a78c27eca72128 now has CI 45583502311 SUCCESS (checks and database), all 18 applicable browser/connected acceptance workflows SUCCESS. This does not resolve the design finding.
+## Самостоятельная coordinator-проверка
 
-Checked pinned Better Auth v1.7.7 source: packages/better-auth/src/context/create-context.ts (default window 10 s); packages/better-auth/src/api/rate-limiter/index.ts (default special rules max 60 s; cleanup on successful reset at lines 185–190; sweep lines 227–240, cutoff derived from configured native windows; customStorage replaces native storage at lines 277–279). Current Vico config does not declare longer rules. Native cleanup has no ownership predicate and can delete a Vico 600-second bucket after 60 seconds if timestamps have their normal meaning. The approved PLAN.md §7 requires both native limits unchanged and TTL/cleanup in existing storage. Merely reverting the future timestamp loses enforcement; artificially increasing the sweep window by adding a dummy rule or intercepting native cleanup by implementation-specific pattern would introduce another workaround. An independent, explicit expiry storage boundary is a candidate that eliminates cross-policy cleanup interference without changing Better Auth native behavior; it would revise the approved storage clause. Do not introduce a new workaround or change the approved plan unilaterally.
+Мира проверила bounded runtime diff отдельно от test results:
 
-**Question for Лёва (technical-plan correction, not implementation or independent review):** determine the minimal supported storage/cleanup contract for the mandatory shared lifecycle budgets and existing native rate limits in AUTH-02a, with their different window semantics; inspect exact-version native behavior and applicable DB constraints. Amend the relevant technical plan if necessary. Acceptance: actual expiry semantics and no premature cross-policy cleanup, unchanged native enforcement, no private APIs, no duplicate native rate limiter, atomic shared HTTP/direct admission, no external resources. Return the bounded decision for implementation by Лена. No AUTH-02b, no merge, no author PASS pending resolution.
+1. Better Auth 1.7.7 `runWithTransaction` и Drizzle transaction fallback повторно сверены с exact-version source.
+2. Итоговый adapter boundary действительно использует один request-local transaction owner.
+3. Vico budget code больше не зависит от native `rate_limit.last_request`; native limiter остаётся отдельным владельцем своих rows.
+4. A-02–A-04 исправлены в итоговом коде; late-preimage sequencing закрыт на фактическом native regression path.
+5. Lifecycle state/plugin остаются private foundation; AUTH-02b public behavior отсутствует.
+6. Migration `0073` и `0074_auth_lifecycle_budget` не переписывают accepted history.
+7. Web runtime получает только необходимые CRUD capabilities новой budget-таблицы; localization boundary не расширена.
+8. Реальных mail/challenge/provider calls и Stage-6 activation нет.
 
-## Author architecture self-check — HOLD (not independent review)
+## Exact-head evidence
 
-Implementation head unchanged: ab2f09fc916279455d78bc2ca8a78c27eca72128. Compared bounded diff with AUTH-01 head e18fdb189d3c6a0a9ad913df398530a6cd69bb6a (29 files); assessed runtime, transaction/guard, observability, lifecycle state, budget, plugin/challenge, migration and Worker injection against approved scope. No new implementation changes or CI runs.
+Exact head: `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
 
-### Confirmed issues requiring correction within AUTH-02a
+1. CI run `45600452416`:
+   - checks — SUCCESS;
+   - database — SUCCESS;
+   - lint/typecheck/unit/build/UI preview/history/metadata/Drizzle parity — SUCCESS;
+   - PostgreSQL 17 migration/schema/privilege checks — SUCCESS;
+   - Worker smoke — SUCCESS.
+2. Unit: 249 files / 3299 tests passed.
+3. Database: 121 files / 1865 tests passed.
+4. Relevant native suites include lifecycle budget, lifecycle state, account uniqueness, SA04 session atomicity и native limiter contention.
+5. 18/18 applicable connected/browser acceptance workflows — SUCCESS на том же exact head.
 
-1. **A-01 — storage semantics workaround.** Existing rate_limit shared sweep conflicts with independent 600-second windows; storing expiry in last_request conceals the conflict. See root-cause section above. Technical-plan correction needed, not a third limiter or another compatibility hack. Existing project content translation budget already has an independent explicit expires_at store (db/content-request-budget-store.ts); examine this as a design precedent, not a mandate to reuse its translation-specific policy or schema.
-2. **A-02 — duplicate transaction control.** session-write-guard.ts retains its own BEGIN/COMMIT/ROLLBACK path and optional owner branch while AuthLifecycleTransaction implements these controls again. Production createAuth always supplies owner; betterAuthOptions without owner is retained in low-level tests. The plan requires preservation of standalone behavior, not two implementations of control. Consolidate ownership/control while preserving standalone guard/actor lock and exact outcome semantics; no need to rewrite AccountState selectors or Better Auth itself.
-3. **A-03 — duplicated protected-operation classification.** session-write-guard.ts computes sessionWrite/userWrite/accountWrite/sessionDelete within perform and separately protectedWrite within guarded. They presently agree, but two independently maintained predicates determine the transaction boundary. Derive the decision once and use it consistently; no new abstraction hierarchy required.
-4. **A-04 — test-only dead interface.** AuthLifecycleTransaction.markFailed duplicates rollback-only state handling already performed by nested run. The changed runtime and state/budget consumers use run, not markFailed; the method is called explicitly only by its own new unit test among reviewed callers. Remove if exact caller inventory confirms no production consumer; do not keep public surface for hypothetical future consumers.
+Эти checks подтверждают уже проверенную модель; они не являются самостоятельным основанием coordinator PASS.
 
-### Specific follow-up risk (not yet a demonstrated regression)
+## Границы результата
 
-Pinned Better Auth 1.7.7 session.ts revokeOtherSessions uses Promise.all over internalAdapter.deleteSession; with-hooks.ts deleteWithHooks catches findMany preimage errors and skips native delete when entityToDelete is absent. The new guard rejects non-owning adapter reads on busy connection; the existing deletionTail queues DELETE but not preimage READ. An interleaving in which a later preimage starts during a standalone delete can therefore yield a skipped deletion without a surfaced error. Existing green cases do not establish all schedules. Need establish/reproduce the interleaving and ensure native concurrent read/write sequencing is compatible with single owner; do not fix via ignoring busy guard, swallowing errors, or manufacturing evidence. Reconcile with A-02/A-03 before editing.
+1. Это repository/local-CI foundation, не deployed/production acceptance.
+2. Mandatory verification, resend UI и signup no-session behavior относятся к AUTH-02b.
+3. Recovery/password creation, email change и unlink не реализованы здесь.
+4. Реальные external providers/resources не активированы.
+5. Лена участвовала в implementation AUTH-02a и не является независимым final whole-feature reviewer.
 
-### Components without identified architectural workaround in the reviewed paths
+## Следствие
 
-- One canonical plugin with no public endpoints, private verification generation/purpose/digest/expiry and locked subject/CAS, provider-neutral disabled/required challenge contract and request ingress injection follow this bounded plan. Later endpoint integration/freshness, native token generation and actual provider timeout/replay guarantees remain later stages, not implemented now.
-- Unique provider/account and partial unique credential/user indexes solve actual DB concurrency invariants; forward migration locks writers, fails duplicate preflight, preserves rows and updates schema/snapshot/manifest. No migration rewrite or auto-delete.
-- Evidence staging is required by actual native multi-write transaction semantics and existing SA02 proof contract; retained existing receipt/postcondition collectors rather than introducing a second fact store. Existing SQL recognition for native observation predates AUTH-02a; transaction ownership itself is explicit. Independent UUID counter row IDs, inferred runtime crypto type and preserved exception causes address confirmed causes, not workarounds.
-
-This author review is static; it does not establish absence of all defects or independent acceptance. Do not start AUTH-02b. Resolve A-01 through the technical-plan correction; then author implements the agreed correction and confirmed local simplifications as one coherent package, diagnoses sequencing risk, and checks on the resulting stable head. No more CI-driven patching before the design issue is resolved.
-
-## Technical-plan correction Лёвы — A-01 decision delivered
-
-Native 1.7.7 source/config и локальный controlled-clock вызов unmodified onRequestRateLimit подтвердили blanket sweep: на +120 s удалён ещё живой 600 s Vico bucket с обычным lastRequest. Исходный PLAN ошибочно требовал общий storage без совместимого per-row expiry contract. PLAN §2/7/8 и stage PLAN исправлены: common AuthLifecycleBudget переносится в `auth_lifecycle_budget` (key PK/count/finite expires_at/index), native rate_limit/configuration сохраняются. Новая forward migration и exact web capability/schema probes входят в тот же correction pass. Причина, исключённые альтернативы, failure/cleanup/atomicity и обязательные tests — STORAGE-DECISION.md.
-
-Лена реализует решение вместе с A-02–A-04 и отдельно диагностирует sequencing risk. Это не PASS существующего head, не реализация исправления и не независимая whole-PR review. CI не повторялся, новая PostgreSQL acceptance не заявляется. После коррекции требуется новый stable exact head с author checks/применимыми CI/acceptance, затем checkpoint Миры; AUTH-02b/merge/Stage 6 не активированы.
-
-## Correction implementation — A-01 written (not runtime-verified)
-
-Лёва resolved storage plan in STORAGE-DECISION.md. New implementation head `0d803d705c8ee7b85c0ab22f8ea694a1e0269c33`, 11 changed files relative to previous head `ab2f09fc916279455d78bc2ca8a78c27eca72128`; base AUTH-01 unchanged.
-
-- Forward 0074_auth_lifecycle_budget added: sole HMAC key PK, positive count, finite timestamptz expires_at, key CHECK, expiry/key cleanup index; accepted 0000–0072 and 0073 unchanged. Snapshot link and all prior snapshot tables verified unchanged; journal/manifest/ledger expectation updated. CHECK manifest hashes calculated from expected PG17 deparse, native parity not yet executed.
-- Existing AuthLifecycleBudget now writes only dedicated table; native rate_limit unchanged (only explanatory comment references it). No separate random id, future last_request, native cleanup override or extra limiter. Fixed-expiry atomic consume, shared admission receipt, network-first ordering, committed attempts, bounded locked cleanup preserved. Counter/deadline assignment uses one DB clock sample for the conflicting row.
-- Existing web capability contract extended with exact CRUD, derived provisioning remains shared. Actual positive web DML/lock probe and localization negative CRUD probes added. No GRANT/role in migration, no external action.
-- Revised native suite applies 0073 then 0074, verifies schema checks, fixed expiry, canonical actual Better Auth HTTP reset/sweep vs live Vico counter, HMAC rotation, bounded cleanup, both cleanup/renewal orders (including native DELETE barrier and actual blocked renewal). No manual imitation of native sweep retained. Tests written, not executed. Container lacks PG17, checkout and pinned Node/pnpm. Do not claim SQL/manifest/CI success.
-- A-02–A-04 and preimage-read sequencing diagnostic remain. Do not launch full CI on intermediate correction head: finish coherent transaction/guard correction first and review the whole package. No new endpoints, no AUTH-02b, no external activation.
-
-## Coherent correction package — author static check complete, runtime checks pending
-
-Exact head `4d6df370c56cef0a7c94090e991b44400c765fed`, base AUTH-01 unchanged, 34 files in bounded diff. No merge, no public lifecycle endpoint, no Stage-6 action.
-
-1. A-01: independent explicit-expiry `auth_lifecycle_budget`; corrected schema insertion (JS replacement string interpreted dollar-apostrophe in regex as suffix, duplicating 1591 lines). Reconstructed from pre-correction schema by exact slicing; verified persisted content equals old schema plus precisely 11 lines for new table; no duplicate exports. Restored unrelated manifest order; native rate_limit definition/config unchanged, metadata/journal append 0074 only, old snapshot tables unchanged. Manifest hashes match expected PG17 deparse strings via local SHA256; actual catalog parity not yet executed. Bounded cleanup uses stable statement timestamp, index-compatible predicate and locked selected rows.
-2. A-02/A-03: removed legacy BEGIN/COMMIT/ROLLBACK branch and duplicate protectedWrite classification; one transaction owner and one adapter entry with explicit transactional flag. Independent native adapter calls on same client serialize at the root; nested calls join and are all tracked, including read and CAS. Mapping protected-operation errors inside the owned callback preserves rollback-only public error instead of recording untranslated AccountInactiveError. Direct callers require a native Client, not a Pool; rate-limit contention regression uses independent native connections per HTTP request. A-04: markFailed removed with its redundant test-only usage.
-3. Sequencing diagnosis: exact Better Auth v1.7.7 revokeOtherSessions uses Promise.all over deleteSession; deleteWithHooks catches preimage failure and only calls native delete if entity exists. On old guard late preimage read during unrelated active DELETE throws busy, which BA can catch and skip. Local Node 22.16 isolated scheduling diagnostic using AsyncLocalStorage, verified guard branches and mocked rows reproduced remaining second session before correction, both removed after serialized root read/write. This is causal-model evidence, NOT execution of native BA/PG. Added native forced late-preimage test, existing HTTP revoke test retained. Queue returns original errors; nested failed reads cause rollback and outstanding native operations drain before rollback. Existing BA catch for genuine preimage storage failure is not rewritten; specific introduced busy-rejection interleaving addressed, native verification pending.
-4. Static exact-head comparison confirms correction 17 files, no duplicate exports in changed foundation files, no former standalone controller/deletionTail/protectedWrite/markFailed, budget code no native last_request access. No new dependency, native limit changes or public flow. Local checkout/pinned Node/pnpm/PG17 unavailable; full tests, build and manifest runtime parity not claimed. Prior green CI belongs to obsolete head.
-5. Applied run:ci and run:acceptance to exact correction head; verify actual results and native cases before author PASS. Coordinator checkpoint Миры only after completed author verification. No AUTH-02b.
-
-## Correction package first actual CI
-
-Exact head `4d6df370c56cef0a7c94090e991b44400c765fed`, CI 45597850935: checks lint passed, Typecheck TS2322 at guard line 80 (dynamic Reflect.apply result unknown, not Promise); database 1864 passed / 1 failed, 120 of 121 files passed. All 18 applicable connected/browser acceptance workflows succeeded. Native auth-lifecycle-budget 12/12, SA04 session atomicity 32/32 including forced late-preimage interleaving, lifecycle-state 8/8, uniqueness 4/4, native rate-limit concurrency 2/2 succeeded. These are actual native evidence for corrected mechanisms, not an author PASS. Remaining manifest/runtime privilege probes were not reached after database test failure.
-
-The only database failure was owner-user-history.test.ts, historical SA03 index migration assertion counting all latest tables (expected 75, actual 76 after intentional 0074). Verified 0064_sa03_profile_history_indexes.sql creates exactly six indexes and no tables/grants. Corrected assertion to compare actual relation names/ACL immediately before/after 0064 in the existing migration loop, retaining all index and plan assertions on latest schema. This checks the intended invariant rather than repeatedly increasing a global count; no production change for this failure. Dynamic adapter invocation wrapped in an async callback to satisfy the Promise contract, retaining rejection and result semantics. Exact correction head `06656fef2d85e03c62b7ab69b03fa96ecfc68653` changes only these two files. Applied run:ci/run:acceptance. Local SHA256 calculation independently confirms expected manifest check hashes for (count > 0), isfinite(expires_at), and key regex; actual PG catalog parity still required. Await checks before author PASS, then coordinator checkpoint Миры; no AUTH-02b.
-
-## Final author result — PASS; coordinator checkpoint pending
-
-Stable implementation #389 head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`; base #388 accepted head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`, behind 0. Bounded diff 35 files. Author self-check and correction package assessed against AUTH-02a PLAN and STORAGE-DECISION. Final two-file delta only normalizes dynamic adapter invocation to an async callback and verifies historical migration 0064 relation/ACL invariance at its own boundary; no policy or schema changes after correction review.
-
-- A-01: removed deadline-in-last_request workaround; native limiter unchanged, independent explicit-expiry table, one HMAC PK, fixed DB expiry and bounded locked cleanup. Native HTTP reset/sweep and expiry/cleanup interleavings passed.
-- A-02–A-04: one transaction controller, one protected-write classification, no markFailed; serialized independent adapter work and tracked nested operations preserve rollback-only/error semantics. Native forced late-preimage regression and existing HTTP/direct session tests passed. No second auth backend or native limiter replacement.
-- Canonical public plugin has no endpoints; lifecycle state/constraints/challenge/evidence remain within foundation scope. Existing signup session on successful registration retained; partial failure now rolls back. No external activation, no real provider calls, no user-visible mandatory verification/recovery flows, no new telemetry kinds for future flows.
-- CI [45600452416](https://github.com/iliya1947/vico-forum/actions/runs/45600452416), exact head: checks 139157665230 SUCCESS, 249 files / 3299 unit tests passed; lint/typecheck/build/UI preview/history/metadata/Drizzle parity all passed. Database 139157665943 SUCCESS, 121 files / 1865 tests passed, including lifecycle budget 12, lifecycle state 8, account uniqueness 4, SA04 session atomicity 32, native limiter contention 2, owner history 5. Structural manifest verified 76 public tables, actual positive/negative PG17 runtime privileges and split-authority provisioning passed; Worker smoke steps passed.
-- 18/18 applicable connected/browser acceptance workflows SUCCESS on same head. No additional CI dispatch needed. Earlier green results did not resolve the architecture issues; current author conclusion is based on correction design, static inspection and corresponding actual native checks.
-- Limit: repository/local-CI foundation only, not deployed acceptance, not final feature/security review, not independent review of own implementation. No remaining confirmed blocking AUTH-02a defect identified by author; coordinator checkpoint is required.
-
-**Handoff to Мира:** perform bounded coordinator checkpoint on this exact head against accepted AUTH-01 base, AUTH-02a scope and correction findings A-01–A-04, including sequencing, actual storage/capability contract and no new user flow. Return confirmed current-scope defects to author if found; coordinator PASS alone permits next stacked stage AUTH-02b, assigned to Лёва by owner. No intermediate merge, no independent whole-feature review yet. Лена stops implementation here.
-
-
-## Coordinator checkpoint Миры — PASS
-
-Exact implementation head: `06656fef2d85e03c62b7ab69b03fa96ecfc68653`; base accepted AUTH-01: `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
-
-1. Проверен bounded runtime diff, а не только author evidence/CI: transaction owner, guarded Better Auth adapter composition, lifecycle state/plugin, separate lifecycle-budget storage, AccountState/evidence integration, migrations и runtime capability boundary.
-2. Better Auth 1.7.7 exact source повторно сверён для `runWithTransaction` и Drizzle adapter transaction fallback. Proxy boundary AUTH-02a действительно заменяет sequential adapter transaction на один request-local `AuthLifecycleTransaction`; самостоятельного второго BEGIN/COMMIT в session-write guard не осталось.
-3. A-01 исправлен по причине, а не новым обходом: Vico counters больше не используют native `rate_limit.last_request`; `auth_lifecycle_budget` имеет собственные fixed `expires_at`, atomic conflict consume и bounded locked cleanup. Native Better Auth rate limiter/configuration не переопределяются.
-4. A-02–A-04 подтверждены в итоговом коде: единый transaction controller, единая классификация protected writes, `markFailed` отсутствует. Late preimage sequencing закрыт сериализацией root adapter operations и native regression на фактическом interleaving.
-5. Lifecycle state хранит digest/current generation/purpose/subject metadata без raw token; deterministic current operation и consume/CAS остаются private foundation. Plugin не открывает AUTH-02b endpoints.
-6. Successful signup/session public contract не изменён; mandatory verification всё ещё выключена. Новые rollback semantics исправляют partial-failure atomicity, но не открывают новый пользовательский flow.
-7. Migration 0073 ограничивает account identity/credential concurrency с duplicate preflight без data rewrite; 0074 добавляет только lifecycle-budget storage. Accepted history не переписана.
-8. Runtime privileges ограничены web CRUD новой таблицы; localization role получает negative boundary. Реальных mail/challenge/provider calls и Stage-6 activation нет.
-9. Exact-head CI 45600452416: checks/database SUCCESS; native PG17/schema/privilege/Worker checks выполнены. 18/18 применимых connected/browser workflows SUCCESS на том же head. Эти результаты использованы как подтверждающее evidence после самостоятельной проверки, не как основание PASS сами по себе.
-10. **Confirmed current-scope defects: 0. COORDINATOR PASS.**
-
-AUTH-02a остаётся intermediate stacked PR без merge и без independent Codex review. PASS разрешает следующую ступень AUTH-02b; по прямому решению владельца её исполнитель — Лёва. Активация AUTH-02b фиксируется отдельным следующим переходом.
+AUTH-02a разрешил следующую stacked-ступень AUTH-02b. По прямому решению владельца AUTH-02b реализует Лёва на base `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
