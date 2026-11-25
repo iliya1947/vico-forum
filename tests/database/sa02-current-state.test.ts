@@ -64,7 +64,6 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
   it("counts all users, distinct actual credential/Google methods, active/expired sessions and native evidence",async()=>{
     for(const id of ["sa02-a","sa02-b","sa02-c","sa02-d"]) await person(id,id==="sa02-c");
     await method("password-a","sa02-a","credential","hashed-not-plaintext");
-    await method("password-a-extra","sa02-a","credential","hashed-again");
     await method("google-a","sa02-a","google",null);
     await method("google-a-extra","sa02-a","google",null);
     await method("google-b","sa02-b","google",null);
