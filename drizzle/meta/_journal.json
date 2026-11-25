@@ -512,6 +512,13 @@
       "when": 1795446645404,
       "tag": "0072_forum_structure_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795564800000,
+      "tag": "0073_auth_account_uniqueness",
+      "breakpoints": true
     }
   ]
 }
