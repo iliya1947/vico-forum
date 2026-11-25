@@ -123,6 +123,31 @@ def run():
             page.on("pageerror", lambda _: errors.append(True))
             return page
 
+        record("credential-forms-use-native-POST-without-JavaScript")
+        unhydrated = browser.new_context(java_script_enabled=False, service_workers="block")
+        try:
+            page = unhydrated.new_page()
+            for mode in ("sign-in", "sign-up"):
+                url = f"{base}/en/{mode}"
+                page.goto(url)
+                submissions = []
+
+                def intercept_native_submission(route):
+                    submissions.append((route.request.method, route.request.url))
+                    route.fulfill(status=200, content_type="text/html", body="<p>Form submitted</p>")
+
+                # Include query-string navigations so a default GET fails the assertion
+                # without sending synthetic credentials to the Worker.
+                page.route(f"{url}*", intercept_native_submission)
+                try:
+                    with page.expect_navigation():
+                        credentials(page, "native-form@auth02b.test.invalid", signup=mode == "sign-up")
+                    assert submissions == [("POST", url)]
+                finally:
+                    page.unroute(f"{url}*", intercept_native_submission)
+        finally:
+            unhydrated.close()
+
         en, ru, he = (f"{locale}@auth02b.test.invalid" for locale in ("en", "ru", "he"))
         guest, second, third = context(), context(), context()
         p = new_page(guest)

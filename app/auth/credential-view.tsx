@@ -93,7 +93,7 @@ export function CredentialView({
       <section className="credential-page" aria-labelledby="credential-heading">
         <h1 id="credential-heading">{t(registration ? "authRegisterHeading" : "authEmailHeading")}</h1>
         {registration && !emailAllowed ? <p className="credential-hint" role="status">{t("authEmailRegistrationClosed")}</p> : null}
-        {emailAllowed ? <form className="credential-form" onSubmit={submit}>
+        {emailAllowed ? <form method="post" className="credential-form" onSubmit={submit}>
           {registration ? (
             <label>{t("authEmailName")}
               <input name="name" type="text" autoComplete="name" required maxLength={100} dir="auto" disabled={pending} />
