@@ -72,7 +72,7 @@ describe("request-scoped auth session", () => {
     },
   );
 
-  it.each(["/en/verify-email?token=private", "/he/verify-email.data", "/ru/verify-email/"])(
+  it.each(["/en/verify-email?token=private", "/he/verify-email.data", "/ru/verify-email/", "/en/VERIFY-EMAIL//", "/he/%76erify-email.data", "/api/auth/verify-email/"])(
     "does not refresh ambient sessions on confirmation documents or data requests: %s", async path => {
       const context = new RouterContextProvider();
       const auth = runtime(authenticatedSession);

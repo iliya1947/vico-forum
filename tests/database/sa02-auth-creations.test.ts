@@ -49,7 +49,7 @@ beforeAll(async () => {
     await client.query(sql);
   }
 });
-beforeEach(async()=>{await client.query("truncate auth_lifecycle_budget");});
+beforeEach(async()=>{await client.query("truncate auth_lifecycle_budget, rate_limit");});
 afterAll(async () => {
   await pool.end();
   await client.query("drop schema if exists " + schema + " cascade");
@@ -311,7 +311,7 @@ describe("AUTH-02a production runtime transaction and observation boundary", () 
     const result = await runtime.handle(submit("sign-up/email", { email, name: "Uncertain", password }));
     expect(committed).toBe(true);
     expect(result.status).toBe(503);
-    expect(result.headers.get("Cache-Control")).toBe("no-store");
+    expect(result.headers.get("Cache-Control")).toBe("private, no-store");
     expect(result.headers.getSetCookie()).toEqual([]);
     expect(await result.text()).not.toContain("test-only");
     expect(controlsAfterCommit).toBe(0);

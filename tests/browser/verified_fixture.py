@@ -47,6 +47,10 @@ def signup_verified_session(sql, request, base, *, headers, data):
     # share the same unknown ingress bucket; isolate these setup operations.
     # Actual registration-policy/verification/budget probes do not use this reset.
     sql("truncate auth_lifecycle_budget")
+    # Native Better Auth 1.7.7 also has independent per-path buckets.
+    # Clear only fixture signup/sign-in buckets; retain all other native limits.
+    sql("delete from rate_limit where key like $1 or key like $2",
+        ["%|/sign-up/email", "%|/sign-in/email"])
     pending = request.post(base + "/api/auth/sign-up/email", headers=headers, data=data)
     assert pending.status == 200, ("pending signup", pending.status, pending.text()[:180])
     assert pending.json() == {"status": True, "token": None}

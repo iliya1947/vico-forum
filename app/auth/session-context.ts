@@ -9,8 +9,15 @@ import {
  * Match the canonical API paths; the auth plugin still enforces its own CSRF.
  */
 export function isGuestEmailVerificationRequest(request: Request): boolean {
-  const path = new URL(request.url).pathname;
-  return /^\/[^/]+\/verify-email(?:\.data)?\/?$/.test(path) ||
+  // React Router accepts case-insensitive, encoded static segments and trailing
+  // slashes. Apply guest privacy to aliases too; the native auth router still
+  // independently decides which API paths it accepts.
+  const parts = new URL(request.url).pathname.split("/");
+  while (parts.at(-1) === "") parts.pop();
+  let path: string;
+  try { path = parts.map(part => decodeURIComponent(part).toLowerCase()).join("/"); }
+  catch { return false; }
+  return /^\/[^/]+\/verify-email(?:\.data)?$/.test(path) ||
     path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
     path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification";
 }

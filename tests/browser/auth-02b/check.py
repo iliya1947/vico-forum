@@ -150,6 +150,9 @@ def run():
             assert item[3] == subject and not sessions(user(email)["id"])
             assert ('dir="rtl"' if locale == "he" else 'dir="ltr"') in item[4]
         record("rendered-EN-RU-HE-mail-from-committed-identities")
+        # The pinned native signup limiter allows three calls per 10 seconds.
+        # Let its real window expire; never mutate either limiter in this flow.
+        time.sleep(10.2)
 
         # Registration closure is fixture setup only. All subsequent auth
         # actions are actual HTTP/browser requests; never reset lifecycle budgets.

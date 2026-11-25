@@ -192,14 +192,6 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
       executionContext.waitUntil(ownerMonitoring.recordRequestFailure(response.status, performance.now() - requestStarted)
         .catch(() => undefined));
     }
-    // Protect the initial token-bearing document, including locale redirects
-    // and framework errors, before the client removes the query from history.
-    if (isGuestEmailVerificationRequest(request)) {
-      const headers = new Headers(finalResponse.headers);
-      headers.set("Cache-Control", "private, no-store");
-      headers.set("Referrer-Policy", "no-referrer");
-      return new Response(finalResponse.body, { status: finalResponse.status, statusText: finalResponse.statusText, headers });
-    }
     return withAuthSessionCookies(finalResponse, authHeaders);
     } finally {
       // A failure or early 503 still finalizes the bounded collector. Never
@@ -221,14 +213,21 @@ export function createApplication(createMailRuntime: RequestMailFactory = create
       const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
         || isOwnerMonitoringPath(new URL(request.url).pathname)
         || isPrivateForumReadPath(new URL(request.url).pathname);
+      const guestVerification = isGuestEmailVerificationRequest(request);
+      const protect = (response: Response): Response => {
+        if (!guestVerification) return privateBoundary ? protectFrameworkFailure(request, response) : response;
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Referrer-Policy", "no-referrer");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      };
       try {
-        const response = await applicationFetch(request, env, executionContext, createMailRuntime);
-        return privateBoundary ? protectFrameworkFailure(request, response) : response;
+        return protect(await applicationFetch(request, env, executionContext, createMailRuntime));
       } catch (error) {
-        if (!privateBoundary) throw error;
-        if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
+        if (!privateBoundary && !guestVerification) throw error;
+        if (error instanceof Response && error.status < 500) return protect(error);
         const status = error instanceof Response ? error.status : 500;
-        return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
+        return protect(new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
           status, headers: { "Content-Type": "text/plain; charset=utf-8" },
         }));
       }

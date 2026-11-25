@@ -88,5 +88,8 @@ export async function signupConnectedVerifiedSession(
     throw new Error("Connected disposable CI fixture required");
   await assertDisposable(db);
   await db.query("truncate auth_lifecycle_budget");
+  // Only disposable connected fixture provisioning, not rate-limit assertions.
+  await db.query("delete from rate_limit where key like $1 or key like $2",
+    ["%|/sign-up/email", "%|/sign-in/email"]);
   return signupVerifiedSession(db, handle, request);
 }
