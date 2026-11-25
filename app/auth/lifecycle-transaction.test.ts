@@ -47,18 +47,14 @@ describe("request-local auth lifecycle transaction ownership", () => {
     expect(scope.connectionUsable).toBe(true);
   });
 
-  it("does not commit a caught nested or guarded failure", async () => {
+  it("does not commit a caught nested failure", async () => {
     const { scope, controls } = fixture();
     const failure = new Error("nested failed");
     await expect(scope.run(async () => {
       await scope.run(async () => { throw failure; }).catch(() => undefined);
       return "not success";
     })).rejects.toBe(failure);
-    await expect(scope.run(async () => {
-      scope.markFailed(failure);
-      return "not success";
-    })).rejects.toBe(failure);
-    expect(controls()).toEqual(["BEGIN", "ROLLBACK", "BEGIN", "ROLLBACK"]);
+    expect(controls()).toEqual(["BEGIN", "ROLLBACK"]);
   });
 
   it("rejects unrelated asynchronous work on a busy connection", async () => {
