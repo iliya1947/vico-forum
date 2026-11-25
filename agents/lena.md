@@ -28,4 +28,4 @@
 
 ## Текущее продолжение AUTH-02a
 
-Implementation PR #389, exact head `ab2f09fc916279455d78bc2ca8a78c27eca72128`, base #388 accepted head unchanged. Все foundation components написаны; подробности и проверки в stages/AUTH-02a/RESULT.md. CI 45583502311 and all 18 applicable acceptance workflows PASS. HOLD on confirmed shared-storage expiry/cleanup design conflict; technical-plan question for Лёва is in stages/AUTH-02a/RESULT.md. Resume bounded implementation after resolution; then author checks and coordinator checkpoint Миры. Не начинать AUTH-02b. Не считать код протестированным до фактических результатов.
+Implementation PR #389, head `0d803d705c8ee7b85c0ab22f8ea694a1e0269c33`, accepted #388 base unchanged. A-01 storage plan resolved by Лёва and implemented with 0074, separate explicit-expiry table, web-only CRUD and native regression coverage; not runtime-verified. Next A-02–A-04 transaction/guard simplification and native sequencing diagnostic, then coherent correction author self-check and applicable CI/acceptance. Details in stages/AUTH-02a/RESULT.md and STORAGE-DECISION.md. No PASS yet; old green CI belongs to pre-correction head. AUTH-02b not started.
