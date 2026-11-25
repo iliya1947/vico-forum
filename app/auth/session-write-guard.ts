@@ -77,7 +77,7 @@ export function guardBetterAuthSessionWrites(
           const sessionDelete = command?.model === "session" &&
             (property === "delete" || property === "deleteMany");
           if (!sessionWrite && !userWrite && !accountWrite && !sessionDelete) {
-            return lifecycle.runAdapterOperation(() => Reflect.apply(method, target, args));
+            return lifecycle.runAdapterOperation(async () => Reflect.apply(method, target, args));
           }
 
           // Only wrapper-owned SQL is classified here. Adapter/BA errors
