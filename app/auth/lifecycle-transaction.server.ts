@@ -37,6 +37,7 @@ export class AuthLifecycleTransaction {
   private readonly context = new AsyncLocalStorage<Frame>();
   private active: Frame | undefined;
   private unusable = false;
+  private failure: AuthLifecycleTransactionError | undefined;
 
   constructor(
     private readonly client: Pick<Client, "query">,
@@ -49,6 +50,9 @@ export class AuthLifecycleTransaction {
 
   /** False after an uncertain control outcome; the caller must discard Client. */
   get connectionUsable(): boolean { return !this.unusable; }
+
+  /** Better Auth can catch transaction errors and return an HTTP response. */
+  get controlFailure(): AuthLifecycleTransactionError | undefined { return this.failure; }
 
   ownsCurrentWork(): boolean {
     if (this.unusable) throw new AuthLifecycleTransactionError("closed");
@@ -112,14 +116,14 @@ export class AuthLifecycleTransaction {
       } catch (cause) {
         // A lost acknowledgement could leave an open transaction on Client.
         this.unusable = true;
-        throw new AuthLifecycleTransactionError("begin-uncertain", { cause });
+        throw this.failure = new AuthLifecycleTransactionError("begin-uncertain", { cause });
       }
       for (const statement of DEADLINES) await this.client.query(statement);
       const value = await this.context.run(frame, async () => {
         const result = await work();
         if (frame.pending !== 0) {
           this.unusable = true;
-          throw new AuthLifecycleTransactionError("unawaited");
+          throw this.failure = new AuthLifecycleTransactionError("unawaited");
         }
         if (frame.failed) throw frame.failed.cause;
         return result;
@@ -131,11 +135,13 @@ export class AuthLifecycleTransaction {
       if (result.command === "ROLLBACK") {
         // PostgreSQL explicitly reports ROLLBACK for an aborted transaction.
         committing = false;
-        throw new AuthLifecycleTransactionError("rolled-back");
+        throw this.failure = new AuthLifecycleTransactionError("rolled-back");
       }
       if (result.command !== "COMMIT") throw new Error("Unexpected COMMIT acknowledgement");
       committing = false;
 
+      // Release the owner before invoking synchronous post-commit observers.
+      this.active = undefined;
       // No staged fact is visible before proven COMMIT; telemetry cannot veto it.
       for (const effect of frame.evidence) this.publish(effect);
       this.gap(frame.omitted);
@@ -146,7 +152,7 @@ export class AuthLifecycleTransaction {
         // Do not issue a second mutation or report rollback after lost COMMIT.
         this.unusable = true;
         this.gap(frame.evidence.length + frame.omitted);
-        throw new AuthLifecycleTransactionError("commit-uncertain", { cause });
+        throw this.failure = new AuthLifecycleTransactionError("commit-uncertain", { cause });
       }
       if (begun) {
         try {
@@ -155,14 +161,14 @@ export class AuthLifecycleTransaction {
         } catch (rollbackCause) {
           this.unusable = true;
           this.gap(frame.evidence.length + frame.omitted);
-          throw new AuthLifecycleTransactionError("rollback-uncertain", { cause: rollbackCause });
+          throw this.failure = new AuthLifecycleTransactionError("rollback-uncertain", { cause: rollbackCause });
         }
       }
       throw cause;
     } finally {
       frame.open = false;
       frame.evidence.length = 0;
-      this.active = undefined;
+      if (this.active === frame) this.active = undefined;
     }
   }
 }
