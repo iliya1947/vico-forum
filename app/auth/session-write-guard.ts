@@ -68,10 +68,16 @@ export function guardBetterAuthSessionWrites(
               ? lifecycle.run(() => fn(wrap(current)))
               : Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
         }
-        if (typeof method !== "function" ||
-          (property !== "create" && property !== "update" && property !== "updateMany" &&
-            property !== "delete" && property !== "deleteMany")) {
-          return method;
+        if (typeof method !== "function") return method;
+        if (property !== "create" && property !== "update" && property !== "updateMany" &&
+          property !== "delete" && property !== "deleteMany") {
+          if (!lifecycle) return method;
+          return (...args: unknown[]) => {
+            // Even a read/verification/rate-limit adapter call must not use
+            // another async execution's transaction or a poisoned connection.
+            lifecycle.ownsCurrentWork();
+            return Reflect.apply(method, target, args);
+          };
         }
         const perform = async (owned: boolean, ...args: unknown[]) => {
           const command = args[0] as {
