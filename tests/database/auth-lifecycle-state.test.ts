@@ -10,7 +10,8 @@ import {
 } from "../../app/auth/lifecycle-state.server";
 import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
 import { createEmailVerificationToken } from "better-auth/api";
-import { signJWT } from "better-auth/crypto";
+import { hashPassword, signJWT, verifyPassword } from "better-auth/crypto";
+import { AuthCredentialLifecycle } from "../../app/auth/credential-lifecycle.server";
 import { decodeEmailVerificationProof, signEmailVerificationProof } from "../../app/auth/email-verification-proof.server";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 import { AuthEmailVerification } from "../../app/auth/email-verification.server";
@@ -433,4 +434,104 @@ describe("AUTH-02b verification domain operations", () => {
     expect(await rows()).toEqual(before);
     expect(await verified()).toBe(false);
   });
+});
+
+
+describe("AUTH-03 credential lifecycle domain", () => {
+  const secret = "disposable-credential-lifecycle-test-secret-32-chars";
+  const email = "member@example.test";
+  const newPassword = "fixture-only-new-credential";
+  const makeService = (client = first) => {
+    const tx = new AuthLifecycleTransaction(client);
+    return new AuthCredentialLifecycle(client, tx, new AuthLifecycleState(client, tx),
+      new AuthLifecycleBudget(client, tx, secret), secret);
+  };
+
+  async function installMethod(provider: "google" | "credential") {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query(`
+      insert into account(id,user_id,provider_id,account_id,password,updated_at)
+      values ($1,$2,$3,$2,$4,now())
+    `, [provider + "-fixture", userId, provider, provider === "credential" ? await hashPassword("fixture-only-old-credential") : null]);
+  }
+
+  it("resets only a verified credential, consumes its proof and atomically removes target sessions", async () => {
+    const service = makeService();
+    expect(await service.requestReset(email)).toBeNull();
+    await installMethod("credential");
+    const issued = await service.requestReset(email);
+    expect(issued).not.toBeNull();
+    await service.inspectReset(issued!.token);
+    expect((await second.query("select id from session order by id")).rows).toHaveLength(2);
+    const result = await service.reset(issued!.token, newPassword, hashPassword);
+    expect(result).toMatchObject({ userId, purpose: "password-reset", revokedSessionIds: [sessionId] });
+    await expect(service.reset(issued!.token, newPassword, hashPassword)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect((await second.query("select id from session")).rows).toEqual([{ id: otherSessionId }]);
+    const stored = await second.query<{ password: string }>("select password from account where user_id=$1", [userId]);
+    await expect(verifyPassword({ hash: stored.rows[0].password, password: newPassword })).resolves.toBe(true);
+  });
+
+  it("binds password creation to the fresh issuing session and preserves that session and Google", async () => {
+    await installMethod("google");
+    const service = makeService();
+    const actor = { userId, sessionId, freshAgeSeconds: 3600 };
+    expect(await service.requestReset(email)).toBeNull();
+    await first.query(`
+      insert into session (id,user_id,token,expires_at,updated_at)
+      values ('additional-own-session',$1,'fixture-only-extra-bearer',now()+interval '1 day',now())
+    `, [userId]);
+    const issued = await service.requestCreation(actor, email);
+    await expect(service.create({ ...actor, sessionId: "additional-own-session" }, issued.token, newPassword, hashPassword))
+      .rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    const result = await service.create(actor, issued.token, newPassword, hashPassword);
+    expect(result).toMatchObject({ purpose: "password-create", revokedSessionIds: ["additional-own-session"] });
+    expect((await second.query("select id from session order by id")).rows.map(row => row.id).sort())
+      .toEqual([sessionId, otherSessionId].sort());
+    expect((await second.query("select provider_id from account where user_id=$1 order by provider_id", [userId])).rows)
+      .toEqual([{ provider_id: "credential" }, { provider_id: "google" }]);
+  });
+
+  it("rolls back proof consumption and the password if session revocation fails", async () => {
+    await installMethod("credential");
+    const service = makeService();
+    const issued = await service.requestReset(email);
+    expect(issued).not.toBeNull();
+    const snapshot = await second.query("select password from account where user_id=$1", [userId]);
+    await first.query(`
+      create function reject_credential_session_delete() returns trigger language plpgsql as $$
+        begin raise exception 'injected revocation failure'; end;
+      $$;
+      create trigger reject_credential_session_delete before delete on session
+        for each row execute function reject_credential_session_delete()
+    `);
+    try {
+      await expect(service.reset(issued!.token, newPassword, hashPassword)).rejects.toThrow();
+      await service.inspectReset(issued!.token);
+      expect((await second.query("select password from account where user_id=$1", [userId])).rows).toEqual(snapshot.rows);
+      expect((await second.query("select id from session")).rows).toHaveLength(2);
+    } finally {
+      await first.query(`
+        drop trigger reject_credential_session_delete on session;
+        drop function reject_credential_session_delete()
+      `);
+    }
+  });
+
+  it("serializes two reset contenders for the same proof across PostgreSQL connections", async () => {
+    await installMethod("credential");
+    const service = makeService();
+    const contender = makeService(second);
+    const issued = await service.requestReset(email);
+    expect(issued).not.toBeNull();
+    const results = await Promise.allSettled([
+      service.reset(issued!.token, newPassword, hashPassword),
+      contender.reset(issued!.token, newPassword + "-other", hashPassword),
+    ]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    const loser = results.find(result => result.status === "rejected");
+    expect(loser?.reason).toBeInstanceOf(InvalidLifecycleProofError);
+    expect((await second.query("select id from session")).rows).toEqual([{ id: otherSessionId }]);
+    expect(await rows()).toEqual([]);
+  });
+
 });

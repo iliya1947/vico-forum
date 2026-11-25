@@ -13,6 +13,8 @@
     "app/auth/lifecycle-transaction.server.ts",
     "app/auth/lifecycle-state.server.ts",
     "app/auth/lifecycle-plugin.server.ts",
+    "app/auth/credential-lifecycle.server.ts",
+    "app/auth/credential-lifecycle-proof.server.ts",
     "app/auth/email-verification-endpoints.server.ts",
     "app/auth/email-verification-proof.server.ts",
     "app/auth/email-verification.server.ts",
