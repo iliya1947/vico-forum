@@ -205,3 +205,22 @@ PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d8
 Author self-check: diff от `4fbf8e8` ограничен общим компонентом и connected регрессией. 14 component tests PASS, повторный локальный Worker/PG17/Chromium сценарий PASS. В одном локальном прогоне существующий resend шаг нажал submit до гидратации; на повторе и в GitHub Actions прошёл. [CI #45715104959](https://github.com/iliya1947/vico-forum/actions/runs/45715104959) PASS, все 19 применимых acceptance workflow PASS, включая [AUTH-02b #45715112322](https://github.com/iliya1947/vico-forum/actions/runs/45715112322) с новой регрессией.
 
 Передано Мире для повторного coordinator checkpoint по новому SHA. AUTH-03 ждёт coordinator PASS.
+
+
+## Повторный coordinator checkpoint Миры — PASS
+
+Проверен stable exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` относительно предыдущего HOLD head `4fbf8e829fd18c7190a540eade17bdf543a406d3`.
+
+1. Correction delta — один commit, два файла:
+   - `app/auth/credential-view.tsx`: общая sign-in/sign-up form получила явный `method="post"`;
+   - `tests/browser/auth-02b/check.py`: added no-JS/pre-hydration regression для обеих credential pages.
+2. Browser regression реально открывает SSR sign-in/sign-up с JavaScript disabled, перехватывает native submission и требует ровно `POST` на URL без query string; synthetic credentials в Worker не отправляются.
+3. Hydrated flow остаётся на canonical auth API; mandatory-verification pending presentation не менялась.
+4. Изменение не расширяет scope в recovery/password creation или AUTH-03 и не меняет auth/session architecture.
+5. Ранее полный coordinator review bounded AUTH-02b уже проверил canonical signup/verify/resend, AccountState/transaction ordering, proof generation/replay/expiry, Google isolation, observability, migration 0075 и предыдущие correction findings; новый delta эти участки не меняет.
+6. Exact-head CI #45715104959 — PASS.
+7. 19/19 применимых acceptance workflows — PASS, включая AUTH-02b #45715112322 с новым regression.
+
+**Confirmed current-scope blocking defects: 0. COORDINATOR PASS.**
+
+AUTH-02b остаётся intermediate stacked PR без merge и independent intermediate review. PASS разрешает следующую ступень AUTH-03; по прямому решению владельца её реализует Лёва после отдельной активации.
