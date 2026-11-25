@@ -8,6 +8,10 @@
 4. AUTH-02a implementation PR/head пока отсутствует.
 5. Лёва реализовал AUTH-01, Лена реализует AUTH-02a; final independent reviewer всей feature должен быть агентом, не участвовавшим в реализации проверяемой сборки.
 
+## Owner routing decision
+
+После coordinator PASS AUTH-02a следующая stacked-ступень **AUTH-02b заранее назначена владельцем Лёве / Codex-6.1 Sol**. До PASS текущего AUTH-02a её не активировать и не передавать в реализацию.
+
 ## Следующее назначение
 
 После завершения Леной AUTH-02a провести coordinator checkpoint stable exact head. Проверять bounded scope AUTH-02a, взаимодействие с принятым AUTH-01 и реальные current-stage regressions. Следующую ступень разрешать только после PASS.
