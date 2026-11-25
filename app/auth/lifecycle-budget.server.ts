@@ -136,14 +136,16 @@ export class AuthLifecycleBudget {
   }
 
   private async prune(): Promise<void> {
+    // A stable DB cutoff permits the expiry index to bound the scan as well
+    // as the number of locked/deleted rows. A later expiry waits for another admission.
     await this.client.query(`
       delete from auth_lifecycle_budget as budget
       using (
         select key from auth_lifecycle_budget
-        where expires_at <= clock_timestamp()
+        where expires_at <= statement_timestamp()
         order by expires_at,key limit 64 for update skip locked
       ) as expired
-      where budget.key=expired.key and budget.expires_at <= clock_timestamp()
+      where budget.key=expired.key and budget.expires_at <= statement_timestamp()
     `);
   }
 
