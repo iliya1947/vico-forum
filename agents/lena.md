@@ -30,6 +30,6 @@
 
 Поскольку Лена участвует в implementation, независимую final whole-feature review этой сборки она не выполняет.
 
-## Текущее продолжение AUTH-02a
+## Текущее состояние AUTH-02a
 
-Implementation PR #389, head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, accepted #388 base unchanged. Coherent A-01–A-04 correction written and author static check complete; native expiry/late-preimage regressions passed on preceding head. Prior CI failed only on dynamic adapter return typing and historical whole-schema table count. Both corrected (see RESULT.md); new-head run:ci/run:acceptance applied. Next inspect actual exact-head results and remaining schema/ACL evidence; only after author PASS transfer to Мира for coordinator checkpoint. Details in stages/AUTH-02a/RESULT.md. No AUTH-02b, merge or external activation.
+Author PASS on #389 exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, accepted #388 base unchanged. A-01–A-04 correction complete, native sequencing regression and schema/ACL verified; CI 45600452416 and 18/18 acceptance SUCCESS. Final evidence and coordinator handoff in stages/AUTH-02a/RESULT.md. Stop for Мира checkpoint; return only if confirmed corrections assigned. AUTH-02b assigned to Лёва after coordinator PASS. No merge/external activation or independent review of own work.
