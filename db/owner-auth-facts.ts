@@ -16,6 +16,8 @@ export type AuthTransitionFact =
   | ({ readonly kind: "auth.sessionDeleted"; readonly userId: string;
       readonly sessionId: string;
       readonly reason: "revoke-one" | "revoke-others" | "revoke-all" | "sign-out" } & Actor)
+  | { readonly kind: "auth.emailVerified"; readonly userId: string;
+      readonly operationId: string; readonly actorUserId?: null }
   | ({ readonly kind: "auth.passwordChanged"; readonly userId: string;
       readonly accountId: string; readonly operationId: string } & Actor);
 
@@ -39,6 +41,7 @@ const FIELDS: Record<Sa02FactKind, readonly string[]> = {
   "auth.sessionCreated": ["kind","userId","sessionId","actorUserId"],
   "auth.sessionDeleted": ["kind","userId","sessionId","reason","actorUserId"],
   "auth.passwordChanged": ["kind","userId","accountId","operationId","actorUserId"],
+  "auth.emailVerified": ["kind","userId","operationId","actorUserId"],
 };
 type Encoded = { kind: Sa02FactKind; monitor: string; entityType: string;
   entityId: string; target: string; actor: string | null;
@@ -85,6 +88,14 @@ function encode(fact: AuthTransitionFact): Encoded {
       entityType = "session"; entityId = checkedId(f.sessionId);
       payload = { reason: pick(f.reason, ["revoke-one","revoke-others","revoke-all","sign-out"]) };
       identity = [kind,entityId]; break;
+    }
+    case "auth.emailVerified": {
+      const f = fact as Extract<AuthTransitionFact,{kind:"auth.emailVerified"}>;
+      if (actor !== null || typeof f.operationId !== "string" || !OPERATION_ID.test(f.operationId)) {
+        throw new Error("Invalid guest email verification fact");
+      }
+      entityType = "user"; entityId = target; correlation = f.operationId;
+      identity = [kind,correlation,entityId]; break;
     }
     case "auth.passwordChanged": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.passwordChanged"}>;
