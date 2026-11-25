@@ -33,3 +33,5 @@
 17. **2026-11-25:** Лёва реализовал AUTH-01 в #388 на stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`: server-only mail foundation, два injected adapters, fake, templates/URL/config/runtime seams. Local author checks и CI 45518743774 (attempt 2) прошли; результат передан Мире на coordinator checkpoint, AUTH-02 не начат. Внешние ресурсы не активировались.
 
 17. **2026-11-25:** AUTH-01 в PR #388 на exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a` прошёл coordinator checkpoint Миры: PASS, 0 confirmed current-scope defects. CI exact-head checks/database SUCCESS; переход к AUTH-02a разрешён без intermediate merge и independent Codex review.
+
+18. **2026-11-25:** после coordinator PASS AUTH-01 активирован AUTH-02a — transaction/plugin/state/limits/constraints foundation. По стандартному workflow реализация назначена Лире; новый stacked PR должен базироваться на branch PR #388. User-visible verification остаётся AUTH-02b.
