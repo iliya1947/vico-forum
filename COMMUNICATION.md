@@ -44,3 +44,12 @@ PR #388, stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
 3. Resend/Brevo HTTP mappings повторно сверены с актуальной официальной документацией.
 4. Scope сохранён: signup/session/verification behavior, schema/dependencies и anti-bot implementation не изменены; external activation отсутствует.
 5. PASS разрешает только следующую stacked-ступень AUTH-02a без intermediate merge/independent Codex review. Whole feature ещё не принята.
+
+
+## AUTH-02a — active
+
+1. AUTH-01 checkpoint PASS разрешил следующую stacked-ступень.
+2. AUTH-02a ограничен foundation: transaction composition, canonical plugin/service seam, lifecycle state, необходимые concurrency constraints и shared abuse primitives.
+3. User-visible verification/signup/session behavior остаётся неизменным до AUTH-02b.
+4. Исполнитель по стандартному workflow — Лира. Прямое назначение Лёвы завершилось вместе с AUTH-01.
+5. Implementation PR должен иметь base на `feat/auth-01-mail-foundation`; intermediate merge отсутствует.
