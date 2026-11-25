@@ -2,16 +2,13 @@
 
 ## Текущий контекст
 
-1. Full auth plan: PASS; delivery mode stacked AUTH-01→AUTH-06, AUTH-07 final gate.
-2. AUTH-01: PR #388 / head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`, coordinator checkpoint PASS.
-3. AUTH-02a активирован и по прямому решению владельца назначен Лене / GPT-6.2; предыдущее назначение Лиры снято до implementation.
-4. AUTH-02a implementation PR/head пока отсутствует.
-5. Лёва реализовал AUTH-01, Лена реализует AUTH-02a; final independent reviewer всей feature должен быть агентом, не участвовавшим в реализации проверяемой сборки.
+1. AUTH-01: PR #388 / head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`, coordinator PASS.
+2. AUTH-02a: PR #389 / exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, author PASS + coordinator PASS, 0 confirmed current-scope defects.
+3. Проверка AUTH-02a включала самостоятельный runtime/architecture review; green CI использован только как подтверждающее evidence.
+4. Следующая ступень AUTH-02b по прямому решению владельца назначена Лёве, но ещё не активирована.
+5. Base следующей ступени — принятый AUTH-02a head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+6. Лёва и Лена участвовали в implementation разных ступеней; final independent reviewer всей сборки определяется отдельно.
 
-## Owner routing decision
+## Следующий переход
 
-После coordinator PASS AUTH-02a следующая stacked-ступень **AUTH-02b заранее назначена владельцем Лёве / Codex-6.1 Sol**. До PASS текущего AUTH-02a её не активировать и не передавать в реализацию.
-
-## Следующее назначение
-
-После завершения Леной AUTH-02a провести coordinator checkpoint stable exact head. Проверять bounded scope AUTH-02a, взаимодействие с принятым AUTH-01 и реальные current-stage regressions. Следующую ступень разрешать только после PASS.
+При следующем продолжении активировать AUTH-02b и оформить bounded handoff Лёве. Не merge AUTH-02a и не запускать independent intermediate review.
