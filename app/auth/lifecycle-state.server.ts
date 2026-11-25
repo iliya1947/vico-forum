@@ -29,7 +29,12 @@ type State = LifecycleClaims & Readonly<{
 }>;
 
 export type IssuedLifecycleProof = Readonly<{
-  claims: LifecycleClaims; token: string; expiresAt: Date;
+  claims: LifecycleClaims; token: string; expiresAt: Date; recipient: string;
+}>;
+
+/** Authoritative locked email snapshot for local signing and post-commit delivery. */
+type TokenContext = Readonly<{
+  claims: LifecycleClaims; email: string; recipient: string; newEmail?: string;
 }>;
 
 /** Claims must come from verified signing/native-token resolution, never a form userId.
@@ -92,7 +97,7 @@ function decode(raw: unknown, userId: string, purpose: LifecyclePurpose): State 
   return state as State;
 }
 
-type TokenFactory = (claims: LifecycleClaims) => Promise<string> | string;
+type TokenFactory = (context: TokenContext) => Promise<string> | string;
 type Stored = { identifier: string; value: string; live: boolean };
 
 export interface LockedLifecycleSubject {
@@ -199,8 +204,12 @@ export class AuthLifecycleState {
     const claims: LifecycleClaims = Object.freeze({
       userId, purpose: intent.purpose, phase, generation: crypto.randomUUID(),
     });
+    const newEmail = intent.purpose === "email-change" ? intent.newEmail : undefined;
+    const recipient = phase === "new-address" && newEmail ? newEmail : email;
     // Local signing/random generation only. Mail/network effects occur after commit.
-    const token = await createToken(claims);
+    // The factory and later delivery must use the locked snapshot, not preflight email.
+    const token = await createToken(Object.freeze({ claims, email, recipient,
+      ...(newEmail ? { newEmail } : {}) }));
     if (!validToken(token)) throw new LifecycleStateInvariantError();
     const state: State = {
       ...claims, version: 1, email, tokenDigest: await digest(token),
@@ -220,7 +229,7 @@ export class AuthLifecycleState {
       returning expires_at at time zone 'UTC' as expires_at
     `, [id, JSON.stringify(state), TTL[intent.purpose]]);
     if (result.rowCount !== 1 || !result.rows[0]) throw new LifecycleStateInvariantError();
-    return { claims, token, expiresAt: result.rows[0].expires_at };
+    return { claims, token, expiresAt: result.rows[0].expires_at, recipient };
   }
 
   private async consume(userId: string, proof: LifecycleProof): Promise<State> {
