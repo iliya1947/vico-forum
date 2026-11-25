@@ -97,7 +97,8 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     ));
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
     const operational=createHyperdriveOperationalRecording(webConnectionString);
-    const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
+    const ingress = captureAttemptIngressSource(request);
+    const collector = new RequestAttemptCollector(ingress,
       () => createHyperdriveAttemptTelemetry(webConnectionString));
     context.set(requestAttemptCollectorContext, collector);
     const facts = new RequestAuthFactCollector(
@@ -108,7 +109,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const auth = withAttemptObservation(
       createHyperdriveAuthRuntime(
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
-        () => collector.recordRegistrationDenied(), facts,
+        () => collector.recordRegistrationDenied(), facts, { ingress },
       ), collector);
     let authHeaders: Headers;
     try {
