@@ -72,8 +72,10 @@ describe("AUTH-02a shared private lifecycle budget", () => {
       expect(results.filter(r=>r.status==="fulfilled")).toHaveLength(5);
       const denied=results.filter(r=>r.status==="rejected");
       expect(denied).toHaveLength(5);
-      expect(denied.every(r=>r.reason instanceof LifecycleBudgetExceededError)).toBe(true);
+      expect(denied.map(r=>r.reason)).toEqual(Array(5).fill(expect.any(LifecycleBudgetExceededError)));
       expect((await persisted()).map(r=>r.count)).toEqual([5]);
+      const stored = (await first.query<{ id: string; key: string }>("select id,key from rate_limit")).rows[0];
+      expect(stored.id).not.toBe(stored.key);
     } finally { await Promise.all(clients.map(c=>c.end())); }
   });
 
