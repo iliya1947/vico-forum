@@ -65,3 +65,10 @@ PLAN §2/7/8 и stage PLAN исправлены; точный schema/migration/r
 ## Owner routing decision — next package
 
 После coordinator PASS текущего AUTH-02a следующую stacked-ступень **AUTH-02b реализует Лёва / Codex-6.1 Sol**. Решение заранее фиксирует исполнителя, но не активирует AUTH-02b: Лена сначала завершает AUTH-02a, затем Мира проводит checkpoint. Base AUTH-02b определяется stable head принятого AUTH-02a.
+
+
+## AUTH-02a — coordinator checkpoint PASS
+
+PR #389 / exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653` принят Мирой: 0 confirmed current-scope defects. Самостоятельно проверены transaction composition, Better Auth 1.7.7 transaction seam, corrected lifecycle-budget storage/cleanup, A-02–A-04, sequencing, lifecycle state/plugin, migrations и runtime capability boundary; CI/acceptance подтверждают результат, но не являются самостоятельным основанием PASS.
+
+Следующий пакет — AUTH-02b — по решению владельца выполняет Лёва. Он ещё не активирован; base при активации — принятый AUTH-02a head. Intermediate merge/review отсутствуют.
