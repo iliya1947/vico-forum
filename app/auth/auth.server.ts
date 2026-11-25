@@ -19,6 +19,7 @@ import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
 import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
+import { authLifecyclePlugin } from "./lifecycle-plugin.server";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -189,6 +190,8 @@ export function betterAuthOptions(
     user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
+    ...(lifecycle ? { plugins: [authLifecyclePlugin(
+      (database as NodePgDatabase & { $client: Client }).$client, lifecycle)] } : {}),
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
