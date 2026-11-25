@@ -5,7 +5,9 @@ import { AuthLifecycleState } from "./lifecycle-state.server";
 import { AuthLifecycleBudget } from "./lifecycle-budget.server";
 import { RegistrationChallenge, type RegistrationChallengeConfig } from "./registration-challenge.server";
 import type { AttemptIngressSource } from "../observability/attempt-source";
-import { AuthEmailVerification } from "./email-verification.server";
+import { AuthEmailVerification, type VerificationFactObserver } from "./email-verification.server";
+import type { OwnerOperationalFactSink } from "../observability/operational-facts";
+import type { VerificationAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 import type { AuthMailRuntime } from "./auth-mail.server";
 import { emailVerificationEndpoints } from "./email-verification-endpoints.server";
 import type { SignupVerificationEvidence } from "./signup-verification-evidence.server";
@@ -14,6 +16,9 @@ export type AuthLifecycleDependencies = Readonly<{
   ingress?: AttemptIngressSource;
   registrationChallenge?: RegistrationChallengeConfig;
   mail?: AuthMailRuntime;
+  observeVerified?: VerificationFactObserver;
+  mailObservations?: OwnerOperationalFactSink;
+  observeVerificationDirectFailure?: (operation: VerificationAttemptOperation, code: VerificationAttemptCode) => void;
 }>;
 
 /** The single canonical server extension. Verification endpoints share this
@@ -25,10 +30,12 @@ export function authLifecyclePlugin(client: Pick<Client, "query">,
   const state = new AuthLifecycleState(client, transaction);
   const budget = new AuthLifecycleBudget(client, transaction, secret, dependencies?.ingress);
   const challenge = new RegistrationChallenge(dependencies?.registrationChallenge);
-  const emailVerification = new AuthEmailVerification(client, transaction, state, budget, secret, dependencies?.mail);
+  const emailVerification = new AuthEmailVerification(client, transaction, state, budget, secret,
+    dependencies?.mail, dependencies?.observeVerified, dependencies?.mailObservations);
   return {
     id: "vico-auth-lifecycle",
-    endpoints: emailVerificationEndpoints(emailVerification, budget, transaction, evidence, unavailable),
+    endpoints: emailVerificationEndpoints(emailVerification, budget, transaction, evidence, unavailable,
+      dependencies?.observeVerificationDirectFailure),
     init: () => ({ context: { vicoAuthLifecycle: state, vicoAuthBudget: budget,
       vicoRegistrationChallenge: challenge, vicoEmailVerification: emailVerification } }),
   } satisfies BetterAuthPlugin;

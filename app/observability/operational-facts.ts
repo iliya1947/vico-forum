@@ -4,7 +4,14 @@ export const TASK_TRANSITION_KINDS = ["task.planned","task.claimed","task.allowa
 export type TaskTransitionKind = typeof TASK_TRANSITION_KINDS[number];
 export const FILE_TRANSITION_KINDS=["file.accepted","file.published","file.unpublished","file.referencesChanged","file.cleanupPass"] as const;
 export type FileTransitionKind=typeof FILE_TRANSITION_KINDS[number];
-export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall" | FileTransitionKind;
+export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall" | "integration.authMailOutcome" | FileTransitionKind;
+export const VERIFICATION_MAIL_TRANSPORTS = ["none", "unknown", "fake", "resend", "brevo"] as const;
+export const VERIFICATION_MAIL_OUTCOMES = ["accepted", "rejected", "unavailable", "uncertain", "disabled"] as const;
+export type VerificationMailObservation = {
+  mailPurpose: "email-verification";
+  mailTransport: typeof VERIFICATION_MAIL_TRANSPORTS[number];
+  mailOutcome: typeof VERIFICATION_MAIL_OUTCOMES[number];
+};
 export type OperationalScalar = string | number | boolean | null;
 export interface OwnerOperationalFact {
   kind: OperationalKind; sourceId: string; occurredAt: string; occurrenceDigest: string;
@@ -72,6 +79,11 @@ export class OperationalFactBuffer {
   captureCleanup(sourceId:string,occurredAt:string,values:CleanupPassValues){
     this.capture({kind:"file.cleanupPass",sourceId,occurredAt,actorUserId:null,
       identity:["file.cleanupPass",sourceId],values:{schemaVersion:1,...values}});
+  }
+  captureVerificationMail(sourceId:string,occurredAt:string,values:VerificationMailObservation) {
+    this.capture({kind:"integration.authMailOutcome",sourceId,occurredAt,actorUserId:null,
+      identity:["integration.authMailOutcome",sourceId],values:{schemaVersion:1,
+        mailPurpose:values.mailPurpose,mailTransport:values.mailTransport,mailOutcome:values.mailOutcome}});
   }
   private capture(fact:Pending) {
     if(!this.sink)return;

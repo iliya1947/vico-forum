@@ -30,8 +30,9 @@ export interface AuthMailDependencies {
   /** Local/CI fixture only. External activation is deliberately absent in AUTH-01. */
   readonly providerFetch?: AuthMailFetch;
 }
+export type InvokedAuthMailTransport = "none" | "unknown" | "fake" | "resend" | "brevo";
 export interface AuthMailRuntime {
-  sendAuthMail(input: AuthMailInput): Promise<AuthMailResult>;
+  sendAuthMail(input: AuthMailInput, onTransportInvoked?: (transport: InvokedAuthMailTransport) => void): Promise<AuthMailResult>;
   buildActionURL(action: AuthMailAction): Promise<string>;
 }
 
@@ -78,7 +79,7 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
       const { registry } = await localization();
       return buildAuthMailActionURL(origin(), registry, action);
     },
-    async sendAuthMail(input) {
+    async sendAuthMail(input, onTransportInvoked) {
       const transport = selected();
       if (!("send" in transport)) return transport;
       let dispatched = false;
@@ -91,6 +92,9 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
         const locale = authMailLocale(input.locale, registry);
         const rendered = await renderAuthMail(input.purpose, actionURL, locale, resources);
         dispatched = true;
+        // Only report the invocation boundary, not a configured provider.
+        try { onTransportInvoked?.(config.AUTH_MAIL_MODE === "fake" ? "fake"
+          : config.AUTH_MAIL_PROVIDER === "resend" ? "resend" : "brevo"); } catch { /* passive observer */ }
         const result = await transport.send({ ...rendered, recipient: input.recipient,
           purpose: input.purpose, operationId: input.operationId });
         // Never forward a transport-supplied payload, recipient or raw error.

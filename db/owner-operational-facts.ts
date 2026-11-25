@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
 import { getTableColumns,sql } from "drizzle-orm";
 import { translationTasks } from "./schema";
-import { TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
 
 /** Exact RETURNING time retains microseconds even when ordinary Drizzle Dates use milliseconds. */
 export const operationalTaskColumns={...getTableColumns(translationTasks),
@@ -10,7 +10,7 @@ const fields=new Set(["schemaVersion","taskKind","generation","attemptCount","ma
   "selected","enqueued","enqueueFailures","pending","expiredProcessing","outcome","calls","succeeded","failed","durationMs",
   "failureCode","failureDisposition","detectedType","byteSize","postId","attachmentId","referenceCreatedAt","addedCount","removedCount","perFileDetailsComplete",
   "prunedRefs","assetClaimed","assetDeleted","assetFailed","journalClaimed","journalDeleteAcknowledged","journalDeletedRows","journalRetiredRegistered","journalFailed",
-  "markerClaimed","markerDeleteAcknowledged","markerFailed","partialCounts","stoppedPhase"]);
+  "markerClaimed","markerDeleteAcknowledged","markerFailed","partialCounts","stoppedPhase","mailPurpose","mailTransport","mailOutcome"]);
 const taskKinds=["ui","content-topic-title","content-post-body"];
 const failureCodes=["provider-rate-limited","provider-temporary","provider-terminal","provider-unsupported",
   "provider-output-invalid","message-kind-unsupported","dependency-temporary","execution-bound-exceeded","attempt-budget-exhausted"];
@@ -19,7 +19,7 @@ const failureCodes=["provider-rate-limited","provider-temporary","provider-termi
 export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSink {
   constructor(private readonly pool:Pick<Pool,"connect">){}
   async append(fact:OwnerOperationalFact):Promise<void>{
-    if(![...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"].includes(fact.kind)
+    if(![...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall","integration.authMailOutcome"].includes(fact.kind)
       ||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(fact.occurredAt)
       ||!Number.isFinite(new Date(fact.occurredAt).getTime())||!/^[a-f0-9]{64}$/.test(fact.occurrenceDigest)
       ||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(fact.sourceId)
@@ -31,12 +31,21 @@ export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSin
         throw new Error("Invalid operational fact field");
     }
     if(fact.values.schemaVersion!==1)throw new Error("Invalid operational fact version");
+    const mailFields=["mailPurpose","mailTransport","mailOutcome"];
+    if(fact.kind==="integration.authMailOutcome"){
+      if(fact.actorUserId!==null||Object.keys(fact.values).sort().join(",")!=="mailOutcome,mailPurpose,mailTransport,schemaVersion"
+        ||fact.values.mailPurpose!=="email-verification"
+        ||!(VERIFICATION_MAIL_TRANSPORTS as readonly unknown[]).includes(fact.values.mailTransport)
+        ||!(VERIFICATION_MAIL_OUTCOMES as readonly unknown[]).includes(fact.values.mailOutcome))
+        throw new Error("Invalid verification mail observation");
+    }else if(mailFields.some(name=>Object.prototype.hasOwnProperty.call(fact.values,name)))
+      throw new Error("Unexpected verification mail observation field");
     // The existing journal stores milliseconds. Retain the original source
     // clock in the safe payload and identity without changing that schema.
     const payload=JSON.stringify({...fact.values,sourceTransitionAt:fact.occurredAt});
     if(new TextEncoder().encode(payload).length>8192)throw new Error("Oversized operational fact");
-    const monitor=fact.kind==="integration.translationCall"?"integrations.translation":fact.kind==="file.accepted"?"files.assets":fact.kind==="file.cleanupPass"?"background.attachments":fact.kind.startsWith("file.")?"files.operations":"background.translation";
-    const entityType=fact.kind==="task.reconciliationPass"?"translation-pass":fact.kind==="file.cleanupPass"?"attachment-cleanup-pass":fact.kind==="file.referencesChanged"?"attachment-reference-operation":fact.kind.startsWith("file.")?"attachment":"translation-task";
+    const monitor=fact.kind==="integration.authMailOutcome"?"integrations.authentication":fact.kind==="integration.translationCall"?"integrations.translation":fact.kind==="file.accepted"?"files.assets":fact.kind==="file.cleanupPass"?"background.attachments":fact.kind.startsWith("file.")?"files.operations":"background.translation";
+    const entityType=fact.kind==="integration.authMailOutcome"?"auth-mail-operation":fact.kind==="task.reconciliationPass"?"translation-pass":fact.kind==="file.cleanupPass"?"attachment-cleanup-pass":fact.kind==="file.referencesChanged"?"attachment-reference-operation":fact.kind.startsWith("file.")?"attachment":"translation-task";
     const c=await this.pool.connect();let begun=false,committing=false,discard=false;
     try{
       await c.query("begin");begun=true;
@@ -69,6 +78,7 @@ function validStringField(name:string,value:string):boolean{
   if(name==="attachmentId")return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   if(name==="referenceCreatedAt")return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(value)&&Number.isFinite(Date.parse(value));
   const allowed:Record<string,readonly string[]>={taskKind:taskKinds,failureCode:failureCodes,
+    mailPurpose:["email-verification"],mailTransport:VERIFICATION_MAIL_TRANSPORTS,mailOutcome:VERIFICATION_MAIL_OUTCOMES,
     detectedType:["png","jpeg","gif","webp","pdf","zip","7z","gzip","tar","ole","text","executable","unknown","other"],
     stoppedPhase:["prune","journal","assets","markers","complete"],failureDisposition:["terminal","retry-exhausted"],outcome:["complete","partial-failure"]};
   return allowed[name]?.includes(value)??false;

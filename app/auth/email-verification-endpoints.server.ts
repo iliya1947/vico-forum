@@ -7,6 +7,7 @@ import { LifecycleBudgetExceededError, type AuthLifecycleBudget } from "./lifecy
 import { InvalidLifecycleProofError } from "./lifecycle-state.server";
 import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 import type { SignupVerificationEvidence } from "./signup-verification-evidence.server";
+import type { VerificationAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
 const nativeSignup = signUpEmail();
@@ -37,10 +38,17 @@ export function emailVerificationEndpoints(
   transaction: AuthLifecycleTransaction,
   evidence: SignupVerificationEvidence,
   unavailable: (error: unknown) => boolean,
+  observeDirectFailure?: (operation: VerificationAttemptOperation, code: VerificationAttemptCode) => void,
 ) {
-  async function command<T>(work: () => Promise<T>): Promise<T> {
+  async function command<T>(work: () => Promise<T>, directOperation?: VerificationAttemptOperation): Promise<T> {
     try { return await work(); }
     catch (error) {
+      if (directOperation) {
+        const code = error instanceof LifecycleBudgetExceededError ? "rate-limited"
+          : error instanceof InvalidLifecycleProofError ? "invalid"
+          : unavailable(error) ? "unavailable" : "gap";
+        try { observeDirectFailure?.(directOperation, code); } catch { /* passive observation */ }
+      }
       if (error instanceof LifecycleBudgetExceededError) {
         const retry = String(error.retryAfterSeconds);
         throw new APIError("TOO_MANY_REQUESTS", { message: "Too many requests" },
@@ -105,7 +113,7 @@ export function emailVerificationEndpoints(
         const remaining = 500 - (Date.now() - start);
         if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
         return ctx.json({ status: true });
-      });
+      }, ctx.request ? undefined : "verification-send");
     }),
 
     // Replacing the core key closes the old state-changing GET for both
@@ -120,7 +128,7 @@ export function emailVerificationEndpoints(
         await service.confirm(ctx.body.token, userId =>
           ctx.context.internalAdapter.updateUser(userId, { emailVerified: true }));
         return ctx.json({ status: true });
-      });
+      }, ctx.request ? undefined : "email-verification");
     }),
 
     inspectEmailVerification: createAuthEndpoint("/inspect-email-verification", {

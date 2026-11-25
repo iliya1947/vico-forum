@@ -259,7 +259,10 @@ export function createAuth(
     count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
   dependencies?: AuthLifecycleDependencies,
 ) {
-  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, dependencies);
+  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
+    ...dependencies,
+    ...(onCreatedFact ? { observeVerified: (fact, at) => onCreatedFact.capture(fact, at) } : {}),
+  });
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.

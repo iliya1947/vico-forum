@@ -1,7 +1,9 @@
 import type { Client } from "pg";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import { AuthMailValidationError, type AuthMailStatus } from "./auth-mail-contract.server";
-import type { AuthMailRuntime } from "./auth-mail.server";
+import type { AuthMailRuntime, InvokedAuthMailTransport } from "./auth-mail.server";
+import { OperationalFactBuffer, type OwnerOperationalFactSink } from "../observability/operational-facts";
+import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 import { decodeEmailVerificationProof, signEmailVerificationProof } from "./email-verification-proof.server";
 import type { AuthLifecycleBudget } from "./lifecycle-budget.server";
 import {
@@ -15,6 +17,7 @@ export type VerificationMailDestination = Readonly<{ locale: string; returnTo?: 
 // Internal outcome only: public signup/resend acknowledgement must not distinguish these values.
 export type VerificationIssuanceOutcome = AuthMailStatus | "not-eligible";
 export type VerifiedEmailReceipt = Readonly<{ userId: string; operationId: string }>;
+export type VerificationFactObserver = (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, occurredAt: Date) => void;
 type UpdateVerifiedUser = (userId: string) => Promise<{
   id: string; email: string; emailVerified: boolean;
 } | null | undefined>;
@@ -35,6 +38,8 @@ export class AuthEmailVerification {
     private readonly budget: AuthLifecycleBudget,
     private readonly secret: string,
     private readonly mail?: AuthMailRuntime,
+    private readonly observeVerified?: VerificationFactObserver,
+    private readonly mailObservations?: OwnerOperationalFactSink,
   ) { transaction.assertConnection(client); }
 
   private assertOutsideTransaction(): void {
@@ -80,25 +85,43 @@ export class AuthEmailVerification {
     destination: VerificationMailDestination): Promise<VerificationIssuanceOutcome> {
     if (!proof) return "not-eligible";
     this.assertOutsideTransaction();
-    if (!this.mail) return "disabled";
-    let actionURL: string;
-    try {
-      actionURL = await this.mail.buildActionURL({
-        purpose: "email-verification", token: proof.token, ...destination,
-      });
-    } catch (error) {
-      return error instanceof AuthMailValidationError ? "rejected" : "unavailable";
+    let transport: InvokedAuthMailTransport = "none";
+    let outcome: AuthMailStatus = "disabled";
+    if (this.mail) {
+      let actionURL: string | undefined;
+      try {
+        actionURL = await this.mail.buildActionURL({
+          purpose: "email-verification", token: proof.token, ...destination,
+        });
+      } catch (error) {
+        outcome = error instanceof AuthMailValidationError ? "rejected" : "unavailable";
+      }
+      if (actionURL !== undefined) {
+        // An injected runtime may not implement the optional invocation observer.
+        const observed: { transport: InvokedAuthMailTransport } = { transport: "unknown" };
+        try {
+          const result = await this.mail.sendAuthMail({
+            purpose: "email-verification", recipient: proof.recipient, locale: destination.locale,
+            actionURL, operationId: proof.claims.generation,
+          }, value => { observed.transport = value; });
+          outcome = result.status;
+          if (outcome === "disabled" && observed.transport === "unknown") observed.transport = "none";
+        } catch {
+          outcome = "uncertain";
+        }
+        transport = observed.transport;
+      }
     }
+    // Mail outcomes are not auth transitions or delivery confirmations.
     try {
-      const result = await this.mail.sendAuthMail({
-        purpose: "email-verification", recipient: proof.recipient, locale: destination.locale,
-        actionURL, operationId: proof.claims.generation,
-      });
-      return result.status;
-    } catch {
-      // The transport may have accepted before the error. Never retry here.
-      return "uncertain";
-    }
+      const observations = new OperationalFactBuffer(this.mailObservations);
+      observations.captureVerificationMail(proof.claims.generation,
+        new Date().toISOString().replace("Z","000Z"), {
+          mailPurpose:"email-verification",mailTransport:transport,mailOutcome:outcome,
+        });
+      await observations.flush();
+    } catch { /* passive recording cannot change the domain result */ }
+    return outcome;
   }
 
   /** Only for a native fresh-signup result with proven user+credential COMMIT.
@@ -161,7 +184,15 @@ export class AuthEmailVerification {
           if (after.email !== before.email || !after.email_verified || !after.has_credential) {
             throw new LifecycleStateInvariantError();
           }
-          return { userId: proof.userId, operationId: proof.generation };
+          const receipt = { userId: proof.userId, operationId: proof.generation };
+          if (this.observeVerified) {
+            // The owner publishes only after proven COMMIT, including nested work.
+            const occurredAt = new Date();
+            this.transaction.stageEvidence(() => this.observeVerified?.({
+              kind: "auth.emailVerified", ...receipt, actorUserId: null,
+            }, occurredAt));
+          }
+          return receipt;
         });
       } catch (error) {
         if (absentAccount(error)) throw new InvalidLifecycleProofError();
