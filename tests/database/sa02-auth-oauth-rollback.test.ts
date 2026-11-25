@@ -1,16 +1,15 @@
 import { readdir, readFile } from "node:fs/promises";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { betterAuth } from "better-auth";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
-  betterAuthOptions, betterAuthSchema, createAuth, observeAuthNativeMutations,
+  createAuth, observeAuthNativeMutations,
   type AuthCreationObserver,
   type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
 import { AuthCreationEvidence } from "../../app/auth/auth-creation-evidence";
+import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -57,22 +56,18 @@ async function accounts(){
     "select id,user_id,provider_id from account order by provider_id,id"
   )).rows;
 }
-async function authFactory(actor:string|null=null,transaction=false,config?:{
+async function authFactory(actor:string|null=null,config?:{
   withObserver?:boolean;
   onProfile?:()=>Promise<void>;
   observer?:AuthCreationObserver;
   onStateError?:(error:unknown)=>void;
 }) {
   const sink=config?.withObserver===false?undefined:config?.observer??observer(actor);
+  const lifecycle = new AuthLifecycleTransaction(client, count => sink?.recordGap?.(count));
   const proof=sink?new AuthCreationEvidence(database,
-    fact=>sink.capture(fact),id=>sink.trustedActorFor(id),count=>sink.recordGap?.(count)):undefined;
-  const base=createAuth(database,env,undefined,undefined,undefined,sink,undefined,proof,
-    config?.onStateError);
-  const auth=transaction ? betterAuth({
-    ...betterAuthOptions(database,env),
-    database:drizzleAdapter(database,{provider:"pg",schema:betterAuthSchema,transaction:true}),
-    databaseHooks:(await base.$context).options.databaseHooks,
-  }):base;
+    fact=>sink.capture(fact),id=>sink.trustedActorFor(id),count=>sink.recordGap?.(count), lifecycle):undefined;
+  const auth=createAuth(database,env,undefined,undefined,undefined,sink,undefined,proof,
+    config?.onStateError,false,lifecycle);
   const context=await auth.$context;
   const google=context.socialProviders.find(p=>p.id==="google");
   if(!google) throw new Error("Synthetic Google provider not registered");
@@ -101,7 +96,9 @@ async function authFactory(actor:string|null=null,transaction=false,config?:{
           restore();
           // Match createHyperdriveAuthRuntime's best-effort proof flush:
           // telemetry failures cannot override an already committed auth outcome.
-          try{await proof?.flush();}catch{/* best effort */}
+          if (lifecycle.connectionUsable) {
+            try{await proof?.flush();}catch{/* best effort */}
+          }
         }
       };
     },
@@ -170,7 +167,7 @@ afterAll(async()=>{
   await client.end();
 });
 
-describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback facts",()=>{
+describe("SA02 native Better Auth v1.7.7 OAuth and committed transaction facts",()=>{
   it("proves signed Google callback account/session creation; returning login only creates a session",async()=>{
     identityEmail="sa02-oauth-first@example.test";identitySub="google-first";
     const start=await initiate(await authFactory(),"sign-in/social");
@@ -291,31 +288,31 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
     expect((await accounts()).map(a=>a.provider_id)).toEqual(["credential"]);
   });
 
-  it("when credential account insert fails after real email user commit, retains user fact only",async()=>{
+  it("rolls back email signup user and evidence if credential account insertion fails",async()=>{
     const cleanup=await rejectAccountInsert("credential");
     try{
       const outcome=await (await authFactory()).handler(post("sign-up/email",{
         email:"sa02-partial-email@example.test",name:"Partial",password,
       }));
       expect(outcome.ok).toBe(false);
-      expect(await countRows()).toMatchObject({users:1,accounts:0,sessions:0});
-      expect(events.map(f=>f.kind)).toEqual(["account.created"]);
+      expect(sessionCookie(outcome)).toBeUndefined();
+      expect(await countRows()).toEqual({users:0,accounts:0,sessions:0,facts:0});
+      expect(events).toEqual([]);
       await persistFacts();
-      expect((await countRows()).facts).toBe(1);
+      expect((await countRows()).facts).toBe(0);
     }finally{await cleanup();}
   });
 
-  it("default nontransactional OAuth account insert failure retains the real committed user only",async()=>{
+  it("rolls back new OAuth user and evidence if provider account insertion fails",async()=>{
     identityEmail="sa02-partial-google@example.test";identitySub="google-partial";
     const start=await initiate(await authFactory(),"sign-in/social");
     const cleanup=await rejectAccountInsert("google");
     try{
       const response=await callback(await authFactory(),start.state,start.cookies);
       expect(response.status).toBe(302);
-      // The installed production Drizzle adapter has transaction:false.
-      // Only facts for genuine persisted transitions are truthful.
-      expect(await countRows()).toMatchObject({users:1,accounts:0,sessions:0});
-      expect(events.map(f=>f.kind)).toEqual(["account.created"]);
+      expect(sessionCookie(response)).toBeUndefined();
+      expect(await countRows()).toEqual({users:0,accounts:0,sessions:0,facts:0});
+      expect(events).toEqual([]);
     }finally{await cleanup();}
   });
 
@@ -324,15 +321,15 @@ describe("SA02 native Better Auth v1.7.7 OAuth, partial commit and rollback fact
     const state=await initiate(await authFactory(),"sign-in/social");
     const cleanup=await rejectAccountInsert("google");
     try{
-      // Test-only transaction:true exercises real Better Auth post-commit
-      // callbacks. Production retains its verified transaction:false setting.
-      const failed=await callback(await authFactory(null,true),state.state,state.cookies);
+      // Use the same guarded, explicit transaction owner as the production
+      // runtime rather than a separate unguarded test-only Drizzle adapter.
+      const failed=await callback(await authFactory(),state.state,state.cookies);
       expect(failed.status).toBe(302);
       expect(await countRows()).toEqual({users:0,accounts:0,sessions:0,facts:0});
       expect(events).toEqual([]);
     }finally{await cleanup();}
     const recovered=await initiate(await authFactory(),"sign-in/social");
-    expect((await callback(await authFactory(null,true),recovered.state,recovered.cookies)).status).toBe(302);
+    expect((await callback(await authFactory(),recovered.state,recovered.cookies)).status).toBe(302);
     expect(events.map(f=>f.kind)).toEqual(["account.created","auth.methodLinked","auth.sessionCreated"]);
     expect(await countRows()).toMatchObject({users:1,accounts:1,sessions:1});
   });
@@ -384,7 +381,7 @@ describe("SA04-I5c Better Auth Google callback lifecycle and exact-fact composit
       let entered!:()=>void;
       const reached=new Promise<void>(resolve=>{entered=resolve;});
       const proceed=new Promise<void>(resolve=>{release=resolve;});
-      const auth=await authFactory(ownerId,false,{
+      const auth=await authFactory(ownerId,{
         withObserver,onProfile:async()=>{entered();await proceed;},
       });
       const request=callback(auth,start.state,
@@ -418,7 +415,7 @@ describe("SA04-I5c Better Auth Google callback lifecycle and exact-fact composit
       const before=await i5cPersistedRows(ownerId);
       const total=await countRows();
       const failures:unknown[]=[];
-      const auth=await authFactory(null,false,{onStateError:error=>{failures.push(error);}});
+      const auth=await authFactory(null,{onStateError:error=>{failures.push(error);}});
       const original=client.query;
       let trapped=false;
       client.query=((...args:unknown[])=>{
@@ -468,14 +465,14 @@ describe("SA04-I5c Better Auth Google callback lifecycle and exact-fact composit
       recordGap:()=>{throw new Error("I5C_PRIVATE_GAP_FAILURE");},
     };
     const start=await initiate(await authFactory(),"sign-in/social");
-    const enrolled=await callback(await authFactory(null,false,{observer:broken}),
+    const enrolled=await callback(await authFactory(null,{observer:broken}),
       start.state,start.cookies);
     expect(enrolled.status).toBe(302);
     expect(sessionCookie(enrolled)).toBeTruthy();
     expect(await countRows()).toMatchObject({users:1,accounts:1,sessions:1,facts:0});
     expect(events).toEqual([]);
     const repeat=await initiate(await authFactory(),"sign-in/social");
-    const returning=await callback(await authFactory(null,false,{observer:broken}),
+    const returning=await callback(await authFactory(null,{observer:broken}),
       repeat.state,repeat.cookies);
     expect(returning.status).toBe(302);
     expect(sessionCookie(returning)).toBeTruthy();
