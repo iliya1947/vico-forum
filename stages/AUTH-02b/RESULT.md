@@ -155,3 +155,14 @@ Review-фаза завершена на exact head `bbd35cb60273a2a90cce7aea997d
 3. locale/return-path validation должна быть согласована с generation issuance так, чтобы не инвалидировать рабочий proof без возможности отправить новый.
 
 После coherent correction package требуется новый stable exact head, полный author self-check bounded AUTH-02b и применимые exact-head CI/acceptance. До coordinator PASS AUTH-03 не начинается.
+
+
+## Пакет исправлений AUTH-02b — 2026-11-26
+
+PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+
+1. P7, SA04-J12 и SA05-2 создают синтетический `.dev.vars` рядом с конфигурацией собранного Worker. Сохранены exclusive create и cleanup собственного файла; CI и probe проверяют фактический путь.
+2. SSR-форма resend явно отправляется POST. Локальный Chromium с отключённым JavaScript подтвердил POST без email в URL; обычная отправка остаётся в canonical API.
+3. Если запрошенная локаль больше недоступна, verification mail использует bootstrap locale и его корневой return path. Перед fallback по-прежнему валидируется исходный locale-local путь. Тест через fake runtime подтвердил принятие письма и отклонение подменённого return path.
+
+Локально прошли typecheck, выбранные unit/component проверки (55), чистые миграции PostgreSQL 17, ownership probe, P7 и SA04-J12. Exact-head CI #45710166025 и acceptance, включая AUTH-02b #45710173292, запущены. AUTHOR PASS зависит от итогов проверок.
