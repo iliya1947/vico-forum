@@ -7,7 +7,7 @@
 3. AUTH-01: PR #388, stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`; author checks/CI PASS; coordinator checkpoint Миры PASS.
 4. Активный bounded-этап: **AUTH-02a — transaction/plugin/state/limits/constraints foundation**.
 5. По прямому назначению владельца текущий исполнитель: **Лена / GPT-6.2**. Предыдущее назначение Лиры снято до начала implementation.
-6. AUTH-02a implementation PR ещё не создан. Рабочая branch `feat/auth-02a-lifecycle-foundation` от принятого AUTH-01, промежуточный head `b495910270ec03b8c60b81b2282fcd3c1a3372ac`. Transaction/guard/runtime/evidence integration и regression test code написаны; checks не выполнены. Следующий внутренний шаг: canonical lifecycle service/plugin и private verification state foundation, затем constraints/budgets. Детали в agents/lena.md. PR base `feat/auth-01-mail-foundation`.
+6. AUTH-02a implementation PR ещё не создан. Рабочая branch `feat/auth-02a-lifecycle-foundation` от принятого AUTH-01, промежуточный head `8d18ef4b830652a35eae24b322b65e0d9e4cda3c`. Transaction/guard/runtime/evidence и private lifecycle state/plugin foundation с regression test code написаны; checks не выполнены. Следующий внутренний шаг: forward account uniqueness constraints, затем shared budgets/challenge seam. Детали в agents/lena.md. PR base `feat/auth-01-mail-foundation`.
 7. User-visible mandatory verification / signup/session contract на AUTH-02a не включается; это AUTH-02b.
 8. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 9. Лёва участвовал в AUTH-01 implementation, Лена участвует в AUTH-02a implementation; оба не могут быть независимыми final reviewers всей собранной feature. Final reviewer определяется отдельно.
