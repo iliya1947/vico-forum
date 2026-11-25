@@ -87,7 +87,7 @@ def new_actor(browser, suffix):
                   else (external.append(route.request.url), route.abort())[-1])
     response = signup_verified_session(sql, context.request, base, headers={"Origin": base},
         data={"name": "AP10 " + suffix + " עברית " + "A" * 55,
-              "email": prefix + "-" + uuid4().hex[:12] + "@test.invalid",
+              "email": prefix + "-" + suffix + "@test.invalid",
               "password": "local-only-" + uuid4().hex},
     )
     assert response.status == 200, ("sign-up", suffix, response.status, response.text()[:240])
@@ -768,7 +768,7 @@ try:
         nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
             [nonowner_id])
-        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "elevated-rank-zero-target")
+        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "rank-zero-target")
         document(owner_page, "/en/admin/authorization")
         expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(
             "Owner authority grants all current permissions")

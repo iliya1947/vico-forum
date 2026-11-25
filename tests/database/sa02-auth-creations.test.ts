@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { Client, Pool } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import {
   createHyperdriveAuthRuntime, type BetterAuthEnvironment, type AuthCreationObserver,
@@ -270,12 +270,17 @@ describe("AUTH-02a production runtime transaction and observation boundary", () 
       return connection;
     }, undefined, { capture: fact => queued.push(fact), trustedActorFor: () => null });
 
-    const result = await runtime.handle(submit("sign-up/email", { email, name: "Atomic failure", password }));
-    expect(injected).toBe(true);
-    expect(result.ok).toBe(false);
-    expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
-    expect(queued).toEqual([]);
-    expect((await client.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const result = await runtime.handle(submit("sign-up/email", { email, name: "Atomic failure", password }));
+      expect(injected).toBe(true);
+      expect(result.ok).toBe(false);
+      expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      expect(await result.text()).not.toContain("test-only credential insertion failure");
+      expect(log).not.toHaveBeenCalled();
+      expect(queued).toEqual([]);
+      expect((await client.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+    } finally { log.mockRestore(); }
   });
 
   it("discards HTTP success, session cookies and evidence when a real COMMIT acknowledgement is lost", async () => {

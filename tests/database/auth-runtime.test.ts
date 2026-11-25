@@ -635,17 +635,33 @@ describe("Better Auth PostgreSQL runtime", () => {
     try {
       await locker.query("begin");
       await locker.query("lock table forum_registration_settings in access exclusive mode");
-      const timedRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => new Client({
-        connectionString: databaseUrl,
-        options: `-c search_path=${schemaName}`,
-        query_timeout: 350,
-      }));
+      let policyReadStarted = false;
+      let commitAfterPolicyRead = false;
+      const timedRuntime = createHyperdriveAuthRuntime(databaseUrl, env, () => {
+        const connection = new Client({
+          connectionString: databaseUrl,
+          options: `-c search_path=${schemaName}`,
+          query_timeout: 350,
+        });
+        const original = connection.query;
+        connection.query = ((...args: unknown[]) => {
+          const statement = args[0];
+          const sql = typeof statement === "string" ? statement :
+            statement && typeof statement === "object" && "text" in statement ? statement.text : null;
+          if (policyReadStarted && sql === "COMMIT") commitAfterPolicyRead = true;
+          if (typeof sql === "string" && sql.includes('"forum_registration_settings"')) policyReadStarted = true;
+          return Reflect.apply(original, connection, args);
+        }) as typeof connection.query;
+        return connection;
+      });
       const before = await counts();
       const unavailable = await timedRuntime.handle(request("sign-up/email", "admission-locked@example.test"));
       expect(unavailable.status).toBe(503);
       expect(unavailable.headers.get("cache-control")).toContain("no-store");
       expect(unavailable.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
       expect(await unavailable.text()).toBe("Service unavailable. Please try again.");
+      expect(policyReadStarted).toBe(true);
+      expect(commitAfterPolicyRead).toBe(false);
       expect(await counts()).toEqual(before);
       expect((await timedRuntime.handle(request("sign-in/email", returningEmail))).status).toBe(200);
     } finally {
