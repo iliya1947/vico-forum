@@ -8,6 +8,10 @@ AUTH-01 реализован Лёвой в #388 и принят coordinator chec
 
 Это plan correction, не implementation или независимая acceptance. Native cleanup воспроизведён локально на unmodified 1.7.7 с controlled clock/in-memory adapter; PostgreSQL tests нового решения ещё не запускались. Реализация #389 не изменена, CI не повторялся.
 
+## Следующий пакет по прямому решению владельца
+
+После coordinator PASS текущего AUTH-02a Лёва становится исполнителем **AUTH-02b — mandatory verification/UI**. До PASS AUTH-02a этот пакет не активирован: не начинать его реализацию и не менять текущую работу Лены. При активации base будет stable head принятого AUTH-02a по stacked workflow.
+
 ## Продолжение
 
 Лена продолжает своё назначение: A-01–A-04 единым пакетом и воспроизводимая диагностика preimage-read sequencing risk, затем stable head/author checks и checkpoint Миры. AUTH-02b/merge/external resources не разрешены. При новой технической эскалации нужен конкретный reproducer; не продолжать workaround chain и не подменять цель green CI.
