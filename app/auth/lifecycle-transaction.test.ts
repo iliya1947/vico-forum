@@ -162,4 +162,27 @@ describe("request-local auth lifecycle transaction ownership", () => {
     const statements = query.mock.calls.map(([sql]) => sql);
     expect(statements.indexOf("nested statement")).toBeLessThan(statements.indexOf("ROLLBACK"));
   });
+  it("retains a completed standalone after-hook without joining the next deletion's transaction", async () => {
+    const { scope } = fixture();
+    const retained = vi.fn();
+    const rolledBack = vi.fn();
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>(resolve => { entered = resolve; });
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    const transaction = scope.run(async () => {
+      scope.stageEvidence(rolledBack);
+      entered();
+      await wait;
+      throw new Error("next deletion rolled back");
+    });
+    await ready;
+    try {
+      scope.stageEvidence(retained);
+      expect(retained).toHaveBeenCalledOnce();
+      expect(rolledBack).not.toHaveBeenCalled();
+    } finally { release(); }
+    await expect(transaction).rejects.toThrow("next deletion rolled back");
+    expect(rolledBack).not.toHaveBeenCalled();
+  });
 });
