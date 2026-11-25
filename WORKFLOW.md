@@ -11,6 +11,7 @@
 7. User-visible mandatory verification / signup/session contract на AUTH-02a не включается; это AUTH-02b.
 8. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 9. Лёва участвовал в AUTH-01 implementation, Лена участвует в AUTH-02a implementation; оба не могут быть независимыми final reviewers всей собранной feature. Final reviewer определяется отдельно.
+10. Прямое решение владельца: после coordinator PASS текущего AUTH-02a следующую stacked-ступень **AUTH-02b реализует Лёва / Codex-6.1 Sol**. Это будущий handoff, не активация AUTH-02b сейчас.
 
 ## Следующий переход
 
