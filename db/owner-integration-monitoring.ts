@@ -86,7 +86,8 @@ export function integrationConfiguration(config:IntegrationRuntimeFacts,local:Re
   return {
     'integrations.database':{webBindingPresent:config.webBindingPresent,localizationBindingPresent:config.localizationBindingPresent,webRoutingRole:'web',localizationRoutingRole:'localization-read',
       requiredLocalizationOutcome:local?.outcome??'unmeasured',requiredLocalizationObservedAt:local?.observedAt??null,requiredLocalizationQuality:local?.quality??'unmeasured'},
-    'integrations.authentication':{googleParametersPresent:config.googleParametersPresent,googleCallbackCoverageMeasured:false,genericSessionProviderKnown:false},
+    'integrations.authentication':{googleParametersPresent:config.googleParametersPresent,googleCallbackCoverageMeasured:false,genericSessionProviderKnown:false,
+      ...(config.mailConfiguration?{mailModeRequested:config.mailConfiguration.mailModeRequested,mailProviderParametersPresent:config.mailConfiguration.mailProviderParametersPresent}:{})},
     'integrations.storage':{bucketBound:config.bucketBound,fixedSampleSlots:STORAGE_SLOTS.length,recordingBestEffort:true,allCallsMeasured:false},
     'integrations.translation':{generationEnabled:config.generationEnabled,generationAdmissionWired:config.generationAdmissionWired,providerWired:config.providerWired,enqueuerWired:config.enqueuerWired,consumerWired:config.consumerWired,codeAvailable:true},
   };

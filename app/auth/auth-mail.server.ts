@@ -32,7 +32,7 @@ export interface AuthMailDependencies {
 }
 export type InvokedAuthMailTransport = "none" | "unknown" | "fake" | "resend" | "brevo";
 export interface AuthMailRuntime {
-  sendAuthMail(input: AuthMailInput, onTransportInvoked?: (transport: InvokedAuthMailTransport) => void): Promise<AuthMailResult>;
+  sendAuthMail(input: AuthMailInput, observeTransport?: (transport: InvokedAuthMailTransport) => void): Promise<AuthMailResult>;
   buildActionURL(action: AuthMailAction): Promise<string>;
 }
 
@@ -79,7 +79,8 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
       const { registry } = await localization();
       return buildAuthMailActionURL(origin(), registry, action);
     },
-    async sendAuthMail(input, onTransportInvoked) {
+    async sendAuthMail(input, observeTransport) {
+      try { observeTransport?.("none"); } catch { /* passive observer */ }
       const transport = selected();
       if (!("send" in transport)) return transport;
       let dispatched = false;
@@ -93,7 +94,7 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
         const rendered = await renderAuthMail(input.purpose, actionURL, locale, resources);
         dispatched = true;
         // Only report the invocation boundary, not a configured provider.
-        try { onTransportInvoked?.(config.AUTH_MAIL_MODE === "fake" ? "fake"
+        try { observeTransport?.(config.AUTH_MAIL_MODE === "fake" ? "fake"
           : config.AUTH_MAIL_PROVIDER === "resend" ? "resend" : "brevo"); } catch { /* passive observer */ }
         const result = await transport.send({ ...rendered, recipient: input.recipient,
           purpose: input.purpose, operationId: input.operationId });

@@ -40,6 +40,8 @@ export const integrationLabels:Record<string,UiKey<"common">>={
   "genericSessionDeletedFacts": "sa07IGenericSessionDeletedFacts",
   "passwordChangeFacts": "sa07IPasswordChangeFacts",
   "verificationFacts": "sa07IVerificationFacts",
+  "mailModeRequested": "sa07IMailModeRequested",
+  "mailProviderParametersPresent": "sa07IMailParametersPresent",
   "integration.authMailOutcome": "sa07IMailOutcome",
   "mailPurpose": "sa07IMailPurpose",
   "mailTransport": "sa07IMailTransport",

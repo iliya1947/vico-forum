@@ -2,7 +2,7 @@ import {createHyperdriveOwnerOverview} from "../db/hyperdrive-owner-overview";
 import {ownerOverviewMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
 import {ownerIntegrationsMonitoringContext} from "../app/super-admin/request-context";
-import {observeRequiredLocalizationRead,googleParametersPresent} from "../app/observability/integration-runtime";
+import {observeRequiredLocalizationRead,googleParametersPresent,mailConfigurationPresence} from "../app/observability/integration-runtime";
 import {createHyperdriveOwnerData} from "../db/hyperdrive-owner-data";
 import {ownerDataMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
@@ -175,6 +175,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const integrationRuntimeFacts={
       webBindingPresent:!!webConnectionString,localizationBindingPresent:!!localizationConnectionString,googleParametersPresent:googleParametersPresent(env as Env & BetterAuthEnvironment),bucketBound:!!attachmentBucket,
+      mailConfiguration:mailConfigurationPresence(env as Env & AuthMailEnvironment),
       generationEnabled:context.get(contentGenerationActionContext).enabled,generationAdmissionWired:context.get(contentGenerationAdmissionContext)!==null,providerWired:false,enqueuerWired:false,consumerWired:false,
     };
     context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),integrationRuntimeFacts,requiredLocalization.current));

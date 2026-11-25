@@ -261,7 +261,7 @@ export function createAuth(
 ) {
   const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
     ...dependencies,
-    ...(onCreatedFact ? { observeVerified: (fact, at) => onCreatedFact.capture(fact, at) } : {}),
+    ...(onCreatedFact ? { observeVerified: (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, at: Date) => onCreatedFact.capture(fact, at) } : {}),
   });
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
