@@ -29,3 +29,7 @@
 После implementation выполнить author self-check и применимые checks/acceptance, зафиксировать PR/stable exact head/evidence в `stages/AUTH-02b/RESULT.md` и #320, затем остановиться для coordinator checkpoint Миры. AUTH-03 самостоятельно не начинать.
 
 Поскольку Лена участвует в AUTH-02a и AUTH-02b implementation, независимую final whole-feature review этой сборки она не выполняет.
+
+## Текущий checkpoint
+
+Branch `feat/auth-02b-email-verification` / `d517b1ec8ae1df18d902d13021b36be70cd45368` от accepted #389. Signed verification proof и non-consuming state inspection written, native regression not run. Следующий шаг: canonical signup/verify/resend server integration с verified native callback/transaction/admission semantics, затем UI/observability/fixtures. См. stages/AUTH-02b/RESULT.md. No implementation PR yet, no CI, no activation.
