@@ -17,7 +17,7 @@
    - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
    - единый transaction owner и sequencing correction приняты;
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — активен.** Исполнитель по прямому решению владельца: Лена / GPT-6.2. Предыдущее назначение Лёвы снято до появления сохранённой реализации AUTH-02b. Scope: mandatory email verification + resend + UI. Base — принятый AUTH-02a head. Точный bounded contract: `stages/AUTH-02b/PLAN.md`.
+3. **AUTH-02b — незавершён.** Лена прекращает работу по прямому решению владельца; Мира принимает handoff для полной проверки Лёвой вместо Лены. Base — принятый AUTH-02a; bounded contract `stages/AUTH-02b/PLAN.md`. AUTHOR PASS отсутствует.
 
 ## Существенные технические зависимости следующих этапов
 
@@ -30,4 +30,4 @@
 
 ## Текущий переход
 
-Лена реализует только `AUTH-02b` поверх stable AUTH-02a. После author self-check и применимых exact-head checks/acceptance он останавливается для coordinator checkpoint Миры. AUTH-03, merge, final independent review и external activation до этого не начинаются.
+Мира координирует назначенную владельцем полную проверку AUTH-02b Лёвой. Текущий exact head, CI blocker и маршрут — WORKFLOW.md; диагностическое evidence — stages/AUTH-02b/RESULT.md. До закрытия этапа AUTH-03 не начинать.
