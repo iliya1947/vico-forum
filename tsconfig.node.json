@@ -10,6 +10,7 @@
     "vitest.database.config.ts",
     "app/auth/auth.server.ts",
     "app/auth/session-write-guard.ts",
+    "app/auth/lifecycle-transaction.server.ts",
     "app/auth/session-label.ts",
     "app/auth/session-deletion-evidence.ts",
     "app/auth/auth-creation-evidence.ts",
