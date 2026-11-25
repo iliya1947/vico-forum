@@ -184,7 +184,7 @@ export class AuthLifecycleTransaction {
         } catch (rollbackCause) {
           this.unusable = true;
           this.gap(frame.evidence.length + frame.omitted);
-          throw this.failure = new AuthLifecycleTransactionError("rollback-uncertain", { cause: new AggregateError([cause, rollbackCause], "Rollback acknowledgement failed") });
+          throw this.failure = new AuthLifecycleTransactionError("rollback-uncertain", { cause: new AggregateError([cause, rollbackCause], "Rollback acknowledgement failed", { cause: rollbackCause }) });
         }
       }
       throw cause;
