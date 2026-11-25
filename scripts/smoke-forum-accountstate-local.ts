@@ -4,6 +4,7 @@
  * The SQL topic mutex is reached only after the Worker authenticated the request.
  */
 import assert from "node:assert/strict";
+import { signupConnectedVerifiedSession } from "../tests/database/verified-credential-fixture";
 import { spawn } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { closeSync, openSync } from "node:fs";
@@ -57,7 +58,9 @@ async function signUp(label: "author" | "control" | "actor" | "unavailable" | "u
     author: "192.0.2.41", control: "192.0.2.42", actor: "192.0.2.43",
     unavailable: "192.0.2.44", unexpected: "192.0.2.45",
   }[label];
-  const response = await http("/api/auth/sign-up/email", {
+  const response = await signupConnectedVerifiedSession(admin,
+    async req => http(new URL(req.url).pathname, {method:req.method,headers:req.headers,body:await req.text()}),
+    new Request(base+"/api/auth/sign-up/email", {
     method: "POST",
     headers: {
       Origin: base, "Content-Type": "application/json",
@@ -68,7 +71,7 @@ async function signUp(label: "author" | "control" | "actor" | "unavailable" | "u
       email: label + "-" + randomUUID() + "@j12.invalid",
       password: "Test-Only-" + randomBytes(12).toString("hex"),
     }),
-  });
+  }));
   assert.ok(response.status >= 200 && response.status < 300,
     "Better Auth sign-up failed: " + response.status);
   const cookie = response.headers.getSetCookie()

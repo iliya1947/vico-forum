@@ -4,6 +4,7 @@
  * No production credentials, external OAuth, remote bucket, or browser required.
  */
 import assert from "node:assert/strict";
+import { signupConnectedVerifiedSession } from "../tests/database/verified-credential-fixture";
 import {spawn} from "node:child_process";
 import {randomBytes,randomUUID} from "node:crypto";
 import {rm,writeFile} from "node:fs/promises";
@@ -46,11 +47,13 @@ async function form(path:string,cookie:string,fields:Record<string,string>){
   },body:new URLSearchParams(fields)},cookie);
 }
 async function signUp(role:string){
-  const response=await http("/api/auth/sign-up/email",{
+  const response = await signupConnectedVerifiedSession(client,
+    async req => http(new URL(req.url).pathname, {method:req.method,headers:req.headers,body:await req.text()}),
+    new Request(base+"/api/auth/sign-up/email", {
     method:"POST",headers:{Origin:base,"Content-Type":"application/json"},
     body:JSON.stringify({name:"Smoke "+role,email:role+"-"+randomUUID()+"@p7.invalid",
       password:"Test-Only-"+randomBytes(12).toString("hex")})
-  });
+  }));
   assert.ok(response.status>=200&&response.status<300,"Signup HTTP failed for "+role+": "+response.status);
   const sessionCookie=response.headers.getSetCookie()
     .find(value=>value.includes("session_token"))?.split(";")[0];

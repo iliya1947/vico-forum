@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import type { Client } from "pg";
 
 type TestDatabase = Pick<Client, "query">;
@@ -15,7 +14,8 @@ async function assertDisposable(db: TestDatabase): Promise<void> {
     "select current_database() db,current_schema() schema");
   const row = result.rows[0];
   if (!row || row.db !== decodeURIComponent(configured.pathname.slice(1)) ||
-      !/^[a-zA-Z0-9_]+_test$/.test(row.schema)) throw new Error("Disposable test schema required");
+      !(/^[a-zA-Z0-9_]+_test$/.test(row.schema) || (row.schema==="public" && process.env.CI==="true")))
+    throw new Error("Disposable test schema required");
 }
 
 /** Use exact forward migrations for historical minimal auth schemas. */
@@ -31,18 +31,23 @@ export async function installAuthLifecycleFixture(db: TestDatabase): Promise<voi
  * acknowledgement for an existing account. Clear its now-obsolete proof. */
 export async function markVerifiedCredentialFixture(db: TestDatabase, email: string): Promise<string> {
   await assertDisposable(db);
-  const row = await db.query<{ id: string }>(`update "user" u set email_verified=true
-    where email=$1 and not email_verified and deactivated_at is null
-    and exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential'
-      and a.password is not null and a.password <> '')
-    and not exists(select 1 from session s where s.user_id=u.id)
-    returning id`, [email.toLowerCase()]);
-  if (row.rowCount !== 1 || !row.rows[0]?.id) throw new Error("Expected one pending credential fixture without sessions");
-  const id = row.rows[0].id;
-  const proofId = "vico-auth-lifecycle:v1:email-verification:" + createHash("sha256").update(id).digest("hex");
-  const deleted = await db.query("delete from verification where id=$1 and identifier=$1", [proofId]);
-  if (deleted.rowCount !== 1) throw new Error("Expected one current verification proof for fixture");
-  return id;
+  const result = await db.query<{ id: string }>(`with pending as (
+      select u.id, v.id proof_id from "user" u join verification v
+        on v.id='vico-auth-lifecycle:v1:email-verification:' || encode(sha256(convert_to(u.id,'UTF8')),'hex')
+        and v.identifier=v.id
+      where u.email=$1 and not u.email_verified and u.deactivated_at is null
+      and exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential'
+        and a.password is not null and a.password <> '')
+      and not exists(select 1 from session s where s.user_id=u.id)
+    ), verified as (
+      update "user" u set email_verified=true from pending p where u.id=p.id
+      returning u.id,p.proof_id
+    ), consumed as (
+      delete from verification v using verified x where v.id=x.proof_id and v.identifier=x.proof_id
+      returning x.id
+    ) select id from consumed`, [email.toLowerCase()]);
+  if (result.rowCount !== 1 || !result.rows[0]?.id) throw new Error("Expected one pending credential fixture and proof");
+  return result.rows[0].id;
 }
 
 /** Preserve the actual signup and policy checks, then stage a verified fixture
@@ -71,4 +76,17 @@ export async function signupVerifiedSession(db: TestDatabase, handle: Handler, r
   const login = await response.clone().json() as {user?:{id:string;emailVerified:boolean}};
   if (login.user?.id !== id || login.user.emailVerified !== true) throw new Error("Unexpected fixture identity");
   return response;
+}
+
+/** Connected smoke fixture only: a shared local Worker ingress bucket is
+ * unrelated to the forum behavior under test. Reset the disposable lifecycle
+ * budget before provisioning each fixture, never during abuse/policy probes. */
+export async function signupConnectedVerifiedSession(
+  db: TestDatabase, handle: Handler, request: Request,
+): Promise<Response> {
+  if(process.env.CI!=="true" || !["localhost","127.0.0.1"].includes(new URL(request.url).hostname))
+    throw new Error("Connected disposable CI fixture required");
+  await assertDisposable(db);
+  await db.query("truncate auth_lifecycle_budget");
+  return signupVerifiedSession(db, handle, request);
 }
