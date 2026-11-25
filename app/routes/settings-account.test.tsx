@@ -244,7 +244,7 @@ describe("SET-05 localized Settings presentation and existing Google linking", (
   it("offers Google-only password creation by email without duplicate Google linking", async () => {
     const { page, router } = showAccount("en", { linkedMethods: ["google"], hasPassword: false });
     await screen.findByText("Google");
-    expect(screen.getByRole("button", { name: "Send a recovery link" })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Send a recovery link" })).toBeEnabled());
     expect(page.container.querySelector(".settings-account-form")).toHaveAttribute("method", "post");
     expect(page.container.querySelector('input[type="password"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
