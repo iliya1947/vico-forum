@@ -32,4 +32,4 @@
 
 ## Текущий checkpoint
 
-Branch `feat/auth-02b-email-verification` / `e08f2876e620e0f213b5c6806b9ebfa714d4bab2` от accepted #389. Verification service/endpoints/UI/observability and native PostgreSQL fixture migration block written. Target and migrated tests not run. Next: Worker/browser/local-smoke verified fixtures and native inventory completeness check; connected acceptance, self-check and stable-head checks. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no external activation.
+Branch `feat/auth-02b-email-verification` / `8177fdb532f38aedfef671fc5c002b7f1069bfc8` от accepted #389. Verification service/endpoints/UI/observability and native PostgreSQL plus connected browser/smoke fixture migration written. Target and migrated tests not run. Next: connected verification-specific actual-flow acceptance, completeness/compile/self-check, stable-head checks. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no external activation.
