@@ -73,6 +73,44 @@ describe("request-local auth lifecycle transaction ownership", () => {
     expect(controls()).toEqual(["BEGIN", "COMMIT"]);
   });
 
+  it("orders independent adapter reads behind writes without admitting unrelated lifecycle work", async () => {
+    const { scope, controls } = fixture();
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>(resolve => { entered = resolve; });
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    const order: string[] = [];
+    const writing = scope.runAdapterOperation(() => scope.run(async () => {
+      await scope.runAdapterOperation(async () => { order.push("owned read"); });
+      entered();
+      await wait;
+      order.push("write");
+    }));
+    await ready;
+    const reading = scope.runAdapterOperation(async () => {
+      expect(scope.ownsCurrentWork()).toBe(false);
+      order.push("independent read");
+    });
+    try {
+      await expect(scope.run(async () => undefined)).rejects.toMatchObject({ code:"busy" });
+      expect(order).toEqual(["owned read"]);
+    } finally { release(); }
+    await writing;
+    await reading;
+    expect(order).toEqual(["owned read", "write", "independent read"]);
+    expect(controls()).toEqual(["BEGIN","COMMIT"]);
+  });
+
+  it("propagates failed adapter operations and does not poison later independent work", async () => {
+    const { scope, controls } = fixture();
+    const failure = new Error("first operation failed");
+    const first = scope.runAdapterOperation(() => scope.run(async () => { throw failure; }));
+    const next = scope.runAdapterOperation(() => scope.run(async () => "next"));
+    await expect(first).rejects.toBe(failure);
+    await expect(next).resolves.toBe("next");
+    expect(controls()).toEqual(["BEGIN","ROLLBACK","BEGIN","COMMIT"]);
+  });
+
   it("never retries a lost COMMIT acknowledgement or publishes success", async () => {
     const { scope, query, controls, gap } = fixture();
     query.mockImplementation(async sql => {
