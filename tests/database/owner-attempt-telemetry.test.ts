@@ -272,4 +272,12 @@ describe("SA-02 recording-hour writer on native PostgreSQL 17", () => {
     expect((await client.query<Pattern>("select * from owner_attempt_patterns")).rows).toHaveLength(0);
     expect((await client.query<State>("select * from owner_attempt_telemetry_state")).rows).toHaveLength(0);
   });
+
+  it("admits the two AUTH-02b closed operations through the forward constraint, no future operations",async()=>{
+    for(const operation of ["email-verification","verification-send"] as const)
+      expect((await writer.record(attempted(null,{operation,networkIp:"192.0.2.31",networkQuality:"trusted"}))).kind).toBe("attributed");
+    const operations=await client.query<{operation:string}>("select operation from owner_attempt_patterns order by operation");
+    expect(operations.rows.map(x=>x.operation)).toEqual(["email-verification","verification-send"]);
+    await expect(writer.record(attempted("actor",{operation:"password-reset" as never}))).rejects.toThrow();
+  });
 });

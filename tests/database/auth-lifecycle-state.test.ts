@@ -16,6 +16,8 @@ import { installRegistrationPolicyFixture } from "./registration-policy-fixture"
 import { AuthEmailVerification } from "../../app/auth/email-verification.server";
 import { AuthLifecycleBudget, LifecycleBudgetExceededError } from "../../app/auth/lifecycle-budget.server";
 import type { AuthMailRuntime } from "../../app/auth/auth-mail.server";
+import type { OwnerOperationalFact } from "../../app/observability/operational-facts";
+import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 import type { AuthMailStatus } from "../../app/auth/auth-mail-contract.server";
 
 const url = process.env.DATABASE_URL;
@@ -292,6 +294,8 @@ describe("AUTH-02b verification domain operations", () => {
   const makeRuntime = async (client = first, mailStatus: AuthMailStatus = "accepted") => {
     const tx = new AuthLifecycleTransaction(client);
     const sent: string[] = [];
+    const captured: AuthTransitionFact[] = [];
+    const mailOutcomes: OwnerOperationalFact[] = [];
     const mail: AuthMailRuntime = {
       async buildActionURL(action) {
         // The independent connection must already see the issued proof.
@@ -300,19 +304,22 @@ describe("AUTH-02b verification domain operations", () => {
         expect(tx.ownsCurrentWork()).toBe(false);
         return "https://forum.example/en/verify-email?token=" + action.token;
       },
-      async sendAuthMail(input) {
+      async sendAuthMail(input, observeTransport) {
+        observeTransport?.("fake");
         expect(input.recipient).toBe(memberEmail);
         sent.push(new URL(input.actionURL).searchParams.get("token")!);
         return { status: mailStatus };
       },
     };
     const service = new AuthEmailVerification(client, tx, new AuthLifecycleState(client, tx),
-      new AuthLifecycleBudget(client, tx, secret), secret, mail);
+      new AuthLifecycleBudget(client, tx, secret), secret, mail,
+      fact => { expect(tx.ownsCurrentWork()).toBe(false); captured.push(fact); },
+      { append: async fact => { expect(tx.ownsCurrentWork()).toBe(false); mailOutcomes.push(fact); } });
     const auth = createAuth(drizzle(client), env, undefined, undefined, undefined,
       undefined, undefined, undefined, undefined, false, tx);
     const native = (await auth.$context).internalAdapter;
     const update = (id: string) => native.updateUser(id, { emailVerified: true });
-    return { service, update, sent };
+    return { service, update, sent, captured, mailOutcomes };
   };
   const installCredential = async () => {
     await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) " +
@@ -329,6 +336,11 @@ describe("AUTH-02b verification domain operations", () => {
     expect(await runtime.service.issueForCommittedSignup(userId, memberEmail, destination)).toBe("accepted");
     expect(runtime.sent).toHaveLength(1);
     const token = runtime.sent[0];
+    expect(runtime.captured).toEqual([]);
+    expect(runtime.mailOutcomes).toEqual([expect.objectContaining({kind:"integration.authMailOutcome",actorUserId:null,
+      values:{schemaVersion:1,mailPurpose:"email-verification",mailTransport:"fake",mailOutcome:"accepted"}})]);
+    expect(JSON.stringify(runtime.mailOutcomes)).not.toContain(token);
+    expect(JSON.stringify(runtime.mailOutcomes)).not.toContain(memberEmail);
     const before = await rows();
     await runtime.service.inspect(token);
     await runtime.service.inspect(token);
@@ -336,12 +348,15 @@ describe("AUTH-02b verification domain operations", () => {
     expect(await verified()).toBe(false);
     const receipt = await runtime.service.confirm(token, runtime.update);
     expect(receipt).toEqual({ userId, operationId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    expect(runtime.captured).toEqual([{kind:"auth.emailVerified",...receipt,actorUserId:null}]);
     expect(await verified()).toBe(true);
     expect(await rows()).toHaveLength(0);
     expect(await sessions()).toEqual(beforeSessions);
     await expect(runtime.service.confirm(token, runtime.update)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
     expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
     expect(runtime.sent).toHaveLength(1);
+    expect(runtime.captured).toHaveLength(1);
+    expect(runtime.mailOutcomes).toHaveLength(1);
   });
 
   it("resend replaces the proof and rolls back consume and native mutation on a post-update failure", async () => {
@@ -359,7 +374,9 @@ describe("AUTH-02b verification domain operations", () => {
     })).rejects.toBe(failure);
     expect(await rows()).toEqual(before);
     expect(await verified()).toBe(false);
+    expect(runtime.captured).toEqual([]);
     await runtime.service.confirm(current, runtime.update);
+    expect(runtime.captured).toHaveLength(1);
     expect(await verified()).toBe(true);
   });
 
@@ -374,6 +391,8 @@ describe("AUTH-02b verification domain operations", () => {
     expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
     await expect(runtime.service.resend(memberEmail, destination)).rejects.toBeInstanceOf(LifecycleBudgetExceededError);
     expect(runtime.sent).toEqual([]);
+    expect(runtime.mailOutcomes).toEqual([]);
+    expect(runtime.captured).toEqual([]);
     expect(await rows()).toHaveLength(0);
   });
 
@@ -384,6 +403,8 @@ describe("AUTH-02b verification domain operations", () => {
     expect(await runtime.service.resend(memberEmail, destination)).toBe("uncertain");
     expect(runtime.sent).toHaveLength(1);
     await runtime.service.inspect(runtime.sent[0]);
+    expect(runtime.captured).toEqual([]);
+    expect(runtime.mailOutcomes[0].values).toMatchObject({mailOutcome:"uncertain",mailTransport:"fake"});
     expect(await verified()).toBe(false);
     expect(await sessions()).toEqual(beforeSessions);
   });
@@ -397,6 +418,7 @@ describe("AUTH-02b verification domain operations", () => {
       a.service.confirm(token, a.update), b.service.confirm(token, b.update),
     ]);
     expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect([...a.captured,...b.captured]).toHaveLength(1);
     expect(results.find(result => result.status === "rejected")).toMatchObject({
       reason: expect.any(InvalidLifecycleProofError),
     });
