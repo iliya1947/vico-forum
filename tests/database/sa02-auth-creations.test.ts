@@ -243,6 +243,7 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
 
 describe("AUTH-02a production runtime transaction and observation boundary", () => {
   it("rolls back new signup identity, credential and session without success facts", async () => {
+    await client.query("truncate rate_limit");
     const email = "auth02a-runtime-session-failure@example.test";
     const queued: AuthTransitionFact[] = [];
     let injected = false;
@@ -271,6 +272,7 @@ describe("AUTH-02a production runtime transaction and observation boundary", () 
   });
 
   it("discards HTTP success, session cookies and evidence when a real COMMIT acknowledgement is lost", async () => {
+    await client.query("truncate rate_limit");
     const email = "auth02a-runtime-uncertain@example.test";
     const queued: AuthTransitionFact[] = [], gaps: number[] = [];
     let committed = false;
