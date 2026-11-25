@@ -72,3 +72,14 @@ PLAN §2/7/8 и stage PLAN исправлены; точный schema/migration/r
 PR #389 / exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653` принят Мирой: 0 confirmed current-scope defects. Самостоятельно проверены transaction composition, Better Auth 1.7.7 transaction seam, corrected lifecycle-budget storage/cleanup, A-02–A-04, sequencing, lifecycle state/plugin, migrations и runtime capability boundary; CI/acceptance подтверждают результат, но не являются самостоятельным основанием PASS.
 
 Следующий пакет — AUTH-02b — по решению владельца выполняет Лёва. Он ещё не активирован; base при активации — принятый AUTH-02a head. Intermediate merge/review отсутствуют.
+
+
+## AUTH-02b — active
+
+1. AUTH-02a coordinator PASS разрешил следующую stacked-ступень.
+2. AUTH-02b ограничен mandatory email verification, resend и пользовательской verification presentation; recovery/password-create/email-change/unlink не входят.
+3. Исполнитель по прямому решению владельца — Лёва / Codex-6.1 Sol.
+4. Implementation PR должен иметь base `feat/auth-02a-lifecycle-foundation` / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+5. Mandatory target: email/password signup без полноценной session до verification; GET landing non-mutating, explicit POST terminal confirmation, затем отдельный sign-in.
+6. SET-02 fresh-registration policy сохраняется; existing verification/resend/sign-in не блокируются закрытием новой регистрации.
+7. Реальные mail/provider/Stage-6 ресурсы не активируются.
