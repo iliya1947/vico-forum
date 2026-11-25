@@ -506,6 +506,10 @@ export function createHyperdriveAuthRuntime(
         catch { /* Creation proof must never change an auth outcome. */ }
         try { await deletions?.flush(); }
         catch { /* Proof/telemetry must never change an auth outcome. */ }
+      } else if (creations || deletions) {
+        // Earlier committed operations in this same call might still have
+        // unflushed receipts. Do not silently claim complete recording.
+        try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ }
       }
       bestEffortDiscardClient(client);
     }
