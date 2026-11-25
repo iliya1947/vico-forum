@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { account, session, user } from "../../db/schema";
 import type { AuthTransitionFact } from "../../db/owner-auth-facts";
+import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 
 type Created = Extract<AuthTransitionFact, {kind:"account.created"|"auth.methodLinked"|"auth.sessionCreated"}>;
 type Receipt = (
@@ -31,6 +32,7 @@ export class AuthCreationEvidence {
     private readonly capture:(fact:AuthTransitionFact, occurredAt:Date)=>void,
     private readonly trustedActorFor:(userId:string)=>string|null,
     private readonly missed:(count:number)=>void,
+    private readonly lifecycle?: AuthLifecycleTransaction,
   ) {}
 
   noteAdapterCreate(arg:unknown,value:unknown):void {
@@ -45,10 +47,15 @@ export class AuthCreationEvidence {
       (row.providerId==="google" || row.providerId==="credential"))
       receipt={model:"account",id:row.id,userId:row.userId,providerId:row.providerId,occurredAt:new Date()};
     else return;
-    const identifier=receipt.model+":"+receipt.id;
-    if(this.receipts.has(identifier)) return;
-    if(this.receipts.size>=LIMIT){this.overflow++;return;}
-    this.receipts.set(identifier,receipt);
+    // Stage only the already selected identity fields, never a full adapter row.
+    const retain = () => {
+      const identifier=receipt.model+":"+receipt.id;
+      if(this.receipts.has(identifier)) return;
+      if(this.receipts.size>=LIMIT){this.overflow++;return;}
+      this.receipts.set(identifier,receipt);
+    };
+    if (this.lifecycle) this.lifecycle.stageEvidence(retain);
+    else retain();
   }
 
   /** PostgreSQL INSERT ... RETURNING from the canonical Better Auth schema. */
