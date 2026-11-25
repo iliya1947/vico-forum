@@ -875,6 +875,31 @@ describe("SA04-I4d Better Auth 1.7.7 destructive session write atomicity", () =>
     expect(await sessions(userId)).toEqual([]);
   });
 
+  it("does not lose a late native session preimage read during another revoke transaction", async () => {
+    const mine = await signUp("i4d-late-preimage");
+    const direct = (await auth.$context).internalAdapter;
+    const first = await direct.createSession(mine.userId);
+    const second = await direct.createSession(mine.userId);
+    const paused = pauseNativeQuery(writer, sql => /^delete from "session" /i.test(sql));
+    const deletingFirst = direct.deleteSession(first.token);
+    let deletingSecond: Promise<unknown> | undefined;
+    try {
+      await paused.entered;
+      // Same native internalAdapter.deleteSession used by revokeOtherSessions'
+      // Promise.all. Force the second preimage lookup to start AFTER the
+      // first DELETE owns the transaction, rather than relying on timing.
+      deletingSecond = direct.deleteSession(second.token);
+      await new Promise<void>(resolve => setImmediate(resolve));
+    } finally {
+      paused.resume();
+      await Promise.allSettled([deletingFirst, ...(deletingSecond ? [deletingSecond] : [])]);
+      paused.restore();
+    }
+    await deletingFirst;
+    await deletingSecond;
+    expect((await sessions(mine.userId)).map(row => row.token)).toEqual([mine.session.token]);
+  });
+
   it("allows only signed own inactive sign-out, deleting exactly the current session", async () => {
     const inactive = await signUp("i4d-inactive-signout");
     const foreign = await signUp("i4d-foreign-signout");
