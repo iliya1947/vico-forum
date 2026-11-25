@@ -35,6 +35,12 @@ AUTH-01 реализован в #388, stable head `e18fdb189d3c6a0a9ad913df39853
 5. Активная ступень — AUTH-01. По прямому решению владельца implementation назначена Лёве; остальные ступени не активны до coordinator checkpoint предыдущей. Поскольку Лёва участвует в реализации, независимый final reviewer определяется отдельно.
 6. External activation остаётся Stage-6-only.
 
-## AUTH-01 — готовое основание для checkpoint
+## AUTH-01 — coordinator checkpoint PASS
 
-Provider-neutral server-only mail boundary, Resend/Brevo injected transports, bounded local/test fake, private results, strict action URLs и отдельный authMail translation namespace реализованы. Signup/session/auth callbacks не изменены; production mail жёстко disabled, внешних calls не было. Будущие token/lifecycle handlers не реализованы: mail capability сама не доказывает token identity/expiry/replay, а returnTo пока path-only. Продолжение — только после checkpoint Миры.
+PR #388, stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
+
+1. Мира проверила весь bounded diff, integration seams и evidence: 0 confirmed current-scope defects.
+2. CI 45518743774 подтверждён на exact head: checks/database SUCCESS.
+3. Resend/Brevo HTTP mappings повторно сверены с актуальной официальной документацией.
+4. Scope сохранён: signup/session/verification behavior, schema/dependencies и anti-bot implementation не изменены; external activation отсутствует.
+5. PASS разрешает только следующую stacked-ступень AUTH-02a без intermediate merge/independent Codex review. Whole feature ещё не принята.
