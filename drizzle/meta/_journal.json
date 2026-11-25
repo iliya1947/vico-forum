@@ -519,6 +519,13 @@
       "when": 1795564800000,
       "tag": "0073_auth_account_uniqueness",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795564800001,
+      "tag": "0074_auth_lifecycle_budget",
+      "breakpoints": true
     }
   ]
 }
