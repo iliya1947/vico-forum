@@ -180,7 +180,7 @@ export class AuthLifecycleTransaction {
       if (begun) {
         try {
           const result = await this.client.query("ROLLBACK");
-          if (result.command !== "ROLLBACK") throw new Error("Unexpected ROLLBACK acknowledgement");
+          if (result.command !== "ROLLBACK") throw new Error("Unexpected ROLLBACK acknowledgement", { cause });
         } catch (rollbackCause) {
           this.unusable = true;
           this.gap(frame.evidence.length + frame.omitted);
