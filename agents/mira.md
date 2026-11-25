@@ -2,14 +2,13 @@
 
 ## Текущий контекст
 
-1. Лена: product-scope revalidation AUTH-01–AUTH-07 — PASS.
-2. Лёва: полный технический план + correction pass завершены.
-3. Мира: correction review — **PASS**.
-4. Delivery mode: stacked AUTH-01→AUTH-06; AUTH-07 final gate.
-5. Активный stage: AUTH-01, исполнитель Лира.
-6. Legacy/Q-01 снят; mandatory verification — единый target contract.
-7. AUTH-05 provider-neutral; конкретный anti-bot provider не выбран.
+1. Full auth plan: PASS; delivery mode stacked AUTH-01→AUTH-06, AUTH-07 final gate.
+2. AUTH-01 implementation: PR #388, head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
+3. AUTH-01 author checks/CI: PASS.
+4. Мира провела coordinator checkpoint AUTH-01: **PASS, 0 confirmed current-scope defects**.
+5. AUTH-02a — следующая ступень, но ещё не активирована и не назначена.
+6. Лёва участвовал в AUTH-01 implementation, поэтому final independent reviewer всей feature должен быть другим агентом.
 
 ## Следующее назначение
 
-После завершения Лирой AUTH-01 проверить stable exact head как coordinator checkpoint. Проверять только scope текущей ступени и реальные regressions/current-stage defects. При PASS разрешить следующую stacked-ступень без intermediate merge и без independent Codex review.
+После следующей команды продолжения активировать AUTH-02a по полному PLAN, зафиксировать bounded stage scope и конкретного исполнителя. До этого implementation не начинается.
