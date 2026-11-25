@@ -1,11 +1,15 @@
 import { readdir, readFile } from "node:fs/promises";
 import { Client, Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
-  createHyperdriveAuthRuntime, type AuthCreationObserver, type BetterAuthEnvironment,
+  createAuth, createHyperdriveAuthRuntime, observeAuthNativeMutations,
+  type AuthCreationObserver, type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { MAX_AUTH_FACTS_PER_REQUEST, PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
 import { RequestAuthFactCollector } from "../../app/observability/auth-fact-collector.server";
+import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
+import { SessionDeletionEvidence } from "../../app/auth/session-deletion-evidence";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1","localhost"].includes(new URL(url).hostname) ||
@@ -313,5 +317,53 @@ describe("SA02 native Better Auth 1.7.7 committed session deletion receipts",()=
     expect(response.status).toBe(200);
     expect(await exists(actor.sessionId)).toBe(true);
     expect(deletions()).toHaveLength(0);
+  });
+});
+
+describe("AUTH-02a deletion proof under an explicit lifecycle transaction", () => {
+  it.each(["one", "all"] as const)("retains no rolled-back %s-session deletion proof", async mode => {
+    const email = "auth02a-staged-deletion-" + mode + "@example.test";
+    const actor = await register(email, "203.0.113.91");
+    const target = await login(email, "203.0.113.92");
+    const token = await sessionToken(target.sessionId);
+    const connection = connected(url);
+    await connection.connect();
+    const database = drizzle(connection);
+    const scope = new AuthLifecycleTransaction(connection, count => gaps.push(count));
+    const proof = new SessionDeletionEvidence(database, fact => events.push(fact),
+      count => gaps.push(count), scope);
+    const instance = createAuth(database, env, undefined, undefined, undefined, observer,
+      proof, undefined, undefined, false, scope);
+    const restore = observeAuthNativeMutations(connection, undefined, proof);
+    events.length = 0;
+    gaps.length = 0;
+    const headers = new Headers({ Cookie: actor.cookie });
+    const revoke = async () => {
+      if (mode === "one") await instance.api.revokeSession({ headers, body: { token } });
+      else await instance.api.revokeSessions({ headers });
+    };
+    const ids = mode === "one" ? [target.sessionId] : [actor.sessionId, target.sessionId];
+    try {
+      const failure = new Error("test-only failure after native revocation");
+      await expect(scope.run(async () => {
+        await revoke();
+        for (const id of ids) expect(await exists(id)).toBe(true);
+        expect(deletions()).toHaveLength(0);
+        throw failure;
+      })).rejects.toBe(failure);
+      await proof.flush();
+      for (const id of ids) expect(await exists(id)).toBe(true);
+      expect(deletions()).toHaveLength(0);
+      expect(gaps).toEqual([]);
+
+      await scope.run(async () => { await revoke(); });
+      await proof.flush();
+      for (const id of ids) expect(await exists(id)).toBe(false);
+      expect(deletions().map(fact => fact.sessionId).sort()).toEqual([...ids].sort());
+      expect(deletions().every(fact => fact.actorUserId === actor.userId &&
+        fact.reason === (mode === "one" ? "revoke-one" : "revoke-all"))).toBe(true);
+      if (mode === "one") expect(await exists(actor.sessionId)).toBe(true);
+      expect(gaps).toEqual([]);
+    } finally { restore(); await connection.end(); }
   });
 });
