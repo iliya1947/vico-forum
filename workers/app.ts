@@ -89,10 +89,11 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
-async function applicationFetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response> {
+async function applicationFetch(request: Request, env: Env, executionContext: ExecutionContext | undefined,
+  createMailRuntime: typeof createRequestAuthMailRuntime): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
-    context.set(authMailRuntimeContext, createRequestAuthMailRuntime(
+    context.set(authMailRuntimeContext, createMailRuntime(
       env as Env & AuthMailEnvironment, context, import.meta.env.DEV ? "local" : "production",
     ));
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
@@ -209,13 +210,18 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     }
 }
 
-export default {
-  async fetch(request, env, executionContext?: ExecutionContext) {
+/** The default entrypoint never supplies local mail fixtures. A separate CI-only
+ * entrypoint can inject the existing request-local mail boundary. */
+export function createApplication(createMailRuntime = createRequestAuthMailRuntime): ExportedHandler<Env> & {
+  fetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response>;
+} {
+  return {
+  async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
     const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
       || isOwnerMonitoringPath(new URL(request.url).pathname)
       || isPrivateForumReadPath(new URL(request.url).pathname);
     try {
-      const response = await applicationFetch(request, env, executionContext);
+      const response = await applicationFetch(request, env, executionContext, createMailRuntime);
       return privateBoundary ? protectFrameworkFailure(request, response) : response;
     } catch (error) {
       if (!privateBoundary) throw error;
@@ -226,4 +232,7 @@ export default {
       }));
     }
   },
-} satisfies ExportedHandler<Env>;
+  };
+}
+
+export default createApplication();
