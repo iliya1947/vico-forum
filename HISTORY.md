@@ -43,3 +43,5 @@
 21. **2026-11-25:** владелец заранее назначил следующую после AUTH-02a stacked-ступень AUTH-02b Лёве / Codex-6.1 Sol. Текущий AUTH-02a остаётся у Лены до coordinator checkpoint; AUTH-02b ещё не активирован и начнётся только после PASS с base на принятом stable head AUTH-02a.
 
 22. **2026-11-25:** AUTH-02a в PR #389 на exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653` прошёл coordinator checkpoint Миры: PASS, 0 confirmed current-scope defects. Проверены исправленный storage design, единый transaction owner, A-02–A-04, sequencing, state/plugin, migrations/capabilities и отсутствие AUTH-02b behavior. CI/acceptance exact-head PASS использованы как подтверждение. Следующая stacked-ступень AUTH-02b заранее назначена Лёве, но активируется отдельным переходом.
+
+23. **2026-11-25:** после coordinator PASS AUTH-02a активирован AUTH-02b — mandatory email verification + resend + UI. По прямому решению владельца implementation назначена Лёве / Codex-6.1 Sol; новый stacked PR должен базироваться на `feat/auth-02a-lifecycle-foundation` exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Recovery/password-create/email-change/unlink и external activation не входят.
