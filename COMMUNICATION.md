@@ -2,7 +2,7 @@
 
 ## Канал
 
-Этот dedicated service PR — единственный рабочий канал stale/legacy audit/cleanup. #342 завершён. Старый closed service PR #366 не используется.
+Service PR #390 — единственный рабочий канал stale/legacy audit/cleanup. #342 завершён. Старый closed service PR #366 не используется.
 
 ## Что установлено
 

@@ -1,6 +1,6 @@
 # agents/mira.md — персональная память Миры по stale/legacy audit
 
-Текущий owner-route: dedicated service PR создан для всего stale/legacy audit/cleanup.
+Текущий owner-route: service PR #390 — dedicated канал всего stale/legacy audit/cleanup.
 
 Baseline: 80 exact A on `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
 

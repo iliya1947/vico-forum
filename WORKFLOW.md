@@ -4,7 +4,7 @@
 
 **TRANSFER COMPLETE / HOLD before current-main reconciliation.**
 
-- Dedicated service branch: `service/stale-legacy-audit-2`.
+- Dedicated service PR: #390, branch `service/stale-legacy-audit-2`.
 - Current main at transfer: `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
 - Baseline audit: 80 exact A on `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; B/C/D/E separately classified.
 - Эти 80 **не считаются current exact** после main drift без reconciliation.
