@@ -11,3 +11,13 @@ Implementation PR #389, head `0e9e25a7302ba92ae7973854332da1e431d9af2d`, base AU
 5. Static author inspection performed while implementing, but no successful executed test claim. Local Node/toolchain and checkout limitations previously recorded. GitHub #389 labels run:ci and run:acceptance successfully applied; first exact-head workflow query returned no runs yet. Need confirm actual applicable checks and resolve failures before coordinator checkpoint. No PASS, no handoff yet.
 
 Next: inspect actual exact-head checks/workflow runs; correct confirmed AUTH-02a findings; record successful author self-check/CI evidence, then transfer result to Мира for checkpoint. Stage 6 remains blocked.
+
+## First CI correction cycle
+
+Original head `0e9e25a7302ba92ae7973854332da1e431d9af2d`: all 17 connected/browser acceptance workflows succeeded. CI run 45534883647 failed: checks job 138938934194 lint (preserve-caught-error); database job 138938934488 (1842 passed, 4 failed, 14 skipped; one additional suite setup failure). Correction head `bf219088039eb6a4d3a5262d2ffe3f411bbe6fee`.
+
+1. Two new signup fault-injection cases never reached injected SQL because the shared unknown-network native rate-limit fixture had been exhausted by earlier tests. Reset only the disposable test rate_limit before those cases.
+2. Existing structure migration test incorrectly treated 0072 as forever last. Keep the historical upgrade boundary at named 0072, then apply that and later migrations; clean path still applies all.
+3. Registration policy query timeout can leave rollback acknowledgement unknown with a still-blocked native statement. Preserve existing safe generic 503 for pre-COMMIT storage failure; only uncertain COMMIT gets uncertain-outcome wording. Retain both original failure and rollback cause with cause chain for storage classification.
+4. Revoke-other-sessions concurrent after-hook can run outside its own transaction while the next serialized delete owns the connection. Evidence retention now distinguishes async transaction frame from merely busy connection; unrelated after-hook can retain preimage independently, still requiring matching committed receipt and absent-row proof. Added unit test; existing native regression retained unchanged.
+5. Reapplied run:ci and run:acceptance on correction head. No results claimed yet; checks job had stopped at lint on previous head, so later checks still require actual success. Author PASS and coordinator handoff remain pending.
