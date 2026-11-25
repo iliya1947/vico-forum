@@ -32,4 +32,4 @@
 
 ## Текущий checkpoint
 
-Branch `feat/auth-02b-email-verification` / `f98346c8184b6cd3196029f266fcf7aedb12acfe` от accepted #389. Verification implementation, native + connected fixtures and connected acceptance code written. Tests not run. Next: completeness/author self-check, corrections, implementation PR, exact-head CI/acceptance. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no external activation.
+Implementation PR #391 (draft), branch `feat/auth-02b-email-verification` / `f353431d280068ecd9b298ef14bcc50076d7b381` от accepted #389. Static corrective package: node composite dependencies, fixture native signup/sign-in limiter isolation, real connected signup window, guest page aliases and outer Worker response privacy, affected uncertain-commit assertion. run:ci/run:acceptance submitted; inspect results, complete self-check and repair confirmed defects. No author PASS.
