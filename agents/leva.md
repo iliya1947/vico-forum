@@ -1,22 +1,30 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Текущий результат
+## Текущее назначение
 
-AUTH-01 реализован Лёвой в #388 и принят coordinator checkpoint. AUTH-02a реализует Лена / GPT-6.2 в #389 на базе AUTH-01; независимую final review всей feature Лёва не выполняет из-за участия в AUTH-01.
+По прямому решению владельца реализовать **AUTH-02b — mandatory email verification + resend + UI** по `PLAN.md` и `stages/AUTH-02b/PLAN.md`.
 
-2026-11-25 разрешён переданный вопрос технического плана A-01 на #389 head `ab2f09fc916279455d78bc2ca8a78c27eca72128`: native rate_limit cleanup несовместим с независимыми длинными Vico windows при обычном lastRequest. Исходное требование общего storage было ошибкой плана; введён explicit-expiry `auth_lifecycle_budget`, native limiter сохраняется. PLAN и stage PLAN исправлены. Полное bounded решение/основания/acceptance — `stages/AUTH-02a/STORAGE-DECISION.md`.
+## Основание stack
 
-Это plan correction, не implementation или независимая acceptance. Native cleanup воспроизведён локально на unmodified 1.7.7 с controlled clock/in-memory adapter; PostgreSQL tests нового решения ещё не запускались. Реализация #389 не изменена, CI не повторялся.
+1. AUTH-01: PR #388, coordinator PASS.
+2. AUTH-02a: PR #389, coordinator PASS на exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+3. Новый implementation PR создаётся с base `feat/auth-02a-lifecycle-foundation`, не от main.
+4. Показывать только bounded diff AUTH-02b.
 
-## Следующий пакет по прямому решению владельца
+## Границы
 
-После coordinator PASS текущего AUTH-02a Лёва становится исполнителем **AUTH-02b — mandatory verification/UI**. До PASS AUTH-02a этот пакет не активирован: не начинать его реализацию и не менять текущую работу Лены. При активации base будет stable head принятого AUTH-02a по stacked workflow.
+1. Включить mandatory email verification только для email/password contract; Google OAuth/explicit linking не объединять и не ломать.
+2. Signup после AUTH-02b не выдаёт полноценную session до verification; после confirmation нужен явный sign-in.
+3. GET verification landing не мутирует state; terminal confirmation — явный POST.
+4. Resend остаётся neutral и использует существующие lifecycle budgets/mail boundary.
+5. Не реализовывать recovery/reset, Google-only password creation, email change или unlink.
+6. Не добавлять legacy/grandfathering policy.
+7. Не выбирать/активировать anti-bot provider и не выполнять реальные provider calls/Stage-6 действия.
+8. Verification-specific observability расширять только под фактические producers текущей ступени.
+9. Green CI не заменяет author design/self-check; при обнаружении обхода или противоречия плану остановиться и проверить причину до следующего patch cycle.
 
-## Продолжение
+## Завершение
 
-Лена продолжает своё назначение: A-01–A-04 единым пакетом и воспроизводимая диагностика preimage-read sequencing risk, затем stable head/author checks и checkpoint Миры. AUTH-02b/merge/external resources не разрешены. При новой технической эскалации нужен конкретный reproducer; не продолжать workaround chain и не подменять цель green CI.
+После implementation выполнить author self-check и применимые checks/acceptance, зафиксировать PR/stable exact head/evidence в `stages/AUTH-02b/RESULT.md` и #320, затем остановиться для coordinator checkpoint Миры. AUTH-03 самостоятельно не начинать.
 
-
-## Готовность следующего пакета
-
-AUTH-02a coordinator checkpoint PASS на exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. По прямому решению владельца следующая ступень AUTH-02b назначена Лёве, но ещё не активирована. До отдельного handoff реализацию не начинать. При активации base = принятый AUTH-02a head.
+Поскольку Лёва участвует в implementation, независимую final whole-feature review этой сборки он не выполняет.
