@@ -16,6 +16,23 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    authMailVerifySubject: message("authMailVerifySubject", "Confirm your email", "Transactional authentication mail: VerifySubject."),
+    authMailVerifyBody: message("authMailVerifyBody", "Confirm this email address for your Vico Forum account.", "Transactional authentication mail: VerifyBody."),
+    authMailVerifyAction: message("authMailVerifyAction", "Confirm email", "Transactional authentication mail: VerifyAction."),
+    authMailResetSubject: message("authMailResetSubject", "Reset your password", "Transactional authentication mail: ResetSubject."),
+    authMailResetBody: message("authMailResetBody", "Use this link to choose a new password for your Vico Forum account.", "Transactional authentication mail: ResetBody."),
+    authMailResetAction: message("authMailResetAction", "Reset password", "Transactional authentication mail: ResetAction."),
+    authMailCreateSubject: message("authMailCreateSubject", "Add a password", "Transactional authentication mail: CreateSubject."),
+    authMailCreateBody: message("authMailCreateBody", "Confirm your request to add a password to your Vico Forum account.", "Transactional authentication mail: CreateBody."),
+    authMailCreateAction: message("authMailCreateAction", "Continue adding a password", "Transactional authentication mail: CreateAction."),
+    authMailChangeConfirmSubject: message("authMailChangeConfirmSubject", "Confirm your email change", "Transactional authentication mail: ChangeConfirmSubject."),
+    authMailChangeConfirmBody: message("authMailChangeConfirmBody", "Confirm that you requested an email address change for your Vico Forum account.", "Transactional authentication mail: ChangeConfirmBody."),
+    authMailChangeConfirmAction: message("authMailChangeConfirmAction", "Confirm email change", "Transactional authentication mail: ChangeConfirmAction."),
+    authMailChangeVerifySubject: message("authMailChangeVerifySubject", "Verify your new email", "Transactional authentication mail: ChangeVerifySubject."),
+    authMailChangeVerifyBody: message("authMailChangeVerifyBody", "Verify this new email address for your Vico Forum account.", "Transactional authentication mail: ChangeVerifyBody."),
+    authMailChangeVerifyAction: message("authMailChangeVerifyAction", "Verify new email", "Transactional authentication mail: ChangeVerifyAction."),
+    authMailIgnore: message("authMailIgnore", "If you did not request this, you can ignore this message.", "Transactional authentication mail: Ignore."),
+    authMailLink: message("authMailLink", "You can also open this link:", "Transactional authentication mail: Link."),
     historyCategoryCreated: message("historyCategoryCreated", "Category created", "Forum structure History action."),
     historyCategoryRenamed: message("historyCategoryRenamed", "Category renamed", "Forum structure History action."),
     historyCategoryReordered: message("historyCategoryReordered", "Category order changed", "Forum structure History action."),

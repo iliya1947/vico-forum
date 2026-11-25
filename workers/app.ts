@@ -28,6 +28,8 @@ import { ContentTranslationPresentationService } from "../app/localization/conte
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
 import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
+import { authMailRuntimeContext, type AuthMailEnvironment } from "../app/auth/auth-mail.server";
+import { createRequestAuthMailRuntime } from "./auth-mail";
 import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
 import { AuthSessionUnavailableError, authSessionForRequest } from "../app/auth/request-context";
 import { captureAttemptIngressSource } from "../app/observability/attempt-source";
@@ -90,6 +92,9 @@ const requestHandler = createRequestHandler(
 async function applicationFetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
+    context.set(authMailRuntimeContext, createRequestAuthMailRuntime(
+      env as Env & AuthMailEnvironment, context, import.meta.env.DEV ? "local" : "production",
+    ));
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
     const operational=createHyperdriveOperationalRecording(webConnectionString);
     const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
