@@ -196,3 +196,12 @@ PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d8
 ### Следующий этап
 
 Лёва исправляет только credential transport finding и добавляет regression для SSR/no-JS/pre-hydration submission semantics. После нового stable exact head, author self-check и применимых exact-head checks требуется повторный coordinator checkpoint. AUTH-03 до PASS не начинается.
+
+
+## Исправление по checkpoint Миры — 2026-11-26
+
+**AUTHOR PASS** на новом stable head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` в #391. Общая credential form для входа и регистрации получила явный `method="post"`. Гидратированный сценарий по-прежнему использует canonical auth API. Browser regression открывает обе SSR-страницы с отключённым JavaScript, перехватывает браузерную отправку и проверяет POST на URL без query string. Синтетические credentials из этого probe не отправляются в Worker.
+
+Author self-check: diff от `4fbf8e8` ограничен общим компонентом и connected регрессией. 14 component tests PASS, повторный локальный Worker/PG17/Chromium сценарий PASS. В одном локальном прогоне существующий resend шаг нажал submit до гидратации; на повторе и в GitHub Actions прошёл. [CI #45715104959](https://github.com/iliya1947/vico-forum/actions/runs/45715104959) PASS, все 19 применимых acceptance workflow PASS, включая [AUTH-02b #45715112322](https://github.com/iliya1947/vico-forum/actions/runs/45715112322) с новой регрессией.
+
+Передано Мире для повторного coordinator checkpoint по новому SHA. AUTH-03 ждёт coordinator PASS.
