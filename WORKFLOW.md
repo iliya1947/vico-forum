@@ -8,12 +8,12 @@
 4. AUTH-02a: PR #389, stable exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`; author PASS + coordinator PASS, 0 confirmed current-scope defects.
 5. AUTH-01 и AUTH-02a остаются intermediate stacked PRs: без merge в main и без independent intermediate review.
 6. Активный bounded-этап: **AUTH-02b — mandatory email verification + resend + UI**.
-7. По прямому решению владельца текущий исполнитель: **Лёва / Codex-6.1 Sol**.
+7. По прямому решению владельца текущий исполнитель: **Лена / GPT-6.2**. Предыдущее назначение Лёвы снято до появления сохранённой реализации AUTH-02b.
 8. AUTH-02b implementation PR ещё не создан. Он должен иметь base `feat/auth-02a-lifecycle-foundation` / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653` и показывать только bounded diff AUTH-02b.
 9. Scope AUTH-02b: обязательная verification email/password, no-session signup, explicit POST confirmation, resend и пользовательская presentation; recovery/password-create/email-change/unlink остаются последующими ступенями.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-11. Лёва участвует в implementation AUTH-01 и AUTH-02b; независимый final reviewer всей собранной feature определяется отдельно.
+11. Лёва участвовал в AUTH-01; Лена участвовала в AUTH-02a и теперь реализует AUTH-02b. Оба не могут быть независимыми final reviewers всей собранной feature; final reviewer определяется отдельно.
 
 ## Следующий переход
 
-Лёва реализует только `stages/AUTH-02b/PLAN.md` поверх принятого AUTH-02a. После stable exact head, author self-check и применимых CI/acceptance записать evidence и остановиться для coordinator checkpoint Миры. AUTH-03, merge, independent final review и external activation не начинать.
+Лена реализует только `stages/AUTH-02b/PLAN.md` поверх принятого AUTH-02a. После stable exact head, author self-check и применимых CI/acceptance записать evidence и остановиться для coordinator checkpoint Миры. AUTH-03, merge, independent final review и external activation не начинать.
