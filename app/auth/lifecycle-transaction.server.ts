@@ -4,7 +4,7 @@ import type { Client } from "pg";
 /** One owner per native request-local PG connection, never a process-wide flag. */
 type Frame = {
   open: boolean;
-  pending: number;
+  pending: Set<Promise<unknown>>;
   failed?: { cause: unknown };
   evidence: Array<() => void>;
   omitted: number;
@@ -96,15 +96,16 @@ export class AuthLifecycleTransaction {
     if (this.ownsCurrentWork()) {
       const frame = this.context.getStore()!;
       if (frame.failed) throw frame.failed.cause;
-      frame.pending++;
-      try { return await work(); }
+      const task = Promise.resolve().then(work);
+      frame.pending.add(task);
+      try { return await task; }
       catch (cause) {
         frame.failed ??= { cause };
         throw cause;
-      } finally { frame.pending--; }
+      } finally { frame.pending.delete(task); }
     }
 
-    const frame: Frame = { open: true, pending: 0, evidence: [], omitted: 0 };
+    const frame: Frame = { open: true, pending: new Set(), evidence: [], omitted: 0 };
     this.active = frame;
     let begun = false;
     let committing = false;
@@ -124,9 +125,21 @@ export class AuthLifecycleTransaction {
         throw this.failure = new AuthLifecycleTransactionError("setup-failed", { cause });
       }
       const value = await this.context.run(frame, async () => {
-        const result = await work();
-        if (frame.pending !== 0) {
-          this.unusable = true;
+        let result: T;
+        try { result = await work(); }
+        catch (cause) {
+          if (frame.pending.size) {
+            // A rejected Promise.all may leave another native operation
+            // running. Close admission and drain it BEFORE sending ROLLBACK.
+            // No nested query may continue in autocommit after rollback.
+            frame.open = false;
+            await Promise.allSettled([...frame.pending]);
+          }
+          throw cause;
+        }
+        if (frame.pending.size) {
+          frame.open = false;
+          await Promise.allSettled([...frame.pending]);
           throw this.failure = new AuthLifecycleTransactionError("unawaited");
         }
         if (frame.failed) throw frame.failed.cause;
