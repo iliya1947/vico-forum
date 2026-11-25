@@ -18,7 +18,7 @@ import {
 import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
-import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
+import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -213,14 +213,21 @@ export function createAuth(
   onCreatedProof?: AuthCreationEvidence,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
+  lifecycle?: AuthLifecycleTransaction,
 ) {
-  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup);
+  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle);
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
     const createdUsers = new Set<string>();
-    function emit(fact: AuthTransitionFact): void {
-      try { onCreatedFact?.capture(fact, new Date()); onCreatedProof?.noteHook(fact); }
+    function observe(effect: () => void): void {
+      try {
+        if (lifecycle) lifecycle.stageEvidence(effect);
+        else effect();
+      } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+    }
+    function emit(fact: AuthTransitionFact, occurredAt = new Date()): void {
+      try { onCreatedFact?.capture(fact, occurredAt); onCreatedProof?.noteHook(fact); }
       catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
     }
     function trustedActor(userId: string): string | null {
@@ -233,8 +240,11 @@ export function createAuth(
       ...options.databaseHooks,
       user: { create: { after: async created => {
         if (typeof created.id !== "string") return;
-        createdUsers.add(created.id);
-        emit({ kind: "account.created", userId: created.id });
+        const userId = created.id, occurredAt = new Date();
+        observe(() => {
+          createdUsers.add(userId);
+          emit({ kind: "account.created", userId }, occurredAt);
+        });
       } } },
       account: {
         create: { after: async created => {
@@ -243,12 +253,13 @@ export function createAuth(
             : created.providerId === "google" ? "google" : null;
           if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
           const actor = trustedActor(userId);
-          emit({
+          const occurredAt = new Date();
+          observe(() => emit({
             kind: "auth.methodLinked", userId, accountId, method,
             linkContext: createdUsers.has(userId) ? "registration"
               : actor && method === "google" ? "explicit-link" : "unknown",
             actorUserId: actor,
-          });
+          }, occurredAt));
         } },
         update: { after: async (updated, context) => {
           // Better Auth 1.7.7 /change-password uses updateAccount(account.id),
@@ -264,20 +275,24 @@ export function createAuth(
           const userId = updated.userId;
           const actorId = context.context.session?.user?.id;
           if (actorId !== userId) return;
-          emit({
+          const fact: AuthTransitionFact = {
             kind: "auth.passwordChanged", userId, accountId: updated.id,
             operationId: crypto.randomUUID(), actorUserId: userId,
-          });
+          };
+          const occurredAt = new Date();
+          observe(() => emit(fact, occurredAt));
         } },
       },
       session: {
         ...options.databaseHooks?.session,
         create: { ...options.databaseHooks?.session?.create, after: async created => {
           if (typeof created.id !== "string" || typeof created.userId !== "string") return;
-          emit({
+          const fact: AuthTransitionFact = {
             kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
             actorUserId: trustedActor(created.userId),
-          });
+          };
+          const occurredAt = new Date();
+          observe(() => emit(fact, occurredAt));
         } },
         delete: { after: async (deleted, context) => {
           try { onDeleted?.noteAfter(deleted, context); }
@@ -285,27 +300,6 @@ export function createAuth(
         } },
       },
     };
-  }
-  if (onDeleted || onCreatedProof) {
-    const factory = options.database as ReturnType<typeof drizzleAdapter>;
-    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
-      get(adapter, property, receiver) {
-        const value = Reflect.get(adapter, property, receiver);
-        if (typeof value !== "function" || (
-          property !== "delete" && property !== "deleteMany" && property !== "create")) {
-          return value;
-        }
-        return async (...args: unknown[]) => {
-          // Observe only successful native adapter results; leave all mutations untouched.
-          const result = await Reflect.apply(value, adapter, args);
-          try {
-            if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
-            else onDeleted?.noteAdapterDelete(property, args[0], result);
-          } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
-          return result;
-        };
-      },
-    });
   }
   if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
@@ -329,18 +323,41 @@ export function createAuth(
       },
     };
   }
-  if (onDatabaseError) {
+  // Preserve the same observation/error boundary in Better Auth's transaction
+  // callback adapter as in ordinary direct calls. Do not bypass AccountState.
+  if (onDeleted || onCreatedProof || onDatabaseError) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
-    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
-      get(adapter, property, receiver) {
-        const value = Reflect.get(adapter, property, receiver);
-        if (typeof value !== "function") return value;
-        return async (...args: unknown[]) => {
-          try { return await Reflect.apply(value, adapter, args); }
-          catch (error) { onDatabaseError(error); throw error; }
-        };
-      },
-    });
+    options.database = (authOptions: BetterAuthOptions) => {
+      type Adapter = ReturnType<typeof factory>;
+      const wrap = (adapter: Adapter): Adapter => new Proxy(adapter, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver);
+          if (typeof value !== "function") return value;
+          if (property === "transaction") {
+            return async <T>(fn: (trx: Adapter) => Promise<T>): Promise<T> => {
+              try {
+                return await Reflect.apply(value, target, [
+                  (trx: Adapter) => fn(wrap(trx)),
+                ]);
+              } catch (error) { onDatabaseError?.(error); throw error; }
+            };
+          }
+          return async (...args: unknown[]) => {
+            let result: unknown;
+            try { result = await Reflect.apply(value, target, args); }
+            catch (error) { onDatabaseError?.(error); throw error; }
+            try {
+              if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
+              if (property === "delete" || property === "deleteMany") {
+                onDeleted?.noteAdapterDelete(property, args[0], result);
+              }
+            } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+            return result;
+          };
+        },
+      });
+      return wrap(factory(authOptions));
+    };
   }
   return betterAuth(options);
 }
@@ -362,8 +379,15 @@ function betterAuthErrorCode(error: unknown): string | null {
   return typeof body?.code === "string" ? body.code : null;
 }
 
+function isUncertainLifecycleControl(error: unknown): boolean {
+  return error instanceof AuthLifecycleTransactionError &&
+    (error.code === "begin-uncertain" || error.code === "commit-uncertain" ||
+      error.code === "rollback-uncertain");
+}
+
 function translateSecurityError(error: unknown): never {
   if (error instanceof AccountSecurityError) throw error;
+  if (isUncertainLifecycleControl(error)) throw new AccountSecurityError("unavailable");
   if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
   switch (betterAuthErrorCode(error)) {
     case "SESSION_NOT_FRESH": throw new AccountSecurityError("not-fresh");
@@ -432,6 +456,9 @@ export function createHyperdriveAuthRuntime(
     preRoutingSessionLookup = false,
   ): Promise<T> {
     const client = createClient(connectionString);
+    const lifecycle = new AuthLifecycleTransaction(client, count => {
+      try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ }
+    });
     let databaseError: unknown;
     let actorStateError: unknown;
     let deletions: SessionDeletionEvidence | undefined;
@@ -444,11 +471,11 @@ export function createHyperdriveAuthRuntime(
           (fact, occurredAt) => onCreatedFact.capture(fact, occurredAt),
           userId => { try { return onCreatedFact.trustedActorFor(userId) === userId ? userId : null; }
             catch { return null; } },
-          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } }, lifecycle);
         deletions = new SessionDeletionEvidence(database,
           (fact, occurredAt) => { try { onCreatedFact.capture(fact, occurredAt); }
             catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
-          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } }, lifecycle);
         // Same exact native driver proof for successful inserts and deletions.
         observeAuthNativeMutations(client, creations, deletions,
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
@@ -456,7 +483,10 @@ export function createHyperdriveAuthRuntime(
       const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
         onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
-        (error) => { actorStateError ??= error; }, preRoutingSessionLookup), database, client);
+        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle), database, client);
+      // Discard a library-generated success/redirect/cookie on unconfirmed
+      // transaction control, even when Better Auth handled the original error.
+      if (lifecycle.controlFailure) throw lifecycle.controlFailure;
       // The HTTP adapter may convert a thrown hook error to a generic response.
       // Restore the classified A2 error before responding to this request.
       if (actorStateError) throw actorStateError;
@@ -464,12 +494,16 @@ export function createHyperdriveAuthRuntime(
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
-      throw actorStateError ?? databaseError ?? error;
+      throw lifecycle.controlFailure ?? actorStateError ?? databaseError ?? error;
     } finally {
-      try { await creations?.flush(); }
-      catch { /* Creation proof must never change an auth outcome. */ }
-      try { await deletions?.flush(); }
-      catch { /* Proof/telemetry must never change an auth outcome. */ }
+      // Never query a connection whose transaction status is unknown.
+      // The owner has already discarded its unconfirmed evidence.
+      if (lifecycle.connectionUsable) {
+        try { await creations?.flush(); }
+        catch { /* Creation proof must never change an auth outcome. */ }
+        try { await deletions?.flush(); }
+        catch { /* Proof/telemetry must never change an auth outcome. */ }
+      }
       bestEffortDiscardClient(client);
     }
   }
@@ -594,7 +628,8 @@ export function createHyperdriveAuthRuntime(
         if (error instanceof InactiveSessionWriteError) {
           return { session: null, headers: new Headers() };
         }
-        if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
+        if (error instanceof AccountStateUnavailableError || isUncertainLifecycleControl(error) ||
+          sessionStorageUnavailable(error)) {
           throw new AuthSessionUnavailableError({ cause: error });
         }
         throw error;
@@ -617,6 +652,12 @@ export function createHyperdriveAuthRuntime(
           throw admission.failure.error;
         }, false, (error) => { admission.failure ??= { error }; });
       } catch (error) {
+        if (isUncertainLifecycleControl(error)) {
+          return new Response("Authentication outcome could not be confirmed.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+          });
+        }
         if (error instanceof AccountStateUnavailableError) {
           return new Response("Service unavailable. Please try again.", {
             status: 503,
