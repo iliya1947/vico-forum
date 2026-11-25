@@ -56,7 +56,7 @@ export class AuthLifecycleBudget {
   private readonly admission = new AsyncLocalStorage<Admission>();
   private readonly network: string;
   private readonly secret: string;
-  private keyPromise?: Promise<CryptoKey>;
+  private keyPromise?: ReturnType<typeof crypto.subtle.importKey>;
 
   constructor(private readonly client: Pick<Client, "query">,
     private readonly transaction: AuthLifecycleTransaction, secret: string,
@@ -109,11 +109,13 @@ export class AuthLifecycleBudget {
   }
 
   private async spend(bucket: Bucket): Promise<number> {
-    // Atomic row insert/update; no local read-decide-write or clock dependency.
+    // Atomic row insert/update; only the unique budget key is the conflict arbiter.
+    // Independent row IDs prevent concurrent first inserts conflicting on a
+    // second unique index (the primary key) outside ON CONFLICT (key).
     const result = await this.client.query(`
       with t as (select floor(extract(epoch from clock_timestamp()) * 1000)::bigint as now_ms)
       insert into rate_limit (id,key,count,last_request)
-      select $1,$1,1,t.now_ms+$2::bigint from t
+      select $4,$1,1,t.now_ms+$2::bigint from t
       on conflict (key) do update
         set count=case when rate_limit.last_request <= (select now_ms from t)
             then 1 else rate_limit.count+1 end,
@@ -122,7 +124,7 @@ export class AuthLifecycleBudget {
       where rate_limit.last_request <= (select now_ms from t)
         or (rate_limit.count >= 1 and rate_limit.count < $3::int)
       returning id
-    `, [bucket.key, bucket.windowMs, bucket.max]);
+    `, [bucket.key, bucket.windowMs, bucket.max, crypto.randomUUID()]);
     if (result.rowCount === 1) return 0;
     const row = (await this.client.query<{ retry: number }>(`
       select greatest(1,least($2::int,
