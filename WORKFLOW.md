@@ -9,11 +9,11 @@
 5. AUTH-01 и AUTH-02a остаются intermediate stacked PRs: без merge в main и без independent intermediate review.
 6. Активный bounded-этап: **AUTH-02b — mandatory email verification + resend + UI**.
 7. По прямому решению владельца текущий исполнитель: **Лена / GPT-6.2**. Предыдущее назначение Лёвы снято до появления сохранённой реализации AUTH-02b.
-8. AUTH-02b implementation branch `feat/auth-02b-email-verification`, head `d517b1ec8ae1df18d902d13021b36be70cd45368`: signed proof + non-consuming state inspection written; runtime verification pending. Implementation PR ещё не создан. Он должен иметь base `feat/auth-02a-lifecycle-foundation` / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653` и показывать только bounded diff AUTH-02b.
+8. AUTH-02b implementation branch `feat/auth-02b-email-verification`, head `933f1e7835293fcf9827b2248d09ef5a60f885bf`: signed proof/inspection and verification domain service + mail landing URL contract written; runtime checks pending. Implementation PR ещё не создан. Он должен иметь base `feat/auth-02a-lifecycle-foundation` / exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653` и показывать только bounded diff AUTH-02b.
 9. Scope AUTH-02b: обязательная verification email/password, no-session signup, explicit POST confirmation, resend и пользовательская presentation; recovery/password-create/email-change/unlink остаются последующими ступенями.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 11. Лёва участвовал в AUTH-01; Лена участвовала в AUTH-02a и теперь реализует AUTH-02b. Оба не могут быть независимыми final reviewers всей собранной feature; final reviewer определяется отдельно.
 
 ## Следующий переход
 
-Лена продолжает `stages/AUTH-02b/PLAN.md`: signed proof/inspection checkpoint сохранён, следующий шаг — canonical signup/verify/resend server integration (см. stages/AUTH-02b/RESULT.md). После stable exact head, author self-check и применимых CI/acceptance записать evidence и остановиться для coordinator checkpoint Миры. AUTH-03, merge, independent final review и external activation не начинать.
+Лена продолжает `stages/AUTH-02b/PLAN.md`: server domain service checkpoint сохранён; следующий шаг — canonical Better Auth signup/verify/resend endpoint orchestration, admission/CSRF/no-store/neutral outcomes, Worker mail capability, read-only landing API. Затем UI/locale, observability/fixtures, stable exact head, author self-check и применимые CI/acceptance; записать evidence и остановиться для coordinator checkpoint Миры. AUTH-03, merge, independent final review и external activation не начинать.

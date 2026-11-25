@@ -32,4 +32,4 @@
 
 ## Текущий checkpoint
 
-Branch `feat/auth-02b-email-verification` / `d517b1ec8ae1df18d902d13021b36be70cd45368` от accepted #389. Signed verification proof и non-consuming state inspection written, native regression not run. Следующий шаг: canonical signup/verify/resend server integration с verified native callback/transaction/admission semantics, затем UI/observability/fixtures. См. stages/AUTH-02b/RESULT.md. No implementation PR yet, no CI, no activation.
+Branch `feat/auth-02b-email-verification` / `933f1e7835293fcf9827b2248d09ef5a60f885bf` от accepted #389. Signed proof/inspection + verification domain service and mail URL contract written, tests not run. Next: canonical Better Auth endpoint orchestration (native signup admission/actual creation evidence/after-commit issuance, POST verify, neutral resend, read-only inspection), Worker mail injection, then UI/observability/fixtures. См. stages/AUTH-02b/RESULT.md. No implementation PR, no CI, no activation.
