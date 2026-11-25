@@ -385,12 +385,6 @@ function betterAuthErrorCode(error: unknown): string | null {
   return typeof body?.code === "string" ? body.code : null;
 }
 
-function isUncertainLifecycleControl(error: unknown): boolean {
-  return error instanceof AuthLifecycleTransactionError &&
-    (error.code === "begin-uncertain" || error.code === "commit-uncertain" ||
-      error.code === "rollback-uncertain");
-}
-
 function translateSecurityError(error: unknown): never {
   if (error instanceof AccountSecurityError) throw error;
   if (error instanceof AuthLifecycleTransactionError) {
@@ -670,7 +664,7 @@ export function createHyperdriveAuthRuntime(
       } catch (error) {
         if (error instanceof AuthLifecycleTransactionError) {
           if (!sessionStorageUnavailable(error)) throw new AccountStateUnexpectedError({ cause: error });
-          return new Response(isUncertainLifecycleControl(error)
+          return new Response(error.code === "commit-uncertain"
             ? "Authentication outcome could not be confirmed."
             : "Service unavailable. Please try again.", {
             status: 503,
