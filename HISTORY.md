@@ -49,3 +49,5 @@
 24. **2026-11-25:** по прямому решению владельца AUTH-02b переназначен с Лёвы / Codex-6.1 Sol на Лену / GPT-6.2. На момент переназначения на GitHub не было сохранённой AUTH-02b implementation-ветки, PR или commit; accepted base и bounded scope не изменены.
 
 25. **2026-11-25:** владелец назначил Лёве полную техническую проверку незавершённого AUTH-02b #391 и всю последующую auth-реализацию. Review и исправления остаются раздельными фазами: сначала Лёва фиксирует findings без изменения implementation, затем сам исправляет/доводит AUTH-02b; после coordinator PASS реализует AUTH-03 → AUTH-06. Final independent whole-feature reviewer будет другим агентом.
+
+26. **2026-11-25:** после завершённой full review AUTH-02b (HOLD, три confirmed findings) активирован отдельный correction/finalization этап AUTH-02b у Лёвы. Review и implementation не смешивались. Входной head #391 — `bbd35cb60273a2a90cce7aea997d50e4f42943cf`; AUTH-03 остаётся заблокирован до coordinator PASS.
