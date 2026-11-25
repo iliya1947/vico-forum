@@ -40,9 +40,17 @@ describe("AUTH-01 URL boundary", () => {
       purpose, locale: "ru", token: "eyJhb.opaque-token_123.signature", returnTo: "/ru/topics/example",
     });
     expect(validateAuthMailActionURL(origin, localeRegistry, purpose, "ru", url)).toBe(url);
-    const callback = new URL(new URL(url).searchParams.get("callbackURL")!);
-    expect(callback.origin).toBe(origin);
-    expect(callback.searchParams.get("returnTo")).toBe("/ru/topics/example");
+    const target = new URL(url);
+    if (purpose === "email-verification") {
+      expect(target.pathname).toBe("/ru/verify-email");
+      expect(target.searchParams.get("token")).toBe("eyJhb.opaque-token_123.signature");
+      expect(target.searchParams.get("callbackURL")).toBeNull();
+      expect(target.searchParams.get("returnTo")).toBe("/ru/topics/example");
+    } else {
+      const callback = new URL(target.searchParams.get("callbackURL")!);
+      expect(callback.origin).toBe(origin);
+      expect(callback.searchParams.get("returnTo")).toBe("/ru/topics/example");
+    }
   });
   it.each([
     "https://other.example/en", "//other.example/en", "/en\\other", "/ru/topics/1",
@@ -71,9 +79,13 @@ describe("AUTH-01 URL boundary", () => {
     for (const altered of [
       url.replace(origin, "https://other.example"), url.replace("/verify-email", "/sign-in/email"),
       `${url}&token=second`, `${url}&redirect=https://other.example`, `${url}#private`,
-      url.replace("/api/auth/verify-email", "/api/auth/../auth/verify-email"),
-      url.replace(encodeURIComponent(origin), encodeURIComponent("https://other.example")),
-      url.replace("%2Fen%2Fsign-in", "%2Fru%2Fsign-in"),
+      url.replace("/en/verify-email", "/en/../en/verify-email"),
+      url.replace("/en/verify-email", "/api/auth/verify-email"),
+      url.replace("/en/verify-email", "/ru/verify-email"),
+      url.replace("returnTo=%2Fen", "returnTo=" + encodeURIComponent("https://other.example")),
+      url.replace("returnTo=%2Fen", "returnTo=%2Fru"),
+      `${url}&returnTo=%2Fen`,
+      `${url}&callbackURL=%2Fen%2Fsign-in`,
     ]) expect(() => validateAuthMailActionURL(origin, localeRegistry, "email-verification", "en", altered))
       .toThrow(AuthMailValidationError);
     expect(() => validateAuthMailActionURL(origin, localeRegistry, "password-reset", "en", url))

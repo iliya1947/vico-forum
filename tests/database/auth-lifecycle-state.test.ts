@@ -13,6 +13,10 @@ import { createEmailVerificationToken } from "better-auth/api";
 import { signJWT } from "better-auth/crypto";
 import { decodeEmailVerificationProof, signEmailVerificationProof } from "../../app/auth/email-verification-proof.server";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { AuthEmailVerification } from "../../app/auth/email-verification.server";
+import { AuthLifecycleBudget, LifecycleBudgetExceededError } from "../../app/auth/lifecycle-budget.server";
+import type { AuthMailRuntime } from "../../app/auth/auth-mail.server";
+import type { AuthMailStatus } from "../../app/auth/auth-mail-contract.server";
 
 const url = process.env.DATABASE_URL;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname) ||
@@ -45,9 +49,10 @@ beforeAll(async () => {
     .replaceAll('"public".', '"' + schema + '".'));
   await first.query(await readFile("drizzle/0065_sa04_account_state_foundation.sql", "utf8"));
   await installRegistrationPolicyFixture(first);
+  await first.query(await readFile("drizzle/0074_auth_lifecycle_budget.sql", "utf8"));
 });
 beforeEach(async () => {
-  await first.query('truncate "user", account, session, verification, rate_limit cascade');
+  await first.query('truncate "user", account, session, verification, rate_limit, auth_lifecycle_budget cascade');
   await first.query('insert into "user"(id,name,email,updated_at) values ($1,$1,$2,now()),($3,$3,$4,now())',
     [userId, "member@example.test", otherId, "other@example.test"]);
   await first.query('insert into "session"(id,user_id,token,expires_at,updated_at) values ' +
@@ -269,5 +274,137 @@ describe("AUTH-02a server-only lifecycle state", () => {
       await escaped.invalidate(["email-verification"]);
     })).rejects.toBeInstanceOf(LifecycleStateInvariantError);
     expect(await rows()).toEqual(corrupted);
+  });
+});
+
+describe("AUTH-02b verification domain operations", () => {
+  const secret = "disposable-lifecycle-verification-test-secret-32-chars";
+  const env = {
+    BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+    GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+  };
+  const destination = { locale: "en" };
+  const memberEmail = "member@example.test";
+  const makeRuntime = async (client = first, mailStatus: AuthMailStatus = "accepted") => {
+    const tx = new AuthLifecycleTransaction(client);
+    const sent: string[] = [];
+    const mail: AuthMailRuntime = {
+      async buildActionURL(action) {
+        // The independent connection must already see the issued proof.
+        const saved = await rows();
+        expect(saved.some(row => JSON.parse(row.value).purpose === "email-verification")).toBe(true);
+        expect(tx.ownsCurrentWork()).toBe(false);
+        return "https://forum.example/en/verify-email?token=" + action.token;
+      },
+      async sendAuthMail(input) {
+        expect(input.recipient).toBe(memberEmail);
+        sent.push(new URL(input.actionURL).searchParams.get("token")!);
+        return { status: mailStatus };
+      },
+    };
+    const service = new AuthEmailVerification(client, tx, new AuthLifecycleState(client, tx),
+      new AuthLifecycleBudget(client, tx, secret), secret, mail);
+    const auth = createAuth(drizzle(client), env, undefined, undefined, undefined,
+      undefined, undefined, undefined, undefined, false, tx);
+    const native = (await auth.$context).internalAdapter;
+    const update = (id: string) => native.updateUser(id, { emailVerified: true });
+    return { service, update, sent };
+  };
+  const installCredential = async () => {
+    await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) " +
+      "values ('member-credential',$1,'credential',$1,'test-fixture-hash',now())", [userId]);
+  };
+  const verified = async () => (await second.query<{ email_verified: boolean }>(
+    'select email_verified from "user" where id=$1', [userId])).rows[0].email_verified;
+  const sessions = async () => (await second.query("select id,user_id,token from session order by id")).rows;
+
+  it("issues after commit, inspects without mutation and atomically consumes via the native user update", async () => {
+    await installCredential();
+    const runtime = await makeRuntime();
+    const beforeSessions = await sessions();
+    expect(await runtime.service.issueForCommittedSignup(userId, memberEmail, destination)).toBe("accepted");
+    expect(runtime.sent).toHaveLength(1);
+    const token = runtime.sent[0];
+    const before = await rows();
+    await runtime.service.inspect(token);
+    await runtime.service.inspect(token);
+    expect(await rows()).toEqual(before);
+    expect(await verified()).toBe(false);
+    const receipt = await runtime.service.confirm(token, runtime.update);
+    expect(receipt).toEqual({ userId, operationId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+    expect(await verified()).toBe(true);
+    expect(await rows()).toHaveLength(0);
+    expect(await sessions()).toEqual(beforeSessions);
+    await expect(runtime.service.confirm(token, runtime.update)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
+    expect(runtime.sent).toHaveLength(1);
+  });
+
+  it("resend replaces the proof and rolls back consume and native mutation on a post-update failure", async () => {
+    await installCredential();
+    const runtime = await makeRuntime();
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("accepted");
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("accepted");
+    const [stale, current] = runtime.sent;
+    await expect(runtime.service.inspect(stale)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    const before = await rows();
+    const failure = new Error("test-only post-update failure");
+    await expect(runtime.service.confirm(current, async id => {
+      await runtime.update(id);
+      throw failure;
+    })).rejects.toBe(failure);
+    expect(await rows()).toEqual(before);
+    expect(await verified()).toBe(false);
+    await runtime.service.confirm(current, runtime.update);
+    expect(await verified()).toBe(true);
+  });
+
+  it("does not issue to missing, passwordless or inactive accounts, or send on target budget denial", async () => {
+    const runtime = await makeRuntime();
+    expect(await runtime.service.resend("absent@example.test", destination)).toBe("not-eligible");
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
+    await installCredential();
+    await first.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,' +
+      "retain_at_least_until=now()+interval '2 years' where id=$1", [userId]);
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("not-eligible");
+    await expect(runtime.service.resend(memberEmail, destination)).rejects.toBeInstanceOf(LifecycleBudgetExceededError);
+    expect(runtime.sent).toEqual([]);
+    expect(await rows()).toHaveLength(0);
+  });
+
+  it("keeps a committed proof after uncertain mail without creating or refreshing any session", async () => {
+    await installCredential();
+    const runtime = await makeRuntime(first, "uncertain");
+    const beforeSessions = await sessions();
+    expect(await runtime.service.resend(memberEmail, destination)).toBe("uncertain");
+    expect(runtime.sent).toHaveLength(1);
+    await runtime.service.inspect(runtime.sent[0]);
+    expect(await verified()).toBe(false);
+    expect(await sessions()).toEqual(beforeSessions);
+  });
+
+  it("serializes competing terminal operations and rejects deactivation-first verification", async () => {
+    await installCredential();
+    const a = await makeRuntime(first), b = await makeRuntime(second);
+    await a.service.resend(memberEmail, destination);
+    const token = a.sent[0];
+    const results = await Promise.allSettled([
+      a.service.confirm(token, a.update), b.service.confirm(token, b.update),
+    ]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.find(result => result.status === "rejected")).toMatchObject({
+      reason: expect.any(InvalidLifecycleProofError),
+    });
+    expect(await verified()).toBe(true);
+    await first.query('update "user" set email_verified=false where id=$1', [userId]);
+    await a.service.resend(memberEmail, destination);
+    const next = a.sent[1];
+    await first.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$1,' +
+      "retain_at_least_until=now()+interval '2 years' where id=$1", [userId]);
+    const before = await rows();
+    await expect(a.service.confirm(next, a.update)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect(await rows()).toEqual(before);
+    expect(await verified()).toBe(false);
   });
 });
