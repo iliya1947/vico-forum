@@ -114,10 +114,13 @@ export class AuthLifecycleBudget {
       insert into auth_lifecycle_budget (key,count,expires_at)
       values ($1,1,clock_timestamp()+$2::int*interval '1 second')
       on conflict (key) do update
-        set count=case when auth_lifecycle_budget.expires_at <= clock_timestamp()
-            then 1 else auth_lifecycle_budget.count+1 end,
-          expires_at=case when auth_lifecycle_budget.expires_at <= clock_timestamp()
-            then clock_timestamp()+$2::int*interval '1 second' else auth_lifecycle_budget.expires_at end
+        set (count,expires_at) = (
+          select case when auth_lifecycle_budget.expires_at <= t.now_at
+              then 1 else auth_lifecycle_budget.count+1 end,
+            case when auth_lifecycle_budget.expires_at <= t.now_at
+              then t.now_at+$2::int*interval '1 second' else auth_lifecycle_budget.expires_at end
+          from (select clock_timestamp() as now_at) as t
+        )
       where auth_lifecycle_budget.expires_at <= clock_timestamp()
         or auth_lifecycle_budget.count < $3::int
       returning key
