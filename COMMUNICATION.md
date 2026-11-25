@@ -24,7 +24,7 @@ Legacy cutover не является отдельным текущим product d
 
 ## Следующий переход
 
-AUTH-01 checkpoint PASS; AUTH-02a у Лены в #389 на head `ab2f09fc916279455d78bc2ca8a78c27eca72128`. Лёва разрешил переданную storage эскалацию и исправил PLAN/stage PLAN; Лена продолжает correction A-01–A-04 и диагностику sequencing risk по stages/AUTH-02a/STORAGE-DECISION.md. Author/coordinator PASS ещё нет; AUTH-02b/merge/external activation не начинать. Актуальный маршрут — WORKFLOW.md.
+AUTH-02a author PASS, #389 exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`; current coordinator checkpoint pending. Final correction evidence: stages/AUTH-02a/RESULT.md. Route: WORKFLOW.md. AUTH-02b assigned to Лёва only after coordinator PASS.
 
 ## Coordinator review — PASS
 
