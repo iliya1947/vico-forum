@@ -19,7 +19,7 @@ import { createRegistrationAdmission } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
 import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
-import { authLifecyclePlugin } from "./lifecycle-plugin.server";
+import { authLifecyclePlugin, type AuthLifecycleDependencies } from "./lifecycle-plugin.server";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -160,6 +160,7 @@ export function betterAuthOptions(
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
   lifecycle?: AuthLifecycleTransaction,
+  dependencies?: AuthLifecycleDependencies,
 ): BetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
@@ -191,7 +192,8 @@ export function betterAuthOptions(
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
     ...(lifecycle ? { plugins: [authLifecyclePlugin(
-      (database as NodePgDatabase & { $client: Client }).$client, lifecycle)] } : {}),
+      (database as NodePgDatabase & { $client: Client }).$client, lifecycle,
+      env.BETTER_AUTH_SECRET, dependencies)] } : {}),
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
@@ -218,8 +220,9 @@ export function createAuth(
   preRoutingSessionLookup = false,
   lifecycle = new AuthLifecycleTransaction((database as NodePgDatabase & { $client: Client }).$client,
     count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
+  dependencies?: AuthLifecycleDependencies,
 ) {
-  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle);
+  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, dependencies);
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
@@ -454,6 +457,7 @@ export function createHyperdriveAuthRuntime(
   createClient: (connectionString: string) => Client = createWebClient,
   onAdmissionDenied?: () => void,
   onCreatedFact?: AuthCreationObserver,
+  dependencies?: AuthLifecycleDependencies,
 ): AuthRuntime {
   async function useAuth<T>(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client) => Promise<T>,
@@ -489,7 +493,7 @@ export function createHyperdriveAuthRuntime(
       const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
         onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
-        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle), database, client);
+        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle, dependencies), database, client);
       // Discard a library-generated success/redirect/cookie on unconfirmed
       // transaction control, even when Better Auth handled the original error.
       if (lifecycle.controlFailure) throw lifecycle.controlFailure;
