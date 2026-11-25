@@ -78,6 +78,45 @@ export async function signupVerifiedSession(db: TestDatabase, handle: Handler, r
   return response;
 }
 
+/** Read-only diagnostic on a failed real HTTP signup in disposable CI.
+ * Keep the original assertion and emit only fixed categories and counts. */
+async function describeConnectedSignupFailure(db: TestDatabase, email: string, response: Response): Promise<void> {
+  let responseKind = "other";
+  try {
+    const body = await response.clone().text();
+    if (body === "Unexpected server failure") responseKind = "worker-failure";
+    else if (body === "Internal Server Error") responseKind = "framework-failure";
+    else if (body === "Service unavailable") responseKind = "worker-unavailable";
+    else {
+      const parsed: unknown = JSON.parse(body);
+      if (parsed && typeof parsed === "object" && "message" in parsed &&
+          parsed.message === "Authentication failed") responseKind = "auth-unexpected-error";
+      else if (parsed && typeof parsed === "object") responseKind = "other-json";
+    }
+  } catch { /* Never print the response body or the parse error. */ }
+  try {
+    const result = await db.query(`with subject as (
+      select id from "user" where email=$1
+    ) select
+      (select count(*)::int from auth_lifecycle_budget) as budget_rows,
+      (select coalesce(sum(count),0)::int from auth_lifecycle_budget) as budget_spends,
+      (select count(*)::int from rate_limit where key like '%|/sign-up/email') as native_signup_buckets,
+      (select email_registration_enabled from forum_registration_settings where id=1) as registration_open,
+      (select count(*)::int from subject) as users,
+      (select count(*)::int from account a join subject s on a.user_id=s.id
+        where a.provider_id='credential' and a.password is not null and a.password<>'') as credentials,
+      (select count(*)::int from verification v join subject s
+        on v.id='vico-auth-lifecycle:v1:email-verification:' || encode(sha256(convert_to(s.id,'UTF8')),'hex')
+        and v.identifier=v.id) as proofs,
+      (select count(*)::int from session x join subject s on x.user_id=s.id) as sessions`, [email.toLowerCase()]);
+    console.error("Connected signup diagnostic:", JSON.stringify({
+      status: response.status, responseKind, ...result.rows[0],
+    }));
+  } catch {
+    console.error("Connected signup diagnostic: database evidence unavailable", response.status, responseKind);
+  }
+}
+
 /** Connected smoke fixture only: a shared local Worker ingress bucket is
  * unrelated to the forum behavior under test. Reset the disposable lifecycle
  * budget before provisioning each fixture, never during abuse/policy probes.
@@ -92,5 +131,13 @@ export async function signupConnectedVerifiedSession(
   // Only disposable connected fixture provisioning, not rate-limit assertions.
   await db.query("delete from rate_limit where key like $1 or key like $2",
     ["%|/sign-up/email", "%|/sign-in/email"]);
-  return signupVerifiedSession(db, handle, request);
+  return signupVerifiedSession(db, async req => {
+    const isSignup = new URL(req.url).pathname === "/api/auth/sign-up/email";
+    const email = isSignup ? (await req.clone().json() as {email:string}).email : undefined;
+    const response = await handle(req);
+    if (email !== undefined && response.status !== 200) {
+      await describeConnectedSignupFailure(db, email, response);
+    }
+    return response;
+  }, request);
 }
