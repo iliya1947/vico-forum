@@ -1,27 +1,19 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Текущее назначение
+## Завершённый результат
 
-Исправить coordinator finding AUTH-02b в draft PR #391 после AUTHOR PASS на `4fbf8e829fd18c7190a540eade17bdf543a406d3`.
+AUTH-02b в PR #391 принят coordinator checkpoint Миры на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: PASS, 0 confirmed current-scope blocking defects.
 
-## Confirmed current-scope finding
+Coordinator finding по credential form закрыт явным POST и no-JS/pre-hydration regression. Предыдущие три review findings также закрыты.
 
-`app/auth/credential-view.tsx` — email/password форма sign-in/sign-up не задаёт явный HTTP method.
+## Текущее состояние
 
-Без hydration/JavaScript браузер использует HTML default GET. Поля `email` и `password` имеют `name`, поэтому sensitive credential data может попасть в query URL/browser history и дальше в URL-facing surfaces. Это реальный текущий auth/security defect, а не future groundwork.
+Активной implementation-задачи сейчас нет. AUTH-03 ещё не активирован.
 
-Файл входит в AUTH-02b diff и его signup presentation изменяется этой ступенью; coordinator PASS невозможен при такой transport semantics.
+По прямому решению владельца следующая stacked-ступень после активации — **AUTH-03 — recovery + password creation**, исполнитель Лёва. Base — принятый AUTH-02b head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
 
-## Требуемый результат
+До отдельного handoff AUTH-03 не начинать. Реальные external providers/Stage-6 resources не активировать.
 
-1. Устранить GET credential submission до hydration/без JS серверно корректной form semantics.
-2. Не добавлять второй auth backend и не обходить canonical Better Auth/Vico endpoints.
-3. Не расширять scope в AUTH-03.
-4. Добавить regression, который доказывает отсутствие password/email в URL при SSR/no-JS или pre-hydration submission path.
-5. Повторно проверить, что JS-hydrated sign-in/sign-up behavior и mandatory-verification pending UI не регрессировали.
+## Final review eligibility
 
-## Завершение
-
-После coherent fix — новый stable exact head, author self-check всего bounded AUTH-02b и применимые exact-head CI/acceptance. Затем STOP для повторного coordinator checkpoint Миры. AUTH-03 до PASS не начинать.
-
-После coordinator PASS AUTH-02b Лёва остаётся исполнителем AUTH-03 → AUTH-06. Final independent whole-feature reviewer назначается отдельно.
+Лёва участвовал в implementation AUTH-01 и AUTH-02b и будет реализовывать следующие auth stages, поэтому независимую final whole-feature review собранной authentication feature не выполняет.
