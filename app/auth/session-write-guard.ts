@@ -304,10 +304,17 @@ export function guardBetterAuthSessionWrites(
           }
         };
         const guarded = async (...args: unknown[]) => {
-          const owned = lifecycle?.ownsCurrentWork() ?? false;
-          // Nested run marks a failed guarded operation rollback-only even
-          // if Better Auth catches its error before returning to the owner.
-          return owned ? lifecycle!.run(() => perform(true, ...args)) : perform(false, ...args);
+          if (!lifecycle) return perform(false, ...args);
+          const owned = lifecycle.ownsCurrentWork();
+          const command = args[0] as { model?: unknown } | undefined;
+          const protectedWrite = command?.model === "account" ||
+            (command?.model === "user" && (property === "update" || property === "updateMany")) ||
+            (command?.model === "session" && property !== "updateMany");
+          // Preserve standalone active-user locking, but use the same explicit
+          // owner so a lost standalone COMMIT acknowledgement cannot publish
+          // native success proof either. Inside a scope this joins the owner.
+          if (owned || protectedWrite) return lifecycle.run(() => perform(true, ...args));
+          return perform(false, ...args);
         };
         return (...args: unknown[]) => {
           const command = args[0] as { model?: unknown } | undefined;
