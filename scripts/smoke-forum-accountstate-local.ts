@@ -24,7 +24,7 @@ if (!["127.0.0.1", "localhost"].includes(dbUrl.hostname)
   throw new Error("Only loopback *_test PostgreSQL may be used");
 }
 const base = "http://127.0.0.1:4182";
-const vars = resolve(".dev.vars");
+const vars = resolve("build/server/.dev.vars");
 const previewLog = resolve(".vico-sa04-j12-preview.log");
 const admin = new Client({ connectionString });
 const holder = new Client({ connectionString });

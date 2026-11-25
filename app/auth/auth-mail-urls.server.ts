@@ -101,16 +101,18 @@ export function buildAuthMailActionURL(
   if (!isMailPurpose(action.purpose) || typeof action.token !== "string"
     || !/^[A-Za-z0-9._~-]{1,2048}$/.test(action.token)) throw new AuthMailValidationError();
   const locale = authMailLocale(action.locale, registry).translationLocale;
-  const destination = returnPath(origin, locale, action.returnTo);
   // Verification mail opens a read-only locale page. The bearer is never
   // submitted to the native state-changing GET endpoint.
   if (action.purpose === "email-verification") {
+    const requested = returnPath(origin, action.locale, action.returnTo);
+    const destination = locale === action.locale ? requested : returnPath(origin, locale);
     const url = new URL(`/${locale}/verify-email`, origin);
     url.searchParams.set("token", action.token);
     url.searchParams.set("returnTo", destination);
     if (url.href.length > 8192) throw new AuthMailValidationError();
     return url.href;
   }
+  const destination = returnPath(origin, locale, action.returnTo);
   const reset = action.purpose === "password-reset" || action.purpose === "password-create";
   const callback = new URL(reset ? `/${locale}/reset-password` : `/${locale}/sign-in`, origin);
   callback.searchParams.set("returnTo", destination);
@@ -134,7 +136,8 @@ export function validateAuthMailActionURL(
       const returnValues = url.searchParams.getAll("returnTo");
       if (tokenValues.length !== 1 || returnValues.length !== 1) throw new AuthMailValidationError();
       const expected = buildAuthMailActionURL(origin, registry, {
-        purpose, locale, token: tokenValues[0], returnTo: returnValues[0],
+        purpose, locale, token: tokenValues[0],
+        returnTo: authMailLocale(locale, registry).translationLocale === locale ? returnValues[0] : undefined,
       });
       if (supplied !== expected) throw new AuthMailValidationError();
       return expected;

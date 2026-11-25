@@ -24,7 +24,7 @@ if(!["127.0.0.1","localhost"].includes(dbUrl.hostname)||!dbUrl.pathname.endsWith
   throw new Error("Only loopback *_test PostgreSQL is allowed");
 // Existing CI PostgreSQL service is disposable; the built Worker already uses its public schema.
 const client=new Client({connectionString});
-const vars=resolve(".dev.vars");
+const vars=resolve("build/server/.dev.vars");
 const previewLog=resolve(".vico-p7-preview.log");
 let worker:ReturnType<typeof spawn>|undefined;
 let ownedVars=false;
@@ -87,7 +87,7 @@ async function ready(){
 }
 async function run(){
   await setupDatabase();
-  // Cloudflare Vite preview consumes local, ignored .dev.vars; never print secrets.
+  // Vite preview reads local variables beside the generated Worker config.
   await writeFile(vars,[
     "BETTER_AUTH_SECRET="+randomBytes(32).toString("hex"),
     "BETTER_AUTH_URL="+base,

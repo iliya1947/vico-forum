@@ -40,7 +40,7 @@ export default function ResendVerificationPage() {
     <section className="credential-page" aria-labelledby="resend-heading">
       <h1 id="resend-heading">{t(result === "ok" ? "authVerificationPending" : "authVerificationResendHeading")}</h1>
       {result === "ok" ? <p role="status">{t("authVerificationPendingBody")}</p> :
-        <form className="credential-form" onSubmit={submit}>
+        <form method="post" className="credential-form" onSubmit={submit}>
           <label>{t("authEmailAddress")}
             <input name="email" type="email" autoComplete="email" dir="ltr" maxLength={254} required disabled={pending} />
           </label>

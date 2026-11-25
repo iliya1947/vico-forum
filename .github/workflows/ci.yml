@@ -203,12 +203,12 @@ jobs:
         run: |
           node --test scripts/smoke-complaints-ownership.probe.mjs
           pnpm exec tsx scripts/smoke-complaints-local.ts
-          test ! -e .dev.vars && test ! -L .dev.vars
+          test ! -e build/server/.dev.vars && test ! -L build/server/.dev.vars
       - name: SA04-J12 built Worker Better Auth AccountState late-deactivation smoke
         run: |
           pnpm exec tsx scripts/smoke-forum-accountstate-local.ts
-          test ! -e .dev.vars && test ! -L .dev.vars
+          test ! -e build/server/.dev.vars && test ! -L build/server/.dev.vars
       - name: SA05-2 built Worker protected Owner resource and alias smoke
         run: |
           pnpm exec tsx scripts/smoke-owner-deactivation-local.ts
-          test ! -e .dev.vars && test ! -L .dev.vars
+          test ! -e build/server/.dev.vars && test ! -L build/server/.dev.vars

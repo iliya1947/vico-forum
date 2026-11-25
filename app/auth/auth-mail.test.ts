@@ -69,6 +69,21 @@ describe("AUTH-01 URL boundary", () => {
   ])("rejects unsafe trusted base config %j", base => {
     expect(() => authMailOrigin(base, "production")).toThrow(AuthMailValidationError);
   });
+  it("sends verification mail with the bootstrap destination when the requested locale is unavailable", async () => {
+    const { runtime } = fakeRuntime();
+    const url = await runtime.buildActionURL({
+      purpose: "email-verification", locale: "fr", token: "token", returnTo: "/fr/topics/example",
+    });
+    const fallback = new URL(url);
+    expect(fallback.pathname).toBe("/en/verify-email");
+    expect(fallback.searchParams.get("returnTo")).toBe("/en");
+    expect(validateAuthMailActionURL(origin, localeRegistry, "email-verification", "fr", url)).toBe(url);
+    await expect(runtime.sendAuthMail({ ...input(), purpose: "email-verification", locale: "fr", actionURL: url }))
+      .resolves.toEqual({ status: "accepted" });
+    fallback.searchParams.set("returnTo", "/en/topics/example");
+    expect(() => validateAuthMailActionURL(origin, localeRegistry, "email-verification", "fr", fallback.href)).toThrow();
+  });
+
   it("allows loopback HTTP only in explicit local/test execution", () => {
     expect(authMailOrigin("http://localhost:5173", "test")).toBe("http://localhost:5173");
     expect(() => authMailOrigin("http://localhost:5173", "production")).toThrow(AuthMailValidationError);
