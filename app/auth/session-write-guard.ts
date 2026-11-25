@@ -2,6 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APIError, type BetterAuthOptions } from "better-auth";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client, QueryResultRow } from "pg";
+import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 import { isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
 import {
@@ -43,8 +44,10 @@ export function guardBetterAuthSessionWrites(
   factory: ReturnType<typeof drizzleAdapter>,
   onAccountStateError?: (error: unknown) => void,
   consumeOwnSignOutToken?: (token: string) => boolean,
+  lifecycle?: AuthLifecycleTransaction,
 ): ReturnType<typeof drizzleAdapter> {
   const connection = (database as NodePgDatabase & { $client: Client }).$client;
+  lifecycle?.assertConnection(connection);
   return (options: BetterAuthOptions) => {
     const adapter = factory(options);
     // /revoke-other-sessions invokes concurrent deleteSession calls using one
@@ -59,14 +62,18 @@ export function guardBetterAuthSessionWrites(
         const method = Reflect.get(target, property, receiver);
         if (property === "transaction" && typeof method === "function") {
           return <T>(fn: (trx: typeof adapter) => Promise<T>): Promise<T> =>
-            Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
+            lifecycle
+              // The lifecycle owner controls this same native client. Use the
+              // existing adapter, not a second Drizzle transaction/connection.
+              ? lifecycle.run(() => fn(wrap(current)))
+              : Reflect.apply(method, target, [async (trx: typeof adapter) => fn(wrap(trx))]);
         }
         if (typeof method !== "function" ||
           (property !== "create" && property !== "update" && property !== "updateMany" &&
             property !== "delete" && property !== "deleteMany")) {
           return method;
         }
-        const guarded = async (...args: unknown[]) => {
+        const perform = async (owned: boolean, ...args: unknown[]) => {
           const command = args[0] as {
             model?: unknown;
             data?: { userId?: unknown };
@@ -93,9 +100,17 @@ export function guardBetterAuthSessionWrites(
             catch (error) { throw classifySessionWriteSqlError(error); }
           };
           let begun = false;
+          const commitStandalone = async () => {
+            if (begun) {
+              await query("COMMIT");
+              begun = false;
+            }
+          };
           try {
-            await query("BEGIN");
-            begun = true;
+            if (!owned) {
+              await query("BEGIN");
+              begun = true;
+            }
             if (accountWrite) {
               if (property === "create") {
                 // BA createAccount/linkAccount and both registration paths
@@ -147,8 +162,7 @@ export function guardBetterAuthSessionWrites(
                   throw new AccountStateUnexpectedError();
                 }
                 if (!owners.size) {
-                  await query("COMMIT");
-                  begun = false;
+                  await commitStandalone();
                   return property === "updateMany" || property === "deleteMany" ? 0 : null;
                 }
                 const owner = owners.values().next().value;
@@ -178,8 +192,7 @@ export function guardBetterAuthSessionWrites(
               )).rows;
               if (rows.length > 1) throw new AccountStateUnexpectedError();
               if (!rows.length) {
-                await query("COMMIT");
-                begun = false;
+                await commitStandalone();
                 return property === "updateMany" ? 0 : null;
               }
               // An update can modify the target's attributes, not transfer its id.
@@ -220,8 +233,7 @@ export function guardBetterAuthSessionWrites(
                   )).rows;
               if (rows.length > 1) throw new AccountStateUnexpectedError();
               if (!rows.length) {
-                await query("COMMIT");
-                begun = false;
+                await commitStandalone();
                 return property === "deleteMany" ? 0 : null;
               }
               const owner = rows[0].user_id;
@@ -249,8 +261,7 @@ export function guardBetterAuthSessionWrites(
               )).rows;
               if (rows.length > 1) throw new AccountStateUnexpectedError();
               if (rows.length === 0) {
-                await query("COMMIT");
-                begun = false;
+                await commitStandalone();
                 return null;
               }
               // A session-target transfer must not bypass its original owner.
@@ -262,8 +273,7 @@ export function guardBetterAuthSessionWrites(
             }
 
             const result = await Reflect.apply(method, target, args);
-            await query("COMMIT");
-            begun = false;
+            await commitStandalone();
             return result;
           } catch (error) {
             let failure = error;
@@ -286,6 +296,12 @@ export function guardBetterAuthSessionWrites(
             }
             throw failure;
           }
+        };
+        const guarded = async (...args: unknown[]) => {
+          const owned = lifecycle?.ownsCurrentWork() ?? false;
+          // Nested run marks a failed guarded operation rollback-only even
+          // if Better Auth catches its error before returning to the owner.
+          return owned ? lifecycle!.run(() => perform(true, ...args)) : perform(false, ...args);
         };
         return (...args: unknown[]) => {
           const command = args[0] as { model?: unknown } | undefined;
