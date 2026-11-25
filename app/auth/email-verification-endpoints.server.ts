@@ -1,5 +1,5 @@
 import { APIError, createAuthEndpoint, dispatchAuthEndpoint, formCsrfMiddleware,
-  signUpEmail, sendVerificationEmail, verifyEmail } from "better-auth/api";
+  signUpEmail, sendVerificationEmail, verifyEmail, type AuthEndpoint } from "better-auth/api";
 import { safeMailAddress, AuthMailValidationError } from "./auth-mail-contract.server";
 import { verificationMailDestination } from "./auth-mail-urls.server";
 import type { AuthEmailVerification } from "./email-verification.server";
@@ -10,8 +10,34 @@ import type { SignupVerificationEvidence } from "./signup-verification-evidence.
 import type { VerificationAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
+// Keep the public endpoint types nameable through Better Auth's exported
+// contract rather than leaking pnpm's transitive Zod installation path.
+type SignupBody = ReturnType<typeof signUpEmail>["options"]["body"];
+type ResendBody = ReturnType<typeof sendVerificationEmail.options.body.strict>;
+type PickedToken = ReturnType<typeof verifyEmail.options.query.pick<{ token: true }>>;
+type TokenSchema = ReturnType<PickedToken["strict"]>;
+type PostOptions<Body> = {
+  method: "POST"; operationId: string; body: Body;
+  use: (typeof formCsrfMiddleware)[]; metadata: { noStore: true };
+};
+type SignupOptions = Omit<PostOptions<SignupBody>, "metadata"> & {
+  cloneRequest: true;
+  metadata: { noStore: true; allowedMediaTypes: string[] };
+};
+type InspectOptions = {
+  method: "GET"; operationId: string; query: TokenSchema; metadata: { noStore: true };
+};
+type Acknowledgement = { status: boolean };
+type SignupAcknowledgement = Acknowledgement & { token: null };
+export type EmailVerificationEndpoints = {
+  signUpEmail: AuthEndpoint<"/sign-up/email", SignupOptions, SignupAcknowledgement>;
+  sendVerificationEmail: AuthEndpoint<"/send-verification-email", PostOptions<ResendBody>, Acknowledgement>;
+  verifyEmail: AuthEndpoint<"/verify-email", PostOptions<TokenSchema>, Acknowledgement>;
+  inspectEmailVerification: AuthEndpoint<"/inspect-email-verification", InspectOptions, Acknowledgement>;
+};
+
 const nativeSignup = signUpEmail();
-const tokenSchema = verifyEmail.options.query.pick({ token: true }).strict();
+const tokenSchema: TokenSchema = verifyEmail.options.query.pick({ token: true }).strict();
 
 function publicEmail(value: string): string {
   const email = value.toLowerCase();
@@ -39,7 +65,7 @@ export function emailVerificationEndpoints(
   evidence: SignupVerificationEvidence,
   unavailable: (error: unknown) => boolean,
   observeDirectFailure?: (operation: VerificationAttemptOperation, code: VerificationAttemptCode) => void,
-) {
+): EmailVerificationEndpoints {
   async function command<T>(work: () => Promise<T>, directOperation?: VerificationAttemptOperation): Promise<T> {
     try { return await work(); }
     catch (error) {
@@ -65,7 +91,7 @@ export function emailVerificationEndpoints(
   }
 
   return {
-    signUpEmail: createAuthEndpoint("/sign-up/email", {
+    signUpEmail: createAuthEndpoint<"/sign-up/email", SignupOptions, SignupAcknowledgement>("/sign-up/email", {
       method: "POST",
       operationId: "signUpWithEmailAndPassword",
       body: nativeSignup.options.body,
@@ -97,7 +123,7 @@ export function emailVerificationEndpoints(
       });
     }),
 
-    sendVerificationEmail: createAuthEndpoint("/send-verification-email", {
+    sendVerificationEmail: createAuthEndpoint<"/send-verification-email", PostOptions<ResendBody>, Acknowledgement>("/send-verification-email", {
       method: "POST", operationId: "sendVerificationEmail",
       body: sendVerificationEmail.options.body.strict(), use: [formCsrfMiddleware],
       metadata: { noStore: true },
@@ -118,7 +144,7 @@ export function emailVerificationEndpoints(
 
     // Replacing the core key closes the old state-changing GET for both
     // native routing and direct auth.api.verifyEmail dispatch.
-    verifyEmail: createAuthEndpoint("/verify-email", {
+    verifyEmail: createAuthEndpoint<"/verify-email", PostOptions<TokenSchema>, Acknowledgement>("/verify-email", {
       method: "POST", operationId: "verifyEmail",
       body: tokenSchema, use: [formCsrfMiddleware],
       metadata: { noStore: true },
@@ -131,7 +157,7 @@ export function emailVerificationEndpoints(
       }, ctx.request ? undefined : "email-verification");
     }),
 
-    inspectEmailVerification: createAuthEndpoint("/inspect-email-verification", {
+    inspectEmailVerification: createAuthEndpoint<"/inspect-email-verification", InspectOptions, Acknowledgement>("/inspect-email-verification", {
       method: "GET", operationId: "inspectEmailVerification",
       query: tokenSchema, metadata: { noStore: true },
     }, async ctx => {

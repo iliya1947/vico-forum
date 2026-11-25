@@ -9,8 +9,9 @@ import { localeRegistry } from "../../app/localization/registry";
 import { syntheticAttemptIngressSource } from "../../app/observability/attempt-source";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
-const databaseUrl = process.env.DATABASE_URL;
-if (!databaseUrl) throw new Error("DATABASE_URL is required");
+const configuredDatabaseUrl = process.env.DATABASE_URL;
+if (!configuredDatabaseUrl) throw new Error("DATABASE_URL is required");
+const databaseUrl: string = configuredDatabaseUrl;
 const url = new URL(databaseUrl);
 if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith("_test")) {
   throw new Error("Disposable local test database required");
