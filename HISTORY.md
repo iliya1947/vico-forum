@@ -29,3 +29,5 @@
 15. **2026-11-25:** Мира приняла correction pass Лёвы: полный технический план получил coordinator PASS. Delivery mode установлен stacked AUTH-01→AUTH-06 с AUTH-07 final gate; AUTH-01 передан Лире как первая ступень, без intermediate merge в main.
 
 16. **2026-11-25:** владелец напрямую переназначил AUTH-01 с Лиры на Лёву до начала implementation. Лира освобождена от этапа; Лёва реализует первую stacked-ступень. Независимый final technical reviewer будет определён отдельно, поскольку Лёва участвует в реализации.
+
+17. **2026-11-25:** Лёва реализовал AUTH-01 в #388 на stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`: server-only mail foundation, два injected adapters, fake, templates/URL/config/runtime seams. Local author checks и CI 45518743774 (attempt 2) прошли; результат передан Мире на coordinator checkpoint, AUTH-02 не начат. Внешние ресурсы не активировались.

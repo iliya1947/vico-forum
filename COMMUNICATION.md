@@ -24,8 +24,7 @@ Legacy cutover не является отдельным текущим product d
 
 ## Следующий переход
 
-Результат полного плана передан Мире для проверки модели/зависимостей и выбора delivery mode. Рекомендация AUTH-01 independent / AUTH-02–06 stack / AUTH-07 final gate не является implementation назначением. Implementation/CI/external activation не выполнялись. Постоянные документы main отражают реально отложенные verification/recovery до отдельного docs closeout после реализации.
-
+AUTH-01 реализован в #388, stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`; author checks и CI прошли. Мира проводит coordinator checkpoint первой stacked-ступени. AUTH-02+ не начаты; intermediate merge отсутствует. Evidence/ограничения — stages/AUTH-01/RESULT.md.
 
 ## Coordinator review — PASS
 
@@ -35,3 +34,7 @@ Legacy cutover не является отдельным текущим product d
 4. Delivery mode: stacked AUTH-01→AUTH-06, AUTH-07 final gate. Причина — одна зависимая vertical; промежуточный merge foundation-кода в main не нужен.
 5. Активная ступень — AUTH-01. По прямому решению владельца implementation назначена Лёве; остальные ступени не активны до coordinator checkpoint предыдущей. Поскольку Лёва участвует в реализации, независимый final reviewer определяется отдельно.
 6. External activation остаётся Stage-6-only.
+
+## AUTH-01 — готовое основание для checkpoint
+
+Provider-neutral server-only mail boundary, Resend/Brevo injected transports, bounded local/test fake, private results, strict action URLs и отдельный authMail translation namespace реализованы. Signup/session/auth callbacks не изменены; production mail жёстко disabled, внешних calls не было. Будущие token/lifecycle handlers не реализованы: mail capability сама не доказывает token identity/expiry/replay, а returnTo пока path-only. Продолжение — только после checkpoint Миры.
