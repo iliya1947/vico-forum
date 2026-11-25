@@ -213,7 +213,8 @@ export function createAuth(
   onCreatedProof?: AuthCreationEvidence,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
-  lifecycle?: AuthLifecycleTransaction,
+  lifecycle = new AuthLifecycleTransaction((database as NodePgDatabase & { $client: Client }).$client,
+    count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
 ) {
   const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle);
   if (onCreatedFact) {
@@ -222,8 +223,7 @@ export function createAuth(
     const createdUsers = new Set<string>();
     function observe(effect: () => void): void {
       try {
-        if (lifecycle) lifecycle.stageEvidence(effect);
-        else effect();
+        lifecycle.stageEvidence(effect);
       } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
     }
     function emit(fact: AuthTransitionFact, occurredAt = new Date()): void {
