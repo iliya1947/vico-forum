@@ -81,7 +81,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("75");
+    expect(applied.rows[0]?.count).toBe("76");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -92,7 +92,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
       where n.nspname = 'public'
         and constraint_row.conname in ('authz_permissions_catalog_check',
-          'admin_history_action_target_check', 'forum_topics_closure_version_check')
+          'admin_history_action_target_check', 'forum_topics_closure_version_check', 'owner_attempt_patterns_kind_check')
       union all
       select 'default:forum_topics.closure_version',
         pg_catalog.pg_get_expr(d.adbin, d.adrelid, false)
@@ -113,13 +113,14 @@ describe("PostgreSQL 17 locale migrations", () => {
     const checkHash = (table: string, name: string) =>
       manifest.tables[table]?.checks.find(row => row.name === name)?.definitionSha256;
     const versionHash = manifest.tables.forum_topics.columns.find(row => row.name === "closure_version")?.defaultSha256;
-    expect(definitions.rows).toHaveLength(4);
+    expect(definitions.rows).toHaveLength(5);
     expect(Object.fromEntries(definitions.rows.map(row =>
       [row.key, createHash("sha256").update(row.definition).digest("hex")]
     ))).toEqual({
       "check:forum_topics.forum_topics_closure_version_check": checkHash("forum_topics", "forum_topics_closure_version_check"),
       "check:authz_permissions.authz_permissions_catalog_check": checkHash("authz_permissions", "authz_permissions_catalog_check"),
       "check:admin_history.admin_history_action_target_check": checkHash("admin_history", "admin_history_action_target_check"),
+      "check:owner_attempt_patterns.owner_attempt_patterns_kind_check": checkHash("owner_attempt_patterns", "owner_attempt_patterns_kind_check"),
       "default:forum_topics.closure_version": versionHash,
     });
 

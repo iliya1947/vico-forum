@@ -87,7 +87,7 @@ def new_actor(browser, suffix):
                   else (external.append(route.request.url), route.abort())[-1])
     response = signup_verified_session(sql, context.request, base, headers={"Origin": base},
         data={"name": "AP10 " + suffix + " עברית " + "A" * 55,
-              "email": prefix + "-" + suffix + "@test.invalid",
+              "email": prefix + "-" + uuid4().hex[:12] + "@test.invalid",
               "password": "local-only-" + uuid4().hex},
     )
     assert response.status == 200, ("sign-up", suffix, response.status, response.text()[:240])

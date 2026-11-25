@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx } from "better-auth/api";
+import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx, isAPIError } from "better-auth/api";
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
@@ -201,7 +201,11 @@ export function betterAuthOptions(
       additionalFields: betterAuthUserAdditionalFields,
       validateUserInfo: async (data, context) => {
         try {
-          let result = await registrationAdmission(data, context);
+          // The policy reader is raw Drizzle work, not a native adapter call.
+          // Track it in the same transaction owner so a native synthetic
+          // duplicate acknowledgement cannot swallow a failed SQL read and
+          // cause COMMIT to be attempted against a still-blocked connection.
+          let result = await lifecycle.runAdapterOperation(() => registrationAdmission(data, context));
           // The provider-neutral challenge exchange is AUTH-05. Until it is
           // wired, a required mode cannot silently admit fresh email signup.
           if (!result && data.source.action === "create-user" && data.source.method === "email-password" &&
@@ -229,6 +233,12 @@ export function betterAuthOptions(
     // The native logger can print raw addresses and adapter errors. Keep
     // structured Vico attempt/fact reporting instead of auth payload logs.
     logger: { disabled: true },
+    // Better Call 1.4.0 logs unhandled non-APIError exceptions independently
+    // of Better Auth's logger. Its onError catch converts a thrown APIError
+    // to a response. Preserve existing API errors; never log raw SQL/params.
+    onAPIError: { onError: error => {
+      if (!isAPIError(error)) throw new APIError("INTERNAL_SERVER_ERROR", { message: "Authentication failed" });
+    } },
     plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
       signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error), dependencies)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,

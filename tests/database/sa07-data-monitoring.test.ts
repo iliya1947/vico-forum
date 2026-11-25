@@ -39,7 +39,7 @@ async function topic(){
     initialPost:{id:post,topicId:id,authorId:member,bodyRevision:{id:revision,sourceLocale:'en',originalContent:'A native Data body'}}});return {id,post,revision};
 }
 it('reads every named full source and actual compatibility subset with distinct connection clocks, without migration-ledger claims',async()=>{
-  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe('0074_auth_lifecycle_budget');expect(s.deployedMigration).toBe('unchecked');
+  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe('0075_auth_verification_observation');expect(s.deployedMigration).toBe('unchecked');
   for(const m of s.monitors){expect(m.recording).toBe('available');expect(m.checks.every(c=>c.status==='measured'||c.status==='compatible')).toBe(true);expect(m.coverageFrom).not.toBeNull();}
   for(const [group,tables]of Object.entries(DATA_COUNT_GROUPS)){
     const actual=check(s,'data.application','counts.'+group);expect(Object.keys(actual.values)).toEqual([...tables]);
@@ -128,16 +128,24 @@ it('reports a missing relation as a named configuration failure without successf
 it('closes both source transactions before a blocked passive observation and preserves measurement',async()=>{
   const blocker=new Client({connectionString:url,options});await blocker.connect();
   await blocker.query("begin;select pg_advisory_xact_lock(1447641936,hashtext('data.application:global'))");
+  const blockerPid=(await blocker.query<{pid:number}>('select pg_backend_pid() pid')).rows[0].pid;
+  const pending=reader.readCurrent();
+  // Other files run in parallel in this same PG database. Observe only a
+  // waiter blocked by this test's own lock, not an arbitrary advisory wait.
+  void pending.catch(()=>undefined);
   try{
-    const pending=reader.readCurrent();let waiting=false;
+    let waiting=false;
     for(let n=0;n<80;n++){
-      waiting=(await c.query("select exists(select 1 from pg_locks where locktype='advisory' and not granted and classid=1447641936) waiting")).rows[0].waiting;
+      waiting=(await c.query("select exists(select 1 from pg_locks l where l.locktype='advisory' and not l.granted and l.classid=1447641936 and $1::int=any(pg_blocking_pids(l.pid))) waiting",[blockerPid])).rows[0].waiting;
       if(waiting)break;await new Promise(resolve=>setTimeout(resolve,5));
     }
     expect(waiting).toBe(true);
-    await c.query('begin;lock table forum_posts,locales in access exclusive mode nowait;rollback');
+    try{await c.query('begin;lock table forum_posts,locales in access exclusive mode nowait');}
+    finally{await c.query('rollback');}
     const s=await pending;expect(monitor(s,'data.application').recording).toBe('unavailable');expect(check(s,'data.application','counts.accounts').values.user).toBe('2');
-  }finally{await blocker.query('rollback');await blocker.end();}
+  }finally{
+    try{await blocker.query('rollback');}finally{await blocker.end();await pending.catch(()=>undefined);}
+  }
 });
 it('counts every retained schema version while explicitly bounding displayed version details',async()=>{
   await c.query("insert into owner_monitor_observations(id,monitor_key,resource_scope,source,schema_version,quality,value,fingerprint) select gen_random_uuid(),'system.runtime','global','application',n,'measured','{}',repeat('0',64) from generate_series(1,40) n");
