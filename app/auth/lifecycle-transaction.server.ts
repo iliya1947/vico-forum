@@ -36,6 +36,7 @@ const MAX_STAGED_EVIDENCE = 128;
 export class AuthLifecycleTransaction {
   private readonly context = new AsyncLocalStorage<Frame>();
   private active: Frame | undefined;
+  private adapterTail: Promise<void> = Promise.resolve();
   private unusable = false;
   private failure: AuthLifecycleTransactionError | undefined;
 
@@ -65,11 +66,24 @@ export class AuthLifecycleTransaction {
     return false;
   }
 
-  /** A guarded write failure must not become commit-able if an inner caller catches it. */
-  markFailed(cause: unknown): void {
-    if (!this.ownsCurrentWork()) return;
-    const frame = this.context.getStore()!;
-    frame.failed ??= { cause };
+  /**
+   * The native adapter is a single-client boundary. Better Auth can issue
+   * concurrent independent calls (including reads before revoke writes).
+   * Serialize root adapter calls, not just DELETE. Nested calls already
+   * belong to the explicit owner and must not wait behind their own parent.
+   * Raw lifecycle work still cannot enter an unrelated busy transaction.
+   */
+  async runAdapterOperation<T>(work: () => Promise<T>): Promise<T> {
+    if (this.context.getStore()) {
+      this.ownsCurrentWork();
+      return work();
+    }
+    const task = this.adapterTail.then(() => {
+      this.ownsCurrentWork();
+      return work();
+    });
+    this.adapterTail = task.then(() => undefined, () => undefined);
+    return task;
   }
 
   private gap(count: number): void {
