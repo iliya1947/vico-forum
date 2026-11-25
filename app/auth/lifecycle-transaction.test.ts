@@ -133,4 +133,33 @@ describe("request-local auth lifecycle transaction ownership", () => {
     expect(gap).toHaveBeenCalledWith(1);
     expect(gap).toHaveBeenCalledWith(3);
   });
+  it.each([false, true])("drains detached nested work before rollback (outer failure=%s)", async outerFailure => {
+    const { scope, query, controls } = fixture();
+    let entered!: () => void;
+    let release!: () => void;
+    const ready = new Promise<void>(resolve => { entered = resolve; });
+    const wait = new Promise<void>(resolve => { release = resolve; });
+    let nested: Promise<void> | undefined;
+    const failure = new Error("outer failure");
+    const transaction = scope.run(async () => {
+      nested = scope.run(async () => {
+        entered();
+        await wait;
+        // The already admitted native operation finishes before rollback.
+        await query("nested statement");
+      });
+      await ready;
+      if (outerFailure) throw failure;
+    });
+    await ready;
+    await Promise.resolve();
+    expect(controls()).toEqual(["BEGIN"]);
+    release();
+    if (outerFailure) await expect(transaction).rejects.toBe(failure);
+    else await expect(transaction).rejects.toMatchObject({ code: "unawaited" });
+    await nested;
+    expect(controls()).toEqual(["BEGIN", "ROLLBACK"]);
+    const statements = query.mock.calls.map(([sql]) => sql);
+    expect(statements.indexOf("nested statement")).toBeLessThan(statements.indexOf("ROLLBACK"));
+  });
 });
