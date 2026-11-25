@@ -144,3 +144,14 @@ Owner directed: Leva performs full technical review instead of Lena; handoff acc
 Проверены canonical HTTP/direct, обязательность email verification и отсутствие signup session, SET-02 fresh-create gate и ошибки чтения policy, порядок AccountState и транзакционные границы, GET/POST и proof generation/expiry/replay, resend и mail outcomes, Google isolation/explicit linking, локализованные UI/return paths, Owner facts/attempts и fixture diff. Локально прошли 220 unit/component-тестов, 56 PostgreSQL-тестов в шести файлах (registration/direct/SET-02, lifecycle, linking, Owner facts и integration monitoring), миграции на чистой PG17.11 и отдельный connected сценарий AUTH-02b с Worker, Playwright 1.62 и системным Chromium вместо Chrome. P7 с исходной конфигурацией FAIL; затронутый сценарий с локально проверенной конфигурацией preview PASS. Последующие общие CI smoke и полный acceptance matrix на этом head локально не запускались. CI `#45684578593` сохраняет свой зарегистрированный статус; AUTHOR PASS и coordinator PASS отсутствуют.
 
 Review-фаза завершена. Следующий назначенный этап — отдельный пакет исправлений AUTH-02b, новый stable head и проверки. AUTH-03 ждёт coordinator PASS AUTH-02b.
+
+
+## Correction/finalization — активирован у Лёвы
+
+Review-фаза завершена на exact head `bbd35cb60273a2a90cce7aea997d50e4f42943cf` с HOLD и тремя confirmed current-scope findings. По прямому решению владельца Лёва начинает отдельную implementation-фазу исправления:
+
+1. built-preview auth binding для P7 и аналогичных post-build smoke;
+2. SSR resend form должна исключить email в GET URL до гидратации;
+3. locale/return-path validation должна быть согласована с generation issuance так, чтобы не инвалидировать рабочий proof без возможности отправить новый.
+
+После coherent correction package требуется новый stable exact head, полный author self-check bounded AUTH-02b и применимые exact-head CI/acceptance. До coordinator PASS AUTH-03 не начинается.
