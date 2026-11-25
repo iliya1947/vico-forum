@@ -17,7 +17,7 @@
    - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
    - единый transaction owner и sequencing correction приняты;
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — незавершён.** Лена прекращает работу по прямому решению владельца; Мира принимает handoff для полной проверки Лёвой вместо Лены. Base — принятый AUTH-02a; bounded contract `stages/AUTH-02b/PLAN.md`. AUTHOR PASS отсутствует.
+3. **AUTH-02b — незавершён.** Лена STOP; полная техническая проверка current #391 передана Лёве. AUTHOR PASS отсутствует. После review Лёва отдельным implementation-этапом сам исправляет/доводит AUTH-02b; после coordinator PASS остаётся исполнителем AUTH-03 → AUTH-06. Base — принятый AUTH-02a; bounded contract `stages/AUTH-02b/PLAN.md`.
 
 ## Существенные технические зависимости следующих этапов
 
@@ -30,4 +30,4 @@
 
 ## Текущий переход
 
-Мира координирует назначенную владельцем полную проверку AUTH-02b Лёвой. Текущий exact head, CI blocker и маршрут — WORKFLOW.md; диагностическое evidence — stages/AUTH-02b/RESULT.md. До закрытия этапа AUTH-03 не начинать.
+Лёва выполняет полную review AUTH-02b #391 без изменения implementation. Текущий exact head, CI blocker и маршрут — WORKFLOW.md; evidence — stages/AUTH-02b/RESULT.md. После review отдельным этапом тот же Лёва исправляет/доводит AUTH-02b. AUTH-03 начинается только после coordinator PASS AUTH-02b и также остаётся у Лёвы.
