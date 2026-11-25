@@ -61,3 +61,7 @@ PR #388, stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
 Лёва независимо подтвердил blanket cleanup Better Auth 1.7.7 и воспроизвёл удаление live 600 s Vico row на +120 s с truthful lastRequest (unmodified native code, controlled-clock/in-memory adapter diagnostic, не PG race test). Требование общего rate_limit было ошибкой технического плана. Common AuthLifecycleBudget получает отдельную `auth_lifecycle_budget` с key PK/count/finite expires_at и indexed bounded cleanup; native limiter/rules/configuration сохраняются. Это изменение storage existing service, без нового policy engine, native customStorage или внешнего backend.
 
 PLAN §2/7/8 и stage PLAN исправлены; точный schema/migration/runtime capability/acceptance contract и исключённые альтернативы — [stages/AUTH-02a/STORAGE-DECISION.md](stages/AUTH-02a/STORAGE-DECISION.md). Storage blocker для начала исправления снят, реализация остаётся у Лены. A-02–A-04 и sequencing diagnostics остаются обязательными до нового stable head/author checks и checkpoint Миры; прежний green CI не принимает новое решение. Лёва application code/CI/external state не менял.
+
+## Owner routing decision — next package
+
+После coordinator PASS текущего AUTH-02a следующую stacked-ступень **AUTH-02b реализует Лёва / Codex-6.1 Sol**. Решение заранее фиксирует исполнителя, но не активирует AUTH-02b: Лена сначала завершает AUTH-02a, затем Мира проводит checkpoint. Base AUTH-02b определяется stable head принятого AUTH-02a.
