@@ -31,3 +31,5 @@
 16. **2026-11-25:** владелец напрямую переназначил AUTH-01 с Лиры на Лёву до начала implementation. Лира освобождена от этапа; Лёва реализует первую stacked-ступень. Независимый final technical reviewer будет определён отдельно, поскольку Лёва участвует в реализации.
 
 17. **2026-11-25:** Лёва реализовал AUTH-01 в #388 на stable head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`: server-only mail foundation, два injected adapters, fake, templates/URL/config/runtime seams. Local author checks и CI 45518743774 (attempt 2) прошли; результат передан Мире на coordinator checkpoint, AUTH-02 не начат. Внешние ресурсы не активировались.
+
+17. **2026-11-25:** AUTH-01 в PR #388 на exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a` прошёл coordinator checkpoint Миры: PASS, 0 confirmed current-scope defects. CI exact-head checks/database SUCCESS; переход к AUTH-02a разрешён без intermediate merge и independent Codex review.
