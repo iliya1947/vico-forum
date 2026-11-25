@@ -51,7 +51,8 @@ function validId(value: unknown): value is string {
 }
 function validEmail(value: unknown): value is string {
   return typeof value === "string" && value.length <= 254 && value === value.toLowerCase() &&
-    /^[^\s@\u0000-\u001f\u007f]+@[^\s@\u0000-\u001f\u007f]+$/.test(value);
+    /^[^\s@]+@[^\s@]+$/.test(value) &&
+    !Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 }
 function validPurpose(value: unknown): value is LifecyclePurpose {
   return typeof value === "string" && lifecyclePurposes.some(p => p === value);
@@ -216,7 +217,7 @@ export class AuthLifecycleState {
         clock_timestamp() at time zone 'UTC',clock_timestamp() at time zone 'UTC')
       on conflict (id) do update set value=excluded.value, expires_at=excluded.expires_at,
         updated_at=excluded.updated_at where verification.identifier=excluded.identifier
-      returning expires_at
+      returning expires_at at time zone 'UTC' as expires_at
     `, [id, JSON.stringify(state), TTL[intent.purpose]]);
     if (result.rowCount !== 1 || !result.rows[0]) throw new LifecycleStateInvariantError();
     return { claims, token, expiresAt: result.rows[0].expires_at };
@@ -224,7 +225,8 @@ export class AuthLifecycleState {
 
   private async consume(userId: string, proof: LifecycleProof): Promise<State> {
     if (proof.userId !== userId || !validPurpose(proof.purpose) ||
-      !validPhase(proof.purpose, proof.phase) || !generationPattern.test(proof.generation) ||
+      !validPhase(proof.purpose, proof.phase) || typeof proof.generation !== "string" ||
+      !generationPattern.test(proof.generation) ||
       !validToken(proof.token)) throw new InvalidLifecycleProofError();
     const id = await key(userId, proof.purpose);
     const current = await this.load(id, userId, proof.purpose);
