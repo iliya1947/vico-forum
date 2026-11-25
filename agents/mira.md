@@ -3,12 +3,12 @@
 ## Текущий контекст
 
 1. AUTH-01: PR #388 / head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`, coordinator PASS.
-2. AUTH-02a: PR #389 / exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, author PASS + coordinator PASS, 0 confirmed current-scope defects.
-3. Проверка AUTH-02a включала самостоятельный runtime/architecture review; green CI использован только как подтверждающее evidence.
-4. Следующая ступень AUTH-02b по прямому решению владельца назначена Лёве, но ещё не активирована.
-5. Base следующей ступени — принятый AUTH-02a head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
-6. Лёва и Лена участвовали в implementation разных ступеней; final independent reviewer всей сборки определяется отдельно.
+2. AUTH-02a: PR #389 / head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`, author PASS + coordinator PASS.
+3. AUTH-02b активирован и по прямому решению владельца назначен Лёве / Codex-6.1 Sol.
+4. Base AUTH-02b — `feat/auth-02a-lifecycle-foundation` exact `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+5. AUTH-02b ограничен mandatory verification/resend/UI; AUTH-03 recovery/password creation не активирован.
+6. Лёва и Лена уже участвовали в implementation stack; final independent reviewer всей сборки определяется отдельно.
 
 ## Следующий переход
 
-При следующем продолжении активировать AUTH-02b и оформить bounded handoff Лёве. Не merge AUTH-02a и не запускать independent intermediate review.
+После завершения Лёвой AUTH-02b провести coordinator checkpoint stable exact head. Проверять фактическую mandatory-verification модель, signup/session contract, verification terminal semantics, resend/privacy, SET-02 interaction, Google isolation и отсутствие AUTH-03 scope expansion. Green CI использовать только как evidence после самостоятельной проверки.
