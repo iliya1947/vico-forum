@@ -66,7 +66,7 @@ afterAll(async () => {
 });
 
 describe("AUTH-02a server-only lifecycle state", () => {
-  it("registers the request-local service in canonical Better Auth with no added endpoints", async () => {
+  it("registers one request-local service and replaces the canonical verification endpoint", async () => {
     const auth = createAuth(drizzle(first), {
       BETTER_AUTH_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "disposable-lifecycle-state-test-secret-32-chars",
@@ -77,8 +77,12 @@ describe("AUTH-02a server-only lifecycle state", () => {
     const service = (context as unknown as { vicoAuthLifecycle: AuthLifecycleState }).vicoAuthLifecycle;
     expect(service).toBeInstanceOf(AuthLifecycleState);
     expect(context.options.plugins?.filter(plugin => plugin.id === "vico-auth-lifecycle")).toHaveLength(1);
-    expect(context.options.plugins?.find(plugin => plugin.id === "vico-auth-lifecycle")?.endpoints).toBeUndefined();
-    expect(context.options.emailAndPassword?.requireEmailVerification).toBe(false);
+    const endpoints = context.options.plugins?.find(plugin => plugin.id === "vico-auth-lifecycle")?.endpoints;
+    expect(endpoints?.verifyEmail?.options.method).toBe("POST");
+    expect(endpoints?.sendVerificationEmail?.options.method).toBe("POST");
+    expect(endpoints?.inspectEmailVerification?.options.method).toBe("GET");
+    expect(context.options.emailAndPassword?.requireEmailVerification).toBe(true);
+    expect(context.options.emailAndPassword?.autoSignIn).toBe(false);
     const issued = await service.withSubject(userId, subject =>
       subject.issue({ purpose: "email-verification" }, testToken));
     expect(await consume(proof(issued))).toMatchObject({ userId, purpose: "email-verification" });

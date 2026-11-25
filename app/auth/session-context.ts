@@ -5,13 +5,26 @@ import {
   type AuthRuntime,
 } from "./request-context";
 
-/** Resolves Better Auth exactly once before React Router handles this request. */
+/** Guest auth commands must not refresh, clear or switch an ambient session.
+ * Match the canonical API paths; the auth plugin still enforces its own CSRF.
+ */
+export function isGuestEmailVerificationRequest(request: Request): boolean {
+  const path = new URL(request.url).pathname;
+  return path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
+    path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification";
+}
+
+/** Resolves Better Auth exactly once before React Router handles ordinary requests. */
 export async function initializeAuthContext(
   context: RouterContextProvider,
   request: Request,
   runtime: AuthRuntime,
 ): Promise<Headers> {
   context.set(authRuntimeContext, runtime);
+  if (isGuestEmailVerificationRequest(request)) {
+    context.set(authSessionContext, null);
+    return new Headers();
+  }
   const resolved = await runtime.getSession(request.headers);
   context.set(authSessionContext, resolved.session);
   return resolved.headers;

@@ -1,5 +1,5 @@
 import { parseLocaleCandidate, type ResolvedLocaleContext } from "../localization/locale";
-import type { LocaleRegistry } from "../localization/registry";
+import { localeRegistry, type LocaleRegistry } from "../localization/registry";
 import { resolveExplicitLocale } from "../localization/resolver";
 import { AuthMailValidationError, isMailPurpose, type AuthMailExecution, type AuthMailPurpose } from "./auth-mail-contract.server";
 
@@ -64,6 +64,26 @@ function returnPath(origin: string, locale: string, supplied?: string): string {
     const url = new URL(supplied, origin);
     if (url.origin !== origin || url.username || url.password) throw new AuthMailValidationError();
     return url.pathname;
+  } catch { throw new AuthMailValidationError(); }
+}
+
+/** Canonical path-only destination used by signup and guest resend.
+ * The mail runtime additionally checks the active request LocaleRegistry. */
+export function verificationMailDestination(callback: string | undefined, origin: string): {
+  locale: string; returnTo?: string;
+} {
+  if (callback === undefined || callback === "/") return { locale: localeRegistry.bootstrap.tag };
+  try {
+    if (!callback.startsWith("/") || callback.startsWith("//") || callback.includes("?") || callback.includes("#")) {
+      throw new AuthMailValidationError();
+    }
+    const decoded = decodedPath(callback);
+    const tag = decoded.split("/")[1];
+    const locale = parseLocaleCandidate(tag);
+    if (!locale || locale.canonicalInput !== locale.translationTag || locale.translationTag !== tag) {
+      throw new AuthMailValidationError();
+    }
+    return { locale: tag, returnTo: returnPath(origin, tag, callback) };
   } catch { throw new AuthMailValidationError(); }
 }
 

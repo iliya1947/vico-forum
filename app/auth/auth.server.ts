@@ -20,6 +20,7 @@ import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
 import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
 import { authLifecyclePlugin, type AuthLifecycleDependencies } from "./lifecycle-plugin.server";
+import { SignupVerificationEvidence } from "./signup-verification-evidence.server";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -49,7 +50,8 @@ export interface AuthCreationObserver {
 }
 export const betterAuthEmailPasswordOptions = {
   enabled: true,
-  requireEmailVerification: false,
+  requireEmailVerification: true,
+  autoSignIn: false,
   minPasswordLength: 8,
   maxPasswordLength: 128,
 } as const;
@@ -165,6 +167,8 @@ export function betterAuthOptions(
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
   const ownSignOutTokens = new Set<string>();
+  const signupEvidence = new SignupVerificationEvidence();
+  const registrationAdmission = createRegistrationAdmission(database);
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
@@ -188,10 +192,40 @@ export function betterAuthOptions(
         }
       } } },
     },
-    user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
+    user: {
+      additionalFields: betterAuthUserAdditionalFields,
+      validateUserInfo: async (data, context) => {
+        try {
+          let result = await registrationAdmission(data, context);
+          // The provider-neutral challenge exchange is AUTH-05. Until it is
+          // wired, a required mode cannot silently admit fresh email signup.
+          if (!result && data.source.action === "create-user" && data.source.method === "email-password" &&
+              dependencies?.registrationChallenge?.mode === "required") {
+            result = { error: "vico_registration_challenge_unavailable", errorDescription: "Registration unavailable" };
+          }
+          signupEvidence.noteAdmission(result);
+          return result;
+        } catch (error) {
+          signupEvidence.noteAdmissionFailure(error);
+          throw error;
+        }
+      },
+    },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
-    plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET, dependencies)],
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: false,
+      autoSignInAfterVerification: false,
+      // Native calls this only after linkAccount, inside its signup transaction.
+      // Record actual creation; the outer endpoint sends only after COMMIT.
+      sendVerificationEmail: async ({ user }) => { signupEvidence.noteCreated(user); },
+    },
+    // The native logger can print raw addresses and adapter errors. Keep
+    // structured Vico attempt/fact reporting instead of auth payload logs.
+    logger: { disabled: true },
+    plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
+      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error), dependencies)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {

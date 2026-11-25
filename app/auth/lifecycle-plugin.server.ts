@@ -7,6 +7,8 @@ import { RegistrationChallenge, type RegistrationChallengeConfig } from "./regis
 import type { AttemptIngressSource } from "../observability/attempt-source";
 import { AuthEmailVerification } from "./email-verification.server";
 import type { AuthMailRuntime } from "./auth-mail.server";
+import { emailVerificationEndpoints } from "./email-verification-endpoints.server";
+import type { SignupVerificationEvidence } from "./signup-verification-evidence.server";
 
 export type AuthLifecycleDependencies = Readonly<{
   ingress?: AttemptIngressSource;
@@ -18,13 +20,15 @@ export type AuthLifecycleDependencies = Readonly<{
  * request-local state, budget and transaction owner.
  */
 export function authLifecyclePlugin(client: Pick<Client, "query">,
-  transaction: AuthLifecycleTransaction, secret: string, dependencies?: AuthLifecycleDependencies) {
+  transaction: AuthLifecycleTransaction, secret: string, evidence: SignupVerificationEvidence,
+  unavailable: (error: unknown) => boolean, dependencies?: AuthLifecycleDependencies) {
   const state = new AuthLifecycleState(client, transaction);
   const budget = new AuthLifecycleBudget(client, transaction, secret, dependencies?.ingress);
   const challenge = new RegistrationChallenge(dependencies?.registrationChallenge);
   const emailVerification = new AuthEmailVerification(client, transaction, state, budget, secret, dependencies?.mail);
   return {
     id: "vico-auth-lifecycle",
+    endpoints: emailVerificationEndpoints(emailVerification, budget, transaction, evidence, unavailable),
     init: () => ({ context: { vicoAuthLifecycle: state, vicoAuthBudget: budget,
       vicoRegistrationChallenge: challenge, vicoEmailVerification: emailVerification } }),
   } satisfies BetterAuthPlugin;

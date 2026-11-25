@@ -109,7 +109,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const auth = withAttemptObservation(
       createHyperdriveAuthRuntime(
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
-        () => collector.recordRegistrationDenied(), facts, { ingress },
+        () => collector.recordRegistrationDenied(), facts, { ingress, mail: context.get(authMailRuntimeContext) },
       ), collector);
     let authHeaders: Headers;
     try {

@@ -9,10 +9,11 @@ import {
 } from "./auth.server";
 
 describe("Better Auth security/database configuration", () => {
-  it("enables email/password signup and signin without mandatory verification", () => {
+  it("requires email verification and explicit sign-in", () => {
     expect(betterAuthEmailPasswordOptions).toEqual({
       enabled: true,
-      requireEmailVerification: false,
+      requireEmailVerification: true,
+      autoSignIn: false,
       minPasswordLength: 8,
       maxPasswordLength: 128,
     });
