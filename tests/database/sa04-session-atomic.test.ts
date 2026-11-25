@@ -26,7 +26,8 @@ const env: BetterAuthEnvironment = {
 };
 const writer = new Client({ connectionString: url, options: `-c search_path=${schema}` });
 const deactivator = new Client({ connectionString: url, options: `-c search_path=${schema}` });
-const auth = betterAuth(betterAuthOptions(drizzle(writer), env));
+const auth = betterAuth(betterAuthOptions(drizzle(writer), env, undefined, false,
+  new AuthLifecycleTransaction(writer)));
 const password = "atomic-session-password-123";
 let ip = 140;
 const deactivateSql = `update "user" set deactivated_at='2026-11-12T00:00:00Z',
@@ -99,66 +100,67 @@ afterAll(async () => {
 });
 
 describe("SA04-I4a Better Auth 1.7.7 native session write atomicity", () => {
-  it("locks real signup transaction-context session INSERT before concurrent deactivation", async () => {
-    const email = "i4a-transaction-signup@example.test";
+  function signupRequest(email: string) {
+    return new Request(origin + "/api/auth/sign-up/email", {
+      method: "POST",
+      headers: { Origin: origin, "content-type": "application/json",
+        "cf-connecting-ip": `203.0.113.${ip++}` },
+      body: JSON.stringify({ name: "AUTH-02a", email, password }),
+    });
+  }
+
+  it("keeps native user and credential inserts invisible until the single outer signup commit", async () => {
+    const instance = auth;
+    const email = "auth02a-atomic-signup@example.test";
     const paused = pauseNativeQuery(writer, sql => /^insert into "session"\s/i.test(sql));
+    const signing = instance.handler(signupRequest(email));
     try {
-      const signing = auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
-        method: "POST",
-        headers: { Origin: origin, "content-type": "application/json",
-          "cf-connecting-ip": `203.0.113.${ip++}` },
-        body: JSON.stringify({ name: "I4a transaction", email, password }),
-      }));
-      await paused.entered; // BA runWithTransaction supplied a guarded callback adapter.
-      const found = (await deactivator.query<{ id: string }>(
+      await Promise.race([paused.entered, signing.then(() => {
+        throw new Error("Signup completed before reaching the native session write");
+      })]);
+      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
+      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
+      paused.resume();
+      const response = await signing;
+      expect(response.status).toBe(200);
+      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
+      const row = (await deactivator.query<{ id: string }>(
         'select id from "user" where email=$1', [email],
       )).rows[0];
-      expect(found?.id).toBeTruthy();
-      await deactivator.query("set lock_timeout='120ms'");
-      await expect(deactivator.query(deactivateSql, [found.id]))
-        .rejects.toMatchObject({ code: "55P03" });
-      paused.resume();
-      const created = await signing;
-      expect(created.status).toBe(200);
-      expect(created.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(true);
-      expect((await deactivator.query<{ n: number }>(
-        'select count(*)::int n from "session" where user_id=$1', [found.id],
-      )).rows[0]?.n).toBe(1);
+      expect(row?.id).toBeTruthy();
+      expect((await deactivator.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
+      expect((await deactivator.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(1);
     } finally {
       paused.resume();
+      await signing.catch(() => undefined);
       paused.restore();
-      await deactivator.query("set lock_timeout='0'");
     }
   }, 30_000);
 
-  it("denies signup session after a deactivation wins before the fallback transaction write", async () => {
-    const email = "i4a-transaction-loser@example.test";
-    const paused = pauseNativeQuery(writer, sql => sql === "BEGIN");
+  it("rolls back native signup user and credential when the final session insert fails", async () => {
+    const instance = auth;
+    const email = "auth02a-atomic-failure@example.test";
+    const original = writer.query;
+    let injected = false;
+    writer.query = ((...args: unknown[]) => {
+      if (!injected && /^insert into "session"\s/i.test(nativeSql(args[0]))) {
+        injected = true;
+        return Promise.reject(new Error("test-only native session insert failure"));
+      }
+      return Reflect.apply(original, writer, args);
+    }) as typeof writer.query;
     try {
-      const signing = auth.handler(new Request(`${origin}/api/auth/sign-up/email`, {
-        method: "POST",
-        headers: { Origin: origin, "content-type": "application/json",
-          "cf-connecting-ip": `203.0.113.${ip++}` },
-        body: JSON.stringify({ name: "I4a transaction loser", email, password }),
-      }));
-      await paused.entered; // I3 create.before passed; I4a final admission has not started.
-      const found = (await deactivator.query<{ id: string }>(
-        'select id from "user" where email=$1', [email],
-      )).rows[0];
-      expect(found?.id).toBeTruthy();
-      await deactivator.query(deactivateSql, [found.id]);
-      paused.resume();
-      const denied = await signing;
-      expect(denied.status).toBe(401);
-      expect(denied.headers.get("Cache-Control")).toBe("private, no-store");
-      expect(denied.headers.getSetCookie().some(x => x.includes("session_token="))).toBe(false);
-      expect((await deactivator.query<{ n: number }>(
-        'select count(*)::int n from "session" where user_id=$1', [found.id],
-      )).rows[0]?.n).toBe(0);
-    } finally {
-      paused.resume();
-      paused.restore();
-    }
+      const result = await instance.handler(signupRequest(email)).catch(() => null);
+      expect(injected).toBe(true);
+      if (result) {
+        expect(result.ok).toBe(false);
+        expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      }
+      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
+      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
+    } finally { writer.query = original; }
   }, 30_000);
 
   it("holds the active user-row lock through actual session INSERT and commits before deactivation", async () => {
@@ -1095,69 +1097,6 @@ describe("AUTH-02a explicit lifecycle owner with the native Better Auth guard", 
     const instance = betterAuth(betterAuthOptions(drizzle(writer), env, undefined, false, scope));
     return { scope, instance };
   }
-
-  function signupRequest(email: string) {
-    return new Request(origin + "/api/auth/sign-up/email", {
-      method: "POST",
-      headers: { Origin: origin, "content-type": "application/json",
-        "cf-connecting-ip": `203.0.113.${ip++}` },
-      body: JSON.stringify({ name: "AUTH-02a", email, password }),
-    });
-  }
-
-  it("keeps native user and credential inserts invisible until the single outer signup commit", async () => {
-    const { instance } = scoped();
-    const email = "auth02a-atomic-signup@example.test";
-    const paused = pauseNativeQuery(writer, sql => /^insert into "session"\s/i.test(sql));
-    const signing = instance.handler(signupRequest(email));
-    try {
-      await Promise.race([paused.entered, signing.then(() => {
-        throw new Error("Signup completed before reaching the native session write");
-      })]);
-      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
-      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
-      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
-      paused.resume();
-      const response = await signing;
-      expect(response.status).toBe(200);
-      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(true);
-      const row = (await deactivator.query<{ id: string }>(
-        'select id from "user" where email=$1', [email],
-      )).rows[0];
-      expect(row?.id).toBeTruthy();
-      expect((await deactivator.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
-      expect((await deactivator.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(1);
-    } finally {
-      paused.resume();
-      await signing.catch(() => undefined);
-      paused.restore();
-    }
-  }, 30_000);
-
-  it("rolls back native signup user and credential when the final session insert fails", async () => {
-    const { instance } = scoped();
-    const email = "auth02a-atomic-failure@example.test";
-    const original = writer.query;
-    let injected = false;
-    writer.query = ((...args: unknown[]) => {
-      if (!injected && /^insert into "session"\s/i.test(nativeSql(args[0]))) {
-        injected = true;
-        return Promise.reject(new Error("test-only native session insert failure"));
-      }
-      return Reflect.apply(original, writer, args);
-    }) as typeof writer.query;
-    try {
-      const result = await instance.handler(signupRequest(email)).catch(() => null);
-      expect(injected).toBe(true);
-      if (result) {
-        expect(result.ok).toBe(false);
-        expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
-      }
-      expect((await deactivator.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
-      expect((await deactivator.query("select id from account")).rowCount).toBe(0);
-      expect((await deactivator.query("select id from session")).rowCount).toBe(0);
-    } finally { writer.query = original; }
-  }, 30_000);
 
   it("holds the AccountState row lock after nested writes return, through the outer commit", async () => {
     const { userId } = await signUp("lifecycle-owner-lock");
