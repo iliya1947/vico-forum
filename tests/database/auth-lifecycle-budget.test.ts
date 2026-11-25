@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { Client } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createAuth } from "../../app/auth/auth.server";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthLifecycleBudget, LifecycleBudgetExceededError, LifecycleBudgetInvariantError,
   type LifecycleBudgetIntent } from "../../app/auth/lifecycle-budget.server";
 import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
@@ -147,7 +147,9 @@ describe("AUTH-02a shared private lifecycle budget", () => {
     expect((await first.query("select id,count from rate_limit")).rows).toEqual([{id:native[0].id,count:1}]);
     expect(await persisted()).toEqual(original);
     await expect(runtime.run(mail(),ok)).rejects.toBeInstanceOf(LifecycleBudgetExceededError);
-    expect((await persisted()).find(row=>row.count===3)?.expires_at).toEqual(original.find(row=>row.count===3)?.expires_at);
+    const target=(await persisted()).find(row=>row.count===3);
+    expect(target).toBeDefined();
+    expect(target?.expires_at).toEqual(original.find(row=>row.key===target?.key)?.expires_at);
   });
 
   it("enforces finite expiry, valid HMAC key and positive count on the forward schema", async () => {
@@ -180,6 +182,48 @@ describe("AUTH-02a shared private lifecycle budget", () => {
     expect((await persisted()).map(r=>r.key)).toEqual(expect.arrayContaining([lockedKey,liveKey]));
     expect((await persisted()).filter(r=>r.expires_at.getTime()<Date.now())).toHaveLength(0);
     expect((await first.query("select id,key,count,last_request from rate_limit")).rows).toEqual([{id:"native",key:"native",count:1,last_request:"1"}]);
+  });
+
+  it("recreates an expired bucket when a concurrent cleanup deletes it first", async () => {
+    await budget(second).run({kind:"signup"},ok);
+    const key=(await persisted())[0].key;
+    await first.query("update auth_lifecycle_budget set expires_at=clock_timestamp()-interval '1 second'");
+    // A distinct real admission owns the cleanup transaction. Pause the
+    // native query only after DELETE has executed and before its COMMIT.
+    const native=first.query;
+    let deleted!:()=>void,release!:()=>void;
+    const deletionReached=new Promise<void>(resolve=>{deleted=resolve;});
+    const barrier=new Promise<void>(resolve=>{release=resolve;});
+    first.query=((...args:unknown[])=>{
+      const result=Reflect.apply(native,first,args);
+      if(typeof args[0]!=="string" || !args[0].includes("delete from auth_lifecycle_budget as budget")) return result;
+      return Promise.resolve(result).then(async value=>{deleted();await barrier;return value;});
+    }) as typeof first.query;
+    const cleaner=budget(first,syntheticAttemptIngressSource("203.0.113.99")).run({kind:"signup"},ok);
+    let renewal:Promise<string>|undefined;
+    try {
+      await Promise.race([deletionReached,cleaner.then(()=>{throw new Error("cleanup did not reach DELETE");})]);
+      const pid=(await second.query<{pid:number}>("select pg_backend_pid() as pid")).rows[0].pid;
+      renewal=budget(second).run({kind:"signup"},ok);
+      // A separate observer cannot borrow the blocked renewal connection.
+      const observer=connection();
+      await observer.connect();
+      try {
+        await vi.waitFor(async()=>{
+          const activity=await observer.query("select wait_event_type from pg_stat_activity where pid=$1",[pid]);
+          expect(activity.rows[0]?.wait_event_type).toBe("Lock");
+        },{timeout:1000,interval:20});
+      } finally {await observer.end();}
+    } finally {
+      release();
+      first.query=native;
+      await Promise.allSettled([cleaner,...(renewal?[renewal]:[])]);
+    }
+    await expect(cleaner).resolves.toBe("ok");
+    await expect(renewal).resolves.toBe("ok");
+    const saved=(await persisted()).find(row=>row.key===key);
+    expect(saved?.count).toBe(1);
+    expect(saved?.expires_at.getTime()).toBeGreaterThan(Date.now());
   });
 
   it("uses separate HMAC keys on secret rotation and leaves old windows bounded", async () => {
