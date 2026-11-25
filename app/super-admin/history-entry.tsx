@@ -34,6 +34,8 @@ const kinds: Record<string,Label> = {
   "account.deactivated":"superAdminHistoryAccountDeactivated",
   "auth.methodLinked":"superAdminHistoryMethodLinked",
   "auth.passwordChanged":"superAdminHistoryPasswordChanged",
+  "auth.emailVerified":"profileOwnerEmailVerified",
+  "integration.authMailOutcome":"sa07IMailOutcome",
   "auth.sessionCreated":"superAdminHistorySessionCreated",
   "auth.sessionDeleted":"superAdminHistorySessionDeleted",
   "monitor.observed":"superAdminObservedEvent",
@@ -66,6 +68,9 @@ const fields:Record<string,Label> = {
   afterStructureVersion:"historyStructureAfterVersion",
   retainAtLeastUntil:"superAdminHistoryRetainUntil",
   operationId:"superAdminHistoryOperationId",
+  mailPurpose:"sa07IMailPurpose",
+  mailTransport:"sa07IMailTransport",
+  mailOutcome:"sa07IMailOutcomeValue",
   runId:"superAdminHistoryOperationId",
   activeUsers:"superAdminActiveUsers",
   deactivatedUsers:"superAdminDeactivatedUsers",
@@ -163,6 +168,8 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
       <span> · </span><bdi>{value}</bdi></>;
   if(typeof value==="string" && numericFields.has(name) && /^[0-9]+$/.test(value))
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
+  if(name==="operation"&&value==="email-verification")return <span>{t("authVerificationHeading")}</span>;
+  if(name==="operation"&&value==="verification-send")return <span>{t("authVerificationResend")}</span>;
   if(typeof value==="string"&&nativeLabels[value])return <span>{t(nativeLabels[value])}</span>;
   return <bdi>{String(value)}</bdi>;
 }

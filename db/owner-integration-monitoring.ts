@@ -2,7 +2,7 @@ import type {Pool,PoolClient} from "pg";
 import type {OwnerSystemMonitoring} from "./owner-system-monitoring";
 import type {SafePayload} from "./owner-system-history";
 import type {IntegrationRuntimeFacts,RequiredLocalizationRead} from "../app/observability/integration-runtime";
-import {TASK_TRANSITION_KINDS} from "../app/observability/operational-facts";
+import {TASK_TRANSITION_KINDS,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES} from "../app/observability/operational-facts";
 import type {TranslationFailureCode} from "../app/localization/translation-failures";
 import {STORAGE_SLOTS} from "../app/observability/storage-observations";
 import {readRetainedStorageSamples} from "./owner-file-monitoring";
@@ -28,6 +28,12 @@ function fact(row:FactRow|undefined,source:string,operational=false):RetainedInt
   if(operational){
     values.payloadSchemaRecognized=row.value?.schemaVersion===1;
     if(!values.payloadSchemaRecognized)return {id:row.id,occurredAt:row.at,kind:row.kind,source,values};
+    if(row.kind==="integration.authMailOutcome"){
+      if(row.value.mailPurpose==="email-verification")values.mailPurpose="email-verification";
+      if((VERIFICATION_MAIL_TRANSPORTS as readonly unknown[]).includes(row.value.mailTransport))values.mailTransport=String(row.value.mailTransport);
+      if((VERIFICATION_MAIL_OUTCOMES as readonly unknown[]).includes(row.value.mailOutcome))values.mailOutcome=String(row.value.mailOutcome);
+      return {id:row.id,occurredAt:row.at,kind:row.kind,source,values};
+    }
     if(['ui','content-topic-title','content-post-body'].includes(String(row.value.taskKind)))values.taskKind=String(row.value.taskKind);
     for(const key of ['generation','attemptCount','calls','succeeded','failed','durationMs'] as const){
       const value=row.value[key];if(typeof value==='number'&&Number.isSafeInteger(value)&&value>=0)values[key]=value;
@@ -53,7 +59,8 @@ async function readSources(c:PoolClient){
     count(*) filter(where kind='auth.sessionCreated')::text as "genericSessionCreatedFacts",
     count(*) filter(where kind='auth.sessionDeleted')::text as "genericSessionDeletedFacts",
     count(*) filter(where kind='auth.passwordChanged')::text as "passwordChangeFacts",
-    (select count(*)::text from owner_attempt_patterns where pool='auth') as "retainedGenericAuthGroups"
+    count(*) filter(where kind='auth.emailVerified')::text as "verificationFacts",
+    (select count(*)::text from owner_attempt_patterns where surface='auth') as "retainedGenericAuthGroups"
     from owner_events where source='auth'`)).rows[0];
   const authValues:IntegrationValues=Object.fromEntries(Object.entries(counts).map(([key,value])=>[key,exact(value)]));
   Object.assign(authValues,{googleRegistrationEnabled:settings[0].google,emailRegistrationEnabled:settings[0].email,registrationVersion:settings[0].version,registrationUpdatedAt:settings[0].updated.toISOString()});
@@ -68,7 +75,8 @@ async function readSources(c:PoolClient){
     if(dependency.source!=='database'||dependency.schema!==1||!['measured','degraded','unavailable'].includes(dependency.quality)||!Number.isFinite(Date.parse(dependency.at)))throw new Error('Invalid native dependency observation');
     retainedSample={id:dependency.id,observedAt:dependency.at,source:'database',schemaVersion:1,quality:dependency.quality,values:dependencyValues(dependency.value)};
   }
-  return {at,authentication:{source:'database' as const,observedAt:at,values:authValues,googleMethodLink:fact(google,'owner_events.auth'),genericSession:fact(session,'owner_events.auth')},
+  return {at,authentication:{source:'database' as const,observedAt:at,values:authValues,googleMethodLink:fact(google,'owner_events.auth'),genericSession:fact(session,'owner_events.auth'),
+    verificationMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'])},
     retainedSample,storageSamples:await readRetainedStorageSamples(c,at),translation:{
       taskOutcome:await lastOperational(c,'background.translation',TASK_TRANSITION_KINDS),
       providerExecution:await lastOperational(c,'integrations.translation',['integration.translationCall'])}};
@@ -106,7 +114,7 @@ export class PostgresOwnerIntegrationMonitoring {
       try{await recordOwnerMonitorSnapshot(this.pool,key,values[key],'application');}catch{recording='unavailable';}
       try{
         const extra=key==='integrations.database'?"union all select min(observed_at),false from owner_monitor_observations where monitor_key='system.dependencies' and resource_scope='global' union all select min(occurred_at),false from owner_events where source='system' and monitor_key='system.dependencies' and kind='system.dependencyUnavailable'":
-          key==='integrations.authentication'?"union all select min(occurred_at),false from owner_events where source='auth' and kind in ('account.created','auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted') union all select min(occurred_at),false from admin_history where action='settings.registrationChanged' union all select min(admitted_at),false from owner_attempt_patterns where surface='auth' union all select min(admitted_at),false from owner_attempt_telemetry_state where right(slot,5)='.auth'":
+          key==='integrations.authentication'?"union all select min(occurred_at),false from owner_events where source='auth' and kind in ('account.created','auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted','auth.emailVerified') union all select min(occurred_at),false from owner_events where source='operation' and monitor_key='integrations.authentication' and kind='integration.authMailOutcome' union all select min(occurred_at),false from admin_history where action='settings.registrationChanged' union all select min(admitted_at),false from owner_attempt_patterns where surface='auth' union all select min(admitted_at),false from owner_attempt_telemetry_state where right(slot,5)='.auth'":
           key==='integrations.storage'?"union all select min(observed_at),false from owner_monitor_observations where monitor_key='integrations.storage' and resource_scope=any($2::text[])":
           "union all select min(occurred_at),false from owner_events where source='operation' and monitor_key in ('background.translation','integrations.translation') and kind=any($2::text[])";
         const r=(await this.pool.query<{first:Date|null;last:Date|null}>(`select min(at) first,max(at) filter(where own) last from(
