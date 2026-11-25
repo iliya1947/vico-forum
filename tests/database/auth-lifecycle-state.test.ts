@@ -9,6 +9,9 @@ import {
   type IssuedLifecycleProof, type LifecycleIntent, type LifecycleProof,
 } from "../../app/auth/lifecycle-state.server";
 import { AuthLifecycleTransaction } from "../../app/auth/lifecycle-transaction.server";
+import { createEmailVerificationToken } from "better-auth/api";
+import { signJWT } from "better-auth/crypto";
+import { decodeEmailVerificationProof, signEmailVerificationProof } from "../../app/auth/email-verification-proof.server";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 
 const url = process.env.DATABASE_URL;
@@ -105,6 +108,40 @@ describe("AUTH-02a server-only lifecycle state", () => {
     expect(await consume(proof(other), otherId)).toMatchObject({ userId: otherId });
     expect(await consume(proof(own, sessionId))).toMatchObject({ purpose: "password-create" });
     expect(await rows()).toHaveLength(0);
+  });
+
+  it("validates a signed current verification proof without consuming or changing identity", async () => {
+    const secret = "disposable-lifecycle-proof-test-secret-32-chars";
+    const signed = () => state.withSubject(userId, subject =>
+      subject.issue({ purpose: "email-verification" }, ({ claims }) =>
+        signEmailVerificationProof(secret, claims)));
+    const firstProof = await signed();
+    const current = await signed();
+    const before = await rows();
+    const parsed = await decodeEmailVerificationProof(secret, current.token);
+    const inspect = (value: LifecycleProof) => state.withSubject(value.userId, subject => subject.inspect(value));
+    expect(parsed).toMatchObject(current.claims);
+    await inspect(parsed);
+    await inspect(parsed);
+    expect(await rows()).toEqual(before);
+    expect(before[0].value).not.toContain(current.token);
+    expect((await second.query<{ email_verified: boolean }>(
+      'select email_verified from "user" where id=$1', [userId])).rows[0].email_verified).toBe(false);
+    await expect(inspect(await decodeEmailVerificationProof(secret, firstProof.token)))
+      .rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    const legacy = await createEmailVerificationToken(secret, "member@example.test");
+    const expired = await signJWT({ proofType: "vico-email-verification:v1", ...current.claims }, secret, -1);
+    const parts = current.token.split(".");
+    const tampered = parts[0] + "." + parts[1] + "." +
+      (parts[2][0] === "A" ? "B" : "A") + parts[2].slice(1);
+    for (const token of [legacy, expired, tampered]) {
+      await expect(decodeEmailVerificationProof(secret, token)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    }
+    await expect(decodeEmailVerificationProof(secret + "-wrong", current.token))
+      .rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect(await rows()).toEqual(before);
+    await expect(consume(parsed)).resolves.toMatchObject({userId, purpose:"email-verification"});
+    await expect(inspect(parsed)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
   });
 
   it("checks authoritative expiry and current email snapshot; invalidation is purpose-scoped", async () => {
