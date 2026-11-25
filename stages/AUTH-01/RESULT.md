@@ -38,3 +38,23 @@ Mail tests запрещают global fetch: все adapters используют
 ## Следующий переход
 
 Мира выполняет coordinator checkpoint AUTH-01 на указанном exact head. Лёва AUTH-02 самостоятельно не начинает и независимую final review собственной реализации не проводит. Intermediate merge в main не выполняется; #320 не merge.
+
+
+## Coordinator checkpoint Миры
+
+**PASS** на stable exact head `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
+
+Проверено:
+
+1. весь bounded diff PR #388 против AUTH-01 stage scope;
+2. server-only boundary, transport classification, no retry/failover, fake isolation и production dormant fence;
+3. canonical action URL validation и locale-local return path;
+4. HTML/text escaping, EN/RU/HE/fallback/direction и отдельный authMail namespace;
+5. Worker request-local/lazy wiring без подключения Better Auth callbacks;
+6. отсутствие schema/dependency/signup/session/verification/anti-bot изменений;
+7. CI run 45518743774 действительно выполнен на этом exact head: checks и database jobs SUCCESS;
+8. актуальные официальные Resend/Brevo HTTP contracts повторно сверены; используемые endpoint/header/body/acceptance fields соответствуют текущей документации.
+
+Подтверждённых дефектов текущего AUTH-01 scope: **0**.
+
+Это intermediate stacked checkpoint: PASS разрешает только переход к AUTH-02a без merge в main и без независимого Codex review. Whole-feature/security acceptance не заявляется.
