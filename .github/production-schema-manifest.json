@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0072_forum_structure_foundation",
+  "targetMigration": "0073_auth_account_uniqueness",
   "tables": {
     "account": {
       "columns": [
@@ -111,6 +111,36 @@
       ],
       "checks": [],
       "indexes": [
+        {
+          "name": "account_credential_user_uidx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": "21659cfc505c78bb56fda7156e2f99f6a4ab69216ca70fd0d8096e6a40fcac3b"
+        },
+        {
+          "name": "account_provider_identity_uidx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "provider_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "account_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
+        },
         {
           "name": "account_userId_idx",
           "unique": false,
