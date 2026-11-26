@@ -7,7 +7,7 @@
 3. AUTH-01: PR #388 — coordinator PASS.
 4. AUTH-02a: PR #389 — coordinator PASS.
 5. AUTH-02b: PR #391, stable exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` — coordinator PASS.
-6. AUTH-03: draft PR #392, reviewed exact head `ce75ff3629a4adae9941703a33f6d0366bd7f570` — AUTHOR PASS, но **COORDINATOR HOLD**.
+6. AUTH-03: draft PR #392, correction head `39c07e539a47b8a317b3a274132337a6dc61cfdf`. Coordinator HOLD относится к reviewed head `ce75ff3629a4adae9941703a33f6d0366bd7f570`; три замечания исправлены, выполняются exact-head проверки.
 7. Coordinator review подтвердил три blocking-группы:
    - SET-05 `change-password` не инвалидирует pending recovery/password-create state; change-first race оставляет старый reset proof действительным;
    - implementation recovery-token model противоречит принятому root PLAN: вместо native Better Auth 1.7.7 random reset token/verification storage + Vico binding используется собственный signed JWT/deterministic lifecycle row; это сначала требует технического reconciliation плана;
@@ -19,4 +19,4 @@
 
 ## Следующий переход
 
-**Лёва — сначала технически reconcile plan ↔ implementation по recovery-token model, без patch поверх неразрешённого противоречия.** Затем отдельным correction package закрыть все confirmed findings из `stages/AUTH-03/RESULT.md`, выполнить полный author self-check AUTH-03 и применимые exact-head CI/acceptance, зафиксировать новый stable head и STOP для повторного coordinator checkpoint Миры. AUTH-04 не начинать.
+Лёва завершает author self-check и exact-head CI/acceptance AUTH-03 #392 на `39c07e539a47b8a317b3a274132337a6dc61cfdf`, затем записывает итог в `stages/AUTH-03/RESULT.md` и останавливается для повторного coordinator checkpoint Миры. AUTH-04 ждёт coordinator PASS.
