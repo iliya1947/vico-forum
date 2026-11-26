@@ -8,7 +8,7 @@
 
 ## F01
 
-В current AUTH-05 #394 exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` email signup при required challenge предварительно проверяет existence и выполняет challenge только для fresh email. Поэтому при открытой SET-02 email registration один и тот же missing/rejected/unavailable challenge может дать:
+В прежнем AUTH-05 #394 exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` email signup при required challenge предварительно проверяет existence и выполняет challenge только для fresh email. Поэтому при открытой SET-02 email registration один и тот же missing/rejected/unavailable challenge может дать:
 - existing email → native duplicate-neutral 200;
 - fresh email → challenge 403/503.
 
@@ -25,3 +25,7 @@
 7. После author self-check и применимых focused checks записать новый stable exact head/evidence в AUTH-05 RESULT и STOP для coordinator checkpoint Миры.
 8. AUTH-06 #395 самостоятельно не синхронизировать до PASS corrected AUTH-05.
 9. Поскольку Ада участвует в correction implementation, independent final whole-feature review этой сборки ей больше не назначается.
+
+## Текущая точка продолжения
+
+F01 correction candidate `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` опубликован в #394, base AUTH-04 неизменён. CI #45882443114 и acceptance (AUTH-05 #45882448007) запущены; результат пока не подтверждён. Повторный вход: актуальные AGENTS.md из main → RULES.md → TASK.md → WORKFLOW.md → этот файл; перед изменениями читать актуальный project/source-of-truth контекст, не повторять E-11. Продолжить с фактических exact-head проверок и bounded author self-check, не запускать их повторно без причины. Детали в stages/AUTH-05/RESULT.md. AUTHOR PASS ещё не выставлен.

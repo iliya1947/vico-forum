@@ -90,3 +90,14 @@ AUTH-05 job #139927467602 фактически выполнил все seven AUT
 Подтверждённых current-scope blocking defects не установлено.
 
 **AUTH-05 coordinator checkpoint закрыт PASS.** AUTH-06 разрешена как следующая stacked-ступень, но implementation начинается только после отдельной активации.
+
+## F01 correction — кандидат опубликован, проверки запущены (Ада, 2026-11-26)
+
+Whole-feature finding F01 на AUTH-06 #395 (см. stages/AUTH-06/REVIEW.md) superseded прежний AUTH-05 PASS. В PR #394 / feat/auth-05-anti-abuse опубликованы два correction commits: b8e5d80 и `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` (текущий head, base accepted AUTH-04 e9f8bad85694321f3279a72b604546a813a856b8 не менялся).
+
+- При required challenge и открытой email registration общая canonical HTTP/direct admission до native signup не зависит от existence: missing/rejected → 403, unavailable → 503 для обоих адресов. Valid proof допускает native signup; existing duplicate остаётся neutral 200 без нового mail/session. SET-02 deliberate closure сохраняет native semantics; actual-create hook повторно читает флаги и проверяет scoped receipt. При reopening отсутствие receipt не авторизует fresh create.
+- Policy preflight переиспользует uncached SET-02 reader и существующий lifecycle owner (runAdapterOperation); challenge I/O вне identity transaction, после budget admission. Google, login/link/recovery, schema, external scope и native лимиты не изменены.
+- Regression: differential HTTP/direct missing/rejected/unavailable/unconfigured, equal public outcome, no identity/session/verification/mail effects, budget accounting и observation; policy-read unavailable без verifier/identity; actual SET-02 recheck after proof; valid duplicate и closed fresh denial. Connected Worker/Chromium fixture сравнивает existing/fresh для трёх negative outcomes. Runtime results пока не установлены.
+- [CI #45882443114](https://github.com/iliya1947/vico-forum/actions/runs/45882443114) и [AUTH-05 connected acceptance #45882448007](https://github.com/iliya1947/vico-forum/actions/runs/45882448007) запущены через run:ci/run:acceptance. Все применимые acceptance должны быть проверены по exact SHA (не считать skipped duplicate runs PASS). AUTHOR PASS не выставлен; прежние PASS относятся только к прежнему head.
+
+Следующее: Ада завершает exact-head проверки и bounded author self-check. При PASS фиксирует результат и STOP для Миры; AUTH-06 #395 до нового coordinator PASS не синхронизировать. External/Stage-6 не активировать.
