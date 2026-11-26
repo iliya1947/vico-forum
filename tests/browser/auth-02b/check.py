@@ -5,6 +5,7 @@ No external provider, forged proof, copied auth implementation or fixture login.
 """
 import json
 import os
+import re
 import subprocess
 import time
 from html import escape
@@ -351,6 +352,57 @@ def run():
         assert private(email_requested.value).status == 200
         old_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
         old_link = old_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
+        record("email-proof-guest-expired-and-other-session-privacy")
+        email_token = parse_qs(urlparse(old_link).fragment)["token"][0]
+        pending_before = sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id")
+        for mode in ("guest", "expired"):
+            landing_context = context()
+            landing_context.set_extra_http_headers({"cf-connecting-ip": "203.0.113.95"})
+            if mode == "expired":
+                assert call(landing_context, "sign-in/email", {"email": ru, "password": "browser-test-only-new-own-password"}).status == 200
+                expired_id = call(landing_context, "get-session").json()["session"]["id"]
+                sql("update session set expires_at=now()-interval '1 minute' where id=$1 returning id", [expired_id])
+            landing_page = new_page(landing_context)
+            requests = []
+            landing_page.on("request", lambda request: requests.append((request.url, request.post_data or "")))
+            assert landing_page.goto(old_link).status == 401
+            expect(landing_page).not_to_have_url(re.compile("token="))
+            for kind in (".auth-sign-in", ".auth-sign-up"):
+                href = landing_page.locator(kind).get_attribute("href")
+                assert parse_qs(urlparse(href).query)["returnTo"] == ["/en/settings/account"]
+                assert email_token not in href
+            assert email_token not in landing_page.content()
+            landing_page.locator(".auth-sign-in").click()
+            landing_page.wait_for_load_state("networkidle")
+            assert email_token not in landing_page.url and email_token not in landing_page.content()
+            callbacks = []
+            def capture_google(route):
+                callbacks.append(json.loads(route.request.post_data))
+                route.fulfill(status=400, content_type="application/json", body='{"message":"Synthetic denial"}')
+            landing_page.route("**/api/auth/sign-in/social", capture_google)
+            landing_page.get_by_role("button", name="Continue with Google").click()
+            expect(landing_page.get_by_role("alert")).to_be_visible()
+            assert len(callbacks) == 1 and callbacks[0]["callbackURL"] == "/en/settings/account"
+            assert email_token not in json.dumps(callbacks) and all(email_token not in url + body for url, body in requests)
+            assert not session_cookie(landing_context)
+            landing_context.close()
+        foreign_page = new_page(second)
+        foreign_cookie = session_cookie(second)
+        assert foreign_page.goto(old_link).status == 200
+        expect(foreign_page).not_to_have_url(re.compile("token="))
+        with foreign_page.expect_response(lambda response: response.url == base + "/api/auth/confirm-email-change") as denied:
+            foreign_page.get_by_role("button", name="Confirm email change").click()
+        assert private(denied.value).status == 400
+        assert session_cookie(second) == foreign_cookie
+        assert user(ru)["id"] == ru_id
+        assert sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id") == pending_before
+        for _ in range(40):
+            attributed = sql("select actor_user_id from owner_attempt_patterns where operation='email-change' and http_status=400 and actor_user_id=$1", [en_id])
+            if attributed:
+                break
+            time.sleep(.1)
+        assert attributed and all(row["actor_user_id"] == en_id for row in attributed)
+        record("two-phase-own-email-change-initiating-session-only")
         assert create_page.goto(old_link).status == 200
         expect(create_page.get_by_role("button", name="Confirm email change")).to_be_visible()
         assert user(ru)["id"] == ru_id and "token=" not in create_page.url

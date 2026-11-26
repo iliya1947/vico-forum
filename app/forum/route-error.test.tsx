@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
@@ -9,7 +9,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { ForumRouteError } from "./ui";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); window.history.replaceState(null, "", "/"); });
 
 function commonResources(): Record<string, string> {
   const resources: Record<string, string> = {};
@@ -41,12 +41,12 @@ function i18n() {
   });
 }
 
-function renderError(error: Response | Error, initialUser: { name: string } | null = null) {
+function renderError(error: Response | Error, initialUser: { name: string } | null = null, path = "/en/admin/authorization") {
   const router = createMemoryRouter([{
     path: "/:locale/*",
     loader: () => { throw error; },
     ErrorBoundary: ForumRouteError,
-  }], { initialEntries: ["/en/admin/authorization"] });
+  }], { initialEntries: [path] });
 
   return render(
     <I18nextProvider i18n={i18n()}>
@@ -58,6 +58,15 @@ function renderError(error: Response | Error, initialUser: { name: string } | nu
 }
 
 describe("ForumRouteError", () => {
+  it.each([401, 503, 500])("F02 discards email proof on an HTTP %s landing before auth navigation", async status => {
+    const path = "/en/settings/account#token=private-proof&purpose=email-change";
+    window.history.replaceState(null, "", path);
+    renderError(new Response("Private", { status }), null, path);
+    await screen.findByText(String(status));
+    await waitFor(() => expect(window.location.hash).toBe(""));
+    for (const link of document.querySelectorAll("a")) expect(link.href).not.toContain("private-proof");
+    expect(document.body.textContent).not.toContain("private-proof");
+  });
   it.each([
     [401, "Sign in required", "Sign in to access this page."],
     [403, "Access denied", "You do not have permission to open this page."],

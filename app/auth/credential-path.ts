@@ -4,11 +4,20 @@ export function safeForumReturnPath(locale: string, pathname: string, search = "
   const localeRoot = `/${encodeURIComponent(locale)}`;
   const localPath = pathname.startsWith("/") && !pathname.startsWith("//")
     && (pathname === localeRoot || pathname.startsWith(`${localeRoot}/`));
-  return localPath ? `${pathname}${search.startsWith("?") ? search : ""}${hash.startsWith("#") ? hash : ""}` : localeRoot;
+  if (!localPath) return localeRoot;
+  // Account mail proofs must never become a nested returnTo query, including
+  // when the protected landing renders its guest/error shell before capture.
+  let accountLanding: boolean;
+  try { accountLanding = /\/settings\/account\/?$/i.test(decodeURIComponent(pathname)); }
+  catch { return localeRoot; }
+  const sensitive = (value: string) => [...new URLSearchParams(value.slice(1)).keys()]
+    .some(key => /^(?:token|purpose|callbackURL|returnTo)$/i.test(key));
+  if (accountLanding || sensitive(search) || sensitive(hash)) return pathname;
+  return `${pathname}${search.startsWith("?") ? search : ""}${hash.startsWith("#") ? hash : ""}`;
 }
 
 export function credentialPagePath(locale: string, mode: CredentialMode, returnTo: string): string {
-  return `/${encodeURIComponent(locale)}/${mode}?returnTo=${encodeURIComponent(returnTo)}`;
+  return `/${encodeURIComponent(locale)}/${mode}?returnTo=${encodeURIComponent(credentialReturnPath(locale, returnTo))}`;
 }
 
 /** Remap only a destination already accepted by the old locale's redirect guard. */

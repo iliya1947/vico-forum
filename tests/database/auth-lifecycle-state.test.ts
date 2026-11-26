@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountInactiveError } from "../../db/account-state";
 import { createAuth } from "../../app/auth/auth.server";
 import {
@@ -831,6 +831,173 @@ describe("AUTH-04 account lifecycle", () => {
       new AuthLifecycleBudget(client, tx, secret), secret, true);
   };
   const email = async () => (await second.query('select email,email_verified from "user" where id=$1', [userId])).rows[0];
+  const environment = { BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+    GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret" };
+  async function ownFixture(dependencies?: Parameters<typeof createAuth>[11]) {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('own-password',$1,'credential',$1,$2,now()),('own-google',$1,'google','immutable-google-id',null,now())",
+      [userId, await hashPassword("fixture-only-original-password")]);
+    const auth = createAuth(drizzle(first), environment, undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined, false, undefined, dependencies);
+    const login = await auth.api.signInEmail({ body: { email: "member@example.test", password: "fixture-only-original-password" }, asResponse: true });
+    const cookie = login.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    const current = await auth.api.getSession({ headers: new Headers({ cookie }) });
+    const headers = new Headers({ cookie, Origin: environment.BETTER_AUTH_URL, "Content-Type": "application/json",
+      "x-vico-account-user": userId, "x-vico-account-session": current!.session.id });
+    return { auth, headers, current: current! };
+  }
+
+  it("F01 preserves classified session-read outages for HTTP and direct calls, distinguishing a missing session", async () => {
+    const directFailures: string[] = [], actors: string[] = [];
+    const { auth, headers } = await ownFixture({
+      observeVerificationDirectFailure: (operation, code) => directFailures.push(operation + ":" + code),
+      observeResolvedAccountActor: id => actors.push(id),
+    });
+    const before = { email: await email(), sessions: (await second.query("select * from session order by id")).rows,
+      accounts: (await second.query("select * from account order by id")).rows };
+    const original = first.query.bind(first);
+    const fault = vi.spyOn(first, "query").mockImplementation(((...args: unknown[]) => {
+      const statement = args[0];
+      const text = typeof statement === "string" ? statement : (statement as { text?: string })?.text;
+      if (text?.includes('from "session"')) return Promise.reject(Object.assign(new Error("private-session-storage-failure"), { code: "ECONNRESET" }));
+      return Reflect.apply(original, first, args);
+    }) as never);
+    try {
+      for (const [path, body] of [["change-email", { newEmail: "outage@example.test" }],
+        ["confirm-email-change", { token: "not-a-proof" }], ["unlink-account", { accountId: "own-google" }]] as const) {
+        const response = await auth.handler(new Request(environment.BETTER_AUTH_URL + "/api/auth/" + path,
+          { method: "POST", headers, body: JSON.stringify(body) }));
+        expect(response.status).toBe(503);
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+        expect(response.headers.getSetCookie()).toEqual([]);
+        expect(await response.text()).not.toContain("private-session-storage-failure");
+      }
+      await expect(auth.api.changeEmail({ headers, body: { newEmail: "outage@example.test" } })).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+      await expect(auth.api.confirmEmailChange({ headers, body: { token: "not-a-proof" } })).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+      await expect(auth.api.unlinkAccount({ headers, body: { accountId: "own-google" } })).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+      expect(directFailures).toEqual(["email-change:unavailable", "email-change:unavailable", "unlink-account:unavailable"]);
+      expect(actors).toEqual([]);
+      await expect(auth.api.changeEmail({ headers: new Headers(), body: { newEmail: "outage@example.test" } })).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+      expect(directFailures.at(-1)).toBe("email-change:invalid");
+    } finally { fault.mockRestore(); }
+    expect({ email: await email(), sessions: (await second.query("select * from session order by id")).rows,
+      accounts: (await second.query("select * from account order by id")).rows }).toEqual(before);
+    expect(await rows()).toEqual([]);
+    const staleHeaders = new Headers(headers); staleHeaders.set("x-vico-account-user", otherId);
+    await expect(auth.api.changeEmail({ headers: staleHeaders, body: { newEmail: "outage@example.test" } })).rejects.toMatchObject({ status: "CONFLICT" });
+    expect(actors).toEqual([userId]); // resolved identity, never the submitted expectation
+  });
+
+  it("F04 rejects duplicate wire fields before email issuance, phase advancement or unlink", async () => {
+    const { auth, headers, current } = await ownFixture();
+    const service = makeService();
+    const initial = await service.requestEmailChange({ ...actor, sessionId: current.session.id }, "wire@example.test");
+    const pending = await rows();
+    let network = 10;
+    const post = (path: string, body: string, contentType = "application/json") => {
+      const wireHeaders = new Headers(headers);
+      wireHeaders.set("cf-connecting-ip", "203.0.113." + network++);
+      wireHeaders.set("Content-Type", contentType);
+      return auth.handler(new Request(environment.BETTER_AUTH_URL + "/api/auth/" + path, { method: "POST", headers: wireHeaders, body }));
+    };
+    for (const [path, body] of [
+      ["change-email", '{"newEmail":"wire@example.test","newEmail":"wire@example.test"}'],
+      ["change-email", '{"newEmail":"wire@example.test","callbackURL":"/en","callbackURL":"/ru"}'],
+      ["change-email", '{"newEmail":"wire@example.test","new\\u0045mail":"wire@example.test"}'],
+      ["confirm-email-change", JSON.stringify({ token: initial.token }).replace(/}$/, ',"token":' + JSON.stringify(initial.token) + '}')],
+      ["unlink-account", '{"accountId":"own-google","accountId":"own-google"}'],
+      ["unlink-account", '{"accountId":"own-google","providerId":"google","providerId":"google"}'],
+    ]) {
+      const response = await post(path, body);
+      expect(response.status).toBe(400);
+      expect(response.headers.getSetCookie()).toEqual([]);
+      expect(await response.text()).not.toContain(initial.token);
+    }
+    for (const contentType of ["application/x-www-form-urlencoded", "multipart/form-data; boundary=fixture"]) {
+      expect((await post("unlink-account", "accountId=own-google&accountId=own-google", contentType)).status).toBe(415);
+    }
+    expect(await rows()).toEqual(pending);
+    expect((await email()).email).toBe("member@example.test");
+    expect((await second.query("select id from account where id='own-google'")).rowCount).toBe(1);
+    expect((await post("change-email", JSON.stringify({ newEmail: "valid@example.test", callbackURL: "/en" }))).status).toBe(200);
+    expect(await rows()).not.toEqual(pending);
+    await expect(auth.api.unlinkAccount({ headers, body: { accountId: "own-google" } })).resolves.toEqual({ status: true });
+  });
+
+  it.each(["disabled", "rejected", "unavailable", "uncertain"] as const)("F03 retains safe pending state and permits explicit restart after %s mail in both phases", async status => {
+    const tokens: string[] = [], observed: OwnerOperationalFact[] = [];
+    const { auth, headers } = await ownFixture({
+      mail: {
+        async buildActionURL(input) { tokens.push(input.token); return "http://localhost:3000/en/settings/account#token=" + input.token; },
+        async sendAuthMail() { return { status }; },
+      },
+      mailObservations: { async append(fact) { observed.push(fact); } },
+    });
+    const sessions = (await second.query("select * from session order by id")).rows;
+    await expect(auth.api.changeEmail({ headers, body: { newEmail: "failed-mail@example.test" } })).resolves.toEqual({ status: true });
+    expect(JSON.parse((await rows())[0].value).phase).toBe("old-address");
+    await expect(auth.api.confirmEmailChange({ headers, body: { token: tokens[0] } })).resolves.toEqual({ status: true });
+    expect(JSON.parse((await rows())[0].value).phase).toBe("new-address");
+    expect((await email()).email).toBe("member@example.test");
+    expect((await second.query("select * from session order by id")).rows).toEqual(sessions);
+    expect(observed).toHaveLength(2);
+    expect(observed.map(fact => fact.values)).toEqual([
+      expect.objectContaining({ mailPurpose: "email-change-confirmation", mailOutcome: status }),
+      expect.objectContaining({ mailPurpose: "email-change-verification", mailOutcome: status }),
+    ]);
+    await auth.api.changeEmail({ headers, body: { newEmail: "restart@example.test" } });
+    expect(JSON.parse((await rows())[0].value).phase).toBe("old-address");
+    for (const token of tokens.slice(0, 2)) {
+      await expect(auth.api.confirmEmailChange({ headers, body: { token } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    }
+    expect((await email()).email).toBe("member@example.test");
+  });
+
+  it.each(["old-address", "new-address"] as const)("rejects a different real own session and a stale initiating session in %s", async phase => {
+    const { auth, headers, current } = await ownFixture();
+    const service = makeService();
+    const owner = { ...actor, sessionId: current.session.id };
+    const initial = await service.requestEmailChange(owner, "bound@example.test");
+    const next = phase === "new-address" ? await service.confirmEmailChange(owner, initial.token) : null;
+    const token = next && "proof" in next ? next.proof.token : initial.token;
+    const login = await auth.api.signInEmail({ body: { email: "member@example.test", password: "fixture-only-original-password" }, asResponse: true });
+    const cookie = login.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    const other = await auth.api.getSession({ headers: new Headers({ cookie }) });
+    const switched = new Headers(headers); switched.set("cookie", cookie); switched.set("x-vico-account-session", other!.session.id);
+    const pending = await rows();
+    const request = (given: Headers) => auth.handler(new Request(environment.BETTER_AUTH_URL + "/api/auth/confirm-email-change", {
+      method: "POST", headers: given, body: JSON.stringify({ token }),
+    }));
+    expect((await request(switched)).status).toBe(400);
+    await first.query("update session set created_at=now()-interval '2 days' where id=$1", [current.session.id]);
+    await expect(auth.api.confirmEmailChange({ headers, body: { token } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    expect(await rows()).toEqual(pending);
+    expect((await email()).email).toBe("member@example.test");
+    expect((await second.query("select id from session where user_id=$1", [userId])).rowCount).toBe(3);
+  });
+
+  it("email commit invalidates existing verification, native reset and own creation proofs", async () => {
+    const { auth, headers, current } = await ownFixture();
+    const owner = { ...actor, sessionId: current.session.id };
+    const tx = new AuthLifecycleTransaction(first);
+    const lifecycle = new AuthLifecycleState(first, tx);
+    const credential = new AuthCredentialLifecycle(first, tx, lifecycle, new AuthLifecycleBudget(first, tx, secret), secret);
+    const verification = await lifecycle.withSubject(userId, subject => subject.issue({ purpose: "email-verification" }, ({ claims }) => signEmailVerificationProof(secret, claims)));
+    const creation = await lifecycle.withSubject(userId, subject => subject.issue({ purpose: "password-create", sessionId: current.session.id }, testToken));
+    const reset = await credential.requestReset("member@example.test", (await auth.$context).internalAdapter.createVerificationValue);
+    expect(reset).not.toBeNull();
+    const service = makeService();
+    const initial = await service.requestEmailChange(owner, "invalidate@example.test");
+    const next = await service.confirmEmailChange(owner, initial.token);
+    if (!("proof" in next)) throw new Error("Expected second phase");
+    await service.confirmEmailChange(owner, next.proof.token);
+    expect(await rows()).toEqual([]); // includes the hashed native reset record
+    await expect(auth.api.verifyEmail({ body: { token: verification.token } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    await expect(auth.api.resetPassword({ body: { token: reset!.token, newPassword: "must-not-replace-password" } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    await expect(lifecycle.withSubject(userId, subject => subject.consume(proof(creation, current.session.id)))).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    await expect(auth.api.confirmEmailChange({ headers, body: { token: initial.token } })).rejects.toMatchObject({ status: "BAD_REQUEST" });
+    expect((await email()).email).toBe("invalidate@example.test");
+  });
 
   it("changes email only after explicit old and new address confirmations and preserves the initiating session", async () => {
     await first.query('update "user" set email_verified=true where id=$1', [userId]);

@@ -115,6 +115,7 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
         () => collector.recordRegistrationDenied(), facts, { ingress, mail: context.get(authMailRuntimeContext),
           mailObservations: operational.sink,
+          observeResolvedAccountActor: userId => { collector.setResolvedActor(userId); facts.setResolvedActor(userId); },
           observeVerificationDirectFailure: (operation, code) => collector.recordVerificationDirectFailure(operation, code) },
       ), collector);
     let authHeaders: Headers;

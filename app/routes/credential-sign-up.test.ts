@@ -63,6 +63,17 @@ describe("SET-02 public sign-up loader", () => {
 });
 
 describe("SET-02 Google sign-in callback error presentation", () => {
+  it("does not serialize an account email proof in either credential loader", async () => {
+    const target = "/en/settings/account#token=private-proof&purpose=email-change";
+    const query = "?" + new URLSearchParams({ returnTo: target });
+    const ctx = context();
+    const signin = signInLoader({ request: new Request("https://vico.test/en/sign-in" + query), params: { locale: "en" }, context: ctx.instance });
+    const signup = await page("/en/sign-up" + query, ctx.instance);
+    for (const result of [signin, signup]) {
+      expect(result.data.returnTo).toBe("/en/settings/account");
+      expect(JSON.stringify(result)).not.toContain("private-proof");
+    }
+  });
   it("shows only generic feedback, ignores provider error_description and retains safe returnTo", () => {
     const ctx = context();
     const response = signInLoader({

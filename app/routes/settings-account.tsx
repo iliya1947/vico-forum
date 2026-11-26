@@ -1,4 +1,6 @@
 import { AccountLifecycleView } from "../auth/account-security-view";
+import { useEffect } from "react";
+import { takeCredentialProof } from "../auth/credential-recovery-client";
 import { data, Form, useActionData, useLoaderData, useNavigation, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
@@ -154,6 +156,9 @@ export default function SettingsAccountRoute() {
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
   const currentAccount = header?.id === state.accountId;
+  useEffect(() => {
+    if (!currentAccount) takeCredentialProof("email-change");
+  }, [currentAccount]);
   const busy = navigation.state !== "idle";
   const otherSessions = state.sessions.filter(session => !session.current);
   const mayCreatePassword = !state.hasPassword && state.linkedMethods.includes("google") && state.sessionAccess === "ready";

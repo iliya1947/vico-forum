@@ -26,7 +26,8 @@ const headers = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-r
 export function accountSecurityEndpoints(service: AccountSecurityLifecycle, unavailable: (error: unknown) => boolean,
   mail?: AuthMailRuntime, sink?: OwnerOperationalFactSink,
   observe?: (transition: AccountLifecycleTransition) => void,
-  observeAttempt?: (operation: "email-change" | "unlink-account", code: VerificationAttemptCode) => void): AccountSecurityEndpoints {
+  observeAttempt?: (operation: "email-change" | "unlink-account", code: VerificationAttemptCode) => void,
+  observeResolvedActor?: (userId: string) => void): AccountSecurityEndpoints {
   async function run<T>(ctx: Parameters<typeof getSessionFromCtx>[0], operation: "email-change" | "unlink-account", work: () => Promise<T>): Promise<T> {
     for (const [key, value] of Object.entries(headers)) ctx.setHeader(key, value);
     try { return await work(); }
@@ -47,9 +48,20 @@ export function accountSecurityEndpoints(service: AccountSecurityLifecycle, unav
     }
   }
   async function actor(ctx: Parameters<typeof getSessionFromCtx>[0]) {
-    const current = await getSessionFromCtx({ ...ctx, context: { ...ctx.context, session: null } },
+    // Pinned getSessionFromCtx swallows adapter failures. Preserve the original
+    // read error locally while retaining native cookie and session validation.
+    let readFailure: { error: unknown } | undefined;
+    const adapter = ctx.context.internalAdapter;
+    const current = await getSessionFromCtx({ ...ctx, context: { ...ctx.context, session: null,
+      internalAdapter: { ...adapter, async findSession(...args) {
+        try { return await adapter.findSession(...args); }
+        catch (error) { readFailure = { error }; throw error; }
+      } },
+    } },
       { disableCookieCache: true, disableRefresh: true });
+    if (readFailure) throw readFailure.error;
     if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, headers);
+    try { observeResolvedActor?.(current.user.id); } catch { /* Passive recording. */ }
     if (ctx.headers?.get("x-vico-account-user") !== current.user.id ||
       ctx.headers?.get("x-vico-account-session") !== current.session.id) throw new APIError("CONFLICT", { message: "Account changed" }, headers);
     return { userId: current.user.id, sessionId: current.session.id, freshAgeSeconds: ctx.context.sessionConfig.freshAge };
