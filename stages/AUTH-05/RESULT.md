@@ -67,3 +67,26 @@ AUTH-05 job #139927467602 фактически выполнил все seven AUT
 Мира проверяет весь bounded AUTH-05 в #394 на stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`, включая взаимодействие с accepted AUTH-04. Маршрут — этот RESULT → stage PLAN/root PLAN → bounded diff и focused tests. Особое внимание — public native OAuth serverContext/transaction seam, actual fresh-create gate, budgets до identity BEGIN, missing verifier/config/late result, raw-proof privacy и inherited request/create/mail limits.
 
 Лёва остановился. AUTH-06 разрешается только после coordinator PASS и отдельной активации. Intermediate merge и independent intermediate review здесь не выполняются. Provider-specific adapter/widget/credentials, реальные mail/Google/anti-bot resources, edge rules и Stage-6 activation остаются за отдельным owner gate. Repository/local-CI PASS не означает real provider delivery/OAuth/challenge acceptance.
+
+
+## Coordinator checkpoint Миры — PASS
+
+**COORDINATOR PASS** на stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`.
+
+Проверен весь bounded AUTH-05 diff против `stages/AUTH-05/PLAN.md`, root PLAN и accepted AUTH-04, включая pinned Better Auth 1.7.7 public seams и фактическое runtime evidence.
+
+1. Fresh email/Google account creation использует challenge admission только на create-user boundary; existing login, explicit link и recovery не требуют успешного fresh-create challenge.
+2. Google redirect path хранит trusted receipt в native Better Auth `serverContext`; client `additionalData/serverContext` authority не получает. Fresh OAuth signup budget связан с native create-user transaction, а existing login/link эту ветку не расходуют.
+3. Required/unknown mode без verifier, unavailable/timeout/uncertain, wrong binding, expired/replayed proof fail closed без user/session/mail effects. Late verifier result не создаёт automatic retry.
+4. Raw challenge proof удаляется до native identity/state persistence; body bounds, private responses и observability не раскрывают proof/IP/target/private provider errors.
+5. AUTH-02a budgets сохраняют atomic DB-clock fixed windows, HMAC keys, native `rate_limit` isolation, bounded cleanup/lock behavior, secret rotation и fail-closed storage semantics. HTTP/direct/nested paths не получают client bypass или double count.
+6. Trusted-network policy не принимает `X-Forwarded-For`/`X-Real-IP` как authority; unknown network остаётся bounded.
+7. Own password-create admission и Retry-After/X-Retry-After закрыты без ослабления AUTH-03/04 session/freshness/invalidation boundaries.
+8. Migration 0078, closed telemetry values, History/current projections, schema manifest и runtime capability boundaries согласованы; external provider activation отсутствует.
+9. Все 17 acceptance-групп bounded stage имеют source/runtime evidence на фактических путях. Whole-lifecycle matrix AUTH-06 и real provider/deployed acceptance этим PASS не утверждаются.
+10. Exact-head CI #45825184525 — PASS; 20/20 applicable connected acceptance workflows — PASS.
+11. K5 run #45825205521 attempt 1 действительно завершился на существующем timing assertion `len(operation)==36`; attempt 2 — PASS на том же exact head без изменения production code или assertion. Rerun квалифицирован и не маскирует AUTH-05 defect.
+
+Подтверждённых current-scope blocking defects не установлено.
+
+**AUTH-05 coordinator checkpoint закрыт PASS.** AUTH-06 разрешена как следующая stacked-ступень, но implementation начинается только после отдельной активации.
