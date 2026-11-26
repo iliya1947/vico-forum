@@ -13,7 +13,7 @@
 9. AUTH-04 / draft #393: author PASS Лёвы был на exact `c9035dce425333d14fdf12d2418f4a8a009edabf`; CI #45744054677 и 16/16 applicable connected acceptance PASS являются supporting evidence, но не закрывают findings.
 10. Лена выполнила независимую bounded-проверку AUTH-04 и поставила **HOLD** с F01–F04 в `stages/AUTH-04/RESULT.md`.
 11. Мира независимо перепроверила F01–F04 против текущего кода, root PLAN и pinned Better Auth 1.7.7 / better-call 1.4.0: **все четыре findings подтверждены как реальные дефекты текущего AUTH-04 scope**. Прежний PARALLEL REVIEW PASS Миры отозван.
-12. **Лёва назначен на bounded correction AUTH-04 #393**. AUTH-05 не активирована; intermediate merge и external activation заблокированы.
+12. **Лёва выполняет bounded correction AUTH-04 #393**. Новый head `e9f8bad85694321f3279a72b604546a813a856b8` содержит F01–F04 correction и focused regressions. Локальные PG/component/Worker Chromium проверки PASS, exact-head CI #45752866279 и применимые acceptance выполняются. AUTHOR PASS ещё не выставлен. AUTH-05 не активирована; intermediate merge и external activation заблокированы.
 
 ## Следующий переход
 
