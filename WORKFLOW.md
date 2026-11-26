@@ -7,13 +7,13 @@
 3. AUTH-01: PR #388 — coordinator PASS.
 4. AUTH-02a: PR #389 — coordinator PASS.
 5. AUTH-02b: PR #391, stable exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` — coordinator PASS.
-6. AUTH-03: draft PR #392, stable correction head `39c07e539a47b8a317b3a274132337a6dc61cfdf` — **AUTHOR PASS**, ожидается повторный coordinator checkpoint Миры.
-7. Исправлены три замечания на reviewed head `ce75ff3`: invalidation pending proofs при SET-05, native opaque reset storage с Vico binding по root PLAN, mail outcome projections и closed `change` context.
-8. Exact-head CI #45730609055 и 16/16 applicable connected workflows PASS. Evidence — `stages/AUTH-03/RESULT.md`.
-9. AUTH-04 заблокирован до нового coordinator PASS AUTH-03.
+6. AUTH-03: draft PR #392, stable exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf` — **AUTHOR PASS + COORDINATOR PASS**, 0 confirmed current-scope blocking defects.
+7. AUTH-03 correction сохранил root PLAN: reset использует Better Auth 1.7.7 opaque random secret + hashed native verification identifier и Vico current-generation binding; SET-05 password change атомарно инвалидирует pending reset/create; AUTH-03 mail outcomes и closed password contexts отражаются в observability.
+8. Exact-head CI #45730609055 PASS; 16/16 applicable connected acceptance workflows PASS, включая Worker/Chromium AUTH-02b/03 #45730614967 и AP-10 #45730614955.
+9. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 остаются intermediate stacked PRs: без merge в main и independent intermediate review.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-11. Исполнитель correction по прямому решению владельца — Лёва / Codex-6.1 Sol; independent final whole-feature reviewer будет другим агентом.
+11. По прямому решению владельца Лёва остаётся исполнителем последующих AUTH-04 → AUTH-06; independent final whole-feature reviewer будет другим агентом.
 
 ## Следующий переход
 
-**Мира — повторный coordinator checkpoint AUTH-03 #392 на exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`.** Лёва остановился после AUTHOR PASS. AUTH-04 ждёт coordinator PASS.
+Активировать **AUTH-04 — own Account & security completion** как следующую stacked-ступень с base на принятом AUTH-03 head `39c07e539a47b8a317b3a274132337a6dc61cfdf` и передать её Лёве. До отдельной активации AUTH-04 implementation не начинать.
