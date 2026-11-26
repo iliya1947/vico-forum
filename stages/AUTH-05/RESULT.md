@@ -1,7 +1,7 @@
 # AUTH-05 — anti-abuse completion
 
 Draft stacked implementation [PR #394](https://github.com/iliya1947/vico-forum/pull/394), branch `feat/auth-05-anti-abuse`, base accepted AUTH-04 `e9f8bad85694321f3279a72b604546a813a856b8`.
-Candidate exact head `cedd19dc6b2b23c8877ac3374f3b1eecd383e8e2`. Author final PASS ожидает exact-head CI/acceptance.
+Candidate exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Author final PASS ожидает exact-head CI/acceptance.
 
 ## Реализация против bounded PLAN
 
@@ -27,3 +27,8 @@ Candidate exact head `cedd19dc6b2b23c8877ac3374f3b1eecd383e8e2`. Author final PA
 ## Remaining verification / переход
 
 CI и применимые connected workflows запущены на candidate exact head. После завершения записать IDs/фактические results и AUTHOR PASS на stable head, затем остановиться для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать. External/Stage-6 gates сохраняются.
+
+
+## Финальный candidate
+
+`ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` содержит test-only correction ожидаемого compiled migration tag в SA07 Data Monitoring: 0078 вместо 0077. Первый CI выявил только это устаревшее ожидание (1929 PG tests PASS), checks job PASS; focused Data Monitoring 13 tests затем PASS. Production code не менялся. Новый CI/20 applicable acceptance запущены на финальном exact head; прежние результаты не выдаются за final-head evidence.
