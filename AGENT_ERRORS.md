@@ -66,3 +66,14 @@
 **Почему это ошибка:** проверка отдельных цепочек и локальных исправлений недостаточна для полной проверки интегрированного этапа; очередной CI не заменяет проверку применимых требований и существенных условий исполнения. Причина P7 HTTP 500 пока не установлена, не утверждать, что её можно было гарантированно обнаружить статически.
 
 **Как предотвращать:** сверять весь scope с планом и actual execution boundaries, проверять существенные альтернативы и интеграции до очередного corrective cycle; не объявлять полную проверку при непроверенных участках. При повторных переделках эскалировать техническую проблему. Общий лог подготовлен в service branch для переноса Мирой.
+
+
+## E-08 — преждевременный PASS AUTH-04 без проверки privacy/error/wire boundaries
+
+**Что произошло:** Мира объявила PARALLEL REVIEW PASS AUTH-04 #393, проверив основную transaction/race/domain логику, но не проследила критические границы session-storage error classification, guest/error navigation с proof fragment, семантику pending/history presentation и actual wire parsing duplicate fields. Независимая проверка Лены выявила F01–F04; повторная проверка Миры подтвердила все четыре.
+
+**Почему это ошибка:** из корректности центральной domain-транзакции и green exact-head checks не следует корректность всего bounded scope. Review преждевременно сузился до основных mutation invariants и не проверил обязательные error/privacy/presentation/parser contracts из root PLAN.
+
+**Как предотвращать:** перед PASS строить review по acceptance/contract boundaries, а не по «главной» реализации: отдельно прослеживать failure classification, guest/error presentation, секреты через навигацию/DTO и фактический wire parser до schema validation. Green CI использовать только как supporting evidence.
+
+**Общий лог:** ошибка относится к классу «преждевременное сужение» и подготовлена в service-branch копии `AGENT_LOGIC_ERRORS.md` для последующего переноса в main разрешённым документационным маршрутом.
