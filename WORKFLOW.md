@@ -11,7 +11,7 @@
 7. AUTH-04: PR #393, corrected stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS + COORDINATOR PASS**. F01–F04 исходного head закрыты; CI #45752866279 и 19/19 applicable connected acceptance PASS.
 8. AUTH-01–AUTH-04 остаются intermediate stacked PRs без merge в main.
 9. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-10. **AUTH-05 активирована.** Исполнитель — Лёва. Bounded contract: `stages/AUTH-05/PLAN.md`.
+10. **AUTH-05 реализована, author verification выполняется.** Исполнитель — Лёва. Draft stacked PR #394, branch `feat/auth-05-anti-abuse`, candidate exact head `cedd19dc6b2b23c8877ac3374f3b1eecd383e8e2`. Bounded contract: `stages/AUTH-05/PLAN.md`; implementation/evidence: `stages/AUTH-05/RESULT.md`. Exact-head CI #45824238618 и применимые acceptance выполняются.
 11. Base AUTH-05: branch `feat/auth-04-account-security`, accepted AUTH-04 exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
 12. AUTH-05 завершает provider-neutral anti-abuse/budget/challenge/config/adversarial coverage; конкретный anti-bot provider и external resources не выбираются и не активируются.
 13. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
