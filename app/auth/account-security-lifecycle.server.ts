@@ -59,12 +59,14 @@ export class AccountSecurityLifecycle {
     const email = newEmail.trim().toLowerCase();
     if (!safeMailAddress(email)) throw new InvalidLifecycleProofError();
     await this.budget.run({ kind: "own", purpose: "email-change", userId: actor.userId }, async () => undefined);
-    return this.budget.run({ kind: "mail", purpose: "email-change", userId: actor.userId, email }, () =>
+    const mailTarget = (await this.client.query<{ email: string }>('select email from "user" where id=$1', [actor.userId])).rows[0]?.email;
+    if (!mailTarget) throw new InvalidLifecycleProofError();
+    return this.budget.run({ kind: "mail", purpose: "email-change", userId: actor.userId, email: mailTarget }, () =>
         this.state.withSubject(actor.userId, async subject => {
           await assertFreshAccountSession(this.client, actor);
           const current = (await this.client.query<{ email: string; email_verified: boolean }>(
             'select email,email_verified from "user" where id=$1', [actor.userId])).rows[0];
-          if (!current?.email_verified || current.email === email) throw new InvalidLifecycleProofError();
+          if (!current?.email_verified || current.email !== mailTarget || current.email === email) throw new InvalidLifecycleProofError();
           return subject.issue({ purpose: "email-change", sessionId: actor.sessionId, newEmail: email },
             ({ claims }) => this.sign(claims));
         }));
@@ -72,13 +74,26 @@ export class AccountSecurityLifecycle {
 
   async confirmEmailChange(actor: FreshCredentialSession, token: unknown): Promise<
     { proof: IssuedLifecycleProof } | { transition: AccountLifecycleTransition }> {
-    return this.budget.run({ kind: "own", purpose: "email-change", userId: actor.userId }, async () => {
-      const proof = await this.decode(actor, token);
+    await this.budget.run({ kind: "own", purpose: "email-change", userId: actor.userId }, async () => undefined);
+    const proof = await this.decode(actor, token);
+    let destination: string | undefined;
+    if (proof.phase === "old-address") {
+      const pending = await this.client.query<{ new_email: string }>(`
+        select value::jsonb->>'newEmail' new_email from verification
+        where id='vico-auth-lifecycle:v1:email-change:' || encode(sha256(convert_to($1,'UTF8')),'hex')
+          and identifier=id and value::jsonb->>'generation'=$2
+      `, [actor.userId, proof.generation]);
+      destination = pending.rows[0]?.new_email;
+      if (!destination) throw new InvalidLifecycleProofError();
+    }
+    const confirm = async (): Promise<{ proof: IssuedLifecycleProof } | { transition: AccountLifecycleTransition }> => {
       try {
         return await this.state.withSubject(actor.userId, async subject => {
           await assertFreshAccountSession(this.client, actor);
           if (proof.phase === "old-address") {
-            return { proof: await subject.advanceEmailChange(proof, ({ claims }) => this.sign(claims)) };
+            const next = await subject.advanceEmailChange(proof, ({ claims }) => this.sign(claims));
+            if (next.recipient !== destination) throw new InvalidLifecycleProofError();
+            return { proof: next };
           }
           const consumed = await subject.consume(proof);
           if (!consumed.newEmail) throw new InvalidLifecycleProofError();
@@ -99,7 +114,8 @@ export class AccountSecurityLifecycle {
         }
         throw error;
       }
-    });
+    };
+    return destination ? this.budget.run({ kind: "mail", purpose: "email-change", userId: actor.userId, email: destination }, confirm) : confirm();
   }
 
   async unlinkGoogle(actor: FreshCredentialSession, accountId: string): Promise<AccountLifecycleTransition> {
