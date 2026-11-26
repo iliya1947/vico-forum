@@ -9,3 +9,11 @@ Google unlink и guarded adapter delete/deleteMany перечитывают ме
 Добавлены committed emailChanged/methodUnlinked facts, фактические session-delete receipts, email-change/unlink attempts и mail outcomes обоих email purposes. Forward migration 0077, snapshot и schema manifest согласованы с PG17.
 
 Локально прошли typecheck, выбранные unit/component, PostgreSQL и Worker/Chromium. Native tests проверяют оба подтверждения, replay/restart/stale-session, hashless unlink, adapter last-method protection, rollback при revoke failure и occupied-address race. Connected browser прошёл Settings old-confirm/new-verify, сохранение initiating session и unlink после добавления password. Финальные CI/acceptance на опубликованном head выполняются. AUTHOR PASS ожидает их итогов. AUTH-05 и реальные провайдеры остаются на паузе.
+
+## Завершение author verification
+
+Current head `19d9ff8f4a515378130bd4d44bbfe6f5b002071e`. Финальные изменения включают обработку fragment второго подтверждения в уже открытых Settings, mail budgets для каждого фактического получателя и удаление дублированной freshness-подсказки. PostgreSQL regression подтвердил, что concurrent native deletes двух usable methods дают один commit и один controlled conflict, сохраняя сессии. Обновлены старые adapter tests под новый last-method contract.
+
+В существующем Complaint race test выявлен поздний rejection handler: ожидаемый отказ мог попасть в unhandled rejection до завершающего assertion. Добавлено раннее наблюдение за исходным promise, сохранив lock/state checks и проверку типа ошибки. Четыре варианта гонки прошли локально. Поведение Complaints не изменялось.
+
+CI #45743147397 и применимые acceptance на финальном head выполняются; [Worker/Chromium #45743153598](https://github.com/iliya1947/vico-forum/actions/runs/45743153598) PASS. AUTHOR PASS ожидает оставшихся результатов.
