@@ -1,16 +1,22 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Текущее основание
+## Активное назначение
 
-AUTH-03 #392 принят Мирой на `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
+**AUTH-04 correction активна.** Implementation PR: #393, branch `feat/auth-04-account-security`, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
 
-## Текущее состояние
+Предыдущий stable head `c9035dce425333d14fdf12d2418f4a8a009edabf` больше не принят: независимая проверка Лены дала HOLD, а Мира независимо подтвердила F01–F04 как реальные дефекты текущего scope.
 
-AUTH-04 реализован в draft stacked PR #393, branch `feat/auth-04-account-security`, base AUTH-03. Stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf` — AUTHOR PASS. Exact-head CI #45744054677 и 16/16 applicable acceptance PASS.
+## Требуемый результат
 
-Полный bounded результат, ограничения synthetic mail и задание Мире находятся в `stages/AUTH-04/RESULT.md`. WORKFLOW передан на coordinator checkpoint. Лёва остановился, AUTH-05 не начат.
+1. Закрыть **F01–F04** из `stages/AUTH-04/RESULT.md` без расширения AUTH-04.
+2. Добавить focused regressions, достаточные для доказательства исправлений и затронутых bounded acceptance criteria.
+3. Не ослаблять принятые AUTH-03/session/transaction/AccountState/last-usable-method boundaries.
+4. Выполнить author self-check и применимые CI/acceptance на новом stable exact head.
+5. Обновить `stages/AUTH-04/RESULT.md` exact head и evidence.
+6. После AUTHOR PASS остановиться для повторного coordinator checkpoint Миры. AUTH-05 самостоятельно не начинать.
+7. Реальные external mail/Google/anti-bot ресурсы и Stage-6 activation не включать.
 
-После coordinator PASS следовать новому назначению в WORKFLOW. По решению владельца Лёва остаётся исполнителем AUTH-04 → AUTH-06. Реальные external resources и Stage-6 activation заблокированы.
+Технические детали findings и проверенные основания уже находятся в RESULT; способ исправления выбирает Лёва в рамках действующего PLAN.
 
 ## Final review eligibility
 
