@@ -2,31 +2,27 @@
 
 ## Общий контекст
 
-1. Полный технический план authentication lifecycle `AUTH-01–AUTH-07` принят; delivery mode — stacked `AUTH-01 → AUTH-02a → AUTH-02b → AUTH-03 → AUTH-04 → AUTH-05 → AUTH-06`, затем AUTH-07 final gate.
-2. Better Auth остаётся authentication/session provider; application authorization отдельна; implicit Google↔credential linking запрещён.
-3. AccountState, Owner Monitoring/History, registration settings и Settings Account & security переиспользуются.
-4. Реальные Resend/Brevo, DNS, external mail/challenge calls, production Google OAuth, edge rules и Stage-6 activation заблокированы до отдельного owner gate.
-5. По прямому решению владельца **Ада / Business GPT-6.2 заменяет Лёву в дальнейшей работе после его уже начатого AUTH-06 handoff**. Это конкретное назначение имеет приоритет над общей ролью Лёвы из AGENTS.md для этой задачи.
+1. Authentication lifecycle выполняется stacked AUTH-01→AUTH-06, затем AUTH-07 final security gate.
+2. Better Auth остаётся identity/session provider; explicit linking only; AccountState/Owner History/Settings переиспользуются.
+3. Реальные mail/Google/anti-bot providers и Stage-6 activation остаются заблокированными.
+4. По решению владельца Ада / Business GPT-6.2 заменила Лёву для дальнейшей технической работы.
 
-## Принятые stacked-ступени
+## Whole-feature review
 
-1. AUTH-01 / #388 — coordinator PASS.
-2. AUTH-02a / #389 — coordinator PASS.
-3. AUTH-02b / #391 — coordinator PASS.
-4. AUTH-03 / #392 — coordinator PASS.
-5. AUTH-04 / #393 — coordinator PASS на corrected exact `e9f8bad85694321f3279a72b604546a813a856b8`.
-6. AUTH-05 / #394 — coordinator PASS на exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`.
+PR #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`: AUTH-06 AUTHOR PASS и green evidence подтверждены, но whole-feature coordinator review Миры — **HOLD**.
 
-## Активная ступень
+Подтверждён один blocker: **F01 registration-challenge email enumeration**. В AUTH-05 email challenge existence precheck решает, выполнять ли challenge: existing duplicate может получить neutral 200 без challenge, тогда как fresh email с тем же missing/rejected/unavailable challenge получает denial/unavailable. Это публично различает существующий и новый email при открытой SET-02 регистрации и противоречит AUTH-05 no-enumeration contract.
 
-**AUTH-06 — whole-lifecycle/security acceptance.** PR #395 / exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`. **AUTHOR PASS; Лёва завершил handoff и STOP.** Evidence matrix: `stages/AUTH-06/RESULT.md`; CI и 20/20 acceptance PASS, 0 confirmed current-scope blockers. Base — accepted AUTH-05 branch `feat/auth-05-anti-abuse` / exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Bounded handoff — `stages/AUTH-06/PLAN.md`; обязательная matrix — root `PLAN.md` §9.
+Подробный evidence и граница finding: `stages/AUTH-06/REVIEW.md`.
 
-AUTH-06 добавляет только недостающий исполняемый acceptance/evidence слой. Подтверждённый defect предыдущих ступеней не исправляется внутри acceptance package: HOLD → отдельный correction route.
+Существующий deliberate SET-02 closure semantics из `docs/SETTINGS.md` не является отдельным finding.
 
-## Следующий агент
+## Correction route
 
-После завершения текущего handoff Лёвы все дальнейшие технические обязанности этой задачи, которые иначе переходили бы Лёве, передаются **Аде / Business GPT-6.2**. Она не участвовала в реализации текущего stack и может быть использована как independent whole-feature reviewer после coordinator PASS Миры.
-
-## Текущий переход
-
-Лёва → AUTH-06 AUTHOR PASS и STOP. Сейчас Мира → whole-feature coordinator review AUTH-01–AUTH-06 на stable head PR #395. После coordinator PASS следующий technical/final-review handoff → Ада. AUTH-07 до отдельного перехода не начинать.
+1. Finding принадлежит AUTH-05 product implementation → correction в PR #394.
+2. AUTH-06 #395 остаётся test/evidence package и не принимает product fix.
+3. После corrected AUTH-05: coordinator checkpoint Миры.
+4. При PASS — sync AUTH-06 на новый base и повторная author/evidence verification.
+5. Затем whole-feature coordinator review заново.
+6. AUTH-07 только после PASS.
+7. Ада после implementation correction не является independent final reviewer; финальный reviewer будет назначен отдельно.
