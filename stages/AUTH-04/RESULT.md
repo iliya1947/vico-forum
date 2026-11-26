@@ -1,23 +1,58 @@
-# AUTH-04 — реализация и проверяемые результаты
+# AUTH-04 — реализация и author verification
 
-Draft stacked PR #393, base accepted AUTH-03 #392 `39c07e539a47b8a317b3a274132337a6dc61cfdf`. Current head `b058838a0b4f20131d2e1b10c47b05743d20ceca`.
+Stacked implementation PR [#393](https://github.com/iliya1947/vico-forum/pull/393), branch `feat/auth-04-account-security`, base accepted AUTH-03 #392 `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
 
-Реализованы safe email/status/pending DTO, двухфазная own email change и Google unlink. Canonical HTTP/direct требуют authoritative fresh session и точное ожидание user/session. Email change использует существующий lifecycle state, proof purpose/generation/phase и общий transaction owner. Старый email работает до final POST. Final commit обновляет email/verified, инвалидирует pending verification/reset/create/change и отзывает остальные сессии. Native identity Google и Owner/RBAC не меняются. Occupied-email conflict возвращает безопасный 409 с rollback.
+Stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`.
 
-Google unlink и guarded adapter delete/deleteMany перечитывают методы под AccountState lock и сохраняют usable verified password либо настроенный Google. Empty/unknown methods не проходят invariant. Unlink сохраняет сессии. В Settings добавлены EN/RU/HE формы, POST transport semantics и in-memory fragment capture, включая вторую ссылку при уже открытой странице.
+## Реализация
 
-Добавлены committed emailChanged/methodUnlinked facts, фактические session-delete receipts, email-change/unlink attempts и mail outcomes обоих email purposes. Forward migration 0077, snapshot и schema manifest согласованы с PG17.
+Safe own-account DTO содержит email, verification status, native Google row ID и pending email-change phase/expiry. Canonical HTTP/direct endpoints требуют authoritative fresh own session и точное ожидание user/session.
 
-Локально прошли typecheck, выбранные unit/component, PostgreSQL и Worker/Chromium. Native tests проверяют оба подтверждения, replay/restart/stale-session, hashless unlink, adapter last-method protection, rollback при revoke failure и occupied-address race. Connected browser прошёл Settings old-confirm/new-verify, сохранение initiating session и unlink после добавления password. Финальные CI/acceptance на опубликованном head выполняются. AUTHOR PASS ожидает их итогов. AUTH-05 и реальные провайдеры остаются на паузе.
+Email change использует существующий lifecycle state и transaction owner. Подписанные proofs связаны с purpose, generation и phase, initiating session хранится в state. Подтверждение старого адреса выдаёт письмо новому, final POST атомарно обновляет verified email, инвалидирует pending verification/reset/create/change и отзывает остальные сессии. Инициирующая сессия сохраняется. Occupied-address conflict даёт controlled 409 с rollback. Independent own/mail budgets списываются для фактического получателя каждого этапа.
 
-## Завершение author verification
+Google unlink и guarded native adapter delete/deleteMany перечитывают методы под AccountState lock. После удаления остаётся usable verified password либо настроенный Google. Empty/hashless/unknown methods не удовлетворяют invariant. Unlink сохраняет сессии, provider identity и RBAC не изменяются.
 
-Current head `19d9ff8f4a515378130bd4d44bbfe6f5b002071e`. Финальные изменения включают обработку fragment второго подтверждения в уже открытых Settings, mail budgets для каждого фактического получателя и удаление дублированной freshness-подсказки. PostgreSQL regression подтвердил, что concurrent native deletes двух usable methods дают один commit и один controlled conflict, сохраняя сессии. Обновлены старые adapter tests под новый last-method contract.
+Settings содержит EN/RU/HE формы и безопасную pending/status presentation. Proof хранится в памяти после удаления fragment из URL. Hashchange обрабатывает второе подтверждение при уже открытых Settings. POST transport, fresh-session/identity guards и locale-local callback действуют для обоих этапов.
 
-В существующем Complaint race test выявлен поздний rejection handler: ожидаемый отказ мог попасть в unhandled rejection до завершающего assertion. Добавлено раннее наблюдение за исходным promise, сохранив lock/state checks и проверку типа ошибки. Четыре варианта гонки прошли локально.
+Добавлены committed emailChanged/methodUnlinked facts, actual session-delete receipts, email-change/unlink attempts и mail outcomes обоих email purposes. Forward migration 0077, snapshot и production schema manifest согласованы с PG17.
 
-CI #45743147397 и применимые acceptance на финальном head выполняются; [Worker/Chromium #45743153598](https://github.com/iliya1947/vico-forum/actions/runs/45743153598) PASS. AUTHOR PASS ожидает оставшихся результатов.
+## Проверка
 
-### Финальный кандидат
+Author self-check охватил весь bounded contract и взаимодействие с принятым AUTH-03. Подтверждённых блокирующих дефектов текущего scope не осталось.
 
-Head `c9035dce425333d14fdf12d2418f4a8a009edabf`. По AP-10 устранён дубль freshness-подсказки и уточнён exact selector Connect Google рядом с новым Disconnect Google. Локальный SET-05 Chromium прошёл полностью. Второй этап email mail принимает validated locale-local callback текущей страницы; PostgreSQL API regression подтвердил выбор RU для new-address mail. CI #45744054677, connected #45744061039 и остальные применимые acceptance запущены на этом head.
+PostgreSQL regressions проверили оба подтверждения, replay/restart/stale-session, own identity expectation, hashless unlink, native adapter last-method protection, rollback при revoke failure, occupied-address race и concurrent deletes двух usable methods. В последней гонке один commit и один controlled conflict сохраняют метод входа и сессии. HTTP/direct regression также проверяет RU locale второго письма.
+
+Connected Worker/Chromium проверил Settings old-confirm → new-verify → email commit, сохранение initiating session и Google unlink после добавления password. Доставка использует synthetic transport и локальную тестовую БД. Реальная доставляемость внешних mail providers этой проверкой не устанавливается.
+
+Локально прошли typecheck, выбранные unit/component/PostgreSQL проверки, полный Worker/Chromium AUTH-02b/03/04 и SET-05. В существующем Complaint race test исправлен поздний rejection handler, который мог дать unhandled rejection до ожидаемого assertion. Исходный promise, тип ошибки и lock/state assertions сохранены. AP-10 selector Connect Google уточнён до exact match рядом с Disconnect Google.
+
+## Exact-head CI и acceptance
+
+**AUTHOR PASS** на `c9035dce425333d14fdf12d2418f4a8a009edabf`, 2026-11-26.
+
+[CI #45744054677](https://github.com/iliya1947/vico-forum/actions/runs/45744054677) — PASS, jobs checks/database. Все **16/16 применимых acceptance workflows — PASS** на том же exact head.
+
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061031) — PASS.
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061021) — PASS.
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061037) — PASS.
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061114) — PASS.
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061059) — PASS.
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061282) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744060995) — PASS.
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061357) — PASS.
+- [AUTH-02b connected email verification Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061039) — PASS.
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061151) — PASS.
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061189) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061254) — PASS.
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061011) — PASS.
+- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45744061340) — PASS.
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061238) — PASS.
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45744061259) — PASS.
+
+Skipped label-trigger runs и Manual PR test controls в 16/16 не включены.
+
+## Передача Мире
+
+Назначение — coordinator checkpoint всего bounded AUTH-04 против `stages/AUTH-04/PLAN.md` и принятого AUTH-03, на stable exact head выше. Проверить двухфазный email flow, state/session/uniqueness atomicity, last-usable-method invariant во всех entrypoints, observability и Settings integration.
+
+Implementation PR остаётся draft intermediate stack. Coordinator PASS разрешает следующий AUTH-05, independent intermediate review и merge в main здесь не выполняются. Лёва остановился и AUTH-05 не начинал. Реальные mail/anti-bot/Google resources и Stage-6 activation остаются заблокированными до отдельной команды владельца.
