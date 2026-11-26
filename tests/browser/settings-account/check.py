@@ -155,7 +155,7 @@ try:
         bob_sid = session_id(bob_id, "bob")
         still_signed_in(alice)
         expect(alice.locator(".settings-account-sessions li")).to_have_count(2)
-        expect(alice.get_by_role("button", name="Connect Google")).to_have_count(1)
+        expect(alice.get_by_role("button", name="Connect Google", exact=True)).to_have_count(1)
         expect(alice.locator('.settings-account-form input[name="newPassword"]')).to_have_count(1)
         expect(alice.locator(".settings-account-revoke-form")).to_have_count(1)
         assert alice.locator(".settings-account-revoke-form input[name=sessionId]").input_value() == a2_sid
@@ -171,7 +171,7 @@ try:
         document(alice, "/en/users/" + alice_id, private=False)
         expect(alice.get_by_role("link", name="Account & security")).to_have_attribute(
             "href", "/en/settings/account")
-        expect(alice.get_by_role("button", name="Connect Google")).to_have_count(0)
+        expect(alice.get_by_role("button", name="Connect Google", exact=True)).to_have_count(0)
         still_signed_in(alice)
         record("existing-explicit-google-link-control-moved-from-profile")
 
@@ -277,7 +277,7 @@ try:
         expect(google.locator(".settings-account-form")).to_have_attribute("method", "post")
         expect(google.get_by_role("button", name="Send a recovery link")).to_be_enabled()
         expect(google.locator('.settings-account-form input[type="password"]')).to_have_count(0)
-        expect(google.get_by_role("button", name="Connect Google")).to_have_count(0)
+        expect(google.get_by_role("button", name="Connect Google", exact=True)).to_have_count(0)
         google_html = google.content()
         for secret in ("set05-secret-access", "set05-secret-refresh", "set05-secret-id-token",
                        "external-google-account"):
