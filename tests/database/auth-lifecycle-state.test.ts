@@ -875,6 +875,7 @@ describe("AUTH-04 account lifecycle", () => {
   });
   it("shares HTTP and direct own-email confirmation, protects last method in the native adapter", async () => {
     const sent: Array<{ token: string; recipient: string; purpose: string }> = [];
+    const mailLocales: string[] = [];
     const facts: AuthTransitionFact[] = [];
     await first.query('update "user" set email_verified=true where id=$1', [userId]);
     await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('own-password',$1,'credential',$1,$2,now()),('own-google',$1,'google','immutable-google-id',null,now())",
@@ -884,7 +885,7 @@ describe("AUTH-04 account lifecycle", () => {
       GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
     }, undefined, undefined, undefined, { capture(f) { facts.push(f); }, trustedActorFor() { return null; } },
     undefined, undefined, undefined, false, undefined, { mail: {
-      async buildActionURL(input) { return "http://localhost:3000/en/settings/account#token=" + input.token; },
+      async buildActionURL(input) { mailLocales.push(input.locale); return "http://localhost:3000/en/settings/account#token=" + input.token; },
       async sendAuthMail(input) {
         sent.push({ token: new URL(input.actionURL).hash.slice(7), recipient: input.recipient, purpose: input.purpose });
         return { status: "accepted" };
@@ -901,7 +902,8 @@ describe("AUTH-04 account lifecycle", () => {
       { method: "POST", headers, body: JSON.stringify({ newEmail: "changed@example.test" }) }));
     expect(requested.status).toBe(200);
     expect(sent[0]).toMatchObject({ recipient: "member@example.test", purpose: "email-change-confirmation" });
-    await auth.api.confirmEmailChange({ headers, body: { token: sent[0].token } });
+    await auth.api.confirmEmailChange({ headers, body: { token: sent[0].token, callbackURL: "/ru" } });
+    expect(mailLocales).toEqual(["en", "ru"]);
     expect(sent[1]).toMatchObject({ recipient: "changed@example.test", purpose: "email-change-verification" });
     await auth.api.confirmEmailChange({ headers, body: { token: sent[1].token } });
     expect((await email()).email).toBe("changed@example.test");

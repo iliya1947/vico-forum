@@ -12,7 +12,7 @@ import type { OwnerOperationalFactSink } from "../observability/operational-fact
 
 type EmailBody = ReturnType<typeof changeEmail.options.body.strict>;
 type UnlinkBody = ReturnType<typeof unlinkAccount.options.body.strict>;
-type TokenPick = ReturnType<typeof verifyEmail.options.query.pick<{ token: true }>>;
+type TokenPick = ReturnType<typeof verifyEmail.options.query.pick<{ token: true; callbackURL: true }>>;
 type TokenBody = ReturnType<TokenPick["strict"]>;
 type Post<Body> = { method: "POST"; operationId: string; body: Body; use: (typeof formCsrfMiddleware)[] };
 type Ack = { status: boolean };
@@ -69,11 +69,11 @@ export function accountSecurityEndpoints(service: AccountSecurityLifecycle, unav
     })),
     confirmEmailChange: createAuthEndpoint<"/confirm-email-change", Post<TokenBody>, Ack>("/confirm-email-change", {
       method: "POST", operationId: "confirmEmailChange", use: [formCsrfMiddleware],
-      body: verifyEmail.options.query.pick({ token: true }).strict(),
+      body: verifyEmail.options.query.pick({ token: true, callbackURL: true }).strict(),
     }, ctx => run(ctx, "email-change", async () => {
+      const destination = verificationMailDestination(ctx.body.callbackURL, new URL(ctx.context.baseURL).origin);
       const result = await service.confirmEmailChange(await actor(ctx), ctx.body.token);
-      if ("proof" in result) await deliverLifecycleMail(mail, sink, result.proof, "email-change-verification",
-        verificationMailDestination(undefined, new URL(ctx.context.baseURL).origin));
+      if ("proof" in result) await deliverLifecycleMail(mail, sink, result.proof, "email-change-verification", destination);
       else publish(result.transition);
       return ctx.json({ status: true });
     })),

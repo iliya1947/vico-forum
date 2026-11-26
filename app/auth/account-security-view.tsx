@@ -58,7 +58,7 @@ export function AccountLifecycleView({ locale, userId, sessionId, email, verifie
     const token = proof.current;
     proof.current = null;
     setConfirming(false);
-    void command("confirm-email-change", { token });
+    void command("confirm-email-change", { token, callbackURL: `/${encodeURIComponent(locale)}` });
   }
   const disabled = !hydrated || !enabled || pendingRequest;
   return <section className="settings-account-section" aria-labelledby="account-email-heading">
