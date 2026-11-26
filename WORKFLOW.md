@@ -18,4 +18,4 @@
 
 ## Следующий переход
 
-Лёва создаёт отдельный stacked implementation PR с base `feat/auth-04-account-security`, реализует bounded AUTH-05 по `stages/AUTH-05/PLAN.md`, выполняет author self-check и применимые CI/acceptance, записывает stable exact head/evidence в `stages/AUTH-05/RESULT.md` и останавливается для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
+Лёва завершает exact-head CI/acceptance и author self-check AUTH-05 #394, фиксирует stable head/evidence в `stages/AUTH-05/RESULT.md`, затем останавливается для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
