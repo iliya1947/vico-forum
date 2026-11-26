@@ -78,3 +78,53 @@ Draft #392 обновлён до `39c07e539a47b8a317b3a274132337a6dc61cfdf`. И�
 **AUTHOR PASS** на `39c07e539a47b8a317b3a274132337a6dc61cfdf`. [CI #45730609055](https://github.com/iliya1947/vico-forum/actions/runs/45730609055) и 16/16 применимых acceptance workflows PASS, включая [Worker/Chromium AUTH-02b/03](https://github.com/iliya1947/vico-forum/actions/runs/45730614967) и [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/45730614955).
 
 Повторно сверены три причины HOLD и остальной AUTH-03: shared budgets и neutral guest acknowledgement, PostgreSQL native hashed reset identifier и текущий Vico binding, одноразовый consume и rollback, SET-05 change-first/reset-first, обе session policies, privacy и mail outcome projections. Root PLAN сохранён. Настоящие внешние ресурсы не использовались. Stable head #392 передан Мире на повторный checkpoint; AUTH-04 ждёт coordinator PASS.
+
+
+## Повторный coordinator checkpoint Миры — PASS
+
+Проверен stable exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf` относительно предыдущего HOLD head `ce75ff3629a4adae9941703a33f6d0366bd7f570`, accepted root PLAN, AUTH-03 stage contract и AUTH-02b base.
+
+### Закрытие finding 1 — change-password / recovery invalidation
+
+`credentialChangePassword()` теперь после успешного canonical Better Auth change-password в том же lifecycle transaction инвалидирует pending `password-reset/password-create`. Failure invalidation откатывает и password mutation/evidence. PostgreSQL race regression проверяет change-first против already-issued reset; прежний reset-first regression сохраняется. Старый proof после committed change больше не может перезаписать новый пароль.
+
+### Закрытие finding 2 — recovery-token architecture
+
+Root PLAN **не изменён**. Correction использует:
+1. Better Auth 1.7.7 public crypto для opaque 24-character reset secret;
+2. exact-version `verification.storeIdentifier` override только для `reset-password:` со strategy `hashed`;
+3. native internalAdapter verification creation с userId value и DB-clock expiry;
+4. Vico deterministic current-generation state, связанный с immutable subject/current email/token digest/native row ID;
+5. manual terminal resolution только hashed native identifier; plaintext fallback не используется canonical Vico reset path;
+6. native legacy reset callback override закрыт, token не переносится в query;
+7. Vico binding consume + exact native row delete + password update + conflicting-state invalidation + target-session revocation находятся в одном lifecycle transaction.
+
+Exact Better Auth 1.7.7 tagged source повторно сверён: built-in `hashed` strategy — SHA-256 полного prefixed identifier → base64url без padding; prefix override применяется до storage processing. Реализация вычисляет тот же identifier для authoritative terminal lookup.
+
+### Закрытие finding 3 — AUTH-03 observability
+
+1. Общий post-commit mail delivery recorder теперь сохраняет bounded `integration.authMailOutcome` для closed purposes `email-verification/password-reset/password-create`.
+2. Reset/create mail producers используют этот recorder; raw recipient/token/URL/provider error не записываются.
+3. Integrations/History projections понимают три current purposes и сохраняют отдельный latest retained outcome по каждому.
+4. Existing SET-05 password change пишет `auth.passwordChanged context="change"`; recovery reset — `context="reset"`. Actor invariant остаётся own actor для change и guest/null для reset.
+5. Recording остаётся best-effort и не меняет auth outcome.
+
+### Остальной повторный review
+
+Correction delta не расширяет AUTH-03 в email change/unlink/AUTH-04 и не активирует внешние providers. Перепроверены neutral forgot behavior, native/Vico replacement и expiry, current subject/email/generation binding, AccountState lock, atomic rollback, all-target reset revocation, Google-only fresh-session creation, initiating-session preservation, direct/HTTP endpoint replacement, shared budgets, sensitive fragment/body transport и accepted AUTH-02b verification mail behavior после вынесения общего mail recorder.
+
+Дополнительных confirmed current-scope blocking defects не установлено.
+
+### Exact-head evidence
+
+1. CI #45730609055 — PASS на exact head.
+2. 16/16 applicable connected workflows — PASS.
+3. AUTH-02b/03 Worker Chromium #45730614967 — PASS, включая reset/create и retained credential mail outcomes.
+4. AP-10 #45730614955 — PASS.
+5. PostgreSQL correction regressions включают hashed native identifier, replacement/expiry, SET-05 change-first/reset-first и rollback.
+
+Checks являются supporting evidence после code/contract review, а не самостоятельным основанием PASS.
+
+**Confirmed current-scope blocking defects: 0. COORDINATOR PASS.**
+
+AUTH-03 остаётся intermediate stacked PR без merge/independent intermediate review. PASS разрешает отдельную активацию AUTH-04; по прямому решению владельца её реализует Лёва.
