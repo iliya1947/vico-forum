@@ -19,7 +19,7 @@
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
 3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST. Следующая ступень AUTH-03 назначена Лёве, но ещё не активирована.
 
-4. **AUTH-03 — COORDINATOR HOLD.** PR #392 / reviewed exact `ce75ff3629a4adae9941703a33f6d0366bd7f570`. Three blocking groups: change-first password-change does not stale pending recovery; recovery-token implementation conflicts with accepted native-token root PLAN; reset/create mail/context observability is incomplete. Лёва сначала reconciles plan, затем делает correction. AUTH-04 blocked.
+4. **AUTH-03 — принят.** PR #392 / exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Recovery использует accepted native opaque+hashed reset model с Vico binding; SET-05 invalidation и AUTH-03 observability закрыты. Следующая ступень AUTH-04 назначена Лёве, но ещё не активирована.
 
 ## Существенные технические зависимости следующих этапов
 
@@ -32,4 +32,4 @@
 
 ## Текущий переход
 
-Лёва разрешает plan ↔ implementation contradiction AUTH-03, затем отдельным correction package закрывает confirmed findings и передаёт новый stable head Мире. AUTH-04 до PASS не начинается.
+Следующая stacked-ступень — AUTH-04 own Account & security completion поверх accepted AUTH-03. Исполнитель по решению владельца — Лёва. Implementation начинается только после отдельной активации.
