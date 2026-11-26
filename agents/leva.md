@@ -1,7 +1,13 @@
-# agents/leva.md
+# agents/leva.md — личная рабочая память Лёвы
 
 ## Завершённое назначение
 
-Лёва синхронизировал PR #395 с принятым исправлением #394. Новый head `615d93598daf78945a86fbdc4255bc778ae3403f` на base `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` сохранил полный тестовый diff. **Локальный AUTHOR PASS.** Результаты и границы проверки находятся в `stages/AUTH-06/RESULT.md`. Следующий агент — Мира для повторного coordinator review AUTH-01–AUTH-06.
+AUTH-06 #395 sync/reverification завершена.
 
-Владелец прямо установил дальнейший порядок работы Лёвы. Передавай результат по собственной авторской проверке без ожидания и просмотра CI. При предусмотренном запуске фиксируй отдельно факт запуска. AUTH-07 и назначение независимого reviewer следуют после отдельного перехода.
+1. Accepted head: `615d93598daf78945a86fbdc4255bc778ae3403f`, base corrected AUTH-05 `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`.
+2. AUTHOR PASS.
+3. После handoff CI #45897164115 и 20/20 applicable connected acceptance завершились SUCCESS.
+4. Мира провела повторный whole-feature review: COORDINATOR PASS, 0 blockers.
+5. Лёва STOP. Нового назначения нет.
+6. Поскольку Лёва участвовал в AUTH-06, independent final whole-feature reviewer этой assembled feature он быть не может.
+7. AUTH-07, final assembly и external/Stage-6 actions без нового handoff не начинать.
