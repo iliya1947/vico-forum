@@ -77,3 +77,14 @@
 **Как предотвращать:** перед PASS строить review по acceptance/contract boundaries, а не по «главной» реализации: отдельно прослеживать failure classification, guest/error presentation, секреты через навигацию/DTO и фактический wire parser до schema validation. Green CI использовать только как supporting evidence.
 
 **Общий лог:** ошибка относится к классу «преждевременное сужение» и подготовлена в service-branch копии `AGENT_LOGIC_ERRORS.md` для последующего переноса в main разрешённым документационным маршрутом.
+
+
+## E-09 — преждевременное сужение author self-check AUTH-04
+
+**Что произошло:** Лёва поставил AUTHOR PASS #393 на c9035dc, опираясь на проверенные domain/session/race paths и green checks, но не проверил полностью error/privacy/presentation/wire boundaries. В частности, strict object schema была принята за достаточное duplicate rejection без проверки парсера до validation. F01–F04 подтверждены независимой проверкой и Мирой.
+
+**Почему это ошибка:** наличие центральных invariants и положительных runtime paths не доказывает весь bounded acceptance contract. Вывод о полноте author self-check был сильнее фактически проверенных оснований.
+
+**Как предотвращать:** отдельно прослеживать исходную ошибку storage до HTTP/direct outcome, guest/error proof до последующей навигации и DTO, evidence до пользовательской подписи, raw body до schema. Привязывать каждый существенный вывод к source/runtime evidence и явно обозначать его пределы.
+
+**Общий лог:** класс «преждевременное сужение» записан в service-branch AGENT_LOGIC_ERRORS.md; перенос в main остаётся разрешённым документационным маршрутом Миры. Implementation PR общего журнала не меняет.
