@@ -1,24 +1,23 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Завершённый результат
+## Принятое основание
 
 AUTH-03 / PR #392 принят coordinator checkpoint Миры на exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`: **PASS**, 0 confirmed current-scope blocking defects.
 
-Три причины предыдущего HOLD закрыты:
-1. SET-05 change-password инвалидирует pending password-reset/password-create в общей transaction; change-first и reset-first проверены.
-2. Recovery model приведён к accepted root PLAN: Better Auth 1.7.7 opaque random reset secret, hashed `reset-password:` native identifier, Vico current-generation/email/subject binding и atomic terminal consume/effects.
-3. AUTH-03 retained mail outcomes и closed password `change/reset` contexts добавлены без secrets/provider errors.
+Recovery model, SET-05 change/reset invalidation и AUTH-03 observability приняты; exact-head CI и 16/16 applicable acceptance использованы как supporting evidence.
 
-Exact-head CI #45730609055 и 16/16 applicable acceptance PASS использованы как supporting evidence после coordinator review.
+## Активная задача
 
-## Текущее состояние
+**AUTH-04 — own Account & security completion активирована владельцем. Исполнитель — Лёва.**
 
-Активной implementation-задачи сейчас нет. AUTH-04 ещё не активирован.
-
-По прямому решению владельца следующая stacked-ступень после активации — **AUTH-04 — own Account & security completion**, исполнитель Лёва. Base — accepted AUTH-03 head `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
-
-До отдельного handoff AUTH-04 не начинать. Реальные external providers/Stage-6 resources не активировать.
+1. Base: branch `feat/auth-03-credential-recovery`, accepted exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
+2. Bounded contract: `stages/AUTH-04/PLAN.md`; полный технический контракт: root `PLAN.md`.
+3. Создать отдельный stacked implementation PR с base на AUTH-03 и bounded diff только AUTH-04.
+4. Реализовать email/status/two-phase email change и Google unlink/last-usable-method invariant в принятых transaction/session/credential boundaries.
+5. Выполнить author self-check и применимые CI/acceptance; записать exact head/evidence в `stages/AUTH-04/RESULT.md`.
+6. После AUTHOR PASS остановиться для coordinator checkpoint Миры. AUTH-05 самостоятельно не начинать.
+7. Реальные external providers и Stage-6 resources не активировать.
 
 ## Final review eligibility
 
-Лёва участвовал в implementation stack и поэтому independent final whole-feature review этой authentication feature не выполняет. Final reviewer назначается отдельно.
+Лёва участвует в implementation stack и поэтому independent final whole-feature review этой authentication feature не выполняет. Final reviewer назначается отдельно.
