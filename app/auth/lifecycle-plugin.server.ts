@@ -55,12 +55,13 @@ type LifecyclePlugin = {
  */
 export function authLifecyclePlugin(client: Pick<Client, "query">,
   transaction: AuthLifecycleTransaction, secret: string, evidence: SignupVerificationEvidence,
-  unavailable: (error: unknown) => boolean, dependencies?: AuthLifecycleDependencies,
+  unavailable: (error: unknown) => boolean, emailRegistrationOpen: () => Promise<boolean>,
+  dependencies?: AuthLifecycleDependencies,
   onActorStateError?: (error: unknown) => void): LifecyclePlugin {
   const state = new AuthLifecycleState(client, transaction);
   const budget = new AuthLifecycleBudget(client, transaction, secret, dependencies?.ingress);
   const challenge = new RegistrationChallenge(dependencies?.registrationChallenge);
-  const registration = new RegistrationChallengeAdmission(challenge, dependencies?.observeRegistrationChallengeFailure);
+  const registration = new RegistrationChallengeAdmission(challenge, emailRegistrationOpen, dependencies?.observeRegistrationChallengeFailure);
   const emailVerification = new AuthEmailVerification(client, transaction, state, budget, secret,
     dependencies?.mail, dependencies?.observeVerified, dependencies?.mailObservations);
   const credentials = new AuthCredentialLifecycle(client, transaction, state, budget, secret);

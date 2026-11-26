@@ -115,8 +115,7 @@ export function emailVerificationEndpoints(
             context: ctx.context, body, headers: ctx.headers,
             request: ctx.request, method: "POST", asResponse: false,
           }));
-          const created = challenge ? await challenge.email(email, registrationChallengeProof,
-            async () => !!await ctx.context.internalAdapter.findUserByEmail(email), signup) : await signup();
+          const created = challenge ? await challenge.email(email, registrationChallengeProof, signup) : await signup();
           if (transaction.controlFailure) throw transaction.controlFailure;
           // Native dispatch returns only after its owned transaction completes.
           // A duplicate/denied/rolled-back signup cannot issue a proof.
