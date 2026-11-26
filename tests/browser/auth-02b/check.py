@@ -406,8 +406,19 @@ def run():
         assert create_page.goto(old_link).status == 200
         expect(create_page.get_by_role("button", name="Confirm email change")).to_be_visible()
         assert user(ru)["id"] == ru_id and "token=" not in create_page.url
+        record("AUTH06-email-proof-refresh-back-no-implicit-consume")
+        before_navigation = sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id")
+        create_page.reload()
+        create_page.goto(base + "/en/")
+        create_page.go_back()
+        expect(create_page).not_to_have_url(re.compile("token="))
+        assert email_token not in create_page.content()
+        assert sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id") == before_navigation
+        create_page.goto(old_link)
         with create_page.expect_response(lambda response: response.url == base + "/api/auth/confirm-email-change") as old_confirmed:
-            create_page.get_by_role("button", name="Confirm email change").click()
+            confirm_button = create_page.get_by_role("button", name="Confirm email change")
+            confirm_button.focus()
+            confirm_button.press("Enter")
         assert private(old_confirmed.value).status == 200
         new_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [changed_email])[0]
         new_link = new_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
@@ -440,6 +451,60 @@ def run():
         expect(create_page.get_by_role("button", name="Disconnect Google")).to_have_count(0)
         assert sql("select provider_id from account where user_id=$1", [ru_id]) == [{"provider_id": "credential"}]
         assert call(third, "get-session").json()["session"]["id"] == ru_session_id
+        record("AUTH06-SET05-password-change-keyboard-retains-existing-sessions")
+        time.sleep(10.1)  # The native sign-in window expires without counter mutation.
+        other_contexts = [context(), context()]
+        for other in other_contexts:
+            assert call(other, "sign-in/email", {"email": changed_email, "password": "browser-test-only-new-own-password"}).status == 200
+        before_change = sessions(ru_id)
+        assert len(before_change) == 3
+        create_page.goto(base + "/en/settings/account")
+        current_input = create_page.locator("#settings-current-password")
+        next_input = create_page.locator("#settings-new-password")
+        current_input.fill("browser-test-only-new-own-password")
+        changed_password = "browser-AUTH06-keyboard-changed-password"
+        next_input.fill(changed_password)
+        current_input.focus()
+        current_input.press("Tab")
+        expect(next_input).to_be_focused()
+        next_input.press("Tab")
+        change_button = create_page.get_by_role("button", name="Change password", exact=True)
+        expect(change_button).to_be_focused()
+        change_button.press("Enter")
+        expect(create_page.get_by_role("status")).to_contain_text("Password changed.")
+        assert sessions(ru_id) == before_change
+        assert call(third, "get-session").json()["session"]["id"] == ru_session_id
+
+        record("AUTH06-SET05-revoke-one-and-all-others-through-current-UI")
+        first_other = create_page.locator("form.settings-account-revoke-form").first
+        removed_id = first_other.locator('input[name="sessionId"]').input_value()
+        first_other.get_by_role("button").click()
+        expect(create_page.get_by_role("status")).to_contain_text("Other sessions signed out.")
+        assert sessions(ru_id) == [s for s in before_change if s["id"] != removed_id]
+        create_page.locator("form.settings-account-revoke-all button").click()
+        expect(create_page.locator("form.settings-account-revoke-form")).to_have_count(0)
+        assert sessions(ru_id) == [{"id": ru_session_id, "user_id": ru_id}]
+        assert all(call(other, "get-session").json() is None for other in other_contexts)
+        for other in other_contexts:
+            other.close()
+
+        record("AUTH06-Settings-EN-RU-HE-responsive-LTR-RTL")
+        for locale, width in (("en", 1440), ("ru", 390), ("he", 390)):
+            create_page.set_viewport_size({"width": width, "height": 900})
+            create_page.goto(base + "/" + locale + "/settings/account")
+            expect(create_page.locator("html")).to_have_attribute("dir", "rtl" if locale == "he" else "ltr")
+            expect(create_page.locator("#settings-current-password")).to_be_visible()
+            assert create_page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        create_page.set_viewport_size({"width": 1280, "height": 900})
+        create_page.goto(base + "/en/settings/account")
+        create_page.reload()
+        assert sessions(ru_id) == [{"id": ru_session_id, "user_id": ru_id}]
+        assert call(third, "sign-out", {}).status == 200 and not sessions(ru_id)
+        time.sleep(10.1)
+        assert call(third, "sign-in/email", {"email": changed_email, "password": "browser-test-only-new-own-password"}).status == 401
+        assert call(third, "sign-in/email", {"email": changed_email, "password": changed_password}).status == 200
+        assert user(changed_email)["id"] == ru_id and len(sessions(ru_id)) == 1
+        record("AUTH06-explicit-relogin-after-email-password-change-and-unlink")
         assert not external and not errors
         browser.close()
 

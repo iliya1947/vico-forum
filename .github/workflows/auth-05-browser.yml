@@ -5,6 +5,7 @@ on:
     types:
       - labeled
     paths:
+      - "tests/database/auth-whole-lifecycle.test.ts"
       - "app/auth/**"
       - "app/routes/credential-*.tsx"
       - "app/routes/verify-email.tsx"
