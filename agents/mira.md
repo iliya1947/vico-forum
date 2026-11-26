@@ -2,11 +2,12 @@
 
 ## Текущий контекст
 
-1. AUTH-01–AUTH-05 — coordinator PASS.
-2. Accepted stack head до AUTH-06: AUTH-05 #394 exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`.
-3. AUTH-06 #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`: Лёва уже начал author verification и завершает только этот текущий handoff.
-4. По прямому решению владельца **Ада / Business GPT-6.2 заменяет Лёву после его текущего AUTH-06 handoff**.
-5. После AUTHOR PASS AUTH-06 я провожу whole-feature coordinator review всей assembled auth vertical на stable exact head.
-6. После моего coordinator PASS дальнейший technical/final-review handoff идёт Аде, а не Лёве. Поскольку Ада не участвовала в implementation AUTH-01–AUTH-06, она пригодна для independent whole-feature review.
-7. Если AUTH-06 выдаст HOLD, Лёва STOP; дальнейший correction route координирую уже с учётом назначения Ады.
-8. External/deployed provider activation остаётся заблокированной.
+1. Whole-feature coordinator review PR #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7` завершён **HOLD**.
+2. Подтверждён один current-scope blocker: F01 в AUTH-05 registration challenge — existence precheck приводит к public existing/fresh email distinction при required challenge и открытой email registration.
+3. Evidence и границы: `stages/AUTH-06/REVIEW.md`.
+4. Других подтверждённых whole-feature blockers после cross-stage review не установлено.
+5. SET-02 deliberate closure behavior из main docs не переоткрывается.
+6. AUTH-05 прежний PASS superseded только в части F01; correction должна быть локальной.
+7. По решению владельца correction выполняет Ада в #394. Product fix не вносится в AUTH-06 #395.
+8. После correction: повторный AUTH-05 checkpoint → sync/reverify AUTH-06 → повторный whole-feature review.
+9. Ада после correction теряет независимость для final whole-feature review; отдельный reviewer определяется позже.
