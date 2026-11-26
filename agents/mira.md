@@ -3,13 +3,12 @@
 ## Текущий контекст
 
 1. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 — coordinator PASS.
-2. Accepted stack head: AUTH-03 #392 exact `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
-3. Повторный AUTH-03 checkpoint подтвердил закрытие change/reset invalidation, native opaque+hashed reset model и AUTH-03 observability findings; новых confirmed blockers не установлено.
-4. CI #45730609055 и 16/16 applicable acceptance PASS — supporting evidence.
-5. Следующая stacked-ступень — AUTH-04 own Account & security completion; исполнитель по прямому решению владельца Лёва, пока не активирована.
-6. External Stage-6 activation остаётся заблокированной.
-7. Final independent whole-feature reviewer определяется отдельно.
+2. Accepted stack head: AUTH-03 #392 exact `39c07e539a47b8a317b3a274132337a6dc61cfdf`, branch `feat/auth-03-credential-recovery`.
+3. AUTH-04 **активирована владельцем**; bounded contract создан в `stages/AUTH-04/PLAN.md`.
+4. Исполнитель AUTH-04 — Лёва. Он должен создать следующую stacked implementation ступень от AUTH-03, выполнить bounded implementation + author self-check/checks и остановиться для моего coordinator checkpoint.
+5. External Stage-6 activation остаётся заблокированной.
+6. Final independent whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation.
 
 ## Следующий переход
 
-При следующем продолжении активировать AUTH-04 поверх accepted AUTH-03 head. Не merge intermediate PRs и не начинать final review.
+После AUTHOR PASS AUTH-04 провести coordinator checkpoint на stable exact head. При PASS разрешить отдельный переход к AUTH-05; intermediate PRs не merge.
