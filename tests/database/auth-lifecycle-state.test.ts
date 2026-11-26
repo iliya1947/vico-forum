@@ -957,4 +957,21 @@ describe("AUTH-04 account lifecycle", () => {
     expect(await rows()).toHaveLength(1);
   });
 
+  it("serializes native adapter deletes so two contenders cannot remove both usable methods", async () => {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('race-password',$1,'credential',$1,'fixture-hash',now()),('race-google',$1,'google','immutable-google',null,now())", [userId]);
+    const env = { BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret" };
+    const a = (await createAuth(drizzle(first), env).$context).adapter;
+    const b = (await createAuth(drizzle(second), env).$context).adapter;
+    const result = await Promise.allSettled([
+      a.delete({ model: "account", where: [{ field: "id", value: "race-password" }] }),
+      b.delete({ model: "account", where: [{ field: "id", value: "race-google" }] }),
+    ]);
+    expect(result.filter(item => item.status === "fulfilled")).toHaveLength(1);
+    expect(result.find(item => item.status === "rejected")?.reason).toMatchObject({ status: "CONFLICT" });
+    expect((await first.query("select id from account where user_id=$1", [userId])).rowCount).toBe(1);
+    expect((await first.query("select id from session")).rowCount).toBe(2);
+  });
+
 });
