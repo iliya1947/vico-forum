@@ -60,3 +60,9 @@ Root PLAN требует retained mail outcome по фактическому pur
 ### Следующий этап
 
 Лёва сначала reconciles recovery-token architecture с accepted PLAN. Затем одним coherent correction package закрывает все findings, выполняет full AUTH-03 author self-check и applicable exact-head CI/acceptance. Новый head требует повторного coordinator checkpoint. AUTH-04 до PASS не начинается.
+
+## Техническое согласование recovery-token model
+
+Root PLAN сохраняется. Better Auth 1.7.7 использует 24-символьный случайный секрет, namespace `reset-password:`, значение userId в native verification и lookup по идентификатору. Его public adapter поддерживает `verification.storeIdentifier` с prefix override и SHA-256/base64url для `hashed`. Используем эту конфигурацию только для `reset-password:`, native crypto для генерации и native adapter для записи. Сам native handler создаёт credential при его отсутствии, поэтому canonical Vico handler продолжает проверять eligibility и выполнять атомарный terminal flow.
+
+Native запись и Vico binding одного поколения создаются в одной транзакции. Vico binding хранит native row ID и digest, разрешение subject выполняется по точному hashed identifier. Под AccountState lock заново проверяются native row, current binding, email и DB-clock expiry. Удаление native row и binding, password write и revoke sessions коммитятся вместе. Доступ по plaintext fallback отсутствует. Замена поколения и SET-05 credential change очищают старые reset records под тем же lock. JWT остаётся только для собственного `password-create`. OAuth и другие native identifier namespaces сохраняют прежний режим хранения.
