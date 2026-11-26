@@ -2,13 +2,14 @@
 
 ## Текущий контекст
 
-1. AUTH-01, AUTH-02a и AUTH-02b прошли coordinator checkpoints.
-2. Accepted stack head: AUTH-02b #391 exact `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
-3. AUTH-03 активирован; исполнитель по прямому решению владельца — Лёва / Codex-6.1 Sol.
-4. Scope AUTH-03: neutral recovery/reset existing verified credential + authenticated fresh-session password creation for Google-only через shared credential service.
-5. Email change/unlink остаются AUTH-04; external Stage-6 activation заблокирована.
-6. Лёва участвует в implementation stack; final independent reviewer будет другим агентом.
+1. AUTH-01/AUTH-02a/AUTH-02b — coordinator PASS.
+2. AUTH-03 #392 exact `ce75ff3629a4adae9941703a33f6d0366bd7f570` — AUTHOR PASS, **COORDINATOR HOLD**.
+3. Confirmed blockers: change-password does not invalidate pending recovery; recovery-token architecture contradicts accepted root PLAN; AUTH-03 mail/context observability incomplete.
+4. CI #45726094032 + 15/15 applicable acceptance PASS are evidence only.
+5. Лёва сначала reconciles technical plan for recovery token model, затем исправляет AUTH-03.
+6. AUTH-04 blocked until new coordinator PASS.
+7. Final independent whole-feature reviewer must be another agent because Лёва participates in implementation.
 
 ## Следующий переход
 
-После handoff Лёвы провести coordinator checkpoint stable exact head AUTH-03: проверить recovery neutrality, reset atomicity/session revocation, Google-only creation proof/freshness, SET-05 regression, common budgets, observability и отсутствие AUTH-04 scope expansion.
+После нового stable head провести полный повторный coordinator checkpoint AUTH-03, начиная с plan reconciliation result и three finding closures; не ограничиваться regression tests.
