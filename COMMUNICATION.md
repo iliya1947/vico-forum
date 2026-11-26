@@ -1,17 +1,18 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Общий контекст
+## Текущее состояние authentication lifecycle
 
-1. Authentication lifecycle поставляется stacked AUTH-01→AUTH-06, затем AUTH-07 final security gate.
-2. Better Auth остаётся authentication/session provider; implicit Google↔credential linking запрещён; AccountState, Owner History/Monitoring и Settings переиспользуются.
-3. Реальные mail/Google/anti-bot providers и Stage-6 activation заблокированы.
+1. AUTH-01–AUTH-04 прошли coordinator checkpoints.
+2. AUTH-05 #394 corrected exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` принят; F01 email-enumeration через registration challenge закрыт.
+3. AUTH-06 #395 синхронизирован поверх corrected AUTH-05. Exact head `615d93598daf78945a86fbdc4255bc778ae3403f`.
+4. Лёва завершил AUTHOR PASS; Мира завершила повторный whole-feature **COORDINATOR PASS**. Confirmed current-scope blockers: 0.
+5. CI #45897164115 и 20/20 applicable connected acceptance завершились SUCCESS на новом head; ключевые logs подтверждают whole-lifecycle 62/62, F01 differential и полный AUTH-06 browser flow.
+6. Repository/local-CI PASS не является external/deployed acceptance.
 
-## Принятый corrected AUTH-05
+## Роли после реализации
 
-AUTH-05 / PR #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — **AUTHOR PASS + COORDINATOR PASS**. F01 устранён: при required challenge и открытой email registration negative challenge outcomes больше не зависят от account existence до native duplicate/create branch; actual SET-02 create-user gate и provider-neutral boundary сохранены. CI #45882443114 PASS; 20/20 applicable connected acceptance PASS.
+Лёва участвовал в AUTH-06 sync/reverification. Ада участвовала в AUTH-05 correction. Поэтому ни Лёва, ни Ада не могут выполнять independent final whole-feature review этой assembled feature. Reviewer назначается отдельно после final assembly/coordinator stage.
 
-## Передано Мире
+## Следующий процессный переход
 
-PR #395 синхронизирован с принятым AUTH-05 `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`. Новый head `615d93598daf78945a86fbdc4255bc778ae3403f` получил локальный AUTHOR PASS Лёвы. Повторный coordinator review Миры охватывает весь стек и исправление F01. Матрица и границы результатов записаны в `stages/AUTH-06/RESULT.md`.
-
-По указанию владельца Лёва передаёт работу без ожидания и проверки CI. Предусмотренные команды запуска выставлены. Лёва и Ада участвовали в реализации. Независимый финальный reviewer назначается после coordinator PASS.
+Final AUTH-06 head должен быть перенесён в первый implementation PR #388 согласно stacked workflow; intermediate PRs закрываются superseded. После assembly нужен stable-head final author/review/security gate. Переход пока не активирован; AUTH-07 и external Stage-6 действия не начинать.
