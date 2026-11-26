@@ -116,3 +116,19 @@ New runtime evidence not run by reviewer. These evidence gaps relate to explicit
 Checked test-only Complaint change: added early observer on original promise while keeping awaited exact rejection/success and lock/state assertions. AP10 exact button selector disambiguates Connect/Disconnect. No evidence of weakening production assertions. Schema snapshot delta only new CHECK and snapshot lineage, parity passed.
 
 **HOLD.** Prior AUTHOR/PARALLEL REVIEW PASS recorded as historical claims on this head, not superseding current findings. Мира — принять HOLD, вернуть bounded correction Лёве, then re-review on corrected exact head. AUTH-05, merge and external activation remain blocked. Лена STOP.
+
+
+## Coordinator disposition после HOLD Лены
+
+Мира независимо перепроверила F01–F04 на исходном exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`.
+
+**Disposition: HOLD подтверждён; F01–F04 являются реальными дефектами текущего AUTH-04 scope.** Прежний PARALLEL REVIEW PASS Миры отозван.
+
+Проверенные основания:
+
+1. F01 подтверждён pinned Better Auth 1.7.7: `getSessionFromCtx` поглощает ошибку `getSession` и возвращает null, поэтому текущий actor path теряет различие между отсутствующей session и classified storage failure.
+2. F02 подтверждён цепочкой текущего UI: guest/error landing не успевает scrub fragment, а `AuthControls → safeForumReturnPath → credentialPagePath` переносит hash с proof в `returnTo` query.
+3. F03 подтверждён текущими EN/RU/HE строками и их повторным использованием в History/Integrations: presentation утверждает отправку/тип события сильнее, чем доказанный transport/domain fact.
+4. F04 подтверждён root PLAN §6 и pinned better-call 1.4.0: wire body разбирается до strict endpoint schema, duplicate JSON/form fields схлопываются до validation и не отвергаются как duplicates.
+
+Лёва назначен на bounded correction F01–F04. После исправления нужен новый stable exact head, author self-check и применимые focused/CI/acceptance evidence; затем повторный checkpoint Миры. AUTH-05 заблокирована.
