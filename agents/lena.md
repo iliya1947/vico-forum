@@ -1,33 +1,26 @@
 # agents/lena.md — личная рабочая память Лены по authentication lifecycle
 
-## Текущее назначение
+## Активное назначение
 
-STOP. Владелец снял Лену с продолжения AUTH-02b и поручил полную проверку Лёве вместо Лены. Handoff Мире; актуальный маршрут WORKFLOW.md. AUTHOR PASS отсутствует.
+По прямой команде владельца Лене передана полная bounded-проверка **AUTH-04** вместо checkpoint Миры.
 
-## Основание stack
+Проверяемый implementation PR: **#393 — AUTH-04: two-phase email change and own Google unlink**.
 
-1. AUTH-01: PR #388, coordinator PASS.
-2. AUTH-02a: PR #389, coordinator PASS на exact head `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
-3. Новый implementation PR создаётся с base `feat/auth-02a-lifecycle-foundation`, не от main.
-4. Показывать только bounded diff AUTH-02b.
-5. Лёва был назначен на AUTH-02b, но сохранённой implementation-ветки/PR/commit по пакету не оставил; его назначение снято владельцем.
+Stable exact head: `c9035dce425333d14fdf12d2418f4a8a009edabf`.
 
-## Границы
+Base: accepted AUTH-03 #392 `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
 
-1. Включить mandatory email verification только для email/password contract; Google OAuth/explicit linking не объединять и не ломать.
-2. Signup после AUTH-02b не выдаёт полноценную session до verification; после confirmation нужен явный sign-in.
-3. GET verification landing не мутирует state; terminal confirmation — явный POST.
-4. Resend остаётся neutral и использует существующие lifecycle budgets/mail boundary.
-5. Не реализовывать recovery/reset, Google-only password creation, email change или unlink.
-6. Не добавлять legacy/grandfathering policy.
-7. Не выбирать/активировать anti-bot provider и не выполнять реальные provider calls/Stage-6 действия.
-8. Verification-specific observability расширять только под фактические producers текущей ступени.
-9. Green CI не заменяет design/self-check; при обнаружении обхода или противоречия плану остановиться и проверить причину до следующего patch cycle.
+## Маршрут
 
-## Завершение
+1. После актуальных `AGENTS.md` и `RULES.md` прочитать `TASK.md`, `WORKFLOW.md`, этот файл, затем `stages/AUTH-04/PLAN.md` и `stages/AUTH-04/RESULT.md`; root `PLAN.md` и source-of-truth читать по необходимости проверки.
+2. Проверить весь bounded diff #393 на указанном exact head, а не только author report или green CI.
+3. Проверить соответствие AUTH-04 contract: двухфазная смена email, state/session/uniqueness atomicity, invalidation, Google unlink и last-usable-method invariant во всех callable entrypoints, observability и Settings integration.
+4. Проверять не только happy path: races, replay/stale/freshness/account-switch, rollback/fault boundaries, HTTP/direct/persistence parity и регрессии принятого AUTH-03/SET-05.
+5. Каждый возможный finding сначала установить как реальный дефект текущего AUTH-04 scope. Будущая работа сама по себе не blocker.
+6. Во время проверки implementation не исправлять и AUTH-05 не начинать.
+7. CI/acceptance использовать как supporting evidence, а не как замену code/contract review.
+8. Если implementation head изменится, результат относится только к фактически проверенному exact head.
 
-Лена прекращает изменения и проверку. Текущий результат и blocker сохранены в stages/AUTH-02b/RESULT.md. Не выполнять дальнейших действий без нового назначения.
+## Результат
 
-## Итог handoff
-
-#391 exact `bbd35cb60273a2a90cce7aea997d50e4f42943cf`; CI #45684578593 FAIL на P7. Контекст и evidence в WORKFLOW.md и stages/AUTH-02b/RESULT.md. Полная самопроверка не завершена.
+Записать в служебный PR краткий проверяемый итог **PASS** или **HOLD**. При HOLD перечислить подтверждённые current-scope defects с основанием; при PASS явно зафиксировать checked exact head и отсутствие подтверждённых blocking defects. После результата остановиться.
