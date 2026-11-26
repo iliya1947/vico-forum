@@ -17,10 +17,10 @@
    - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
    - единый transaction owner и sequencing correction приняты;
    - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST. Следующая ступень AUTH-03 назначена Лёве, но ещё не активирована.
+3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST.
 
 4. **AUTH-03 — принят.** PR #392 / exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Recovery использует accepted native opaque+hashed reset model с Vico binding; SET-05 invalidation и AUTH-03 observability закрыты.
-5. **AUTH-04 — активирована.** Исполнитель — Лёва; bounded contract: `stages/AUTH-04/PLAN.md`; base — `feat/auth-03-credential-recovery` на accepted AUTH-03 head.
+5. **AUTH-04 — HOLD.** PR #393; independent bounded review Лены выявил F01–F04 и незакрытые acceptance evidence. Реализация остаётся в draft, подробности в `stages/AUTH-04/RESULT.md`.
 
 ## Существенные технические зависимости следующих этапов
 
@@ -33,4 +33,4 @@
 
 ## Текущий переход
 
-Активная stacked-ступень — **AUTH-04 own Account & security completion** поверх accepted AUTH-03. Исполнитель — Лёва. После AUTHOR PASS и применимых checks Лёва останавливается для coordinator checkpoint Миры; AUTH-05 без отдельного перехода не начинать.
+Мира принимает HOLD Лены и координирует correction Лёвой по WORKFLOW.md и `stages/AUTH-04/RESULT.md`. До закрытия AUTH-04 не начинать AUTH-05.
