@@ -150,10 +150,9 @@ export function guardBetterAuthSessionWrites(
                   }
                   await assertActiveAccountForMutation(connection, owner);
                   if (property === "delete" || property === "deleteMany") {
-                    const deleted = await query<{ id: string }>(
-                      idOnly ? 'select id from account where id=$1 and user_id=$2'
-                        : 'select id from account where user_id=$2',
-                      [fields.get("id") ?? null, owner]);
+                    const deleted = idOnly
+                      ? await query<{ id: string }>('select id from account where id=$1 and user_id=$2', [fields.get("id"), owner])
+                      : await query<{ id: string }>('select id from account where user_id=$1', [owner]);
                     const configured = options.socialProviders?.google;
                     const google = typeof configured === "function" ? await configured() : configured;
                     await assertRemainingAccountMethod(connection, owner, deleted.rows.map(row => row.id),

@@ -341,6 +341,7 @@ def run():
             {"purpose": "password-reset", "transport": "fake", "outcome": "accepted"},
         ]
         record("credential-mail-outcomes-retain-purpose-and-observed-transport")
+        third.set_extra_http_headers({"cf-connecting-ip": "203.0.113.94"})
         record("two-phase-own-email-change")
         changed_email = "changed@auth02b.test.invalid"
         create_page.goto(base + "/en/settings/account")

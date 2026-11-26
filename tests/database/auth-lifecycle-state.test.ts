@@ -915,4 +915,46 @@ describe("AUTH-04 account lifecycle", () => {
       .rejects.toMatchObject({ status: "CONFLICT" });
   });
 
+  it("rolls back final email consumption and update if session revocation fails", async () => {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into session(id,user_id,token,expires_at,updated_at) values ('own-extra',$1,'own-extra-token',now()+interval '1 day',now())", [userId]);
+    const service = makeService();
+    const issued = await service.requestEmailChange(actor, "rollback@example.test");
+    const next = await service.confirmEmailChange(actor, issued.token);
+    if (!("proof" in next)) throw new Error("Expected second phase");
+    await first.query(`
+      create function deny_email_session_delete() returns trigger language plpgsql as $$
+      begin raise exception 'test revocation failure'; end; $$;
+      create trigger deny_email_session_delete before delete on session for each row execute function deny_email_session_delete()
+    `);
+    try {
+      await expect(service.confirmEmailChange(actor, next.proof.token)).rejects.toThrow();
+      expect((await email()).email).toBe("member@example.test");
+      expect(await rows()).toHaveLength(1);
+      expect((await second.query("select id from session")).rowCount).toBe(3);
+    } finally {
+      await first.query("drop trigger deny_email_session_delete on session; drop function deny_email_session_delete()");
+    }
+    await expect(service.confirmEmailChange(actor, next.proof.token)).resolves.toHaveProperty("transition");
+  });
+
+  it("lets only one of two verified identities commit an occupied-address race", async () => {
+    await first.query('update "user" set email_verified=true');
+    const a = makeService();
+    const b = makeService(second);
+    const other = { userId: otherId, sessionId: otherSessionId, freshAgeSeconds: 3600 };
+    const initial = await a.requestEmailChange(actor, "occupied@example.test");
+    const initialOther = await b.requestEmailChange(other, "occupied@example.test");
+    const next = await a.confirmEmailChange(actor, initial.token);
+    const nextOther = await b.confirmEmailChange(other, initialOther.token);
+    if (!("proof" in next) || !("proof" in nextOther)) throw new Error("Expected second phase");
+    const results = await Promise.allSettled([
+      a.confirmEmailChange(actor, next.proof.token), b.confirmEmailChange(other, nextOther.proof.token),
+    ]);
+    expect(results.filter(result => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.find(result => result.status === "rejected")?.reason).toBeInstanceOf(AccountMethodConflictError);
+    expect((await first.query('select id from "user" where email=$1', ["occupied@example.test"])).rowCount).toBe(1);
+    expect(await rows()).toHaveLength(1);
+  });
+
 });

@@ -656,9 +656,11 @@ describe("SA04-I4c Better Auth 1.7.7 existing-account write atomicity", () => {
     const initial = await direct.createAccount({
       userId, providerId: "google", accountId: "unlink-active-account",
     });
+    const current = await auth.api.getSession({ headers: new Headers({ Cookie: cookie }) });
     const response = await auth.handler(new Request(origin + "/api/auth/unlink-account", {
       method: "POST",
-      headers: { Origin: origin, Cookie: cookie, "content-type": "application/json" },
+      headers: { Origin: origin, Cookie: cookie, "content-type": "application/json",
+        "x-vico-account-user": userId, "x-vico-account-session": current!.session.id },
       body: JSON.stringify({ accountId: initial.id }),
     }));
     expect(response.status).toBe(200);
@@ -685,7 +687,7 @@ describe("SA04-I4c Better Auth 1.7.7 existing-account write atomicity", () => {
     )).rows).toHaveLength(1);
   }, 30_000);
 
-  it("holds account DELETE through commit and supports active account deleteMany", async () => {
+  it("holds account DELETE through commit and rejects deleting the last usable method", async () => {
     const { userId } = await signUp("i4c-delete-first");
     const direct = (await auth.$context).internalAdapter;
     const linked = await direct.createAccount({
@@ -706,8 +708,8 @@ describe("SA04-I4c Better Auth 1.7.7 existing-account write atomicity", () => {
       await deactivator.query("set lock_timeout='0'");
     }
     expect((await accounts(userId)).map(x => x.provider_id)).toEqual(["credential"]);
-    await direct.deleteAccounts(userId);
-    expect(await accounts(userId)).toHaveLength(0);
+    await expect(direct.deleteAccounts(userId)).rejects.toMatchObject({ status: "CONFLICT" });
+    expect((await accounts(userId)).map(row => row.provider_id)).toEqual(["credential"]);
     expect((await writer.query<{ id: string }>(
       'select id from "user" where id=$1', [userId],
     )).rows).toHaveLength(1);
