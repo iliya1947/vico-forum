@@ -184,3 +184,23 @@ AUTH connected job #139684553904 фактически выполнил новы�
 Матрица Лены сохраняет полезное различие source/runtime evidence. Новые focused tests закрывают подтверждённые F01–F04 и перечисленные bounded gaps. Полная cross-entrypoint unlink × create/change/reset race matrix не объявляется отдельно выполненной этим correction; shared-lock source reasoning и существующие credential/adapter races остаются evidence в своих фактических пределах, whole-vertical matrix предусмотрена AUTH-06. Реальная provider доставка/Google OAuth/production activation не выполнялись.
 
 **Назначение Мире** — повторный coordinator checkpoint corrected bounded AUTH-04 на `e9f8bad85694321f3279a72b604546a813a856b8`, с проверкой F01–F04 и остального stage scope против accepted AUTH-03. Начать с раздела bounded correction и его tests/evidence, затем сверить полный diff. Лёва остановился; AUTH-05 ждёт coordinator PASS. Intermediate merge и independent intermediate review не выполняются. External/Stage-6 gates сохраняются.
+
+
+## Повторный coordinator checkpoint Миры — PASS
+
+**COORDINATOR PASS** на corrected stable exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
+
+Повторная проверка выполнена после HOLD Лены и bounded correction Лёвы. Сопоставлены correction diff, `stages/AUTH-04/PLAN.md`, root PLAN, accepted AUTH-03 и затронутые общие auth/navigation consumers.
+
+1. **F01 закрыт:** classified session-storage failure больше не схлопывается в missing-session 401; исходная `findSession` ошибка сохраняется локально и классифицируется как unavailable, при этом genuine missing session остаётся 401. HTTP/direct regressions покрывают 503/401 и отсутствие durable effects/private leakage.
+2. **F02 закрыт:** account proof не переносится в sign-in/sign-up `returnTo`, credential loader/navigation или error shell. Error landing дополнительно удаляет fragment; account/session binding не ослаблен. Ordinary forum query/anchor navigation сохраняется.
+3. **F03 закрыт:** pending UI, mail-purpose labels и committed history events больше не утверждают недоказанную доставку или неверный тип события. EN/RU/HE и retained Integration/History presentation согласованы с фактическими outcomes.
+4. **F04 закрыт:** raw JSON body этих трёх endpoints проверяется до Better Call parsing; duplicate top-level member names, включая escaped names, отвергаются. Unsupported form media types получают 415; strict endpoint schema остаётся allowlist для HTTP/direct.
+5. Authoritative actor observation использует только успешно resolved session user ID и не доверяет submitted expectation.
+6. Дополнительные focused regressions закрывают real different-own-session/stale initiating session, old/new phase privacy и invalidation pre-existing verification/reset/create proofs после email commit.
+7. Correction затронула только связанные AUTH-04/error-navigation/presentation/test boundaries; подтверждённого unrelated scope expansion не установлено.
+8. Exact-head CI #45752866279 — PASS; все 19/19 применимых connected acceptance workflows на этом head — PASS. Green checks использованы как supporting evidence, не как замена source review.
+
+Подтверждённых current-scope blocking defects на corrected head не осталось. Полная cross-entrypoint whole-vertical race matrix остаётся AUTH-06 scope; external provider delivery/Google OAuth/production activation остаются Stage-6 scope и этим PASS не утверждаются.
+
+**AUTH-04 coordinator checkpoint закрыт PASS.** AUTH-05 разрешена как следующий stacked transition, но до отдельной активации implementation не начинается.
