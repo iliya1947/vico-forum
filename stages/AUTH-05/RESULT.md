@@ -1,7 +1,7 @@
 # AUTH-05 — anti-abuse completion
 
 Draft stacked implementation [PR #394](https://github.com/iliya1947/vico-forum/pull/394), branch `feat/auth-05-anti-abuse`, base accepted AUTH-04 `e9f8bad85694321f3279a72b604546a813a856b8`.
-Candidate exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Author final PASS ожидает exact-head CI/acceptance.
+Stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` — **AUTHOR PASS**, 2026-11-26. Следующий шаг — coordinator checkpoint Миры.
 
 ## Реализация против bounded PLAN
 
@@ -24,11 +24,46 @@ Candidate exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Author final PA
 - Новый local built Worker/Chromium AUTH-05 PASS: required-no-verifier без fake fallback, one-use SQL proof, expiry/binding/replay, unavailable/uncertain/timeout, committed verification mail, real browser verify/login, recovery, spoofed forwarding → общий unknown 5/min, 429 headers/UI/explicit retry, private observations, no egress/page errors.
 - Полный прежний Worker/Chromium AUTH-02b/03/04 PASS, включая new own-budget 429 и явный retry после real expiry. Counters в flow не сбрасывались. Реальная доставка писем/Google OAuth этой synthetic проверкой не утверждается.
 
-## Remaining verification / переход
-
-CI и применимые connected workflows запущены на candidate exact head. После завершения записать IDs/фактические results и AUTHOR PASS на stable head, затем остановиться для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать. External/Stage-6 gates сохраняются.
-
-
 ## Финальный candidate
 
-`ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` содержит test-only correction ожидаемого compiled migration tag в SA07 Data Monitoring: 0078 вместо 0077. Первый CI выявил только это устаревшее ожидание (1929 PG tests PASS), checks job PASS; focused Data Monitoring 13 tests затем PASS. Production code не менялся. Новый CI/20 applicable acceptance запущены на финальном exact head; прежние результаты не выдаются за final-head evidence.
+`ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` содержит test-only correction ожидаемого compiled migration tag в SA07 Data Monitoring: 0078 вместо 0077. Первый CI выявил только это устаревшее ожидание (1929 PG tests PASS), checks job PASS; focused Data Monitoring 13 tests затем PASS. Production code не менялся. Новый CI и все 20 applicable acceptance завершились PASS на финальном exact head. Evidence ниже.
+
+
+## Stable-head verification и передача — AUTHOR PASS
+
+Author self-check всего bounded AUTH-05 выполнен против stage/root PLAN и accepted AUTH-04. Проверены fresh-only admission, trusted native state/server invocation binding, flags/config/timeouts/errors, server-owned counter parity/transaction order, native limiter isolation, input bounds/aliases, privacy/closed observations и inherited auth/AccountState/Owner/Settings/History behavior. Подтверждённых current-scope blocking defects не осталось. Это авторский результат; независимую review собственной реализации Лёва не выполняет.
+
+- [CI #45825184525](https://github.com/iliya1947/vico-forum/actions/runs/45825184525) — PASS. Checks: **252 files / 3342 tests**; PostgreSQL 17: **122 files / 1930 tests**. Lint/typecheck/builds/migration/schema/runtime checks jobs checks/database завершились успешно.
+- PG job #139927395195 подтвердил clean schema manifest parity для 76 tables. Native rate_limit и existing budget table capabilities не расширены; новая migration меняет только closed attempt CHECK.
+- Все **20/20 применимых connected acceptance workflows — PASS** на `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Skipped duplicate label-trigger runs и Manual PR test controls не входят в 20.
+
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205521) — PASS.
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205058) — PASS.
+- [AUTH-05 connected anti-abuse Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205011) — PASS.
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205178) — PASS.
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205083) — PASS.
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205201) — PASS.
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204689) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204727) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204812) — PASS.
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204767) — PASS.
+- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45825204907) — PASS.
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204972) — PASS.
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205039) — PASS.
+- [AUTH-02b connected email verification Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205163) — PASS.
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204760) — PASS.
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204829) — PASS.
+- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825204873) — PASS.
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205164) — PASS.
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205119) — PASS.
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45825205125) — PASS.
+
+AUTH-05 job #139927467602 фактически выполнил все seven AUTH05_CONNECTED steps, включая required-no-verifier, expiry/binding/replay/uncertainty/timeout, real verify/login, unknown-network spoofing и UI 429/private observation. Старый auth job #139927468091 выполнил `own-rate-limit-expiry-and-explicit-UI-retry` после 429 и завершился success; counters не сбрасывались.
+
+**K5 evidence qualification.** Первый K5 job #139927469008 завершился на прежнем immediate `len(editorOperationId)==36` assertion. Editor useEffect первоначально переводит SSR empty ID в UUID; этот editor/test код AUTH-05 не изменяет. Тот же production code на cedd19d уже прошёл K5. Перезапущен только failed job на том же final SHA, без изменения assertion/продукции: job #139930060118 / run attempt 2 — PASS. Это повторная успешная проверка; первый timing failure не скрывается и не считается пройденным.
+
+## Coordinator checkpoint — следующий шаг
+
+Мира проверяет весь bounded AUTH-05 в #394 на stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`, включая взаимодействие с accepted AUTH-04. Маршрут — этот RESULT → stage PLAN/root PLAN → bounded diff и focused tests. Особое внимание — public native OAuth serverContext/transaction seam, actual fresh-create gate, budgets до identity BEGIN, missing verifier/config/late result, raw-proof privacy и inherited request/create/mail limits.
+
+Лёва остановился. AUTH-06 разрешается только после coordinator PASS и отдельной активации. Intermediate merge и independent intermediate review здесь не выполняются. Provider-specific adapter/widget/credentials, реальные mail/Google/anti-bot resources, edge rules и Stage-6 activation остаются за отдельным owner gate. Repository/local-CI PASS не означает real provider delivery/OAuth/challenge acceptance.
