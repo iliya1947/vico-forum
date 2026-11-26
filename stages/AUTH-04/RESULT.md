@@ -2,7 +2,7 @@
 
 Stacked implementation PR [#393](https://github.com/iliya1947/vico-forum/pull/393), branch `feat/auth-04-account-security`, base accepted AUTH-03 #392 `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
 
-Stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`.
+Current stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS после bounded correction F01–F04**. Следующий шаг — повторный coordinator checkpoint Миры. Исходный `c9035dc` получил HOLD; детали и исправления ниже.
 
 ## Реализация
 
@@ -18,7 +18,7 @@ Settings содержит EN/RU/HE формы и безопасную pending/st
 
 ## Проверка
 
-Author self-check охватил весь bounded contract и взаимодействие с принятым AUTH-03. Подтверждённых блокирующих дефектов текущего scope не осталось.
+Первичный author self-check на c9035dc был неполным и superseded подтверждённым HOLD F01–F04. Актуальный correction self-check/evidence находится в конце файла.
 
 PostgreSQL regressions проверили оба подтверждения, replay/restart/stale-session, own identity expectation, hashless unlink, native adapter last-method protection, rollback при revoke failure, occupied-address race и concurrent deletes двух usable methods. В последней гонке один commit и один controlled conflict сохраняют метод входа и сессии. HTTP/direct regression также проверяет RU locale второго письма.
 
@@ -26,7 +26,7 @@ Connected Worker/Chromium проверил Settings old-confirm → new-verify �
 
 Локально прошли typecheck, выбранные unit/component/PostgreSQL проверки, полный Worker/Chromium AUTH-02b/03/04 и SET-05. В существующем Complaint race test исправлен поздний rejection handler, который мог дать unhandled rejection до ожидаемого assertion. Исходный promise, тип ошибки и lock/state assertions сохранены. AP-10 selector Connect Google уточнён до exact match рядом с Disconnect Google.
 
-## Exact-head CI и acceptance
+## CI и acceptance исходного c9035dc — historical
 
 **AUTHOR PASS** на `c9035dce425333d14fdf12d2418f4a8a009edabf`, 2026-11-26.
 
@@ -51,14 +51,14 @@ Connected Worker/Chromium проверил Settings old-confirm → new-verify �
 
 Skipped label-trigger runs и Manual PR test controls в 16/16 не включены.
 
-## Передача Мире
+## Первичная передача Мире — superseded HOLD
 
 Назначение — coordinator checkpoint всего bounded AUTH-04 против `stages/AUTH-04/PLAN.md` и принятого AUTH-03, на stable exact head выше. Проверить двухфазный email flow, state/session/uniqueness atomicity, last-usable-method invariant во всех entrypoints, observability и Settings integration.
 
 Implementation PR остаётся draft intermediate stack. Coordinator PASS разрешает следующий AUTH-05, independent intermediate review и merge в main здесь не выполняются. Лёва остановился и AUTH-05 не начинал. Реальные mail/anti-bot/Google resources и Stage-6 activation остаются заблокированными до отдельной команды владельца.
 
 
-## Параллельная проверка Миры
+## Параллельная проверка Миры — отозвана disposition ниже
 
 **PASS** на stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`.
 
@@ -136,7 +136,7 @@ Checked test-only Complaint change: added early observer on original promise whi
 
 ## Bounded correction F01–F04 — Лёва
 
-Current correction head `e9f8bad85694321f3279a72b604546a813a856b8`. F01–F04 исправлены в том же stacked PR #393. Прежние PASS на `c9035dc` остаются историческими и не закрывают HOLD. Новый AUTHOR PASS ожидает exact-head checks.
+Current correction head `e9f8bad85694321f3279a72b604546a813a856b8`. F01–F04 исправлены в том же stacked PR #393. Прежние PASS на `c9035dc` остаются историческими и не закрывают HOLD. Новый AUTHOR PASS и exact-head evidence зафиксированы в заключительном разделе ниже.
 
 1. **F01** — native signed-cookie/session validation сохраняется. Вокруг request-local internalAdapter.findSession сохраняется исходная read error до того, как getSessionFromCtx её поглотит. Classified outage даёт 503 и direct unavailable, missing session даёт 401. Unexpected errors не объявляются недоступностью. Focused PG fault injection проверил canonical HTTP/direct для всех трёх endpoints с valid cookie, no new proof/email/method/session effects и отсутствие private error/cookies в ответе.
 2. **F02** — Account return paths очищаются до сериализации в sign-in/sign-up returnTo и loader DTO; token-bearing query/fragment и вложенные callbacks не переносятся. Error landing и known account switch discard proof, locale navigation использует safe destination. Инициирующая сессия остаётся обязательной, sign-in не возобновляет старый proof автоматически. Chromium проверил guest/expired 401 → clean sign-in → intercepted local Google callback, другую authenticated identity с 400 и сохранением ambient session, затем успешное завершение обеих фаз исходной сессией. 401/503/500 error shells проверены компонентными тестами. Обычные forum post anchors сохраняются.
@@ -148,4 +148,39 @@ Current correction head `e9f8bad85694321f3279a72b604546a813a856b8`. F01–F04 и
 
 Локальные результаты — typecheck/lint выбранного scope, 41 PG lifecycle tests, 68 unit/component и отдельные 44 Settings/locale/navigation tests PASS. Полный local built Worker/Chromium AUTH-02b/03/04 PASS, включая новые privacy landings и прежние reset/create/email/unlink. Synthetic transport, реального provider egress нет.
 
-Final CI [#45752866279](https://github.com/iliya1947/vico-forum/actions/runs/45752866279), AUTH connected [#45752873105](https://github.com/iliya1947/vico-forum/actions/runs/45752873105), AP-10 [#45752873004](https://github.com/iliya1947/vico-forum/actions/runs/45752873004) и остальные применимые workflows выполняются. AUTH-05 не начат. После checks — новый AUTHOR PASS/evidence и повторный checkpoint Миры.
+Exact-head CI и все применимые acceptance завершились PASS. Итоговая передача ниже. AUTH-05 не начат.
+
+
+## Corrected stable head — AUTHOR PASS и повторная передача
+
+**AUTHOR PASS** на `e9f8bad85694321f3279a72b604546a813a856b8`, 2026-11-26. PR #393, base принятого AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf` не изменён.
+
+Author self-check повторно сопоставил весь bounded AUTH-04 с stage/root PLAN, включая error → status/observation, raw body → validation, mail proof → guest/error/account-switch navigation/DTO, committed state → presentation и взаимодействие с AUTH-03/state/session/adapter guards. F01–F04 закрыты реализацией и targeted regressions по описанию выше. Подтверждённых current-scope blocking defects после correction не осталось. Это авторский результат; coordinator HOLD снимает Мира после повторной проверки этого head.
+
+- [CI #45752866279](https://github.com/iliya1947/vico-forum/actions/runs/45752866279) — PASS. Checks: **252 files / 3339 tests**, PG17: **121 files / 1903 tests**, включая **41 lifecycle tests**. Typecheck, lint, builds и остальные обязательные шаги jobs checks/database PASS.
+- Все **19/19 применимых connected acceptance workflows PASS** на том же head. Изменение общего Forum error/navigation consumer дополнительно включило SA04-L3/K5/N к прежним 16 workflows.
+- [Topic Watch connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872989) — PASS.
+- [SA04-M2 connected AP10 Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872901) — PASS.
+- [SA04-L3 connected authorization Owner Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872885) — PASS.
+- [SA04-J12 connected AccountState Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872890) — PASS.
+- [Own topic title connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873035) — PASS.
+- [AUTH-02b connected email verification Worker Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873105) — PASS.
+- [Topic Bookmarks connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873017) — PASS.
+- [SA08 Overview and whole-program entry connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872947) — PASS.
+- [AP-10 isolated browser acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873004) — PASS.
+- [SA04-S complete AccountState connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873062) — PASS.
+- [Forum structure whole-feature connected Chromium and local R2](https://github.com/iliya1947/vico-forum/actions/runs/45752872883) — PASS.
+- [SA06 native monitoring connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872789) — PASS.
+- [SA05 whole Owner deactivation connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872818) — PASS.
+- [Personal Mute/Block connected acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873044) — PASS.
+- [SA-01 Super-admin connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873002) — PASS.
+- [SA04-N connected Complaints Worker Chromium AccountState acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872808) — PASS.
+- [SA07 Background Localization Files Data and Integrations connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872783) — PASS.
+- [SA04-K5 connected attachment Worker R2 Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752872786) — PASS.
+- [SA-03 unified profile connected Chromium acceptance](https://github.com/iliya1947/vico-forum/actions/runs/45752873065) — PASS.
+
+AUTH connected job #139684553904 фактически выполнил новые `email-proof-guest-expired-and-other-session-privacy`, `two-phase-own-email-change-initiating-session-only` и `own-google-unlink-preserves-usable-password-and-session`. Финальный script также проверил retained denial actor; общий successful job подтверждён по steps/logs. Skipped duplicate label-trigger runs и Manual PR test controls в 19/19 не включены.
+
+Матрица Лены сохраняет полезное различие source/runtime evidence. Новые focused tests закрывают подтверждённые F01–F04 и перечисленные bounded gaps. Полная cross-entrypoint unlink × create/change/reset race matrix не объявляется отдельно выполненной этим correction; shared-lock source reasoning и существующие credential/adapter races остаются evidence в своих фактических пределах, whole-vertical matrix предусмотрена AUTH-06. Реальная provider доставка/Google OAuth/production activation не выполнялись.
+
+**Назначение Мире** — повторный coordinator checkpoint corrected bounded AUTH-04 на `e9f8bad85694321f3279a72b604546a813a856b8`, с проверкой F01–F04 и остального stage scope против accepted AUTH-03. Начать с раздела bounded correction и его tests/evidence, затем сверить полный diff. Лёва остановился; AUTH-05 ждёт coordinator PASS. Intermediate merge и independent intermediate review не выполняются. External/Stage-6 gates сохраняются.
