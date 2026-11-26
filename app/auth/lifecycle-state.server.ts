@@ -15,7 +15,8 @@ const generationPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{
 const digestPattern = /^[0-9a-f]{64}$/;
 
 export type LifecycleIntent =
-  | { purpose: "email-verification" | "password-reset" }
+  | { purpose: "email-verification" }
+  | { purpose: "password-reset"; nativeResetId?: string }
   | { purpose: "password-create"; sessionId: string }
   | { purpose: "email-change"; sessionId: string; newEmail: string };
 
@@ -25,7 +26,7 @@ export type LifecycleClaims = Readonly<{
 
 type State = LifecycleClaims & Readonly<{
   version: 1; email: string; tokenDigest: string;
-  sessionId?: string; newEmail?: string;
+  sessionId?: string; newEmail?: string; nativeResetId?: string;
 }>;
 
 export type IssuedLifecycleProof = Readonly<{
@@ -84,13 +85,15 @@ function decode(raw: unknown, userId: string, purpose: LifecyclePurpose): State 
   const state = value as Record<string, unknown>;
   const own = purpose === "password-create" || purpose === "email-change";
   const fields = ["version", "userId", "purpose", "phase", "generation", "email", "tokenDigest",
-    ...(own ? ["sessionId"] : []), ...(purpose === "email-change" ? ["newEmail"] : [])];
+    ...(own ? ["sessionId"] : []), ...(purpose === "email-change" ? ["newEmail"] : []),
+    ...(purpose === "password-reset" && Object.hasOwn(state, "nativeResetId") ? ["nativeResetId"] : [])];
   if (Object.keys(state).length !== fields.length || !Object.keys(state).every(k => fields.includes(k)) ||
     state.version !== 1 || state.userId !== userId || state.purpose !== purpose ||
     !validEmail(state.email) || !validPhase(purpose, state.phase) ||
     typeof state.generation !== "string" || !generationPattern.test(state.generation) ||
     typeof state.tokenDigest !== "string" || !digestPattern.test(state.tokenDigest) ||
     (own && !validId(state.sessionId)) ||
+    (Object.hasOwn(state, "nativeResetId") && !validId(state.nativeResetId)) ||
     (purpose === "email-change" && (!validEmail(state.newEmail) || state.newEmail === state.email))) {
     throw new LifecycleStateInvariantError();
   }
@@ -104,6 +107,7 @@ export interface LockedLifecycleSubject {
   issue(intent: LifecycleIntent, createToken: TokenFactory): Promise<IssuedLifecycleProof>;
   /** Non-consuming validation for a landing page; terminal must recheck. */
   inspect(proof: LifecycleProof): Promise<void>;
+  resolveNativeReset(token: string, nativeResetId: string): Promise<LifecycleProof>;
   consume(proof: LifecycleProof): Promise<Readonly<Omit<State, "tokenDigest">>>;
   advanceEmailChange(proof: LifecycleProof, createToken: TokenFactory): Promise<IssuedLifecycleProof>;
   invalidate(purposes: readonly LifecyclePurpose[]): Promise<void>;
@@ -134,6 +138,14 @@ export class AuthLifecycleState {
       const capability: LockedLifecycleSubject = {
         issue: (intent, createToken) => scoped(() => this.issue(userId, intent, createToken)),
         inspect: proof => scoped(async () => { await this.match(userId, proof); }),
+        resolveNativeReset: (token, nativeResetId) => scoped(async () => {
+          const current = await this.load(await key(userId, "password-reset"), userId, "password-reset");
+          if (!current?.row.live || current.state.nativeResetId !== nativeResetId) throw new InvalidLifecycleProofError();
+          const proof: LifecycleProof = { token, userId, purpose: "password-reset",
+            generation: current.state.generation, phase: "pending" };
+          await this.match(userId, proof);
+          return proof;
+        }),
         consume: proof => scoped(async () => {
           const state = await this.consume(userId, proof);
           // An old-address confirmation must use the atomic phase transition.
@@ -155,6 +167,7 @@ export class AuthLifecycleState {
             throw new LifecycleStateInvariantError();
           for (const purpose of new Set(purposes)) {
             const id = await key(userId, purpose);
+            if (purpose === "password-reset") await this.deleteNativeReset((await this.load(id, userId, purpose))?.state);
             await this.client.query("delete from verification where id=$1 and identifier=$1", [id]);
           }
         }),
@@ -191,8 +204,17 @@ export class AuthLifecycleState {
     return { row, state: decode(row.value, userId, purpose) };
   }
 
+  private async deleteNativeReset(state: State | undefined): Promise<void> {
+    if (state?.nativeResetId) {
+      await this.client.query("delete from verification where id=$1 and value=$2", [state.nativeResetId, state.userId]);
+    }
+  }
+
   private async issue(userId: string, intent: LifecycleIntent, createToken: TokenFactory): Promise<IssuedLifecycleProof> {
     if (!validPurpose(intent.purpose)) throw new LifecycleStateInvariantError();
+    if (intent.purpose === "password-reset" && intent.nativeResetId !== undefined && !validId(intent.nativeResetId)) {
+      throw new LifecycleStateInvariantError();
+    }
     const email = await this.currentEmail(userId);
     if (intent.purpose === "password-create" || intent.purpose === "email-change") {
       await this.assertSession(userId, intent.sessionId);
@@ -219,10 +241,12 @@ export class AuthLifecycleState {
       ...(intent.purpose === "password-create" || intent.purpose === "email-change"
         ? { sessionId: intent.sessionId } : {}),
       ...(intent.purpose === "email-change" ? { newEmail: intent.newEmail } : {}),
+      ...(intent.purpose === "password-reset" && intent.nativeResetId ? { nativeResetId: intent.nativeResetId } : {}),
     };
     const id = await key(userId, intent.purpose);
     // Do not silently overwrite unrelated or corrupt persisted data.
-    await this.load(id, userId, intent.purpose);
+    const previous = await this.load(id, userId, intent.purpose);
+    await this.deleteNativeReset(previous?.state);
     const result = await this.client.query<{ expires_at: Date }>(`
       insert into verification (id,identifier,value,expires_at,created_at,updated_at)
       values ($1,$1,$2,(clock_timestamp() at time zone 'UTC') + $3::int * interval '1 second',

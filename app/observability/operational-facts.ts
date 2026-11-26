@@ -7,8 +7,9 @@ export type FileTransitionKind=typeof FILE_TRANSITION_KINDS[number];
 export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall" | "integration.authMailOutcome" | FileTransitionKind;
 export const VERIFICATION_MAIL_TRANSPORTS = ["none", "unknown", "fake", "resend", "brevo"] as const;
 export const VERIFICATION_MAIL_OUTCOMES = ["accepted", "rejected", "unavailable", "uncertain", "disabled"] as const;
-export type VerificationMailObservation = {
-  mailPurpose: "email-verification";
+export const AUTH_MAIL_OBSERVED_PURPOSES = ["email-verification", "password-reset", "password-create"] as const;
+export type AuthMailObservation = {
+  mailPurpose: typeof AUTH_MAIL_OBSERVED_PURPOSES[number];
   mailTransport: typeof VERIFICATION_MAIL_TRANSPORTS[number];
   mailOutcome: typeof VERIFICATION_MAIL_OUTCOMES[number];
 };
@@ -80,7 +81,7 @@ export class OperationalFactBuffer {
     this.capture({kind:"file.cleanupPass",sourceId,occurredAt,actorUserId:null,
       identity:["file.cleanupPass",sourceId],values:{schemaVersion:1,...values}});
   }
-  captureVerificationMail(sourceId:string,occurredAt:string,values:VerificationMailObservation) {
+  captureAuthMail(sourceId:string,occurredAt:string,values:AuthMailObservation) {
     this.capture({kind:"integration.authMailOutcome",sourceId,occurredAt,actorUserId:null,
       identity:["integration.authMailOutcome",sourceId],values:{schemaVersion:1,
         mailPurpose:values.mailPurpose,mailTransport:values.mailTransport,mailOutcome:values.mailOutcome}});

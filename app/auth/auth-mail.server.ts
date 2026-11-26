@@ -1,9 +1,11 @@
 import { createContext } from "react-router";
+import { OperationalFactBuffer, type AuthMailObservation, type OwnerOperationalFactSink } from "../observability/operational-facts";
+import type { IssuedLifecycleProof } from "./lifecycle-state.server";
 import type { LocaleRegistry } from "../localization/registry";
 import type { TranslationResourceLoader } from "../localization/resource-loader";
 import {
   AuthMailValidationError, isMailPurpose, safeMailAddress, safeMailOperationId,
-  type AuthMailExecution, type AuthMailFetch, type AuthMailInput, type AuthMailResult, type AuthMailTransport,
+  type AuthMailExecution, type AuthMailFetch, type AuthMailInput, type AuthMailResult, type AuthMailStatus, type AuthMailTransport,
 } from "./auth-mail-contract.server";
 import { authMailLocale, authMailOrigin, buildAuthMailActionURL, validateAuthMailActionURL, type AuthMailAction } from "./auth-mail-urls.server";
 import { renderAuthMail } from "./auth-mail-templates.server";
@@ -107,4 +109,43 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
       }
     },
   };
+}
+
+
+/** Records the outcome of an already committed issuance. Mail and recording
+ * failures never alter the committed identity state or expose recipient data.
+ */
+export async function deliverLifecycleMail(
+  mail: AuthMailRuntime | undefined,
+  sink: OwnerOperationalFactSink | undefined,
+  proof: IssuedLifecycleProof,
+  purpose: AuthMailObservation["mailPurpose"],
+  destination: { locale: string; returnTo?: string },
+): Promise<AuthMailStatus> {
+  let outcome: AuthMailStatus = "disabled";
+  let transport: InvokedAuthMailTransport = "none";
+  if (mail) {
+    let actionURL: string | undefined;
+    try { actionURL = await mail.buildActionURL({ purpose, token: proof.token, ...destination }); }
+    catch (error) { outcome = error instanceof AuthMailValidationError ? "rejected" : "unavailable"; }
+    if (actionURL !== undefined) {
+      // An injected runtime may not implement invocation observation.
+      const observed: { transport: InvokedAuthMailTransport } = { transport: "unknown" };
+      try {
+        const result = await mail.sendAuthMail({ purpose, recipient: proof.recipient, locale: destination.locale,
+          actionURL, operationId: proof.claims.generation }, value => { observed.transport = value; });
+        outcome = result.status;
+        if (outcome === "disabled" && observed.transport === "unknown") observed.transport = "none";
+      } catch { outcome = "uncertain"; }
+      transport = observed.transport;
+    }
+  }
+  try {
+    const observations = new OperationalFactBuffer(sink);
+    observations.captureAuthMail(proof.claims.generation, new Date().toISOString().replace("Z", "000Z"), {
+      mailPurpose: purpose, mailTransport: transport, mailOutcome: outcome,
+    });
+    await observations.flush();
+  } catch { /* Recording never changes the issuance result. */ }
+  return outcome;
 }

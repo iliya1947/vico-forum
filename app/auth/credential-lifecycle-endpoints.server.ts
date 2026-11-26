@@ -1,14 +1,15 @@
 import {
   APIError, createAuthEndpoint, formCsrfMiddleware, getSessionFromCtx,
-  requestPasswordReset, resetPassword, type AuthEndpoint,
+  requestPasswordReset, requestPasswordResetCallback, resetPassword, type AuthEndpoint,
 } from "better-auth/api";
 import { verificationMailDestination } from "./auth-mail-urls.server";
 import { AuthMailValidationError, safeMailAddress } from "./auth-mail-contract.server";
-import type { AuthMailRuntime } from "./auth-mail.server";
+import { deliverLifecycleMail, type AuthMailRuntime } from "./auth-mail.server";
 import { CredentialAlreadySetError, type AuthCredentialLifecycle, type CredentialTransition } from "./credential-lifecycle.server";
 import type { IssuedLifecycleProof } from "./lifecycle-state.server";
 import { InvalidLifecycleProofError } from "./lifecycle-state.server";
 import { AccountMissingError, AccountInactiveError } from "../../db/account-state";
+import type { OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { CredentialAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 import { LifecycleBudgetExceededError } from "./lifecycle-budget.server";
 
@@ -20,6 +21,7 @@ type DestinationBody = ReturnType<DestinationPick["strict"]>;
 type Post<Body> = { method: "POST"; operationId: string; body: Body; use: (typeof formCsrfMiddleware)[] };
 type Acknowledgement = { status: boolean };
 export type CredentialLifecycleEndpoints = {
+  requestPasswordResetCallback: typeof requestPasswordResetCallback;
   requestPasswordReset: AuthEndpoint<"/request-password-reset", Post<ResetRequest>, Acknowledgement>;
   resetPassword: AuthEndpoint<"/reset-password", Post<SetCredential>, Acknowledgement>;
   requestCredentialCreation: AuthEndpoint<"/request-password-create", Post<DestinationBody>, Acknowledgement>;
@@ -57,7 +59,8 @@ function protect(ctx: { setHeader: (key: string, value: string) => void }): void
 export function credentialLifecycleEndpoints(service: AuthCredentialLifecycle,
   unavailable: (error: unknown) => boolean, mail?: AuthMailRuntime,
   observe?: (transition: CredentialTransition) => void,
-  observeAttempt?: (operation: CredentialAttemptOperation, code: VerificationAttemptCode) => void): CredentialLifecycleEndpoints {
+  observeAttempt?: (operation: CredentialAttemptOperation, code: VerificationAttemptCode) => void,
+  mailObservations?: OwnerOperationalFactSink): CredentialLifecycleEndpoints {
   async function run<T>(request: Request | undefined, operation: CredentialAttemptOperation, work: () => Promise<T>): Promise<T> {
     try { return await command(work, unavailable); }
     catch (error) {
@@ -73,14 +76,7 @@ export function credentialLifecycleEndpoints(service: AuthCredentialLifecycle,
 
   async function deliver(proof: IssuedLifecycleProof | null, purpose: "password-reset" | "password-create",
     destination: ReturnType<typeof verificationMailDestination>): Promise<void> {
-    if (!mail || !proof) return;
-    try {
-      const actionURL = await mail.buildActionURL({ purpose, token: proof.token, ...destination });
-      await mail.sendAuthMail({ purpose, recipient: proof.recipient, locale: destination.locale,
-        actionURL, operationId: proof.claims.generation });
-    } catch {
-      // Public acknowledgements never include transport behavior or private provider errors.
-    }
+    if (proof) await deliverLifecycleMail(mail, mailObservations, proof, purpose, destination);
   }
 
   async function actor(ctx: Parameters<typeof getSessionFromCtx>[0]) {
@@ -100,6 +96,9 @@ export function credentialLifecycleEndpoints(service: AuthCredentialLifecycle,
   }
 
   return {
+    requestPasswordResetCallback: createAuthEndpoint<"/reset-password/:token", typeof requestPasswordResetCallback.options, never>(
+      requestPasswordResetCallback.path, requestPasswordResetCallback.options,
+      () => { throw new APIError("NOT_FOUND", { message: "Not Found" }, privateHeaders); }),
     requestPasswordReset: createAuthEndpoint<"/request-password-reset", Post<ResetRequest>, Acknowledgement>(
       "/request-password-reset", { method: "POST", operationId: "requestPasswordReset",
         use: [formCsrfMiddleware], body: requestPasswordReset.options.body.strict() },
@@ -110,7 +109,7 @@ export function credentialLifecycleEndpoints(service: AuthCredentialLifecycle,
           if (!safeMailAddress(email)) throw new AuthMailValidationError();
           const destination = verificationMailDestination(ctx.body.redirectTo, new URL(ctx.context.baseURL).origin);
           const started = Date.now();
-          await deliver(await service.requestReset(email), "password-reset", destination);
+          await deliver(await service.requestReset(email, ctx.context.internalAdapter.createVerificationValue), "password-reset", destination);
           const wait = 500 - (Date.now() - started);
           if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
           return ctx.json({ status: true });

@@ -11,7 +11,7 @@ import {PostgresOwnerStorageObservations} from "../../db/owner-storage-observati
 import {PostgresOwnerOperationalFactSink} from "../../db/owner-operational-facts";
 import {PostgresAuthFactWriter,type AuthTransitionFact} from "../../db/owner-auth-facts";
 import {DrizzleTranslationTaskStore} from "../../db/translation-task-store";
-import {OperationalProviderCalls} from "../../app/observability/operational-facts";
+import {OperationalFactBuffer,OperationalProviderCalls} from "../../app/observability/operational-facts";
 import {observeRequiredLocalizationRead,googleParametersPresent,type IntegrationRuntimeFacts} from "../../app/observability/integration-runtime";
 import {loadPersistentRegistry} from "../../app/localization/persistent-registry";
 import {createHyperdriveRegistryLoader} from "../../db/hyperdrive-registry";
@@ -41,6 +41,21 @@ it('uses the existing System reader exactly once, preserves its original sample 
   expect((await c.query("select count(*)::text n from owner_monitor_observations where resource_scope like 'storage:%'")).rows[0].n).toBe('0');
   const scoped=await history.readTimeline({monitorKey:'integrations.database'}),native=await history.readTimeline({monitorKey:'system.dependencies'}),all=await history.readTimeline();
   expect(scoped.entries.some(e=>e.id===original)).toBe(true);expect(native.entries.some(e=>e.id===original)).toBe(true);expect(all.entries.filter(e=>e.id===original)).toHaveLength(1);
+});
+it("retains distinct observed authentication mail outcomes by closed purpose", async () => {
+  const buffer = new OperationalFactBuffer(new PostgresOwnerOperationalFactSink(pool));
+  for (const mailPurpose of ["email-verification", "password-reset", "password-create"] as const) {
+    buffer.captureAuthMail(crypto.randomUUID(), "2026-11-25T00:00:00.123000Z", {
+      mailPurpose, mailTransport: "fake", mailOutcome: mailPurpose === "password-create" ? "uncertain" : "accepted",
+    });
+  }
+  await buffer.flush();
+  const current = (await reader().readCurrent()).authentication;
+  expect(current.verificationMail?.values).toMatchObject({ mailPurpose: "email-verification", mailOutcome: "accepted" });
+  expect(current.passwordResetMail?.values).toMatchObject({ mailPurpose: "password-reset", mailOutcome: "accepted" });
+  expect(current.passwordCreateMail?.values).toMatchObject({ mailPurpose: "password-create", mailOutcome: "uncertain" });
+  const scoped = await history.readTimeline({ monitorKey: "integrations.authentication", kind: "integration.authMailOutcome" });
+  expect(scoped.entries.map(entry => entry.values.mailPurpose).sort()).toEqual(["email-verification", "password-create", "password-reset"]);
 });
 it('does not use web success as localization health or invoke the required loader again',async()=>{
   const load=vi.fn(createHyperdriveRegistryLoader('postgresql://postgres:postgres@127.0.0.1:9/vico_integration_test',undefined,()=>undefined)),observed=observeRequiredLocalizationRead(load);

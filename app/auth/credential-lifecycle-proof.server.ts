@@ -8,7 +8,7 @@ export type CredentialProofPurpose = "password-reset" | "password-create";
 const proofType = "vico-credential-lifecycle:v1";
 
 export async function signCredentialProof(secret: string, claims: LifecycleClaims): Promise<string> {
-  if (claims.phase !== "pending" || (claims.purpose !== "password-reset" && claims.purpose !== "password-create")) {
+  if (claims.phase !== "pending" || claims.purpose !== "password-create") {
     throw new LifecycleStateInvariantError();
   }
   return signJWT({ proofType, ...claims }, secret, lifecycleProofTtlSeconds[claims.purpose]);
@@ -17,7 +17,7 @@ export async function signCredentialProof(secret: string, claims: LifecycleClaim
 export async function decodeCredentialProof(
   secret: string, token: unknown, purpose: CredentialProofPurpose,
 ): Promise<LifecycleProof> {
-  if (typeof token !== "string" || token.length > 2048 ||
+  if (purpose !== "password-create" || typeof token !== "string" || token.length > 2048 ||
       !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
     throw new InvalidLifecycleProofError();
   }

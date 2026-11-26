@@ -19,7 +19,7 @@ export type AuthTransitionFact =
   | { readonly kind: "auth.emailVerified"; readonly userId: string;
       readonly operationId: string; readonly actorUserId?: null }
   | ({ readonly kind: "auth.passwordChanged"; readonly userId: string;
-      readonly accountId: string; readonly operationId: string; readonly context?: "reset" } & Actor);
+      readonly accountId: string; readonly operationId: string; readonly context?: "reset" | "change" } & Actor);
 
 /** Upper bound per trusted Worker request, including bulk session revocation. */
 export const MAX_AUTH_FACTS_PER_REQUEST = 32;
@@ -107,8 +107,9 @@ function encode(fact: AuthTransitionFact): Encoded {
         throw new Error("Invalid auth fact operation ID");
       }
       if (f.context !== undefined) {
-        if (actor !== null) throw new Error("Invalid guest password reset fact");
-        payload = { context: pick(f.context, ["reset"]) };
+        const context = pick(f.context, ["reset", "change"]);
+        if (context === "reset" ? actor !== null : actor !== target) throw new Error("Invalid credential actor");
+        payload = { context };
       }
       correlation = f.operationId;
       identity = [kind,correlation,entityId]; break;

@@ -1,3 +1,4 @@
+import { generateRandomString } from "better-auth/crypto";
 import type { Client } from "pg";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
 import type { AuthLifecycleBudget } from "./lifecycle-budget.server";
@@ -5,7 +6,7 @@ import {
   decodeCredentialProof, signCredentialProof, type CredentialProofPurpose,
 } from "./credential-lifecycle-proof.server";
 import {
-  InvalidLifecycleProofError, LifecycleStateInvariantError,
+  InvalidLifecycleProofError, LifecycleStateInvariantError, lifecycleProofTtlSeconds,
   type AuthLifecycleState, type IssuedLifecycleProof, type LifecycleProof,
 } from "./lifecycle-state.server";
 import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
@@ -26,6 +27,14 @@ export type CredentialTransition = Readonly<{
 
 export class CredentialAlreadySetError extends Error {
   constructor() { super("A password is already set"); this.name = "CredentialAlreadySetError"; }
+}
+
+type WriteResetVerification = (data: { identifier: string; value: string; expiresAt: Date }) => Promise<{ id: string }>;
+type ResetTarget = Readonly<{ purpose: "password-reset"; token: string; identifier: string; nativeId: string; userId: string }>;
+
+async function nativeResetIdentifier(token: string): Promise<string> {
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("reset-password:" + token));
+  return btoa(String.fromCharCode(...new Uint8Array(hash))).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
 }
 
 type Identity = {
@@ -85,7 +94,7 @@ export class AuthCredentialLifecycle {
     if (result.rowCount !== 1) throw new InvalidLifecycleProofError();
   }
 
-  async requestReset(email: string): Promise<IssuedLifecycleProof | null> {
+  async requestReset(email: string, writeNative: WriteResetVerification): Promise<IssuedLifecycleProof | null> {
     this.assertOutsideTransaction();
     return this.budget.run({ kind: "mail", purpose: "password-reset", email }, async () => {
       const result = await this.client.query<{ id: string }>('select id from "user" where email=$1', [email]);
@@ -95,7 +104,13 @@ export class AuthCredentialLifecycle {
         return await this.state.withSubject(userId, async subject => {
           const identity = await this.identity(userId);
           if (identity.email !== email || !identity.email_verified || !identity.has_password) return null;
-          return subject.issue({ purpose: "password-reset" }, ({ claims }) => signCredentialProof(this.secret, claims));
+          const token = generateRandomString(24, "a-z", "A-Z", "0-9");
+          const { rows } = await this.client.query<{ expires_at: Date }>(
+            "select clock_timestamp() + $1::int * interval '1 second' as expires_at", [lifecycleProofTtlSeconds["password-reset"]],
+          );
+          const native = await writeNative({ identifier: "reset-password:" + token, value: userId, expiresAt: rows[0].expires_at });
+          if (!native.id) throw new LifecycleStateInvariantError();
+          return subject.issue({ purpose: "password-reset", nativeResetId: native.id }, () => token);
         });
       } catch (error) {
         if (absentAccount(error)) return null;
@@ -118,14 +133,27 @@ export class AuthCredentialLifecycle {
       }));
   }
 
+  private async resolveReset(token: unknown): Promise<ResetTarget> {
+    if (typeof token !== "string" || !/^[A-Za-z0-9]{24}$/.test(token)) throw new InvalidLifecycleProofError();
+    const identifier = await nativeResetIdentifier(token);
+    const result = await this.client.query<{ id: string; value: string }>(`
+      select id,value from verification where identifier=$1 and expires_at > timezone('UTC', clock_timestamp())
+      limit 2
+    `, [identifier]);
+    if (result.rowCount !== 1 || !result.rows[0]) throw new InvalidLifecycleProofError();
+    return { purpose: "password-reset", token, identifier, nativeId: result.rows[0].id, userId: result.rows[0].value };
+  }
+
   async inspectReset(token: unknown): Promise<void> {
     this.assertOutsideTransaction();
-    const proof = await decodeCredentialProof(this.secret, token, "password-reset");
+    const proof = await this.resolveReset(token);
     try {
       await this.state.withSubject(proof.userId, async subject => {
         const identity = await this.identity(proof.userId);
         if (!identity.has_password || !identity.email_verified) throw new InvalidLifecycleProofError();
-        await subject.inspect(proof);
+        const current = await this.resolveReset(proof.token);
+        if (current.nativeId !== proof.nativeId || current.userId !== proof.userId) throw new InvalidLifecycleProofError();
+        await subject.resolveNativeReset(proof.token, proof.nativeId);
       });
     } catch (error) {
       if (absentAccount(error)) throw new InvalidLifecycleProofError();
@@ -136,7 +164,7 @@ export class AuthCredentialLifecycle {
   async reset(token: unknown, password: string, hash: (password: string) => Promise<string>): Promise<CredentialTransition> {
     this.assertOutsideTransaction();
     return this.budget.run({ kind: "terminal", purpose: "password-reset" }, async () => {
-      const proof = await decodeCredentialProof(this.secret, token, "password-reset");
+      const proof = await this.resolveReset(token);
       return this.change(proof, password, hash);
     });
   }
@@ -151,7 +179,7 @@ export class AuthCredentialLifecycle {
     });
   }
 
-  private async change(proof: LifecycleProof, password: string,
+  private async change(target: LifecycleProof | ResetTarget, password: string,
     hash: (password: string) => Promise<string>, session?: FreshCredentialSession): Promise<CredentialTransition> {
     if (typeof password !== "string" || password.length < 8 || password.length > 128) {
       throw new InvalidLifecycleProofError();
@@ -159,7 +187,8 @@ export class AuthCredentialLifecycle {
     const hashed = await hash(password);
     if (typeof hashed !== "string" || !hashed) throw new LifecycleStateInvariantError();
     try {
-      return await this.state.withSubject(proof.userId, async subject => {
+      return await this.state.withSubject(target.userId, async subject => {
+        const proof = "nativeId" in target ? await subject.resolveNativeReset(target.token, target.nativeId) : target;
         if (session) await this.assertFresh(session);
         const identity = await this.identity(proof.userId);
         if (!identity.email_verified || (session ? !identity.has_google : !identity.has_password)) {
@@ -167,6 +196,13 @@ export class AuthCredentialLifecycle {
         }
         if (session && identity.has_password) throw new CredentialAlreadySetError();
         await subject.consume(proof);
+        if ("nativeId" in target) {
+          const consumed = await this.client.query(`
+            delete from verification where id=$1 and identifier=$2 and value=$3
+              and expires_at > timezone('UTC', clock_timestamp()) returning id
+          `, [target.nativeId, target.identifier, target.userId]);
+          if (consumed.rowCount !== 1) throw new InvalidLifecycleProofError();
+        }
         const changed = identity.credential_id
           ? await this.client.query<{ id: string }>(`
               update account set password=$1, updated_at=timezone('UTC', clock_timestamp())

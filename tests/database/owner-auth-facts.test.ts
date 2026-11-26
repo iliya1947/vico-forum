@@ -215,7 +215,7 @@ describe("SA02 PostgreSQL17 native append-only auth fact writer", () => {
     const sink = new PostgresOwnerOperationalFactSink(pool);
     const buffered:OwnerOperationalFact[]=[];
     const buffer = new OperationalFactBuffer({append:async fact=>{buffered.push(fact);await sink.append(fact);}});
-    buffer.captureVerificationMail(operationId,"2026-11-25T00:00:00.123000Z",{
+    buffer.captureAuthMail(operationId,"2026-11-25T00:00:00.123000Z",{
       mailPurpose:"email-verification",mailTransport:"fake",mailOutcome:"accepted",
     });
     await buffer.flush();

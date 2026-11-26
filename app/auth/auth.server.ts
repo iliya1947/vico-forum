@@ -181,6 +181,7 @@ export function betterAuthOptions(
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    verification: { storeIdentifier: { default: "plain", overrides: { "reset-password:": "hashed" } } },
     database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
       schema: betterAuthSchema,
@@ -356,7 +357,7 @@ export function createAuth(
           if (actorId !== userId) return;
           const fact: AuthTransitionFact = {
             kind: "auth.passwordChanged", userId, accountId: updated.id,
-            operationId: crypto.randomUUID(), actorUserId: userId,
+            operationId: crypto.randomUUID(), context: "change", actorUserId: userId,
           };
           const occurredAt = new Date();
           observe(() => emit(fact, occurredAt));

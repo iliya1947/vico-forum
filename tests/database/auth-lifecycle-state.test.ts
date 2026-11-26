@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
@@ -443,8 +444,16 @@ describe("AUTH-03 credential lifecycle domain", () => {
   const newPassword = "fixture-only-new-credential";
   const makeService = (client = first) => {
     const tx = new AuthLifecycleTransaction(client);
-    return new AuthCredentialLifecycle(client, tx, new AuthLifecycleState(client, tx),
+    const service = new AuthCredentialLifecycle(client, tx, new AuthLifecycleState(client, tx),
       new AuthLifecycleBudget(client, tx, secret), secret);
+    const auth = createAuth(drizzle(client), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    }, undefined, undefined, undefined, undefined, undefined, undefined, undefined, false, tx);
+    const requestReset = service.requestReset.bind(service);
+    return Object.assign(service, {
+      requestReset: async (email: string) => requestReset(email, (await auth.$context).internalAdapter.createVerificationValue),
+    });
   };
 
   async function installMethod(provider: "google" | "credential") {
@@ -489,6 +498,119 @@ describe("AUTH-03 credential lifecycle domain", () => {
       .toEqual([sessionId, otherSessionId].sort());
     expect((await second.query("select provider_id from account where user_id=$1 order by provider_id", [userId])).rows)
       .toEqual([{ provider_id: "credential" }, { provider_id: "google" }]);
+  });
+
+  it("stores opaque reset in hashed native storage and SET-05 invalidates its current binding", async () => {
+    await installMethod("credential");
+    const service = makeService();
+    const issued = await service.requestReset(email);
+    expect(issued).not.toBeNull();
+    const token = issued!.token;
+    expect(token).toMatch(/^[A-Za-z0-9]{24}$/);
+    const nativeIdentifier = createHash("sha256").update("reset-password:" + token).digest("base64url");
+    const stored = await rows();
+    const native = stored.find(row => row.identifier === nativeIdentifier);
+    expect(native?.value).toBe(userId);
+    const binding = stored.find(row => row.id.includes(":password-reset:"));
+    expect(JSON.parse(binding!.value)).toMatchObject({
+      nativeResetId: native!.id, generation: issued!.claims.generation, userId, email,
+    });
+    expect(JSON.stringify(stored)).not.toContain(token);
+
+    const auth = createAuth(drizzle(first), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    });
+    const legacy = await auth.handler(new Request(`http://localhost:3000/api/auth/reset-password/${token}?callbackURL=%2Fen`));
+    expect(legacy.status).toBe(404);
+    expect(legacy.headers.get("Location")).toBeNull();
+    const session = await auth.api.signInEmail({
+      body: { email, password: "fixture-only-old-credential" }, asResponse: true,
+    });
+    const cookie = session.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    await expect(auth.api.changePassword({
+      headers: new Headers({ cookie }),
+      body: { currentPassword: "fixture-only-old-credential", newPassword, revokeOtherSessions: false },
+    })).resolves.toMatchObject({ user: { id: userId } });
+    expect(await rows()).toEqual([]);
+    await expect(service.reset(token, "fixture-only-late-reset", hashPassword))
+      .rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect((await second.query("select id from session")).rowCount).toBe(3);
+  });
+
+  it("replaces the old native reset row and checks native expiry independently of the Vico binding", async () => {
+    await installMethod("credential");
+    const service = makeService();
+    const firstProof = await service.requestReset(email);
+    const current = await service.requestReset(email);
+    expect(firstProof).not.toBeNull();
+    expect(current).not.toBeNull();
+    await expect(service.inspectReset(firstProof!.token)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    const hashed = createHash("sha256").update("reset-password:" + current!.token).digest("base64url");
+    expect(await rows()).toHaveLength(2);
+    const expired = await first.query("update verification set expires_at=(clock_timestamp() at time zone 'UTC') - interval '1 second' where identifier=$1", [hashed]);
+    expect(expired.rowCount).toBe(1);
+    await expect(service.reset(current!.token, newPassword, hashPassword)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect((await second.query("select id from session")).rowCount).toBe(2);
+    expect(await rows()).toHaveLength(2);
+  });
+
+  it("rejects reset already in flight when SET-05 wins the subject lock", async () => {
+    await installMethod("credential");
+    const reset = makeService(second);
+    const issued = await reset.requestReset(email);
+    expect(issued).not.toBeNull();
+    const auth = createAuth(drizzle(first), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    });
+    const signIn = await auth.api.signInEmail({ body: { email, password: "fixture-only-old-credential" }, asResponse: true });
+    const cookie = signIn.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    const latch = connection();
+    await latch.connect();
+    const backend = async (client: Client): Promise<number> =>
+      (await client.query<{ pid: number }>("select pg_backend_pid() pid")).rows[0].pid;
+    const [changePid, resetPid, latchPid] = await Promise.all([backend(first), backend(second), backend(latch)]);
+    const waitBlockedBy = async (pid: number, holder: number) => {
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const result = await latch.query("select 1 where $2::int = any(pg_blocking_pids($1))", [pid, holder]);
+        if (result.rowCount) return;
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      throw new Error("Expected a credential operation to wait for the other transaction");
+    };
+    await first.query(`
+      create function wait_for_credential_change() returns trigger language plpgsql as $$
+        begin perform pg_advisory_xact_lock(32796014); return new; end;
+      $$;
+      create trigger wait_for_credential_change before update of password on account
+        for each row execute function wait_for_credential_change()
+    `);
+    let change: Promise<unknown> | undefined;
+    let pendingReset: ReturnType<typeof reset.reset> | undefined;
+    try {
+      await latch.query("select pg_advisory_lock(32796014)");
+      change = auth.api.changePassword({ headers: new Headers({ cookie }),
+        body: { currentPassword: "fixture-only-old-credential", newPassword, revokeOtherSessions: false } });
+      void change.catch(() => {});
+      await waitBlockedBy(changePid, latchPid);
+      pendingReset = reset.reset(issued!.token, "fixture-only-losing-reset", hashPassword);
+      void pendingReset.catch(() => {});
+      await waitBlockedBy(resetPid, changePid);
+      await latch.query("select pg_advisory_unlock(32796014)");
+      await expect(change).resolves.toMatchObject({ user: { id: userId } });
+      await expect(pendingReset).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+      expect((await second.query("select id from session")).rowCount).toBe(3);
+      expect(await rows()).toEqual([]);
+    } finally {
+      await latch.query("select pg_advisory_unlock_all()");
+      await Promise.allSettled([change, pendingReset]);
+      await first.query(`
+        drop trigger wait_for_credential_change on account;
+        drop function wait_for_credential_change()
+      `);
+      await latch.end();
+    }
   });
 
   it("rolls back proof consumption and the password if session revocation fails", async () => {

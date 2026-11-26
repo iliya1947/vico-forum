@@ -1,8 +1,8 @@
 import type { Client } from "pg";
 import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
-import { AuthMailValidationError, type AuthMailStatus } from "./auth-mail-contract.server";
-import type { AuthMailRuntime, InvokedAuthMailTransport } from "./auth-mail.server";
-import { OperationalFactBuffer, type OwnerOperationalFactSink } from "../observability/operational-facts";
+import type { AuthMailStatus } from "./auth-mail-contract.server";
+import { deliverLifecycleMail, type AuthMailRuntime } from "./auth-mail.server";
+import type { OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { AuthTransitionFact } from "../../db/owner-auth-facts";
 import { decodeEmailVerificationProof, signEmailVerificationProof } from "./email-verification-proof.server";
 import type { AuthLifecycleBudget } from "./lifecycle-budget.server";
@@ -85,43 +85,7 @@ export class AuthEmailVerification {
     destination: VerificationMailDestination): Promise<VerificationIssuanceOutcome> {
     if (!proof) return "not-eligible";
     this.assertOutsideTransaction();
-    let transport: InvokedAuthMailTransport = "none";
-    let outcome: AuthMailStatus = "disabled";
-    if (this.mail) {
-      let actionURL: string | undefined;
-      try {
-        actionURL = await this.mail.buildActionURL({
-          purpose: "email-verification", token: proof.token, ...destination,
-        });
-      } catch (error) {
-        outcome = error instanceof AuthMailValidationError ? "rejected" : "unavailable";
-      }
-      if (actionURL !== undefined) {
-        // An injected runtime may not implement the optional invocation observer.
-        const observed: { transport: InvokedAuthMailTransport } = { transport: "unknown" };
-        try {
-          const result = await this.mail.sendAuthMail({
-            purpose: "email-verification", recipient: proof.recipient, locale: destination.locale,
-            actionURL, operationId: proof.claims.generation,
-          }, value => { observed.transport = value; });
-          outcome = result.status;
-          if (outcome === "disabled" && observed.transport === "unknown") observed.transport = "none";
-        } catch {
-          outcome = "uncertain";
-        }
-        transport = observed.transport;
-      }
-    }
-    // Mail outcomes are not auth transitions or delivery confirmations.
-    try {
-      const observations = new OperationalFactBuffer(this.mailObservations);
-      observations.captureVerificationMail(proof.claims.generation,
-        new Date().toISOString().replace("Z","000Z"), {
-          mailPurpose:"email-verification",mailTransport:transport,mailOutcome:outcome,
-        });
-      await observations.flush();
-    } catch { /* passive recording cannot change the domain result */ }
-    return outcome;
+    return deliverLifecycleMail(this.mail, this.mailObservations, proof, "email-verification", destination);
   }
 
   /** Only for a native fresh-signup result with proven user+credential COMMIT.

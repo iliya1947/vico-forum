@@ -2,7 +2,7 @@ import type {Pool,PoolClient} from "pg";
 import type {OwnerSystemMonitoring} from "./owner-system-monitoring";
 import type {SafePayload} from "./owner-system-history";
 import type {IntegrationRuntimeFacts,RequiredLocalizationRead} from "../app/observability/integration-runtime";
-import {TASK_TRANSITION_KINDS,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES} from "../app/observability/operational-facts";
+import {TASK_TRANSITION_KINDS,AUTH_MAIL_OBSERVED_PURPOSES,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES} from "../app/observability/operational-facts";
 import type {TranslationFailureCode} from "../app/localization/translation-failures";
 import {STORAGE_SLOTS} from "../app/observability/storage-observations";
 import {readRetainedStorageSamples} from "./owner-file-monitoring";
@@ -29,7 +29,7 @@ function fact(row:FactRow|undefined,source:string,operational=false):RetainedInt
     values.payloadSchemaRecognized=row.value?.schemaVersion===1;
     if(!values.payloadSchemaRecognized)return {id:row.id,occurredAt:row.at,kind:row.kind,source,values};
     if(row.kind==="integration.authMailOutcome"){
-      if(row.value.mailPurpose==="email-verification")values.mailPurpose="email-verification";
+      if((AUTH_MAIL_OBSERVED_PURPOSES as readonly unknown[]).includes(row.value.mailPurpose))values.mailPurpose=String(row.value.mailPurpose);
       if((VERIFICATION_MAIL_TRANSPORTS as readonly unknown[]).includes(row.value.mailTransport))values.mailTransport=String(row.value.mailTransport);
       if((VERIFICATION_MAIL_OUTCOMES as readonly unknown[]).includes(row.value.mailOutcome))values.mailOutcome=String(row.value.mailOutcome);
       return {id:row.id,occurredAt:row.at,kind:row.kind,source,values};
@@ -44,9 +44,9 @@ function fact(row:FactRow|undefined,source:string,operational=false):RetainedInt
   // Session facts deliberately contain no provider, method, user/time inference or joins.
   return {id:row.id,occurredAt:row.at,kind:row.kind,source,values};
 }
-async function lastOperational(c:PoolClient,monitor:string,kinds:readonly string[]){
+async function lastOperational(c:PoolClient,monitor:string,kinds:readonly string[],purpose?: typeof AUTH_MAIL_OBSERVED_PURPOSES[number]){
   const row=(await c.query<FactRow>(`select id::text id,${timestamp('occurred_at')} at,kind,payload value from owner_events
-    where source='operation' and monitor_key=$1 and kind=any($2::text[]) order by occurred_at desc,id desc limit 1`,[monitor,kinds])).rows[0];
+    where source='operation' and monitor_key=$1 and kind=any($2::text[]) and ($3::text is null or payload->>'mailPurpose'=$3) order by occurred_at desc,id desc limit 1`,[monitor,kinds,purpose??null])).rows[0];
   return fact(row,'owner_events.operation',true);
 }
 async function readSources(c:PoolClient){
@@ -76,7 +76,9 @@ async function readSources(c:PoolClient){
     retainedSample={id:dependency.id,observedAt:dependency.at,source:'database',schemaVersion:1,quality:dependency.quality,values:dependencyValues(dependency.value)};
   }
   return {at,authentication:{source:'database' as const,observedAt:at,values:authValues,googleMethodLink:fact(google,'owner_events.auth'),genericSession:fact(session,'owner_events.auth'),
-    verificationMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'])},
+    verificationMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'email-verification'),
+    passwordResetMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'password-reset'),
+    passwordCreateMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'password-create') },
     retainedSample,storageSamples:await readRetainedStorageSamples(c,at),translation:{
       taskOutcome:await lastOperational(c,'background.translation',TASK_TRANSITION_KINDS),
       providerExecution:await lastOperational(c,'integrations.translation',['integration.translationCall'])}};

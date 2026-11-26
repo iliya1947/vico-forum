@@ -333,6 +333,14 @@ def run():
         assert sql("select provider_id from account where user_id=$1 order by provider_id", [ru_id]) == [
             {"provider_id": "credential"}, {"provider_id": "google"}]
         record("google-method-and-initial-session-preserved")
+        credential_mail = sql("""select payload->>'mailPurpose' purpose, payload->>'mailTransport' transport,
+          payload->>'mailOutcome' outcome from owner_events where kind='integration.authMailOutcome'
+          and payload->>'mailPurpose' in ('password-reset','password-create') order by purpose""")
+        assert credential_mail == [
+            {"purpose": "password-create", "transport": "fake", "outcome": "accepted"},
+            {"purpose": "password-reset", "transport": "fake", "outcome": "accepted"},
+        ]
+        record("credential-mail-outcomes-retain-purpose-and-observed-transport")
         browser.close()
 
 

@@ -1,6 +1,7 @@
 import { APIError, changePassword, createAuthEndpoint, dispatchAuthEndpoint, getSessionFromCtx, signInEmail, type AuthEndpoint } from "better-auth/api";
 import type { Client } from "pg";
 import { AccountInactiveError, AccountMissingError, assertActiveAccountForMutation } from "../../db/account-state";
+import type { AuthLifecycleState } from "./lifecycle-state.server";
 import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 
 type Native = ReturnType<typeof signInEmail>;
@@ -61,7 +62,7 @@ type NativeChange = typeof changePassword;
 type NativeChangeResult = NativeChange extends AuthEndpoint<"/change-password", NativeChange["options"], infer Result> ? Result : never;
 
 export function credentialChangePassword(
-  client: Pick<Client, "query">, transaction: AuthLifecycleTransaction, onActorStateError?: (error: unknown) => void,
+  client: Pick<Client, "query">, transaction: AuthLifecycleTransaction, state: AuthLifecycleState, onActorStateError?: (error: unknown) => void,
 ): NativeChange {
   return createAuthEndpoint<"/change-password", NativeChange["options"], NativeChangeResult>(
     changePassword.path, changePassword.options, async ctx => {
@@ -71,7 +72,7 @@ export function credentialChangePassword(
           const actor = await getSessionFromCtx({ ...ctx, context: { ...ctx.context, session: null } },
             { disableCookieCache: true, disableRefresh: true });
           if (!actor) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" });
-          return dispatchAuthEndpoint(changePassword, {
+          const response = await dispatchAuthEndpoint(changePassword, {
             ...ctx,
             context: {
               ...ctx.context,
@@ -98,6 +99,8 @@ export function credentialChangePassword(
             asResponse: false,
             returnHeaders: true,
           });
+          await state.withSubject(actor.user.id, subject => subject.invalidate(["password-reset", "password-create"]));
+          return response;
         }) as { response: NativeChangeResult; headers?: Headers };
         result.headers?.forEach((value, name) => ctx.responseHeaders.append(name, value));
         return ctx.json(result.response);

@@ -385,7 +385,7 @@ const LEGACY_SOURCE_SQL = [
   "from owner_events e where e.source='operation' and e.monitor_key='background.attachments' and e.kind='file.cleanupPass'",
   "union all",
   "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['integrations.authentication']::text[],",
-  "e.kind,e.source,'best-effort'::text,jsonb_build_object('operationId',e.entity_id,'mailPurpose',case when e.payload->>'mailPurpose'='email-verification' then 'email-verification' end,'mailTransport',case when e.payload->>'mailTransport' in ('none','unknown','fake','resend','brevo') then e.payload->>'mailTransport' end,'mailOutcome',case when e.payload->>'mailOutcome' in ('accepted','rejected','unavailable','uncertain','disabled') then e.payload->>'mailOutcome' end)",
+  "e.kind,e.source,'best-effort'::text,jsonb_build_object('operationId',e.entity_id,'mailPurpose',case when e.payload->>'mailPurpose' in ('email-verification','password-reset','password-create') then e.payload->>'mailPurpose' end,'mailTransport',case when e.payload->>'mailTransport' in ('none','unknown','fake','resend','brevo') then e.payload->>'mailTransport' end,'mailOutcome',case when e.payload->>'mailOutcome' in ('accepted','rejected','unavailable','uncertain','disabled') then e.payload->>'mailOutcome' end)",
   "from owner_events e where e.source='operation' and e.monitor_key='integrations.authentication' and e.kind='integration.authMailOutcome'",
 ].join("\n");
 

@@ -96,7 +96,7 @@ describe("SA02 native Better Auth 1.7.7 credential password changes", () => {
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       kind:"auth.passwordChanged",userId:actor.userId,
-      accountId:actor.accountId,actorUserId:actor.userId,
+      accountId:actor.accountId,actorUserId:actor.userId,context:"change",
     });
     expect(events[0]).toHaveProperty("operationId",expect.stringMatching(
       /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/));
@@ -109,7 +109,7 @@ describe("SA02 native Better Auth 1.7.7 credential password changes", () => {
       [saved.id])).rows;
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({entity_id:actor.accountId,target_user_id:actor.userId,
-      actor_user_id:actor.userId,payload:{}});
+      actor_user_id:actor.userId,payload:{context:"change"}});
     expect(rows[0].correlation_id).toBe((events[0] as { operationId:string }).operationId);
     expect(JSON.stringify(rows)).not.toContain(actor.beforeHash);
     expect(JSON.stringify(rows)).not.toContain(oldPassword);

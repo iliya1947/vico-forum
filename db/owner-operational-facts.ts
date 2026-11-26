@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
 import { getTableColumns,sql } from "drizzle-orm";
 import { translationTasks } from "./schema";
-import { TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
+import { TASK_TRANSITION_KINDS,FILE_TRANSITION_KINDS,AUTH_MAIL_OBSERVED_PURPOSES,VERIFICATION_MAIL_TRANSPORTS,VERIFICATION_MAIL_OUTCOMES,type OwnerOperationalFact,type OwnerOperationalFactSink } from "../app/observability/operational-facts";
 
 /** Exact RETURNING time retains microseconds even when ordinary Drizzle Dates use milliseconds. */
 export const operationalTaskColumns={...getTableColumns(translationTasks),
@@ -34,7 +34,7 @@ export class PostgresOwnerOperationalFactSink implements OwnerOperationalFactSin
     const mailFields=["mailPurpose","mailTransport","mailOutcome"];
     if(fact.kind==="integration.authMailOutcome"){
       if(fact.actorUserId!==null||Object.keys(fact.values).sort().join(",")!=="mailOutcome,mailPurpose,mailTransport,schemaVersion"
-        ||fact.values.mailPurpose!=="email-verification"
+        ||!(AUTH_MAIL_OBSERVED_PURPOSES as readonly unknown[]).includes(fact.values.mailPurpose)
         ||!(VERIFICATION_MAIL_TRANSPORTS as readonly unknown[]).includes(fact.values.mailTransport)
         ||!(VERIFICATION_MAIL_OUTCOMES as readonly unknown[]).includes(fact.values.mailOutcome))
         throw new Error("Invalid verification mail observation");
@@ -78,7 +78,7 @@ function validStringField(name:string,value:string):boolean{
   if(name==="attachmentId")return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   if(name==="referenceCreatedAt")return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$/.test(value)&&Number.isFinite(Date.parse(value));
   const allowed:Record<string,readonly string[]>={taskKind:taskKinds,failureCode:failureCodes,
-    mailPurpose:["email-verification"],mailTransport:VERIFICATION_MAIL_TRANSPORTS,mailOutcome:VERIFICATION_MAIL_OUTCOMES,
+    mailPurpose:AUTH_MAIL_OBSERVED_PURPOSES,mailTransport:VERIFICATION_MAIL_TRANSPORTS,mailOutcome:VERIFICATION_MAIL_OUTCOMES,
     detectedType:["png","jpeg","gif","webp","pdf","zip","7z","gzip","tar","ole","text","executable","unknown","other"],
     stoppedPhase:["prune","journal","assets","markers","complete"],failureDisposition:["terminal","retry-exhausted"],outcome:["complete","partial-failure"]};
   return allowed[name]?.includes(value)??false;

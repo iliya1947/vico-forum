@@ -49,6 +49,8 @@ export function SuperAdminIntegrations({locale,state,viewerId}:{locale:string;st
         <Fact locale={locale} title="sa07IGoogleMethodFact" fact={state.authentication.googleMethodLink}/>
         <Fact locale={locale} title="sa07IGenericSessionFact" fact={state.authentication.genericSession}/>
         <Fact locale={locale} title="sa07ILastVerificationMail" fact={state.authentication.verificationMail??null}/>
+        <Fact locale={locale} title="authCredentialReset" fact={state.authentication.passwordResetMail??null}/>
+        <Fact locale={locale} title="authCredentialCreate" fact={state.authentication.passwordCreateMail??null}/>
         <p><Link to={routing.superAdmin.accounts(locale)}>{t('superAdminAreaAccounts')}</Link></p>
       </>:m.key==='integrations.storage'?<><p>{t('sa07FStorageNote')}</p>{state.storageSamples.map(({scope,sample})=><details key={scope} data-storage-slot={scope}>
         <summary><bdi>{scope}</bdi> · {t(sample?'sa07FRetainedSample':'sa07FUnmeasured')}</summary>{sample?<>

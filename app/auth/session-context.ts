@@ -21,6 +21,7 @@ export function isGuestEmailVerificationRequest(request: Request): boolean {
     path === "/api/auth/sign-up/email" || path === "/api/auth/verify-email" ||
     path === "/api/auth/send-verification-email" || path === "/api/auth/inspect-email-verification" ||
     path === "/api/auth/request-password-reset" || path === "/api/auth/reset-password" ||
+    path.startsWith("/api/auth/reset-password/") ||
     /^\/[^/]+\/(?:forgot-password|reset-password)(?:\.data)?$/.test(path);
 }
 
