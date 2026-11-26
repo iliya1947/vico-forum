@@ -3,7 +3,8 @@
 ## Текущий этап
 
 - Служебный PR #369, не merge.
-- Проверенная основа main: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- Историческая проверенная основа stack: `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
+- **2026-11-26 — Лена: baseline drift / coordinator decision required before B8b1.** Actual main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432` is 4 commits ahead of the accepted stack merge base `9cff976a9621d9fe5dfef28ea5367e390ff435b1`; [GitHub comparison](https://github.com/iliya1947/vico-forum/compare/9cff976a9621d9fe5dfef28ea5367e390ff435b1...9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432). P0 #373/P1 #375/P2 #385 heads are unchanged; their historical exact-head PASS remains scoped to the old source. Main adds current-product catalog permissions `forum.content.visibility.manage`, `forum.structure.manage`, `forum.topic.move` (and changes initial grants), five routes in `app/routes.ts`, and four Worker registrations (`forumStructureReaderContext`, `forumStructureWriterContext`, `topicMoveWriterContext`, `hiddenQueueContext`). These directly change PLAN §10/P1/P2 coverage, not future Stage 6 work. B8b1's `readManagementState()` type/loader logic itself is unchanged; do not mislabel it as an implementation defect. Its implementation on the old stack is not proof against current main. Existing bounded assignment explicitly excludes stack sync. **Лена STOP before code changes**; Мира to resolve delivery/baseline synchronization timing and revised coverage with Лёва if the plan needs changes; then assign the next bounded step. Do not restart P2 or invalidate old checks indiscriminately. No implementation commits, test runs, merge or deployment on this activation.
 - Концепция и канонический technical `PLAN.md` приняты; delivery mode: **stacked P0→P5**, затем P6 после merge.
 - **P0 завершён и прошёл coordinator checkpoint Миры: PASS.**
 - P0 implementation: Draft #373, branch `feature/ui-progress-preview-p0`, stable exact head `e1f077c0c8c7f15d4600df0a64dd661982755bb8`, base main `9cff976a9621d9fe5dfef28ea5367e390ff435b1`.
@@ -228,4 +229,4 @@ STOP:
 - Лира снимается с исполнения P2 после B8a PASS.
 - Новый исполнитель P2 — **Лена**.
 - Продолжить текущий P2 с Draft #385 exact `56f63e1e0732a76419e4f3fd74f95e65e699de0a` по актуальным `AGENTS.md`, `RULES.md`, `WORKFLOW.md` и `PLAN.md`.
-- Следующий bounded шаг — B8b1. Не начинать P2 заново.
+- B8b1 остаётся следующим implementation шагом, но сейчас STOP: требуется решение Миры о baseline drift (см. начало WORKFLOW). Не начинать P2 заново.
