@@ -10,11 +10,11 @@
 6. AUTH-01/AUTH-02a/AUTH-02b остаются intermediate stacked PRs: без merge в main и independent intermediate review.
 7. Активный bounded-этап: **AUTH-03 — recovery/reset + password creation для Google-only**.
 8. Исполнитель по прямому решению владельца: **Лёва / Codex-6.1 Sol**.
-9. Draft implementation PR #392 поверх `feat/auth-02b-email-verification` / exact `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`. Current head `cb40e15b6ede72a23b40807cd6de2942d661c893`; implementation опубликована, выполняются exact-head checks. Evidence — `stages/AUTH-03/RESULT.md`.
+9. Draft implementation PR #392 поверх `feat/auth-02b-email-verification` / exact `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`. Stable head `ce75ff3629a4adae9941703a33f6d0366bd7f570` — **AUTHOR PASS**. CI #45726094032 и 15/15 applicable connected workflows PASS, включая AUTH-02b/03 #45726100332 и AP-10 #45726100472. Evidence — `stages/AUTH-03/RESULT.md`.
 10. Scope: neutral forgot/reset existing verified credential + own fresh-session mail-proof password creation for Google-only через shared credential service; email change/unlink остаются AUTH-04.
 11. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 12. Лёва участвует в implementation stack и не является independent final whole-feature reviewer.
 
 ## Следующий переход
 
-Лёва завершает exact-head CI/acceptance и полный author self-check AUTH-03 #392, фиксирует evidence в `stages/AUTH-03/RESULT.md` и останавливается для coordinator checkpoint Миры. AUTH-04 самостоятельно не начинать.
+**Мира — coordinator checkpoint AUTH-03 #392 на stable exact head `ce75ff3629a4adae9941703a33f6d0366bd7f570`.** Лёва остановился после AUTHOR PASS. AUTH-04 ждёт coordinator PASS AUTH-03.
