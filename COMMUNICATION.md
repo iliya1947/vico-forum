@@ -3,34 +3,26 @@
 ## Общий контекст
 
 1. Полный технический план authentication lifecycle `AUTH-01–AUTH-07` принят coordinator review; delivery mode — stacked `AUTH-01 → AUTH-02a → AUTH-02b → AUTH-03 → AUTH-04 → AUTH-05 → AUTH-06`, затем AUTH-07 final gate.
-2. Target contract D-01: email/password требует обязательного подтверждения email; legacy/grandfathering policy для гипотетических production users не вводится. Возможный external cutover проверяется только перед отдельно разрешённым Stage 6.
-3. Better Auth остаётся authentication/session provider; implicit Google↔credential linking запрещён. Existing SET-02 registration policy относится только к fresh create-user и не должна блокировать login/verification/recovery/linking существующего account.
-4. AccountState, Owner History/Monitoring, Settings Account & security и существующие registration/session boundaries переиспользуются; второй auth backend не создаётся.
-5. Конкретный anti-bot provider не выбран. Provider-neutral challenge boundary не означает обязательную Stage-6 активацию.
-6. Реальные Resend/Brevo credentials, DNS, provider calls, production Google OAuth/Owner binding и иные external actions остаются заблокированными до отдельного Stage-6 решения владельца.
+2. Email/password target contract требует mandatory verification; legacy/grandfathering для гипотетических production users не вводится.
+3. Better Auth остаётся authentication/session provider; implicit Google↔credential linking запрещён.
+4. AccountState, Owner History/Monitoring, Settings Account & security и registration/session boundaries переиспользуются.
+5. Конкретный anti-bot provider не выбран. AUTH-05 реализует provider-neutral challenge contract и repository/local-CI evidence без внешней активации.
+6. Реальные Resend/Brevo credentials, DNS, provider calls, anti-bot resources, production Google OAuth/Owner binding и Stage-6 actions остаются заблокированными.
 
 ## Принятые stacked-ступени
 
-1. **AUTH-01 / PR #388** — mail foundation; coordinator PASS на `e18fdb189d3c6a0a9ad913df398530a6cd69bb6a`.
-2. **AUTH-02a / PR #389** — lifecycle transaction/state/constraints/budgets foundation; coordinator PASS на `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
-   - исходный общий storage Vico budgets в native `rate_limit` признан ошибкой плана;
-   - итоговый contract использует отдельную `auth_lifecycle_budget` с explicit expiry, сохраняя native Better Auth limiter;
-   - единый transaction owner и sequencing correction приняты;
-   - подробный итог: `stages/AUTH-02a/RESULT.md`; техническое storage-решение: `stages/AUTH-02a/STORAGE-DECISION.md`.
-3. **AUTH-02b — принят.** PR #391 / exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Mandatory verification/resend/UI доставлены; credential no-JS transport защищён явным POST.
+1. AUTH-01 / PR #388 — coordinator PASS.
+2. AUTH-02a / PR #389 — coordinator PASS; отдельный `auth_lifecycle_budget` с explicit expiry принят вместо shared native `rate_limit`.
+3. AUTH-02b / PR #391 — coordinator PASS.
+4. AUTH-03 / PR #392 — coordinator PASS.
+5. AUTH-04 / PR #393 — corrected exact head `e9f8bad85694321f3279a72b604546a813a856b8`: AUTHOR PASS + COORDINATOR PASS; исходный HOLD F01–F04 закрыт.
 
-4. **AUTH-03 — принят.** PR #392 / exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`: AUTHOR PASS + COORDINATOR PASS, 0 confirmed current-scope blocking defects. Recovery использует accepted native opaque+hashed reset model с Vico binding; SET-05 invalidation и AUTH-03 observability закрыты.
-5. **AUTH-04 — HOLD.** PR #393; independent bounded review Лены выявил F01–F04 и незакрытые acceptance evidence. Реализация остаётся в draft, подробности в `stages/AUTH-04/RESULT.md`.
+## Активная ступень
 
-## Существенные технические зависимости следующих этапов
+**AUTH-05 — anti-abuse completion.** Исполнитель — Лёва. Base — accepted AUTH-04 branch `feat/auth-04-account-security` / exact head `e9f8bad85694321f3279a72b604546a813a856b8`. Bounded contract — `stages/AUTH-05/PLAN.md`.
 
-1. Verification/recovery/change/unlink обязаны использовать AUTH-02a transaction/state/budget primitives и сохранять AccountState ordering.
-2. Verification token/state должен быть purpose/subject/generation-bound; GET landing не выполняет terminal mutation.
-3. Recovery не может использоваться как anonymous создание password method для Google-only account; password creation остаётся own authenticated flow AUTH-03.
-4. Last-usable-method invariant и email change относятся к AUTH-04, не к текущему AUTH-02b.
-5. Closed auth facts/attempt telemetry расширяются только одновременно с реальным producer соответствующей ступени; rollback/zero-row/uncertain outcome не создают ложный success fact.
-6. Green CI является подтверждающим evidence, а не основанием считать архитектурную предпосылку доказанной.
+AUTH-05 завершает server-owned budgets, HTTP/Settings/direct parity, trusted-network semantics, provider-neutral registration challenge, config/failure/privacy и adversarial coverage. Turnstile или иной provider, SDK/widget/sitekey/secrets и external activation не входят.
 
 ## Текущий переход
 
-Мира принимает HOLD Лены и координирует correction Лёвой по WORKFLOW.md и `stages/AUTH-04/RESULT.md`. До закрытия AUTH-04 не начинать AUTH-05.
+После AUTHOR PASS AUTH-05 Лёва останавливается для coordinator checkpoint Миры. AUTH-06 до отдельного перехода не начинать.
