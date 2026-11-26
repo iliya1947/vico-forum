@@ -274,9 +274,10 @@ try:
         ])
         document(google, "/en/settings/account")
         expect(google.get_by_text("Google", exact=True)).to_have_count(1)
-        expect(google.locator(".settings-account-form")).to_have_count(0)
+        expect(google.locator(".settings-account-form")).to_have_attribute("method", "post")
+        expect(google.get_by_role("button", name="Send a recovery link")).to_be_enabled()
+        expect(google.locator('.settings-account-form input[type="password"]')).to_have_count(0)
         expect(google.get_by_role("button", name="Connect Google")).to_have_count(0)
-        expect(google.get_by_text("no password credential", exact=False)).to_have_count(1)
         google_html = google.content()
         for secret in ("set05-secret-access", "set05-secret-refresh", "set05-secret-id-token",
                        "external-google-account"):
