@@ -69,7 +69,6 @@ export function AccountLifecycleView({ locale, userId, sessionId, email, verifie
     {result ? <p role={result === "ok" ? "status" : "alert"}>
       {t(result === "ok" ? "authAccountRequestDone" : result === "rate-limited" ? "authVerificationRateLimited" : "authAccountConflict")}
     </p> : null}
-    {!enabled ? <p>{t("settingsSecurityNotFresh")}</p> : null}
     {confirming ? <form method="post" onSubmit={confirm}>
       <button type="submit" disabled={disabled}>{t("authAccountConfirmEmail")}</button>
     </form> : <form method="post" onSubmit={submit} className="settings-email-form">
