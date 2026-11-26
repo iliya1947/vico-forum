@@ -45,3 +45,10 @@ Finding находится в AUTH-05 product implementation, не в AUTH-06 te
 ## Следующий маршрут
 
 Ада / Business GPT-6.2 выполняет отдельную AUTH-05 correction по F01. Поскольку после этого Ада участвует в implementation, independent final whole-feature reviewer должен быть другим агентом. После correction: повторный AUTH-05 coordinator checkpoint → sync/reverification AUTH-06 на новом base → whole-feature coordinator review заново. AUTH-07 до PASS не активировать.
+
+
+## Статус после нижней correction
+
+F01 исправлен в AUTH-05 #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` и прошёл повторный coordinator checkpoint Миры: PASS.
+
+Этот REVIEW **не превращается в PASS**, потому что он относится к старому AUTH-06 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`, собранному поверх прежнего AUTH-05. После отдельной sync/reverification AUTH-06 будет проведён новый whole-feature coordinator review на новом stable exact head.
