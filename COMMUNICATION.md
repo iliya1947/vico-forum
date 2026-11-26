@@ -19,7 +19,7 @@
 
 ## Активная ступень
 
-**AUTH-06 — whole-lifecycle/security acceptance.** PR #395 / exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`. Лёва уже начал author verification и завершает только этот текущий handoff. Base — accepted AUTH-05 branch `feat/auth-05-anti-abuse` / exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Bounded handoff — `stages/AUTH-06/PLAN.md`; обязательная matrix — root `PLAN.md` §9.
+**AUTH-06 — whole-lifecycle/security acceptance.** PR #395 / exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`. **AUTHOR PASS; Лёва завершил handoff и STOP.** Evidence matrix: `stages/AUTH-06/RESULT.md`; CI и 20/20 acceptance PASS, 0 confirmed current-scope blockers. Base — accepted AUTH-05 branch `feat/auth-05-anti-abuse` / exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Bounded handoff — `stages/AUTH-06/PLAN.md`; обязательная matrix — root `PLAN.md` §9.
 
 AUTH-06 добавляет только недостающий исполняемый acceptance/evidence слой. Подтверждённый defect предыдущих ступеней не исправляется внутри acceptance package: HOLD → отдельный correction route.
 
@@ -29,4 +29,4 @@ AUTH-06 добавляет только недостающий исполняе�
 
 ## Текущий переход
 
-Лёва → завершает AUTH-06 author verification и STOP. Затем Мира → whole-feature coordinator review. После coordinator PASS следующий technical/final-review handoff → Ада. AUTH-07 до отдельного перехода не начинать.
+Лёва → AUTH-06 AUTHOR PASS и STOP. Сейчас Мира → whole-feature coordinator review AUTH-01–AUTH-06 на stable head PR #395. После coordinator PASS следующий technical/final-review handoff → Ада. AUTH-07 до отдельного перехода не начинать.
