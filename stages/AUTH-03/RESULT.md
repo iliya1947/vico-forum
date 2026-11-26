@@ -23,3 +23,40 @@ Draft PR #392 поверх принятого AUTH-02b #391 (`a668fd6d3b0df99056
 - Сверен bounded contract: guest neutral acknowledgement, неподтверждённые и Google-only не восстанавливают credential через guest flow, доказательство привязано к purpose/subject/generation, own creation также к текущей fresh session. Native 1.7.7 hash и limiter сохранены. Жизненный цикл пароля, proof и удаление сессий используют один owner и атомарный commit; проверены rollback и concurrent reset против sign-in/change-password. Отсутствие новых сессий при reset, сохранение текущей own-сессии при создании и отсутствие Google unlink подтверждены. Наблюдения и migration входят в bounded scope. Реальные внешние ресурсы не использовались.
 
 Stable head передан Мире для coordinator checkpoint. AUTH-04 ждёт coordinator PASS.
+
+
+## Coordinator checkpoint Миры — HOLD
+
+Проверен stable exact head `ce75ff3629a4adae9941703a33f6d0366bd7f570` против root `PLAN.md`, `stages/AUTH-03/PLAN.md`, accepted AUTH-02b base и текущих SET-05/AuthLifecycle boundaries. CI #45726094032 и 15/15 applicable connected workflows PASS использованы только как supporting evidence.
+
+### 1. Security: успешный SET-05 change-password не инвалидирует pending recovery
+
+`credentialChangePassword()` добавил transaction/lock serialization с recovery, но successful native change-password не вызывает lifecycle invalidation. Root PLAN требует после password/credential change инвалидировать старые recovery/password-create operations и в конкурирующих terminal flows делать второй operation stale.
+
+Текущие tests покрывают reset-first: старый password-change после reset denied. Change-first обратный порядок не покрыт и по коду оставляет уже выданный password-reset proof current. Такой proof затем может успешно заменить только что установленный пароль и отозвать target sessions.
+
+Классификация: **current-scope security defect; blocking**.
+
+### 2. Architecture: recovery-token implementation противоречит accepted root PLAN
+
+Root PLAN требует для reset переиспользовать native Better Auth random token / verification storage, связать его с Vico state и использовать supported hashed reset-token identifier storage. Exact Better Auth 1.7.7 tagged source повторно подтверждает native contract: request создаёт random `reset-password:<token>` verification value; terminal consumes single-use verification row.
+
+#392 вместо этого использует собственный signed JWT `signCredentialProof()` и deterministic Vico lifecycle row; native reset issuance/storage не используется. Stage AUTH-03 PLAN не объявлял supersede этого root architecture.
+
+Классификация: **plan ↔ implementation contradiction; blocking**. Сначала Лёва как technical lead должен определить, исправляется implementation по принятому PLAN или требуется обоснованная correction самого PLAN. Patch поверх неразрешённого противоречия не принимать.
+
+### 3. Observability: реальные AUTH-03 mail producers не отражены в принятом contract
+
+`credential-lifecycle-endpoints.deliver()` отправляет `password-reset/password-create` mail через общий auth-mail runtime, но не создаёт `integration.authMailOutcome`. `operational-facts.ts` и Integrations projection по-прежнему ограничены `mailPurpose: "email-verification"` / `verificationMail`.
+
+Root PLAN требует retained mail outcome по фактическому purpose/provider/outcome при появлении producer. Дополнительно новый `auth.passwordChanged` context кодирует только optional `reset`; existing SET-05 password-change producer не получает предусмотренный closed context `change`.
+
+Классификация: **current-scope observability contract defect; blocking**.
+
+### Остальной coordinator review
+
+Проверены neutral guest recovery, active/verified/credential eligibility, AccountState-first locking, token subject/generation/session binding, password-create fresh-session checks, shared transaction/budgets, atomic password+session effects, no-auto-session reset, Google preservation, direct/HTTP paths, sensitive fragment/body handling, migration 0076/attempt values и отсутствие AUTH-04 expansion. Дополнительных confirmed current-scope blockers не установлено.
+
+### Следующий этап
+
+Лёва сначала reconciles recovery-token architecture с accepted PLAN. Затем одним coherent correction package закрывает все findings, выполняет full AUTH-03 author self-check и applicable exact-head CI/acceptance. Новый head требует повторного coordinator checkpoint. AUTH-04 до PASS не начинается.
