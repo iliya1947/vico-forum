@@ -117,9 +117,35 @@ def run():
         record("replay-denial-and-existing-account-neutral-duplicate")
         retry = context(120)
         assert call(retry, "auth05-replayed@auth02b.test.invalid", valid).status == 403
-        duplicate = call(retry, email)
+        duplicate_proof = proof()
+        duplicate = call(retry, email, duplicate_proof)
         assert duplicate.status == 200 and duplicate.json() == {"status": True, "token": None}
+        no_session(duplicate)
+        assert sql("select consumed from auth05_test_proofs where digest=encode(sha256(convert_to($1,'UTF8')),'hex')", [duplicate_proof]) == [{"consumed": True}]
         assert len(sql("select seq from auth02b_test_mail where recipient=$1", [email])) == 1
+        retry.close()
+
+        record("F01-open-email-registration-differential-challenge-denials")
+        for i, (outcome, status) in enumerate([("missing", 403), ("rejected", 403), ("unavailable", 503)]):
+            ctx = context(150 + i)
+            existing = f"auth05-f01-existing-{i}@auth02b.test.invalid"
+            fresh = f"auth05-f01-fresh-{i}@auth02b.test.invalid"
+            setup = call(ctx, existing, proof())
+            assert setup.status == 200 and setup.json() == {"status": True, "token": None}
+            no_session(setup)
+            before = sql('select (select count(*)::int from "user") users,(select count(*)::int from account) accounts,(select count(*)::int from session) sessions,(select count(*)::int from verification) verifications,(select count(*)::int from auth02b_test_mail) mails')
+            # Equivalent independent one-use proofs keep the comparison from
+            # accidentally measuring replay rather than account existence.
+            left = call(ctx, existing, None if outcome == "missing" else proof(outcome))
+            right = call(ctx, fresh, None if outcome == "missing" else proof(outcome))
+            for denied in (left, right):
+                assert denied.status == status
+                no_session(denied)
+                assert existing not in denied.text() and fresh not in denied.text()
+            assert left.json() == right.json()
+            assert left.json()["code"] == ("vico_registration_challenge_rejected" if status == 403 else "vico_registration_challenge_unavailable")
+            assert sql('select (select count(*)::int from "user") users,(select count(*)::int from account) accounts,(select count(*)::int from session) sessions,(select count(*)::int from verification) verifications,(select count(*)::int from auth02b_test_mail) mails') == before
+            ctx.close()
 
         record("real-browser-verification-and-existing-login-with-required-challenge")
         row = sql("select body_text from auth02b_test_mail where recipient=$1", [email])[0]

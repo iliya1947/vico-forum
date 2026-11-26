@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { getOAuthState } from "better-auth/api";
+import { APIError, getOAuthState } from "better-auth/api";
 import type { RegistrationChallenge, RegistrationChallengeDecision } from "./registration-challenge.server";
 
 type Method = "email" | "google";
@@ -16,6 +16,7 @@ export const REGISTRATION_CHALLENGE_CONTEXT = "vicoRegistrationChallenge";
 export class RegistrationChallengeAdmission {
   private readonly scope = new AsyncLocalStorage<Frame>();
   constructor(private readonly challenge: RegistrationChallenge,
+    private readonly emailRegistrationOpen: () => Promise<boolean>,
     private readonly observeFailure?: (code: "invalid" | "unavailable") => void) {}
 
   private async prepare(method: Method, raw: unknown): Promise<Receipt | undefined> {
@@ -28,9 +29,26 @@ export class RegistrationChallengeAdmission {
     return Object.freeze({ version: 1, ...binding, decision, expiresAt: Date.now() + 600_000 });
   }
 
-  async email<T>(email: string, raw: unknown, exists: () => Promise<boolean>, work: () => Promise<T>): Promise<T> {
-    const receipt = this.challenge.required && !await exists() ? await this.prepare("email", raw) : undefined;
-    return this.run({ open: true, email, receipt, observed: false }, work);
+  async email<T>(email: string, raw: unknown, work: () => Promise<T>): Promise<T> {
+    // While SET-02 email registration is open, admit every signup request
+    // before native dispatch, independently of account existence. A denial
+    // must never reach the native duplicate acknowledgement path.
+    // Deliberate closure retains native duplicate/closed-create semantics.
+    const requiredOpen = this.challenge.required && await this.emailRegistrationOpen();
+    const receipt = requiredOpen ? await this.prepare("email", raw) : undefined;
+    return this.run({ open: true, email, receipt, observed: false }, async () => {
+      if (requiredOpen) {
+        const denial = await this.admit("email", email);
+        if (denial) {
+          throw new APIError(denial.error === "vico_registration_challenge_unavailable" ? "SERVICE_UNAVAILABLE" : "FORBIDDEN",
+            { code: denial.error, message: denial.errorDescription },
+            { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" });
+        }
+      }
+      // The native actual-create hook still rechecks SET-02 and the scoped
+      // receipt; a concurrent reopening cannot authorize a proofless create.
+      return work();
+    });
   }
 
   async google<T>(raw: unknown, work: (receipt: Receipt | undefined) => Promise<T>): Promise<T> {

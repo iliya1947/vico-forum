@@ -118,11 +118,111 @@ describe("AUTH-05 actual fresh-create challenge admission", () => {
     expect(counters.rowCount).toBeGreaterThan(0);
     expect(JSON.stringify(counters.rows)).not.toMatch(/example\.test|203\.0\.113|private/);
   });
+  it.each([
+    { label: "missing", proof: undefined, configured: true, status: 403, code: "vico_registration_challenge_rejected", observation: "invalid" },
+    { label: "rejected", proof: "rejected", configured: true, status: 403, code: "vico_registration_challenge_rejected", observation: "invalid" },
+    { label: "unavailable", proof: "unavailable", configured: true, status: 503, code: "vico_registration_challenge_unavailable", observation: "unavailable" },
+    { label: "unconfigured", proof: "local-valid-proof", configured: false, status: 503, code: "vico_registration_challenge_unavailable", observation: "unavailable" },
+  ])("F01: open email registration has identical existing/fresh $label outcomes in HTTP and direct signup", async ({ proof, configured, status, code, observation }) => {
+    const existing = "f01-existing@example.test", fresh = "f01-fresh@example.test";
+    const setup = await runtime();
+    expect((await setup.signup(existing)).status).toBe(200);
+    const verifier = fake();
+    const r = await runtime(configured ? { mode: "required", verifier } : { mode: "required" });
+    const before = await snapshot();
+    const proofsBefore = (await client.query("select count(*)::int as n from verification")).rows;
+    const responses = [await r.signup(existing, proof), await r.signup(fresh, proof)];
+    const bodies = [];
+    for (const response of responses) {
+      expect(response.status).toBe(status);
+      expect(response.headers.get("Cache-Control")).toContain("no-store");
+      expect(response.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      const body = await response.json();
+      expect(body).toMatchObject({ code, message: "Registration unavailable" });
+      expect(JSON.stringify(body)).not.toMatch(/f01-existing|f01-fresh|local-valid-proof/);
+      bodies.push(body);
+    }
+    expect(bodies[0]).toEqual(bodies[1]);
+    const direct = (email: string) => r.auth.api.signUpEmail({
+      headers: new Headers(headers), body: { email, password, name: "Synthetic member", registrationChallengeProof: proof },
+    });
+    for (const email of [existing, fresh]) {
+      await expect(direct(email)).rejects.toMatchObject({
+        status: status === 403 ? "FORBIDDEN" : "SERVICE_UNAVAILABLE", body: { code, message: "Registration unavailable" },
+      });
+    }
+    expect(await snapshot()).toEqual(before);
+    expect((await client.query("select count(*)::int as n from verification")).rows).toEqual(proofsBefore);
+    expect(r.mails).toEqual([]);
+    expect(r.failures).toEqual(Array(4).fill(observation));
+    expect(verifier.verifyRegistrationChallenge).toHaveBeenCalledTimes(configured && proof ? 4 : 0);
+    // The original signup plus both HTTP and both direct attempts are spent;
+    // rejecting either address is not a budget bypass or a second spend.
+    expect((await client.query("select count from auth_lifecycle_budget order by count")).rows.map(row => row.count)).toEqual([2, 3, 5, 5]);
+  });
+
+  it("fails closed before challenge or identity work when the SET-02 preflight is unavailable", async () => {
+    const existing = "f01-policy-existing@example.test", fresh = "f01-policy-fresh@example.test";
+    const setup = await runtime();
+    expect((await setup.signup(existing)).status).toBe(200);
+    const verifier = fake(), r = await runtime({ mode: "required", verifier });
+    const before = await snapshot();
+    const proofCount = (await client.query("select count(*)::int as n from verification")).rows;
+    const original = client.query.bind(client);
+    const fault = vi.spyOn(client, "query").mockImplementation(((...args: unknown[]) => {
+      const statement = args[0];
+      const text = typeof statement === "string" ? statement : (statement as { text?: string })?.text;
+      if (text?.includes("forum_registration_settings")) return Promise.reject(Object.assign(new Error("private-policy-read-failure"), { code: "ECONNRESET" }));
+      return Reflect.apply(original, client, args);
+    }) as never);
+    try {
+      const bodies = [];
+      for (const email of [existing, fresh]) {
+        const response = await r.signup(email, "local-valid-proof");
+        expect(response.status).toBe(503);
+        expect(response.headers.get("Cache-Control")).toContain("no-store");
+        const body = await response.text();
+        expect(body).not.toContain("private-policy-read-failure");
+        bodies.push(body);
+        await expect(r.auth.api.signUpEmail({
+          headers: new Headers(headers), body: { email, password, name: "Synthetic member", registrationChallengeProof: "local-valid-proof" },
+        })).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+      }
+      expect(bodies[0]).toBe(bodies[1]);
+    } finally { fault.mockRestore(); }
+    expect(verifier.verifyRegistrationChallenge).not.toHaveBeenCalled();
+    expect(await snapshot()).toEqual(before);
+    expect((await client.query("select count(*)::int as n from verification")).rows).toEqual(proofCount);
+    expect(r.mails).toEqual([]);
+    expect(r.failures).toEqual([]);
+  });
+
+  it("rechecks the actual SET-02 create policy after a passed email proof", async () => {
+    const verifier: RegistrationChallengeVerifier = {
+      async verifyRegistrationChallenge({ expected }) {
+        await client.query("update forum_registration_settings set email_registration_enabled=false where id=1");
+        return { status: "passed", binding: expected };
+      },
+    };
+    const r = await runtime({ mode: "required", verifier });
+    const response = await r.signup("f01-closed-during-proof@example.test", "synthetic-valid");
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "vico_email_registration_closed" });
+    expect(await snapshot()).toEqual({ users: 0, accounts: 0, sessions: 0 });
+    expect(r.mails).toEqual([]);
+    expect(r.failures).toEqual([]);
+  });
+
   it("admits explicit verified email and Google proofs, rejects reuse and keeps proof out of native storage/DTO", async () => {
     const r = await runtime({ mode: "required", verifier: fake() });
     const response = await r.signup("passed@example.test", "local-valid-private-email");
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: true, token: null });
+    expect(await snapshot()).toEqual({ users: 1, accounts: 1, sessions: 0 });
+    expect(r.mails).toEqual(["email-verification"]);
+    const duplicate = await r.signup("passed@example.test", "local-valid-private-duplicate");
+    expect(duplicate.status).toBe(200);
+    expect(await duplicate.json()).toEqual({ status: true, token: null });
     expect(await snapshot()).toEqual({ users: 1, accounts: 1, sessions: 0 });
     expect(r.mails).toEqual(["email-verification"]);
     expect((await r.signup("replay@example.test", "local-valid-private-email")).status).toBe(403);
@@ -174,6 +274,11 @@ describe("AUTH-05 actual fresh-create challenge admission", () => {
     const duplicate = await r.signup("existing@example.test", "client-boolean-is-not-proof");
     expect(duplicate.status).toBe(200);
     expect(await duplicate.json()).toEqual({ status: true, token: null });
+    const beforeClosedSignup = await snapshot();
+    const closed = await r.signup("fresh-while-closed@example.test", "client-boolean-is-not-proof");
+    expect(closed.status).toBe(403);
+    expect(await closed.json()).toMatchObject({ code: "vico_email_registration_closed" });
+    expect(await snapshot()).toEqual(beforeClosedSignup);
     expect((await r.post("request-password-reset", { email: "existing@example.test" })).status).toBe(200);
     expect(r.mails).toEqual(["password-reset"]);
     expect(r.failures).toEqual([]);
