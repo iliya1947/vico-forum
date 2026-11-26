@@ -88,3 +88,14 @@
 **Как предотвращать:** отдельно прослеживать исходную ошибку storage до HTTP/direct outcome, guest/error proof до последующей навигации и DTO, evidence до пользовательской подписи, raw body до schema. Привязывать каждый существенный вывод к source/runtime evidence и явно обозначать его пределы.
 
 **Общий лог:** класс «преждевременное сужение» записан в service-branch AGENT_LOGIC_ERRORS.md; перенос в main остаётся разрешённым документационным маршрутом Миры. Implementation PR общего журнала не меняет.
+
+
+## E-10 — no-enumeration проверен по раздельным кейсам вместо дифференциального исхода
+
+**Что произошло:** AUTH-05 author/coordinator PASS и AUTH-06 author matrix приняли challenge privacy как закрытую, потому что fresh challenge failures и existing duplicate neutrality были проверены отдельными тестами. Не было сопоставлено, что при одном и том же required-challenge условии existing email получает neutral 200, а fresh email — 403/503.
+
+**Почему это ошибка:** из корректности каждого изолированного кейса не следует отсутствие account enumeration. Privacy-инвариант является сравнительным: observable outcome для secret-dependent ветвей нужно проверять между альтернативными состояниями. Green tests в данном случае закрепляли обе половины утечки раздельно.
+
+**Как предотвращать:** для privacy/no-enumeration contracts строить differential checks по одинаковому публичному input против existing/fresh/missing состояний и сравнивать status/body/headers и существенные observable side effects. При whole-feature review проверять взаимодействие соседних принятых invariants, а не только их индивидуальные PASS.
+
+**Исправление:** whole-feature review Миры поставил HOLD на exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`; F01 передан Аде как локальная AUTH-05 correction в #394. После correction обязательны повторный AUTH-05 checkpoint и пересборка зависимого AUTH-06 evidence.
