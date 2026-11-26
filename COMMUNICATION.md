@@ -5,22 +5,19 @@
 1. Authentication lifecycle поставляется stacked AUTH-01→AUTH-06, затем AUTH-07 final security gate.
 2. Better Auth остаётся authentication/session provider; implicit Google↔credential linking запрещён; AccountState, Owner History/Monitoring и Settings переиспользуются.
 3. Реальные mail/Google/anti-bot providers и Stage-6 activation заблокированы.
-4. По прямому решению владельца дальнейшую техническую работу после Лёвы выполняет Ада / Business GPT-6.2.
 
 ## Принятый corrected AUTH-05
 
-AUTH-05 / PR #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — **AUTHOR PASS + COORDINATOR PASS**.
+AUTH-05 / PR #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — **AUTHOR PASS + COORDINATOR PASS**. F01 устранён: при required challenge и открытой email registration negative challenge outcomes больше не зависят от account existence до native duplicate/create branch; actual SET-02 create-user gate и provider-neutral boundary сохранены. CI #45882443114 PASS; 20/20 applicable connected acceptance PASS.
 
-Whole-feature F01 устранён локальной correction: при required challenge и открытой email registration challenge admission больше не зависит от account existence до native signup; negative outcomes выровнены для existing/fresh, valid duplicate остаётся neutral. Actual SET-02 create-user gate и provider-neutral boundary сохранены. Permanent deliberate closure semantics из `docs/SETTINGS.md` не менялись.
+## Активная задача
 
-Exact-head CI #45882443114 PASS; 20/20 applicable connected acceptance PASS. Подробный повторный checkpoint — `stages/AUTH-05/RESULT.md`.
+По прямому решению владельца **AUTH-06 sync/reverification передана Лёве / Codex-6.1 Sol**.
 
-Прежний F02 снят: correction не меняет telemetry, а permanent `docs/SUPER_ADMIN.md` прямо допускает canonical trusted ingress IP с source quality в exact-Owner-only telemetry/History. Untrusted forwarding headers и private challenge/request material authority не получили.
+PR #395 сейчас ещё находится на старом head `2eb3f9c303ad1b67d5348664267eca665f079cf7` поверх superseded AUTH-05 `ac59e3d2...`. Лёва должен синхронизировать существующий AUTH-06 test/evidence package с corrected AUTH-05 `dbbfe1c05...`, разрешая только реальные последствия изменения нижней ступени, без новой product functionality.
 
-## AUTH-06 после изменения нижней ступени
+После sync нужен новый stable exact head, author self-check и применимые exact-head CI/acceptance. При blocker — HOLD и STOP; при PASS — обновлённый RESULT и STOP для повторного whole-feature coordinator review Миры.
 
-PR #395 всё ещё указывает на прежний exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`, построенный поверх superseded AUTH-05. Его старые AUTHOR PASS/CI/acceptance остаются evidence прежней сборки, но не являются final evidence corrected stack.
+Ада завершила AUTH-05 correction; AUTH-06 ей не назначен. Поскольку Лёва теперь участвует в AUTH-06, а Ада участвовала в AUTH-05 correction, independent final reviewer должен быть другим агентом.
 
-Следующий отдельный переход — sync/reverification #395 поверх accepted AUTH-05 `dbbfe1c05...`, затем повторный whole-feature coordinator review. До этого AUTH-07 заблокирован.
-
-Поскольку Ада участвовала в correction implementation, independent final whole-feature reviewer должен быть другим агентом.
+AUTH-07, merge и external/Stage-6 activation не начинать.
