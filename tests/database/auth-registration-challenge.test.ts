@@ -161,6 +161,42 @@ describe("AUTH-05 actual fresh-create challenge admission", () => {
     expect((await client.query("select count from auth_lifecycle_budget order by count")).rows.map(row => row.count)).toEqual([2, 3, 5, 5]);
   });
 
+  it("fails closed before challenge or identity work when the SET-02 preflight is unavailable", async () => {
+    const existing = "f01-policy-existing@example.test", fresh = "f01-policy-fresh@example.test";
+    const setup = await runtime();
+    expect((await setup.signup(existing)).status).toBe(200);
+    const verifier = fake(), r = await runtime({ mode: "required", verifier });
+    const before = await snapshot();
+    const proofCount = (await client.query("select count(*)::int as n from verification")).rows;
+    const original = client.query.bind(client);
+    const fault = vi.spyOn(client, "query").mockImplementation(((...args: unknown[]) => {
+      const statement = args[0];
+      const text = typeof statement === "string" ? statement : (statement as { text?: string })?.text;
+      if (text?.includes("forum_registration_settings")) return Promise.reject(Object.assign(new Error("private-policy-read-failure"), { code: "ECONNRESET" }));
+      return Reflect.apply(original, client, args);
+    }) as never);
+    try {
+      const bodies = [];
+      for (const email of [existing, fresh]) {
+        const response = await r.signup(email, "local-valid-proof");
+        expect(response.status).toBe(503);
+        expect(response.headers.get("Cache-Control")).toContain("no-store");
+        const body = await response.text();
+        expect(body).not.toContain("private-policy-read-failure");
+        bodies.push(body);
+        await expect(r.auth.api.signUpEmail({
+          headers: new Headers(headers), body: { email, password, name: "Synthetic member", registrationChallengeProof: "local-valid-proof" },
+        })).rejects.toMatchObject({ status: "SERVICE_UNAVAILABLE" });
+      }
+      expect(bodies[0]).toBe(bodies[1]);
+    } finally { fault.mockRestore(); }
+    expect(verifier.verifyRegistrationChallenge).not.toHaveBeenCalled();
+    expect(await snapshot()).toEqual(before);
+    expect((await client.query("select count(*)::int as n from verification")).rows).toEqual(proofCount);
+    expect(r.mails).toEqual([]);
+    expect(r.failures).toEqual([]);
+  });
+
   it("rechecks the actual SET-02 create policy after a passed email proof", async () => {
     const verifier: RegistrationChallengeVerifier = {
       async verifyRegistrationChallenge({ expected }) {

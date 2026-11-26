@@ -247,7 +247,7 @@ export function betterAuthOptions(
     } },
     plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
       signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error),
-      async () => (await readRegistrationFlags(database)).emailRegistrationEnabled,
+      () => lifecycle.runAdapterOperation(async () => (await readRegistrationFlags(database)).emailRegistrationEnabled),
       { ...dependencies, registrationChallenge: dependencies?.registrationChallenge ?? registrationChallengeConfig(env.AUTH_REGISTRATION_CHALLENGE_MODE),
         googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
       onActorStateError)],
