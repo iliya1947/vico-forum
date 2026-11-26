@@ -1,3 +1,4 @@
+import { AccountSecurityLifecycle, AccountMethodConflictError } from "../../app/auth/account-security-lifecycle.server";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -817,6 +818,101 @@ describe("AUTH-03 credential lifecycle domain", () => {
       `);
       await latch.end();
     }
+  });
+
+});
+
+describe("AUTH-04 account lifecycle", () => {
+  const secret = "disposable-account-security-secret-0123456789";
+  const actor = { userId, sessionId, freshAgeSeconds: 3600 };
+  const makeService = (client = first) => {
+    const tx = new AuthLifecycleTransaction(client);
+    return new AccountSecurityLifecycle(client, new AuthLifecycleState(client, tx),
+      new AuthLifecycleBudget(client, tx, secret), secret, true);
+  };
+  const email = async () => (await second.query('select email,email_verified from "user" where id=$1', [userId])).rows[0];
+
+  it("changes email only after explicit old and new address confirmations and preserves the initiating session", async () => {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into session(id,user_id,token,expires_at,updated_at) values ('other-own',$1,'other-own-token',now()+interval '1 day',now())", [userId]);
+    const service = makeService();
+    const original = await email();
+    const issued = await service.requestEmailChange(actor, "new@example.test");
+    expect(issued.recipient).toBe("member@example.test");
+    expect(await email()).toEqual(original);
+    const next = await service.confirmEmailChange(actor, issued.token);
+    expect("proof" in next).toBe(true);
+    if (!("proof" in next)) throw new Error("Expected new-address proof");
+    expect(next.proof.recipient).toBe("new@example.test");
+    await expect(service.confirmEmailChange(actor, issued.token)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect(await email()).toEqual(original);
+    const final = await service.confirmEmailChange(actor, next.proof.token);
+    expect(final).toMatchObject({ transition: { kind: "email", userId, revokedSessionIds: ["other-own"] } });
+    expect(await email()).toEqual({ email: "new@example.test", email_verified: true });
+    expect((await second.query("select id from session order by id")).rows.map(row => row.id).sort()).toEqual([sessionId,otherSessionId].sort());
+    expect(await rows()).toEqual([]);
+  });
+
+  it("invalidates a prior generation on restart and rejects a different current session", async () => {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    const service = makeService();
+    const a = await service.requestEmailChange(actor, "a@example.test");
+    const b = await service.requestEmailChange(actor, "b@example.test");
+    await expect(service.confirmEmailChange(actor, a.token)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    await expect(service.confirmEmailChange({ ...actor, sessionId: otherSessionId }, b.token)).rejects.toBeInstanceOf(InvalidLifecycleProofError);
+    expect((await email()).email).toBe("member@example.test");
+  });
+
+  it("rejects Google-only and hashless unlink, then permits unlink with verified usable password", async () => {
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('own-google',$1,'google','google-immutable',null,now()),('empty-password',$1,'credential',$1,'',now())", [userId]);
+    const service = makeService();
+    await expect(service.unlinkGoogle(actor, "own-google")).rejects.toBeInstanceOf(AccountMethodConflictError);
+    await first.query("update account set password='fixture-usable-hash' where id='empty-password'");
+    const transition = await service.unlinkGoogle(actor, "own-google");
+    expect(transition).toEqual({ kind: "unlink", userId, accountId: "own-google" });
+    expect((await second.query("select id from session")).rowCount).toBe(2);
+  });
+  it("shares HTTP and direct own-email confirmation, protects last method in the native adapter", async () => {
+    const sent: Array<{ token: string; recipient: string; purpose: string }> = [];
+    const facts: AuthTransitionFact[] = [];
+    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('own-password',$1,'credential',$1,$2,now()),('own-google',$1,'google','immutable-google-id',null,now())",
+      [userId, await hashPassword("fixture-only-original-password")]);
+    const auth = createAuth(drizzle(first), {
+      BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
+      GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
+    }, undefined, undefined, undefined, { capture(f) { facts.push(f); }, trustedActorFor() { return null; } },
+    undefined, undefined, undefined, false, undefined, { mail: {
+      async buildActionURL(input) { return "http://localhost:3000/en/settings/account#token=" + input.token; },
+      async sendAuthMail(input) {
+        sent.push({ token: new URL(input.actionURL).hash.slice(7), recipient: input.recipient, purpose: input.purpose });
+        return { status: "accepted" };
+      },
+    } });
+    const login = await auth.api.signInEmail({ body: { email: "member@example.test", password: "fixture-only-original-password" }, asResponse: true });
+    const cookie = login.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";",1)[0];
+    const current = await auth.api.getSession({ headers: new Headers({ cookie }) });
+    const headers = new Headers({ cookie, Origin: "http://localhost:3000",
+      "Content-Type": "application/json", "x-vico-account-user": userId, "x-vico-account-session": current!.session.id });
+    await expect(auth.api.changeEmail({ headers: new Headers({ cookie }), body: { newEmail: "changed@example.test" } }))
+      .rejects.toMatchObject({ status: "CONFLICT" });
+    const requested = await auth.handler(new Request("http://localhost:3000/api/auth/change-email",
+      { method: "POST", headers, body: JSON.stringify({ newEmail: "changed@example.test" }) }));
+    expect(requested.status).toBe(200);
+    expect(sent[0]).toMatchObject({ recipient: "member@example.test", purpose: "email-change-confirmation" });
+    await auth.api.confirmEmailChange({ headers, body: { token: sent[0].token } });
+    expect(sent[1]).toMatchObject({ recipient: "changed@example.test", purpose: "email-change-verification" });
+    await auth.api.confirmEmailChange({ headers, body: { token: sent[1].token } });
+    expect((await email()).email).toBe("changed@example.test");
+    await auth.api.unlinkAccount({ headers, body: { accountId: "own-google" } });
+    expect(facts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "auth.emailChanged", userId }),
+      expect.objectContaining({ kind: "auth.methodUnlinked", accountId: "own-google", userId }),
+    ]));
+    const native = (await auth.$context).adapter;
+    await expect(native.delete({ model: "account", where: [{ field: "id", value: "own-password" }] }))
+      .rejects.toMatchObject({ status: "CONFLICT" });
   });
 
 });

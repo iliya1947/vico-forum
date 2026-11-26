@@ -9,7 +9,7 @@ import type { AttemptIngressSource } from "./attempt-source";
 const MAX_REQUEST_ATTEMPTS = 4;
 type DirectOperation = "password-change" | "session-revoke" | "session-revoke-all";
 export type VerificationAttemptOperation = "email-verification" | "verification-send";
-export type CredentialAttemptOperation = "password-reset-request" | "password-reset" | "password-create";
+export type CredentialAttemptOperation = "password-reset-request" | "password-reset" | "password-create" | "email-change" | "unlink-account";
 export type VerificationAttemptCode = "invalid" | "rate-limited" | "unavailable" | "gap";
 type Sink = AttemptTelemetryWriter & { close(): Promise<void> };
 type WriterFactory = () => Sink;
@@ -152,6 +152,9 @@ const AUTH_HTTP_OPERATIONS: Readonly<Record<string, AttemptOperation>> = {
   "/reset-password": "password-reset",
   "/request-password-create": "password-create",
   "/create-password": "password-create",
+  "/change-email": "email-change",
+  "/confirm-email-change": "email-change",
+  "/unlink-account": "unlink-account",
 };
 
 function httpOperation(request: Request): AttemptOperation | null {

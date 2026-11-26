@@ -1,3 +1,4 @@
+import { AccountLifecycleView } from "../auth/account-security-view";
 import { data, Form, useActionData, useLoaderData, useNavigation, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
@@ -182,6 +183,10 @@ export default function SettingsAccountRoute() {
             userId={state.accountId} sessionId={state.sessionId} />
           {!state.hasPassword && !mayCreatePassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
+        {state.email ? <AccountLifecycleView key={state.sessionId + ":account"} locale={state.locale}
+          userId={state.accountId} sessionId={state.sessionId} email={state.email}
+          verified={state.emailVerified === true} enabled={state.sessionAccess === "ready"}
+          googleAccountId={state.googleAccountId} pending={state.pendingEmailChange} /> : null}
         {state.hasPassword ? <section className="settings-account-section" aria-labelledby="settings-account-password">
           <h3 id="settings-account-password">{t("settingsSecurityPasswordHeading")}</h3>
           <Form method="post" className="settings-account-form" aria-busy={busy || undefined}>

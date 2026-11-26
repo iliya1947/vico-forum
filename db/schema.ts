@@ -2075,7 +2075,7 @@ export const ownerAttemptPatterns = pgTable("owner_attempt_patterns", {
         'sign-up', 'sign-in', 'method-link', 'password-change',
         'session-revoke', 'session-revoke-all', 'sign-out',
         'registration-admission', 'owner-guard', 'email-verification', 'verification-send',
-        'password-reset-request', 'password-reset', 'password-create'
+        'password-reset-request', 'password-reset', 'password-create', 'email-change', 'unlink-account'
       )
       and ${t.outcome} in ('denied', 'failed', 'rate-limited', 'unavailable')
       and ((${t.httpStatus} between 400 and 599 and ${t.directCode} is null)

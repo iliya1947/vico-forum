@@ -31,7 +31,7 @@ describe("SA-02 closed monitoring and exact-transition catalog", () => {
   it("enumerates only proven persisted account, method, password and session transitions", () => {
     expect(Object.keys(SA02_FACT_MONITORS)).toEqual([
       "account.created", "auth.methodLinked", "auth.passwordChanged",
-      "auth.sessionCreated", "auth.sessionDeleted", "auth.emailVerified",
+      "auth.sessionCreated", "auth.sessionDeleted", "auth.emailChanged", "auth.methodUnlinked", "auth.emailVerified",
     ]);
     expect(sa02MonitorsForFact("account.created")).toEqual(["accounts.users"]);
     expect(sa02MonitorsForFact("auth.passwordChanged")).toEqual(["accounts.methods", "security.auth"]);

@@ -20,9 +20,11 @@ export async function credentialRequest(endpoint: "request-password-reset" | "re
   } catch { return "unavailable"; }
 }
 
-export function takeCredentialProof(): string | null {
+export function takeCredentialProof(purpose = "password-create"): string | null {
   const url = new URL(window.location.href);
-  const values = new URLSearchParams(url.hash.slice(1)).getAll("token");
+  const fragment = new URLSearchParams(url.hash.slice(1));
+  if (fragment.has("purpose") && fragment.get("purpose") !== purpose) return null;
+  const values = fragment.getAll("token");
   if (values.length === 0) return null;
   try { window.history.replaceState(window.history.state, "", url.pathname + url.search); }
   catch { return null; }

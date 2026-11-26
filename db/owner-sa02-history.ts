@@ -285,6 +285,8 @@ const LEGACY_SOURCE_SQL = [
   " when 'account.created' then ARRAY['accounts.users','integrations.authentication']::text[]",
   " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
   " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.emailChanged' then ARRAY['accounts.users','security.auth','integrations.authentication']::text[]",
+  " when 'auth.methodUnlinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
   " when 'auth.emailVerified' then ARRAY['accounts.users','security.auth','integrations.authentication']::text[]",
   " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
   " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
@@ -295,7 +297,7 @@ const LEGACY_SOURCE_SQL = [
   " 'entityType',e.entity_type,'entityId',e.entity_id)",
   " from owner_events e where e.source='auth' and e.kind in",
   " ('account.created','auth.methodLinked','auth.passwordChanged',",
-  " 'auth.sessionCreated','auth.sessionDeleted','auth.emailVerified')",
+  " 'auth.sessionCreated','auth.sessionDeleted','auth.emailVerified','auth.emailChanged','auth.methodUnlinked')",
   "union all",
   ACCOUNT_HISTORY_SELECT_SQL,
   "union all",
@@ -385,7 +387,7 @@ const LEGACY_SOURCE_SQL = [
   "from owner_events e where e.source='operation' and e.monitor_key='background.attachments' and e.kind='file.cleanupPass'",
   "union all",
   "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['integrations.authentication']::text[],",
-  "e.kind,e.source,'best-effort'::text,jsonb_build_object('operationId',e.entity_id,'mailPurpose',case when e.payload->>'mailPurpose' in ('email-verification','password-reset','password-create') then e.payload->>'mailPurpose' end,'mailTransport',case when e.payload->>'mailTransport' in ('none','unknown','fake','resend','brevo') then e.payload->>'mailTransport' end,'mailOutcome',case when e.payload->>'mailOutcome' in ('accepted','rejected','unavailable','uncertain','disabled') then e.payload->>'mailOutcome' end)",
+  "e.kind,e.source,'best-effort'::text,jsonb_build_object('operationId',e.entity_id,'mailPurpose',case when e.payload->>'mailPurpose' in ('email-verification','password-reset','password-create','email-change-confirmation','email-change-verification') then e.payload->>'mailPurpose' end,'mailTransport',case when e.payload->>'mailTransport' in ('none','unknown','fake','resend','brevo') then e.payload->>'mailTransport' end,'mailOutcome',case when e.payload->>'mailOutcome' in ('accepted','rejected','unavailable','uncertain','disabled') then e.payload->>'mailOutcome' end)",
   "from owner_events e where e.source='operation' and e.monitor_key='integrations.authentication' and e.kind='integration.authMailOutcome'",
 ].join("\n");
 

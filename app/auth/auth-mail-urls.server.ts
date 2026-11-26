@@ -101,26 +101,20 @@ export function buildAuthMailActionURL(
   if (!isMailPurpose(action.purpose) || typeof action.token !== "string"
     || !/^[A-Za-z0-9._~-]{1,2048}$/.test(action.token)) throw new AuthMailValidationError();
   const locale = authMailLocale(action.locale, registry).translationLocale;
-  if (action.purpose !== "email-change-confirmation" && action.purpose !== "email-change-verification") {
+  {
     const requested = returnPath(origin, action.locale, action.returnTo);
     const destination = locale === action.locale ? requested : returnPath(origin, locale);
     const page = action.purpose === "email-verification" ? "verify-email"
       : action.purpose === "password-reset" ? "reset-password" : "settings/account";
     const url = new URL(`/${locale}/${page}`, origin);
     if (action.purpose === "email-verification") url.searchParams.set("token", action.token);
-    else url.hash = new URLSearchParams({ token: action.token }).toString();
+    else url.hash = new URLSearchParams({ token: action.token,
+      ...(action.purpose.startsWith("email-change") ? { purpose: "email-change" } : {}) }).toString();
     url.searchParams.set("returnTo", destination);
     if (url.href.length > 8192) throw new AuthMailValidationError();
     return url.href;
   }
-  const destination = returnPath(origin, locale, action.returnTo);
-  const callback = new URL(`/${locale}/sign-in`, origin);
-  callback.searchParams.set("returnTo", destination);
-  const url = new URL("/api/auth/verify-email", origin);
-  url.searchParams.set("token", action.token);
-  url.searchParams.set("callbackURL", callback.href);
-  if (url.href.length > 8192) throw new AuthMailValidationError();
-  return url.href;
+
 }
 
 /** Revalidate even a URL supplied by another server module; never trust its brand/caller. */
@@ -131,7 +125,7 @@ export function validateAuthMailActionURL(
     inspectURLText(supplied);
     const url = new URL(supplied);
     if (url.origin !== origin || url.username || url.password) throw new AuthMailValidationError();
-    if (purpose !== "email-change-confirmation" && purpose !== "email-change-verification") {
+    {
       const tokenSource = purpose === "email-verification" ? url.searchParams : new URLSearchParams(url.hash.slice(1));
       const tokenValues = tokenSource.getAll("token");
       const returnValues = url.searchParams.getAll("returnTo");
@@ -143,18 +137,6 @@ export function validateAuthMailActionURL(
       if (supplied !== expected) throw new AuthMailValidationError();
       return expected;
     }
-    const callbackValues = url.searchParams.getAll("callbackURL");
-    if (callbackValues.length !== 1) throw new AuthMailValidationError();
-    const callback = new URL(callbackValues[0]);
-    const returnValues = callback.searchParams.getAll("returnTo");
-    if (returnValues.length !== 1) throw new AuthMailValidationError();
-    const token = url.searchParams.get("token");
-    const expected = buildAuthMailActionURL(origin, registry, {
-      purpose, locale, token: token ?? "", returnTo: returnValues[0],
-    });
-    // Exact server-built form rejects path normalization, extra/duplicate fields,
-    // nested callbacks, foreign return origins and token-bearing destinations.
-    if (supplied !== expected) throw new AuthMailValidationError();
-    return expected;
+
   } catch { throw new AuthMailValidationError(); }
 }

@@ -12,7 +12,7 @@ import {
   AccountSecurityError,
   AuthSessionUnavailableError,
   type AccountSecurityIdentity,
-  type AccountSecuritySession,
+  type AccountSecuritySession, type AccountSecuritySnapshot,
   type AuthRuntime,
   type AuthSession,
 } from "./request-context";
@@ -245,7 +245,8 @@ export function betterAuthOptions(
       if (!isAPIError(error)) throw new APIError("INTERNAL_SERVER_ERROR", { message: "Authentication failed" });
     } },
     plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
-      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error), dependencies,
+      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error),
+      { ...dependencies, googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
       onActorStateError)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
@@ -278,6 +279,20 @@ export function createAuth(
   const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
     ...dependencies,
     ...(onCreatedFact ? {
+      observeAccount: transition => {
+        const actorUserId = transition.userId;
+        const at = new Date();
+        if (transition.kind === "unlink") {
+          onCreatedFact.capture({ kind: "auth.methodUnlinked", userId: actorUserId, actorUserId,
+            accountId: transition.accountId, method: "google" }, at);
+        } else {
+          onCreatedFact.capture({ kind: "auth.emailChanged", userId: actorUserId, actorUserId,
+            operationId: transition.generation }, at);
+          for (const sessionId of transition.revokedSessionIds) onCreatedFact.capture({
+            kind: "auth.sessionDeleted", userId: actorUserId, actorUserId, sessionId, reason: "email-change",
+          }, at);
+        }
+      },
       observeVerified: (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, at: Date) => onCreatedFact.capture(fact, at),
       observeCredential: (transition: CredentialTransition) => {
         const { userId, accountId, generation, purpose, revokedSessionIds } = transition;
@@ -607,7 +622,7 @@ export function createHyperdriveAuthRuntime(
 
   return {
     security: {
-      read: (headers, identity) => securityCall(() => useAuth(async (auth, database) => {
+      read: (headers, identity) => securityCall(() => useAuth(async (auth, database, client) => {
         const current = await verifyIdentity(auth, headers, identity);
         const accounts = await auth.api.listUserAccounts({ headers });
         const hasPassword = await hasCredentialPassword(database, current.user.id);
@@ -630,7 +645,18 @@ export function createHyperdriveAuthRuntime(
           if (betterAuthErrorCode(error) !== "SESSION_NOT_FRESH") throw error;
           sessionAccess = "not-fresh";
         }
-        return { linkedMethods, hasPassword, sessionAccess, sessions };
+        const pending = await client.query<{ phase: string; expires_at: Date }>(`
+          select value::jsonb->>'phase' phase, expires_at at time zone 'UTC' expires_at
+          from verification where id='vico-auth-lifecycle:v1:email-change:' ||
+            encode(sha256(convert_to($1,'UTF8')),'hex') and identifier=id
+            and expires_at > timezone('UTC',clock_timestamp())
+        `, [current.user.id]);
+        const change = pending.rows[0];
+        const pendingEmailChange: AccountSecuritySnapshot["pendingEmailChange"] = change && (change.phase === "old-address" || change.phase === "new-address")
+          ? { phase: change.phase, expiresAt: change.expires_at.toISOString() } : null;
+        return { linkedMethods, hasPassword, sessionAccess, sessions, email: current.user.email,
+          emailVerified: current.user.emailVerified, googleAccountId: accounts.find(link => link.providerId === "google")?.id,
+          pendingEmailChange };
       }, true)),
       changePassword: (headers, identity, currentPassword, newPassword) =>
         securityCall(() => useAuth(async (auth, database) => {

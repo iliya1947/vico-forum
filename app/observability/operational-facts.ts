@@ -7,7 +7,7 @@ export type FileTransitionKind=typeof FILE_TRANSITION_KINDS[number];
 export type OperationalKind = TaskTransitionKind | "task.reconciliationPass" | "integration.translationCall" | "integration.authMailOutcome" | FileTransitionKind;
 export const VERIFICATION_MAIL_TRANSPORTS = ["none", "unknown", "fake", "resend", "brevo"] as const;
 export const VERIFICATION_MAIL_OUTCOMES = ["accepted", "rejected", "unavailable", "uncertain", "disabled"] as const;
-export const AUTH_MAIL_OBSERVED_PURPOSES = ["email-verification", "password-reset", "password-create"] as const;
+export const AUTH_MAIL_OBSERVED_PURPOSES = ["email-verification", "password-reset", "password-create", "email-change-confirmation", "email-change-verification"] as const;
 export type AuthMailObservation = {
   mailPurpose: typeof AUTH_MAIL_OBSERVED_PURPOSES[number];
   mailTransport: typeof VERIFICATION_MAIL_TRANSPORTS[number];

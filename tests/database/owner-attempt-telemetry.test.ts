@@ -274,11 +274,11 @@ describe("SA-02 recording-hour writer on native PostgreSQL 17", () => {
   });
 
   it("admits the verification and credential recovery operations through the forward constraint",async()=>{
-    const expected = ["email-verification", "password-create", "password-reset", "password-reset-request", "verification-send"] as const;
+    const expected = ["email-change", "email-verification", "password-create", "password-reset", "password-reset-request", "unlink-account", "verification-send"] as const;
     for(const operation of expected)
       expect((await writer.record(attempted(null,{operation,networkIp:"192.0.2.31",networkQuality:"trusted"}))).kind).toBe("attributed");
     const operations=await client.query<{operation:string}>("select operation from owner_attempt_patterns order by operation");
     expect(operations.rows.map(x=>x.operation)).toEqual(expected);
-    await expect(writer.record(attempted("actor",{operation:"email-change" as never}))).rejects.toThrow();
+    await expect(writer.record(attempted("actor",{operation:"registration-challenge" as never}))).rejects.toThrow();
   });
 });

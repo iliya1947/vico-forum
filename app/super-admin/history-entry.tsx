@@ -34,6 +34,8 @@ const kinds: Record<string,Label> = {
   "account.deactivated":"superAdminHistoryAccountDeactivated",
   "auth.methodLinked":"superAdminHistoryMethodLinked",
   "auth.passwordChanged":"superAdminHistoryPasswordChanged",
+  "auth.emailChanged":"authAccountChangeEmail",
+  "auth.methodUnlinked":"authAccountUnlinkGoogle",
   "auth.emailVerified":"profileOwnerEmailVerified",
   "integration.authMailOutcome":"sa07IMailOutcome",
   "auth.sessionCreated":"superAdminHistorySessionCreated",
@@ -168,6 +170,8 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
       <span> · </span><bdi>{value}</bdi></>;
   if(typeof value==="string" && numericFields.has(name) && /^[0-9]+$/.test(value))
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
+  if(value==="email-change"&&(name==="operation"||name==="reason"))return <span>{t("authAccountChangeEmail")}</span>;
+  if(name==="operation"&&value==="unlink-account")return <span>{t("authAccountUnlinkGoogle")}</span>;
   if(name==="operation"&&value==="email-verification")return <span>{t("authVerificationHeading")}</span>;
   if(name==="operation"&&value==="verification-send")return <span>{t("authVerificationResend")}</span>;
   if(name==="operation"&&value==="password-reset-request")return <span>{t("authCredentialSendLink")}</span>;

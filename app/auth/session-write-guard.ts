@@ -1,3 +1,4 @@
+import { AccountMethodConflictError, assertRemainingAccountMethod } from "./account-security-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APIError, type BetterAuthOptions } from "better-auth";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -148,6 +149,16 @@ export function guardBetterAuthSessionWrites(
                     throw new AccountStateUnexpectedError();
                   }
                   await assertActiveAccountForMutation(connection, owner);
+                  if (property === "delete" || property === "deleteMany") {
+                    const deleted = await query<{ id: string }>(
+                      idOnly ? 'select id from account where id=$1 and user_id=$2'
+                        : 'select id from account where user_id=$2',
+                      [fields.get("id") ?? null, owner]);
+                    const configured = options.socialProviders?.google;
+                    const google = typeof configured === "function" ? await configured() : configured;
+                    await assertRemainingAccountMethod(connection, owner, deleted.rows.map(row => row.id),
+                      !!google && !!google.clientId && !!google.clientSecret);
+                  }
                 }
               } else if (userWrite) {
                 // BA 1.7.7 internalAdapter.updateUser uses a unique id selector;
@@ -216,6 +227,7 @@ export function guardBetterAuthSessionWrites(
                 const ownSignOut = !!byToken && !!token && consumeOwnSignOutToken?.(token) === true;
                 try {
                   await assertActiveAccountForMutation(connection, owner);
+
                 } catch (error) {
                   if (!(error instanceof AccountInactiveError) || !ownSignOut) throw error;
                   // The same FOR NO KEY UPDATE row lock survives this caught
@@ -247,6 +259,10 @@ export function guardBetterAuthSessionWrites(
 
               return await Reflect.apply(method, target, args);
             } catch (failure) {
+              if (failure instanceof AccountMethodConflictError) {
+                throw new APIError("CONFLICT", { message: "A usable sign-in method is required" },
+                  { "Cache-Control": "private, no-store" });
+              }
               // Classify inside the owned callback so rollback-only preserves
               // the same public error even if the nested caller catches it.
               if (failure instanceof AccountInactiveError || failure instanceof AccountMissingError) {

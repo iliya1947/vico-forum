@@ -540,6 +540,13 @@
       "when": 1795649998664,
       "tag": "0076_auth_credential_observation",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1795659156581,
+      "tag": "0077_auth_account_security_observation",
+      "breakpoints": true
     }
   ]
 }

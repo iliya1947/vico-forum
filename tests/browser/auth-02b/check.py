@@ -341,6 +341,40 @@ def run():
             {"purpose": "password-reset", "transport": "fake", "outcome": "accepted"},
         ]
         record("credential-mail-outcomes-retain-purpose-and-observed-transport")
+        record("two-phase-own-email-change")
+        changed_email = "changed@auth02b.test.invalid"
+        create_page.goto(base + "/en/settings/account")
+        create_page.locator('input[name="newEmail"]').fill(changed_email)
+        with create_page.expect_response(lambda response: response.url == base + "/api/auth/change-email") as email_requested:
+            create_page.get_by_role("button", name="Request email change").click()
+        assert private(email_requested.value).status == 200
+        old_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
+        old_link = old_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert create_page.goto(old_link).status == 200
+        expect(create_page.get_by_role("button", name="Confirm email change")).to_be_visible()
+        assert user(ru)["id"] == ru_id and "token=" not in create_page.url
+        with create_page.expect_response(lambda response: response.url == base + "/api/auth/confirm-email-change") as old_confirmed:
+            create_page.get_by_role("button", name="Confirm email change").click()
+        assert private(old_confirmed.value).status == 200
+        new_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [changed_email])[0]
+        new_link = new_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert user(ru)["id"] == ru_id
+        create_page.goto(new_link)
+        expect(create_page.get_by_role("button", name="Confirm email change")).to_be_visible()
+        with create_page.expect_response(lambda response: response.url == base + "/api/auth/confirm-email-change") as final_confirmed:
+            create_page.get_by_role("button", name="Confirm email change").click()
+        assert private(final_confirmed.value).status == 200
+        assert user(changed_email)["id"] == ru_id
+        assert call(third, "get-session").json()["session"]["id"] == ru_session_id
+        expect(create_page.get_by_text(changed_email, exact=True)).to_be_visible()
+        record("own-google-unlink-preserves-usable-password-and-session")
+        with create_page.expect_response(lambda response: response.url == base + "/api/auth/unlink-account") as unlinked:
+            create_page.get_by_role("button", name="Disconnect Google").click()
+        assert private(unlinked.value).status == 200
+        expect(create_page.get_by_role("button", name="Disconnect Google")).to_have_count(0)
+        assert sql("select provider_id from account where user_id=$1", [ru_id]) == [{"provider_id": "credential"}]
+        assert call(third, "get-session").json()["session"]["id"] == ru_session_id
+        assert not external and not errors
         browser.close()
 
 

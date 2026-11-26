@@ -13,6 +13,8 @@
     "app/auth/lifecycle-transaction.server.ts",
     "app/auth/lifecycle-state.server.ts",
     "app/auth/lifecycle-plugin.server.ts",
+    "app/auth/account-security-lifecycle.server.ts",
+    "app/auth/account-security-endpoints.server.ts",
     "app/auth/credential-lifecycle.server.ts",
     "app/auth/credential-auth-endpoints.server.ts",
     "app/auth/credential-lifecycle-endpoints.server.ts",

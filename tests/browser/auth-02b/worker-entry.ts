@@ -15,7 +15,7 @@ export default createApplication((env, context) => {
   const fakeTransport: AuthMailTransport = {
     async send(message) {
       if (env.BETTER_AUTH_URL !== localOrigin || env.AUTH_MAIL_MODE !== "fake" ||
-          !["email-verification", "password-reset", "password-create"].includes(message.purpose) || !message.recipient.endsWith("@auth02b.test.invalid"))
+          !["email-verification", "password-reset", "password-create", "email-change-confirmation", "email-change-verification"].includes(message.purpose) || !message.recipient.endsWith("@auth02b.test.invalid"))
         return { status: "rejected" };
       const client = new Client({ connectionString });
       await client.connect();
@@ -30,10 +30,13 @@ export default createApplication((env, context) => {
           select $1,$2,$3,$4,$5
           where exists (
             select 1 from "user" u
-              join verification v on v.id='vico-auth-lifecycle:v1:' || $6 || ':' || encode(sha256(convert_to(u.id,'UTF8')),'hex')
-            where u.email=$1 and v.value::jsonb->>'generation'=$2
+              join verification v on v.id='vico-auth-lifecycle:v1:' || (case when $6 like 'email-change-%' then 'email-change' else $6 end) || ':' || encode(sha256(convert_to(u.id,'UTF8')),'hex')
+            where (case when $6='email-change-verification' then v.value::jsonb->>'newEmail' else u.email end)=$1 and v.value::jsonb->>'generation'=$2
               and (
-                ($6 in ('email-verification','password-reset') and
+                ($6 in ('email-change-confirmation','email-change-verification') and u.email_verified
+                  and exists(select 1 from session s where s.user_id=u.id and s.id=v.value::jsonb->>'sessionId')
+                  and v.value::jsonb->>'phase'=case when $6='email-change-confirmation' then 'old-address' else 'new-address' end)
+                or ($6 in ('email-verification','password-reset') and
                   exists(select 1 from account a where a.user_id=u.id and a.provider_id='credential'
                     and a.password is not null and a.password<>'')
                   and (($6='email-verification' and not u.email_verified

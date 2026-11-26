@@ -78,7 +78,9 @@ async function readSources(c:PoolClient){
   return {at,authentication:{source:'database' as const,observedAt:at,values:authValues,googleMethodLink:fact(google,'owner_events.auth'),genericSession:fact(session,'owner_events.auth'),
     verificationMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'email-verification'),
     passwordResetMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'password-reset'),
-    passwordCreateMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'password-create') },
+    passwordCreateMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'password-create'),
+    emailChangeOldMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'email-change-confirmation'),
+    emailChangeNewMail:await lastOperational(c,'integrations.authentication',['integration.authMailOutcome'],'email-change-verification') },
     retainedSample,storageSamples:await readRetainedStorageSamples(c,at),translation:{
       taskOutcome:await lastOperational(c,'background.translation',TASK_TRANSITION_KINDS),
       providerExecution:await lastOperational(c,'integrations.translation',['integration.translationCall'])}};
@@ -117,7 +119,7 @@ export class PostgresOwnerIntegrationMonitoring {
       try{await recordOwnerMonitorSnapshot(this.pool,key,values[key],'application');}catch{recording='unavailable';}
       try{
         const extra=key==='integrations.database'?"union all select min(observed_at),false from owner_monitor_observations where monitor_key='system.dependencies' and resource_scope='global' union all select min(occurred_at),false from owner_events where source='system' and monitor_key='system.dependencies' and kind='system.dependencyUnavailable'":
-          key==='integrations.authentication'?"union all select min(occurred_at),false from owner_events where source='auth' and kind in ('account.created','auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted','auth.emailVerified') union all select min(occurred_at),false from owner_events where source='operation' and monitor_key='integrations.authentication' and kind='integration.authMailOutcome' union all select min(occurred_at),false from admin_history where action='settings.registrationChanged' union all select min(admitted_at),false from owner_attempt_patterns where surface='auth' union all select min(admitted_at),false from owner_attempt_telemetry_state where right(slot,5)='.auth'":
+          key==='integrations.authentication'?"union all select min(occurred_at),false from owner_events where source='auth' and kind in ('account.created','auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted','auth.emailVerified','auth.emailChanged','auth.methodUnlinked') union all select min(occurred_at),false from owner_events where source='operation' and monitor_key='integrations.authentication' and kind='integration.authMailOutcome' union all select min(occurred_at),false from admin_history where action='settings.registrationChanged' union all select min(admitted_at),false from owner_attempt_patterns where surface='auth' union all select min(admitted_at),false from owner_attempt_telemetry_state where right(slot,5)='.auth'":
           key==='integrations.storage'?"union all select min(observed_at),false from owner_monitor_observations where monitor_key='integrations.storage' and resource_scope=any($2::text[])":
           "union all select min(occurred_at),false from owner_events where source='operation' and monitor_key in ('background.translation','integrations.translation') and kind=any($2::text[])";
         const r=(await this.pool.query<{first:Date|null;last:Date|null}>(`select min(at) first,max(at) filter(where own) last from(

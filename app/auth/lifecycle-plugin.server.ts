@@ -1,3 +1,5 @@
+import { AccountSecurityLifecycle, type AccountLifecycleTransition } from "./account-security-lifecycle.server";
+import { accountSecurityEndpoints, type AccountSecurityEndpoints } from "./account-security-endpoints.server";
 import { credentialChangePassword, credentialSignIn } from "./credential-auth-endpoints.server";
 import { AuthCredentialLifecycle, type CredentialTransition } from "./credential-lifecycle.server";
 import { credentialLifecycleEndpoints, type CredentialLifecycleEndpoints } from "./credential-lifecycle-endpoints.server";
@@ -17,6 +19,8 @@ import type { SignupVerificationEvidence } from "./signup-verification-evidence.
 
 export type AuthLifecycleDependencies = Readonly<{
   ingress?: AttemptIngressSource;
+  googleEnabled?: boolean;
+  observeAccount?: (transition: AccountLifecycleTransition) => void;
   registrationChallenge?: RegistrationChallengeConfig;
   mail?: AuthMailRuntime;
   observeVerified?: VerificationFactObserver;
@@ -27,7 +31,7 @@ export type AuthLifecycleDependencies = Readonly<{
 
 type LifecyclePlugin = {
   id: "vico-auth-lifecycle";
-  endpoints: EmailVerificationEndpoints & CredentialLifecycleEndpoints & {
+  endpoints: EmailVerificationEndpoints & CredentialLifecycleEndpoints & AccountSecurityEndpoints & {
     signInEmail: ReturnType<typeof credentialSignIn>;
     changePassword: ReturnType<typeof credentialChangePassword>;
   };
@@ -52,9 +56,12 @@ export function authLifecyclePlugin(client: Pick<Client, "query">,
   const emailVerification = new AuthEmailVerification(client, transaction, state, budget, secret,
     dependencies?.mail, dependencies?.observeVerified, dependencies?.mailObservations);
   const credentials = new AuthCredentialLifecycle(client, transaction, state, budget, secret);
+  const account = new AccountSecurityLifecycle(client, state, budget, secret, dependencies?.googleEnabled ?? false);
   return {
     id: "vico-auth-lifecycle",
     endpoints: {
+      ...accountSecurityEndpoints(account, unavailable, dependencies?.mail, dependencies?.mailObservations, dependencies?.observeAccount,
+        dependencies?.observeVerificationDirectFailure),
       signInEmail: credentialSignIn(client, transaction, onActorStateError),
       changePassword: credentialChangePassword(client, transaction, state, onActorStateError),
       ...emailVerificationEndpoints(emailVerification, budget, transaction, evidence, unavailable,

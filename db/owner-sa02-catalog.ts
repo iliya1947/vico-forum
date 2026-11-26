@@ -29,6 +29,8 @@ export const SA02_FACT_MONITORS = {
   "auth.passwordChanged": ["accounts.methods", "security.auth"],
   "auth.sessionCreated": ["accounts.sessions", "security.auth"],
   "auth.sessionDeleted": ["accounts.sessions", "security.auth"],
+  "auth.emailChanged": ["accounts.users", "security.auth"],
+  "auth.methodUnlinked": ["accounts.methods", "security.auth"],
   "auth.emailVerified": ["accounts.users", "security.auth"],
 } as const satisfies Record<string, readonly Sa02MonitorKey[]>;
 export type Sa02FactKind = keyof typeof SA02_FACT_MONITORS;
