@@ -126,3 +126,34 @@ Exact head `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`, base accepted AUTH-04 `e9
 **Граница решения:** постоянный `main/docs/SUPER_ADMIN.md:151–168` разрешает сохранять canonical network IP с quality в exact-Owner-only telemetry и выводить network data там, где доступно. Stage privacy clause может вводить более узкое ограничение для challenge либо употреблять raw IP только в смысле непроверенного исходного header. Нельзя молча объявить оба текста согласованными, изменить permanent contract или расширить поручение «только F01». Если запрет относится к полному IP нового operation, минимальный вариант — ограничить History/DTO projection именно registration-challenge (не ломая существующие coalescing/network enforcement и остальные типы History), с explicit qualified-network privacy regression; если допускается canonical Owner-only IP, уточнить stage contract. Ни один вариант не принят самовольно. Требуется разрешение границы F02 и при необходимости назначение corrective pass.
 
 **Итог авторской проверки: AUTHOR HOLD по F02, F01 source-level correction подтверждён.** CI/acceptance не определяют этот вывод и в данном review не опрашивались. Реализация в #394 не изменялась. Handoff на coordinator checkpoint, AUTH-06 sync, AUTH-07 и external actions пока не разрешены.
+
+## Окончательный авторский результат F01 — AUTHOR PASS / STOP
+
+Exact head `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`, base AUTH-04 `e9f8bad85694321f3279a72b604546a813a856b8` неизменны. Предыдущий AUTHOR HOLD superseded настоящим результатом. **F02 отозван:** действующий `main/docs/SUPER_ADMIN.md` (§SA-02) прямо разрешает Owner-only telemetry хранить canonical ingress network IP с source quality и отображать соответствующие сетевые данные в History. TASK требует переиспользовать этот контракт; локальная фраза о raw IP не является самостоятельным изменением постоянной policy. Уже установленные ограничения исключают непроверенные заголовки как authority, raw request/provider payloads, token и challenge material. Никакого изменения Owner History, дополнительной продуктовой политики или маскирования canonical IP не требуется. Сохраняется исходный evidence о фактическом пути IP, но вывод о блокирующем дефекте снят. F01 source-level correction и остальные результаты содержательной проверки выше подтверждены без обращения к CI как критерию корректности. **AUTHOR PASS; 0 confirmed blocking defects в bounded AUTH-05.**
+
+### Отдельные автоматизированные результаты на том же exact head
+
+- [CI #45882443114](https://github.com/iliya1947/vico-forum/actions/runs/45882443114) — success; checks и database jobs на exact SHA выполнены, включая lint/typecheck/test/build, clean PostgreSQL 17 migrations/constraints, schema/manifest/privilege parity, Worker smoke.
+- Все 20 применимых connected acceptance workflows завершились success на exact SHA, attempt 1; skipped label-event duplicates не засчитаны. AUTH-05 [#45882448007](https://github.com/iliya1947/vico-forum/actions/runs/45882448007) и AUTH-02b [#45882447907](https://github.com/iliya1947/vico-forum/actions/runs/45882447907) дополнительно проверены по actual job/steps, включая migrate disposable DB и actual Worker/Chromium run. Полный список:
+  - [AUTH-05 #45882448007](https://github.com/iliya1947/vico-forum/actions/runs/45882448007) — PASS
+  - [AUTH-02b #45882447907](https://github.com/iliya1947/vico-forum/actions/runs/45882447907) — PASS
+  - [AP-10 #45882447657](https://github.com/iliya1947/vico-forum/actions/runs/45882447657) — PASS
+  - [SA-01 #45882447661](https://github.com/iliya1947/vico-forum/actions/runs/45882447661) — PASS
+  - [SA-03 #45882448037](https://github.com/iliya1947/vico-forum/actions/runs/45882448037) — PASS
+  - [SA04-J12 #45882447553](https://github.com/iliya1947/vico-forum/actions/runs/45882447553) — PASS
+  - [SA04-K5 #45882447578](https://github.com/iliya1947/vico-forum/actions/runs/45882447578) — PASS
+  - [SA04-L3 #45882447983](https://github.com/iliya1947/vico-forum/actions/runs/45882447983) — PASS
+  - [SA04-M2 #45882447902](https://github.com/iliya1947/vico-forum/actions/runs/45882447902) — PASS
+  - [SA04-N #45882447629](https://github.com/iliya1947/vico-forum/actions/runs/45882447629) — PASS
+  - [SA04-S #45882448071](https://github.com/iliya1947/vico-forum/actions/runs/45882448071) — PASS
+  - [SA05 #45882448137](https://github.com/iliya1947/vico-forum/actions/runs/45882448137) — PASS
+  - [SA06 #45882447836](https://github.com/iliya1947/vico-forum/actions/runs/45882447836) — PASS
+  - [SA07 #45882447636](https://github.com/iliya1947/vico-forum/actions/runs/45882447636) — PASS
+  - [SA08 #45882448126](https://github.com/iliya1947/vico-forum/actions/runs/45882448126) — PASS
+  - [Personal Mute/Block #45882447911](https://github.com/iliya1947/vico-forum/actions/runs/45882447911) — PASS
+  - [Topic Watch #45882448024](https://github.com/iliya1947/vico-forum/actions/runs/45882448024) — PASS
+  - [Topic Bookmarks #45882447721](https://github.com/iliya1947/vico-forum/actions/runs/45882447721) — PASS
+  - [Own topic title #45882447864](https://github.com/iliya1947/vico-forum/actions/runs/45882447864) — PASS
+  - [Forum structure #45882448054](https://github.com/iliya1947/vico-forum/actions/runs/45882448054) — PASS
+
+Repository/local synthetic checks не доказывают deployed/provider acceptance. **Ада STOP; Мира — повторный AUTH-05 coordinator checkpoint на указанном exact head.** AUTH-06 #395 остаётся на прежнем head до coordinator PASS и отдельного назначения sync/reverify. AUTH-07, merge, main и Stage-6 не активированы.

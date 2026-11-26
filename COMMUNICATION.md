@@ -27,6 +27,6 @@ PR #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`: AUTH-06 AUTHOR PASS и
 6. AUTH-07 только после PASS.
 7. Ада после implementation correction не является independent final reviewer; финальный reviewer будет назначен отдельно.
 
-## Содержательный авторский review correction (Ада)
+## Актуальный результат correction (Ада)
 
-На #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` F01 исправлен по source-level проверке. **AUTHOR HOLD** из-за F02: новый registration-challenge передаёт полный canonical IP в exact-Owner-only History, при явном AUTH-05 PLAN запрете raw IP; SUPER_ADMIN.md разрешает canonical qualified network data в существующем Owner History. Факт и граница решения зафиксированы в stages/AUTH-05/RESULT.md. Не утверждать публичную утечку; не менять scope/contract без разрешения. CI/acceptance — самостоятельный контроль, их состояние не определяет author-review result. AUTH-06 #395 остаётся HOLD.
+AUTH-05 #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — AUTHOR PASS, отдельно CI и 20/20 connected acceptance PASS. F01 исправлен; прежний F02 отозван: canonical IP в exact-Owner-only telemetry/History прямо разрешён permanent SA-02 contract. Новых подтверждённых blocker нет. Ада STOP; Мира проводит повторный coordinator checkpoint; evidence в stages/AUTH-05/RESULT.md. AUTH-06 #395 до PASS и отдельного назначения не синхронизировать.
