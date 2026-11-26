@@ -14,6 +14,10 @@ Google unlink и guarded adapter delete/deleteMany перечитывают ме
 
 Current head `19d9ff8f4a515378130bd4d44bbfe6f5b002071e`. Финальные изменения включают обработку fragment второго подтверждения в уже открытых Settings, mail budgets для каждого фактического получателя и удаление дублированной freshness-подсказки. PostgreSQL regression подтвердил, что concurrent native deletes двух usable methods дают один commit и один controlled conflict, сохраняя сессии. Обновлены старые adapter tests под новый last-method contract.
 
-В существующем Complaint race test выявлен поздний rejection handler: ожидаемый отказ мог попасть в unhandled rejection до завершающего assertion. Добавлено раннее наблюдение за исходным promise, сохранив lock/state checks и проверку типа ошибки. Четыре варианта гонки прошли локально. Поведение Complaints не изменялось.
+В существующем Complaint race test выявлен поздний rejection handler: ожидаемый отказ мог попасть в unhandled rejection до завершающего assertion. Добавлено раннее наблюдение за исходным promise, сохранив lock/state checks и проверку типа ошибки. Четыре варианта гонки прошли локально.
 
 CI #45743147397 и применимые acceptance на финальном head выполняются; [Worker/Chromium #45743153598](https://github.com/iliya1947/vico-forum/actions/runs/45743153598) PASS. AUTHOR PASS ожидает оставшихся результатов.
+
+### Финальный кандидат
+
+Head `c9035dce425333d14fdf12d2418f4a8a009edabf`. По AP-10 устранён дубль freshness-подсказки и уточнён exact selector Connect Google рядом с новым Disconnect Google. Локальный SET-05 Chromium прошёл полностью. Второй этап email mail принимает validated locale-local callback текущей страницы; PostgreSQL API regression подтвердил выбор RU для new-address mail. CI #45744054677, connected #45744061039 и остальные применимые acceptance запущены на этом head.
