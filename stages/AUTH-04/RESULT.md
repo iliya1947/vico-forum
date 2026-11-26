@@ -56,3 +56,26 @@ Skipped label-trigger runs и Manual PR test controls в 16/16 не включе
 Назначение — coordinator checkpoint всего bounded AUTH-04 против `stages/AUTH-04/PLAN.md` и принятого AUTH-03, на stable exact head выше. Проверить двухфазный email flow, state/session/uniqueness atomicity, last-usable-method invariant во всех entrypoints, observability и Settings integration.
 
 Implementation PR остаётся draft intermediate stack. Coordinator PASS разрешает следующий AUTH-05, independent intermediate review и merge в main здесь не выполняются. Лёва остановился и AUTH-05 не начинал. Реальные mail/anti-bot/Google resources и Stage-6 activation остаются заблокированными до отдельной команды владельца.
+
+
+## Параллельная проверка Миры
+
+**PASS** на stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`.
+
+Проверен весь bounded AUTH-04 diff против stage/root plan и принятого AUTH-03, а не только author report/green CI. Отдельно проверены:
+
+1. two-phase email change: old-address proof → new-address proof → terminal email commit;
+2. current user/session/freshness binding, replay/stale generation и account-switch rejection;
+3. atomic email update + lifecycle invalidation + other-session revocation и rollback при conflict/failure;
+4. occupied-address race и отсутствие partial durable effects;
+5. Google unlink и last-usable-method invariant в custom endpoint и guarded native adapter delete/deleteMany;
+6. сериализация account-method writes с AccountState/deactivation через общий user lock;
+7. observability/facts/attempt closed values, migration 0077, History/Integrations projections и private DTO;
+8. Settings proof capture/hash removal, revalidation и сохранение initiating session;
+9. exact-head CI #45744054677 и 16/16 applicable connected acceptance как supporting evidence.
+
+Изменение `tests/database/sa04-complaints-n1.test.ts` проверено как узкая test-harness correction: rejection handler добавлен без изменения исходного promise, ожидаемого типа ошибки или lock/state assertions.
+
+Подтверждённых дефектов текущего AUTH-04 scope не установлено. Реальная внешняя mail/Google/Stage-6 acceptance не утверждается и остаётся вне этой ступени.
+
+По прямому решению владельца отдельная независимая bounded-проверка AUTH-04 остаётся назначенной Лене; AUTH-05 до её результата не активируется.
