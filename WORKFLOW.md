@@ -13,9 +13,10 @@
 9. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 остаются intermediate stacked PRs без merge в main.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 11. **AUTH-04 — AUTHOR PASS.** Draft #393, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`, stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`. Исполнитель — Лёва. Exact-head CI #45744054677 и 16/16 применимых connected acceptance PASS. Evidence — `stages/AUTH-04/RESULT.md`.
-12. По прямому решению владельца текущая bounded-проверка AUTH-04 передана **Лене вместо checkpoint Миры**. Лена не участвовала в реализации #393.
-13. Лёва остановлен; AUTH-05 не активирована. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
+12. **Мира — PARALLEL REVIEW PASS** на том же exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`: проверены bounded diff, transaction/session/state ordering, two-phase email flow, occupied-email rollback, last-usable-method invariant в lifecycle и native adapter delete/deleteMany, deactivation serialization, observability/schema projections, Settings integration и exact-head workflow evidence. Подтверждённых current-scope blocking defects не установлено.
+13. По прямому решению владельца отдельная bounded-проверка AUTH-04 также передана **Лене**. Лена не участвовала в реализации #393.
+14. Лёва остановлен; AUTH-05 не активирована. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
 
 ## Следующий переход
 
-Лена проводит полную bounded-проверку AUTH-04 PR #393 на stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf` против `stages/AUTH-04/PLAN.md`, root `PLAN.md`, принятого AUTH-03 и актуальных source-of-truth. Не исправляет код во время проверки. Итог — PASS или HOLD с подтверждёнными current-scope findings и достаточным evidence в служебном PR. AUTH-05 разрешается только после PASS этой проверки и отдельного перехода.
+Дождаться независимого PASS/HOLD Лены по AUTH-04 #393 на stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`. До её результата AUTH-05 не активировать и intermediate PRs не merge. При PASS определить отдельный переход к AUTH-05; при HOLD вернуть подтверждённые current-scope findings реализатору.
