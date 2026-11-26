@@ -14,9 +14,9 @@
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
 11. **AUTH-04 — AUTHOR PASS.** Draft #393, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`, stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`. Исполнитель — Лёва. Exact-head CI #45744054677 и 16/16 применимых connected acceptance PASS. Evidence — `stages/AUTH-04/RESULT.md`.
 12. **Мира — PARALLEL REVIEW PASS** на том же exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`: проверены bounded diff, transaction/session/state ordering, two-phase email flow, occupied-email rollback, last-usable-method invariant в lifecycle и native adapter delete/deleteMany, deactivation serialization, observability/schema projections, Settings integration и exact-head workflow evidence. Подтверждённых current-scope blocking defects не установлено.
-13. По прямому решению владельца отдельная bounded-проверка AUTH-04 также передана **Лене**. Лена не участвовала в реализации #393.
-14. Лёва остановлен; AUTH-05 не активирована. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
+13. **Лена — независимая bounded-проверка AUTH-04: HOLD** на exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`. Подтверждены F01–F04 (session storage classification, guest proof privacy, misleading pending/mail/history presentation, duplicate body fields); неполное доказательство отдельных обязательных acceptance. Подробный итог — `stages/AUTH-04/RESULT.md`.
+14. Лена STOP. Мира принимает HOLD и координирует bounded correction Лёвой. AUTH-05 не активирована; independent final whole-feature reviewer определяется отдельно.
 
 ## Следующий переход
 
-Дождаться независимого PASS/HOLD Лены по AUTH-04 #393 на stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf`. До её результата AUTH-05 не активировать и intermediate PRs не merge. При PASS определить отдельный переход к AUTH-05; при HOLD вернуть подтверждённые current-scope findings реализатору.
+**Мира — принять HOLD Лены по AUTH-04 #393, передать Лёве bounded correction по `stages/AUTH-04/RESULT.md`.** Не считать предыдущий green CI/parallel PASS достаточным после findings. После исправления — author self-check и применимые проверки на corrected exact head, повторный checkpoint. AUTH-05, intermediate merge и external activation заблокированы до закрытия AUTH-04.
