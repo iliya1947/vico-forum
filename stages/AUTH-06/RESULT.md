@@ -42,3 +42,34 @@
 В обоих сценариях использованы приватные фикстуры и локальная почта. В браузере Google-only аккаунт подготовлен как тестовая фикстура. Реальные OAuth, доставка провайдером и deployed challenge относятся к внешней проверке Stage 6.
 
 Следующий шаг Миры — повторно проверить всю цепочку AUTH-01–AUTH-06 на `615d93598daf78945a86fbdc4255bc778ae3403f` с учётом исправления F01. AUTH-07 ожидает отдельного назначения после coordinator PASS. Лёва и Ада участвовали в реализации, независимый финальный reviewer назначается отдельно.
+
+## Exact-head GitHub evidence после авторского handoff
+
+После остановки Лёвы предусмотренные workflows завершились на head `615d93598daf78945a86fbdc4255bc778ae3403f`.
+
+- CI #45897164115 — SUCCESS: checks 252 files / 3342 tests; database 123 files / 1998 tests; `auth-whole-lifecycle` 62/62; schema manifest 76 tables; runtime/split-authority probes PASS. Pull-request merge-ref `fa33fc59a4de57ccb78902812fca9c942b2f6a24` имеет тот же tree SHA, что и implementation head.
+- 20/20 applicable connected acceptance — SUCCESS, attempt 1, без failures/cancelled/in-progress:
+  - #45897171720 Own topic title
+  - #45897171864 AUTH-05 anti-abuse Worker/Chromium
+  - #45897171613 SA04-M2
+  - #45897171727 Topic Watch
+  - #45897171538 SA04-J12
+  - #45897171484 SA04-L3
+  - #45897171890 SA05 Owner deactivation
+  - #45897171840 SA04-S
+  - #45897171629 Topic Bookmarks
+  - #45897171812 Forum structure
+  - #45897171489 SA06
+  - #45897171879 Personal Mute/Block
+  - #45897171586 SA-03
+  - #45897171837 SA-01
+  - #45897171522 AUTH-02b email verification
+  - #45897171852 SA04-N
+  - #45897171830 SA04-K5
+  - #45897172006 SA07
+  - #45897171549 SA08
+  - #45897171987 AP-10
+
+AUTH-05 log на exact head исполнил F01 differential challenge case; AUTH-02b log исполнил AUTH-06 refresh/back, SET-05 password/session, EN/RU/HE responsive LTR/RTL и explicit relogin сценарии.
+
+Coordinator review результата: `stages/AUTH-06/REVIEW.md`.
