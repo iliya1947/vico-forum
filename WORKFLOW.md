@@ -10,11 +10,11 @@
 6. AUTH-03: draft PR #392, stable exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf` — **AUTHOR PASS + COORDINATOR PASS**, 0 confirmed current-scope blocking defects.
 7. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 остаются intermediate stacked PRs без merge в main.
 8. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-9. AUTH-04 / draft #393 после correction: stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS**, ожидает повторной coordinator проверки Миры. Exact-head CI #45752866279 PASS (3339 unit/component + 1903 PG17 tests), **19/19 applicable connected acceptance PASS**. Evidence — `stages/AUTH-04/RESULT.md`.
-10. Исходный head c9035dc получил HOLD Лены с F01–F04, независимо подтверждённый Мирой. Corrected head e9f8bad закрывает эти findings реализацией и focused regressions по author self-check; disposition на новом head даёт Мира.
-11. Мира независимо перепроверила F01–F04 против текущего кода, root PLAN и pinned Better Auth 1.7.7 / better-call 1.4.0: **все четыре findings подтверждены как реальные дефекты текущего AUTH-04 scope**. Прежний PARALLEL REVIEW PASS Миры отозван.
-12. **Лёва завершил bounded correction AUTH-04 #393 и остановился для повторного checkpoint Миры**. AUTH-05 не активирована; intermediate merge и external activation заблокированы.
+9. AUTH-04 / draft #393 после correction: stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS + COORDINATOR PASS**. Exact-head CI #45752866279 PASS; **19/19 applicable connected acceptance PASS**. Evidence — `stages/AUTH-04/RESULT.md`.
+10. Исходный head `c9035dce425333d14fdf12d2418f4a8a009edabf` получил HOLD Лены с F01–F04; Мира независимо подтвердила findings и отозвала прежний PASS. Corrected head `e9f8bad85694321f3279a72b604546a813a856b8` повторно проверен Мирой: F01–F04 закрыты, новых current-scope blocking defects не установлено.
+11. Лёва остановлен после AUTH-04 correction. AUTH-05 **ещё не активирована**. Intermediate merge и external activation не выполнять.
+12. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
 
 ## Следующий переход
 
-Мира повторно проверяет corrected AUTH-04 #393 на stable exact head `e9f8bad85694321f3279a72b604546a813a856b8`. Маршрут — заключительные разделы `stages/AUTH-04/RESULT.md` (bounded correction и AUTHOR PASS) → `stages/AUTH-04/PLAN.md` / root PLAN → полный bounded diff и focused tests. Проверка включает F01–F04 и взаимодействие с accepted AUTH-03. Лёва остановился; AUTH-05 разрешается только после coordinator PASS. Intermediate merge и external activation не выполнять.
+AUTH-04 закрыта coordinator checkpoint PASS на exact `e9f8bad85694321f3279a72b604546a813a856b8`. Следующая stacked-ступень — AUTH-05 из root PLAN; активировать её отдельным переходом. До отдельной активации implementation AUTH-05 не начинать.
