@@ -10,14 +10,8 @@
 
 AUTH-05 / PR #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — **AUTHOR PASS + COORDINATOR PASS**. F01 устранён: при required challenge и открытой email registration negative challenge outcomes больше не зависят от account existence до native duplicate/create branch; actual SET-02 create-user gate и provider-neutral boundary сохранены. CI #45882443114 PASS; 20/20 applicable connected acceptance PASS.
 
-## Активная задача
+## Передано Мире
 
-По прямому решению владельца **AUTH-06 sync/reverification передана Лёве / Codex-6.1 Sol**.
+PR #395 синхронизирован с принятым AUTH-05 `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`. Новый head `615d93598daf78945a86fbdc4255bc778ae3403f` получил локальный AUTHOR PASS Лёвы. Повторный coordinator review Миры охватывает весь стек и исправление F01. Матрица и границы результатов записаны в `stages/AUTH-06/RESULT.md`.
 
-PR #395 сейчас ещё находится на старом head `2eb3f9c303ad1b67d5348664267eca665f079cf7` поверх superseded AUTH-05 `ac59e3d2...`. Лёва должен синхронизировать существующий AUTH-06 test/evidence package с corrected AUTH-05 `dbbfe1c05...`, разрешая только реальные последствия изменения нижней ступени, без новой product functionality.
-
-После sync нужен новый stable exact head, author self-check и применимые exact-head CI/acceptance. При blocker — HOLD и STOP; при PASS — обновлённый RESULT и STOP для повторного whole-feature coordinator review Миры.
-
-Ада завершила AUTH-05 correction; AUTH-06 ей не назначен. Поскольку Лёва теперь участвует в AUTH-06, а Ада участвовала в AUTH-05 correction, independent final reviewer должен быть другим агентом.
-
-AUTH-07, merge и external/Stage-6 activation не начинать.
+По указанию владельца Лёва передаёт работу без ожидания и проверки CI. Предусмотренные команды запуска выставлены. Лёва и Ада участвовали в реализации. Независимый финальный reviewer назначается после coordinator PASS.

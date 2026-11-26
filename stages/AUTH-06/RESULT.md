@@ -1,74 +1,44 @@
-# AUTH-06 — whole-lifecycle/security acceptance
+# AUTH-06. Повторная авторская проверка после исправления AUTH-05
 
-## Авторская проверка
+**AUTHOR PASS по локальной проверке.** На коммите `615d93598daf78945a86fbdc4255bc778ae3403f` подтверждённых блокеров нет. Лёва передал Мире повторное coordinator review всей цепочки AUTH-01–AUTH-06. [PR #395](https://github.com/iliya1947/vico-forum/pull/395)
 
-PR #395; base AUTH-05 #394 `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`; stable head `2eb3f9c303ad1b67d5348664267eca665f079cf7`.
+## Проверенная версия
 
-**AUTHOR PASS. Confirmed current-scope blockers: 0. STOP для coordinator whole-feature review Миры. AUTH-07 не начат.**
+В существующую ветку PR #395 включён принятый коммит AUTH-05 `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`. Git сохранил историю обеих веток. Diff от исправленного основания побайтово совпал с первоначальным diff AUTH-06 во всех 22 файлах. Проверка в обратном направлении также подтвердила, что изменение относительно старого head #395 точно соответствует исправлению AUTH-05. В пакет входят 20 фильтров запуска, сценарий Chromium и набор из 62 проверок PostgreSQL. [Исправление #394](https://github.com/iliya1947/vico-forum/pull/394) · [Diff AUTH-06](https://github.com/iliya1947/vico-forum/compare/dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6...615d93598daf78945a86fbdc4255bc778ae3403f)
 
-## Новые исполняемые проверки
+Прежний AUTHOR PASS и прежние прогоны относятся к `2eb3f9c303ad1b67d5348664267eca665f079cf7`. [Протокол прежней версии](https://github.com/iliya1947/vico-forum/blob/027e35a0c880e1db26d0f6a4f980089001448209/stages/AUTH-06/RESULT.md)
 
-- `tests/database/auth-whole-lifecycle.test.ts`: 62 native PostgreSQL 17 / Better Auth checks: 24 Owner-deactivation races (12 operations × оба порядка); 11 critical-statement rollback faults; 4 applied-COMMIT/ACK-loss cases; 4 observation failures; 4 real lock deadlines; 4 real 5s statement deadlines; 4 actual PG backend terminations; 6 credential mutation × HTTP unlink races; 1 email reuse identity case.
-- `tests/browser/auth-02b/check.py`: продолжение actual Worker/Chromium lifecycle до keyboard SET-05 password change (existing sessions сохраняются), revoke-one/revoke-others, EN/RU/HE responsive LTR/RTL и явного повторного входа; navigation refresh/back не расходует proof.
-- 20 existing acceptance workflow path filters включают whole-lifecycle test; прежние selectors/assertions сохранены.
+## Локальное исполнение на новом коммите
 
-## Обязательная matrix root PLAN §9
-
-| Группа | Исполняемый evidence |
+| Проверка | Фактический результат |
 |---|---|
-| 1. Pending/verified signup, independent Google, explicit link, no same-email claim, duplicate/return injection | `registration-auth-admission`, `forum-email-registration`, `auth-link-identity`, `auth-account-uniqueness`, `auth-runtime`, `auth-registration-challenge`; credential-path/view + route tests; AUTH-02b/AUTH-05 connected |
-| 2. Missing/inactive/unverified/verified, no pending session, all registration flags, closure/unavailable | `auth-lifecycle-state`, `registration-auth-admission`, `auth-runtime`, `auth-registration-challenge`, `auth-whole-lifecycle`; AUTH-02b/AUTH-05, AP-10 SET-02 |
-| 3. Expiry/replay/purpose/phase/tamper/latest generation, old proof after changes, reused email | `credential-lifecycle-proof`, `auth-lifecycle-state`, new native reused-address case; AUTH-02b connected resend/replay/read-only GET/navigation |
-| 4. Reset/create/change proof, SET-05 current password/session policy, foreign/stale/fresh sessions and revocation | `auth-lifecycle-state`, `account-security`, `sa04-session-atomic`, `sa02-auth-password-change/session-deletion`; new native faults/races; expanded AUTH-02b and AP-10 Settings |
-| 5. Two-phase email, occupied race, mail failure/restart/account switch, unchanged Google identity | `auth-lifecycle-state` AUTH-04 cases (all mail outcomes/both phases, occupied-address race, real distinct own session); `auth-whole-lifecycle` digest/account-ID snapshot; AUTH-02b connected |
-| 6. Last usable method/empty hash/concurrent deletion and set/reset/change | `auth-lifecycle-state` native adapter delete race + HTTP/direct unlink; `sa04-session-atomic`; new six two-client credential × HTTP-unlink races |
-| 7. Deactivation vs issuance/consume/verify/reset/link/unlink/email commit, both orders; inactive own sign-out/no reactivation | new 24 actual Owner-command vs native-auth races; `sa04-session-atomic`, `auth-runtime`, `sa05-owner-account-lifecycle`; SA04/SA05 connected and CI Worker smoke |
-| 8. Critical SQL/commit faults, real deadlines/connection loss, uncertain mail/observer failure | new 31 native fault/deadline/backend/observer cases; `lifecycle-transaction`, `auth-lifecycle-state`, `sa02-auth-oauth-rollback/creations/observer`; mail transport/outcome suites |
-| 9. HTTP/direct/Settings budgets, burst/spoof/unknown-source, privacy/challenge negatives | `auth-lifecycle-budget`, `auth-registration-challenge`, `auth-rate-limit-concurrency`, `account-security`, registration-challenge units; AUTH-05 and AUTH-02b actual 429/expiry/explicit retry; AP-10 |
-| 10. Exact Owner/RBAC/SET-02/05, retained state/tombstone, History/filter/paging, inert Integration GET | auth/Owner/History database and route suites; AP-10, SA01/03/04/05/06/07/08 connected; complete forum/notification/attachment baseline |
+| Модульные, компонентные и маршрутные проверки auth, Settings и Owner Integrations | 228 тестов в 21 файле прошли |
+| Better Auth и PostgreSQL 17 на изолированной loopback БД | 395 тестов в 25 файлах прошли, в том числе все 62 из `auth-whole-lifecycle.test.ts` и регрессии F01 из исправленного основания |
+| Собранный Worker и Chromium, `tests/browser/auth-05/check.py` | Прошёл полный сценарий F01 и anti-abuse с закрытой тестовой почтой и синтетической проверкой регистрации |
+| Собранный Worker и Chromium, `tests/browser/auth-02b/check.py` | Прошёл полный сценарий AUTH-06 от регистрации и подтверждения почты до смены email и пароля, отзыва сессий и повторного входа. Проверены refresh/back, клавиатура и EN/RU/HE с LTR/RTL |
+| Структура и сборка | TypeScript прошёл. На чистую PostgreSQL 17 применены 79 миграций. Schema manifest совпал для 76 таблиц. Положительные и отрицательные пробы runtime privileges прошли. В 143 файлах клиентской сборки совпадений с проверенными приватными маркерами и тестовым значением секрета нет |
 
-All file names above refer to committed `*.test.ts[x]` suites in `app/` or `tests/database/`, or committed browser scripts. Все перечисленные группы фактически выполнены на указанном stable exact head; завершённые run IDs ниже.
+## Матрица из раздела 9 плана
 
-## Локальное исполнение
+Ссылки указывают на код проверенной версии. Имена в таблице относятся к одноимённым тестовым файлам. [Наборы PostgreSQL](https://github.com/iliya1947/vico-forum/tree/615d93598daf78945a86fbdc4255bc778ae3403f/tests/database) · [Сценарий AUTH-06](https://github.com/iliya1947/vico-forum/blob/615d93598daf78945a86fbdc4255bc778ae3403f/tests/browser/auth-02b/check.py) · [Сценарий F01](https://github.com/iliya1947/vico-forum/blob/615d93598daf78945a86fbdc4255bc778ae3403f/tests/browser/auth-05/check.py)
 
-- Targeted native suite: **62/62 PASS**, PostgreSQL 17, disposable loopback DB, genuine migrations, separate real clients and PG wait-event evidence. Test barriers hold queries, without faking SQL results. Password hashing finishes before starting Owner's short lock-wait window.
-- Connected Worker/Chromium complete flow: **PASS**, disposable private mailbox, no observed browser egress/page errors. Google-only browser account provisioned as a method fixture; Google native sign-in/link exercised with synthetic provider only in PG suites.
-- Targeted ESLint, TypeScript build, Python syntax and diff checks: **PASS**.
-- Built client scan: **143 files**, no private runtime config value/canary, mailbox table or test server factory/database binding entry point. The SDK's literal `BETTER_AUTH_SECRET` environment getter name is present; its presence is not a secret value. This scan covers known fixture values/markers, not arbitrary secret detection.
-
-## Честные границы
-
-Только repository/local-CI evidence. No real mail/Google/challenge provider, production credentials, DNS, edge rules, deployed delivery, or Stage-6 activation. Browser Google-only provisioning is a fixture, not a live OAuth journey. Applied-COMMIT acknowledgement loss and post-statement transport failures are injected at the client query boundary after genuine SQL; actual backend termination and real timeouts are exercised separately. This author self-check does not replace coordinator/independent whole-feature review or AUTH-07 security gate.
-
-## Exact-head GitHub evidence
-
-[CI #45850580053](https://github.com/iliya1947/vico-forum/actions/runs/45850580053) — **PASS**. `checks` job **140015563495**: lint/typecheck, **3342 tests / 252 files**, build/UI preview, migration history/metadata и Drizzle parity. `database` job **140015563226**: **1992 tests / 123 files**, включая новые **62/62**, clean PostgreSQL 17 migrations, schema manifest, runtime/split-authority privilege/provisioning probes, built Worker smoke/AccountState/Owner checks.
-
-`run:ci` и `run:acceptance` реально приняты label-trigger workflows. Skipped runs от другого label не считаются evidence. Все **20/20** acceptance workflows ниже — completed SUCCESS; AP-10 включает четыре completed SUCCESS jobs. Повторных запусков для этого head не потребовалось.
-
-| Acceptance workflow | Завершённый PASS run |
+| Группа | Локальное покрытие |
 |---|---|
-| AP-10 isolated browser acceptance | [45850589810](https://github.com/iliya1947/vico-forum/actions/runs/45850589810) |
-| AUTH-02b connected email verification Worker Chromium acceptance | [45850590111](https://github.com/iliya1947/vico-forum/actions/runs/45850590111) |
-| AUTH-05 connected anti-abuse Worker Chromium acceptance | [45850589745](https://github.com/iliya1947/vico-forum/actions/runs/45850589745) |
-| Forum structure whole-feature connected Chromium and local R2 | [45850590151](https://github.com/iliya1947/vico-forum/actions/runs/45850590151) |
-| Own topic title connected acceptance | [45850589823](https://github.com/iliya1947/vico-forum/actions/runs/45850589823) |
-| Personal Mute/Block connected acceptance | [45850590085](https://github.com/iliya1947/vico-forum/actions/runs/45850590085) |
-| SA-01 Super-admin connected Chromium acceptance | [45850590152](https://github.com/iliya1947/vico-forum/actions/runs/45850590152) |
-| SA-03 unified profile connected Chromium acceptance | [45850590076](https://github.com/iliya1947/vico-forum/actions/runs/45850590076) |
-| SA04-J12 connected AccountState Chromium acceptance | [45850589616](https://github.com/iliya1947/vico-forum/actions/runs/45850589616) |
-| SA04-K5 connected attachment Worker R2 Chromium acceptance | [45850589968](https://github.com/iliya1947/vico-forum/actions/runs/45850589968) |
-| SA04-L3 connected authorization Owner Worker Chromium acceptance | [45850590278](https://github.com/iliya1947/vico-forum/actions/runs/45850590278) |
-| SA04-M2 connected AP10 Worker Chromium AccountState acceptance | [45850589764](https://github.com/iliya1947/vico-forum/actions/runs/45850589764) |
-| SA04-N connected Complaints Worker Chromium AccountState acceptance | [45850590172](https://github.com/iliya1947/vico-forum/actions/runs/45850590172) |
-| SA04-S complete AccountState connected acceptance | [45850589838](https://github.com/iliya1947/vico-forum/actions/runs/45850589838) |
-| SA05 whole Owner deactivation connected acceptance | [45850589976](https://github.com/iliya1947/vico-forum/actions/runs/45850589976) |
-| SA06 native monitoring connected Chromium acceptance | [45850589818](https://github.com/iliya1947/vico-forum/actions/runs/45850589818) |
-| SA07 Background Localization Files Data and Integrations connected Chromium acceptance | [45850590217](https://github.com/iliya1947/vico-forum/actions/runs/45850590217) |
-| SA08 Overview and whole-program entry connected Chromium acceptance | [45850589912](https://github.com/iliya1947/vico-forum/actions/runs/45850589912) |
-| Topic Bookmarks connected acceptance | [45850590065](https://github.com/iliya1947/vico-forum/actions/runs/45850590065) |
-| Topic Watch connected acceptance | [45850590186](https://github.com/iliya1947/vico-forum/actions/runs/45850590186) |
+| 1. Регистрация, вход, явная привязка Google, дубликаты и return URL | `auth-runtime`, `auth-link-identity`, `registration-auth-admission`, credential path/view и оба Chromium-сценария |
+| 2. Состояния аккаунта, pending без сессии и SET-02 | `auth-lifecycle-state`, `registration-settings`, `registration-auth-admission`, `forum-email-registration` и регрессии F01 в `auth-registration-challenge`. Для открытой регистрации проверено одинаковое публичное поведение при разных состояниях адреса |
+| 3. Срок, поколение, фаза, replay и повторное использование адреса | `credential-lifecycle-proof`, `auth-lifecycle-state`, `auth-whole-lifecycle` и Chromium refresh/back |
+| 4. Сброс и создание пароля, SET-05, свежесть и отзыв сессий | `account-security`, `auth-lifecycle-state`, `sa04-session-atomic`, `sa02-auth-password-change`, `sa02-auth-session-deletion`, Settings и Chromium |
+| 5. Смена email в две фазы, занятый адрес, перезапуск, смена аккаунта и сохранение Google identity | `auth-lifecycle-state`, `auth-whole-lifecycle`, `auth-link-identity` и Chromium с отдельными сессиями |
+| 6. Сохранение последнего способа входа при конкурирующих операциях | `auth-lifecycle-state` проверяет пустой hash и конкурентное удаление через адаптер. В `auth-whole-lifecycle` исполняются шесть гонок создания, сброса и смены пароля с HTTP unlink |
+| 7. Деактивация и операции авторизации | `auth-whole-lifecycle` проверяет оба порядка блокировки для 12 операций с настоящей командой Owner. `sa04-session-atomic`, `auth-runtime` и `sa05-owner-account-lifecycle` проверяют account state и собственный sign-out |
+| 8. Ошибки транзакции и наблюдения | 31 сценарий в `auth-whole-lifecycle`, включая потерю подтверждения COMMIT, реальные lock/statement timeout и обрыв PG-соединения. Ошибки транспорта почты и наблюдателя покрыты `auth-lifecycle-state`, `auth-mail-transports`, `sa02-auth-oauth-rollback` и `sa02-auth-observer` |
+| 9. Лимиты и приватность challenge, HTTP/direct/Settings | `auth-lifecycle-budget`, `auth-rate-limit-concurrency`, `auth-registration-challenge`, `account-security`. Оба Chromium-сценария проверили обработку 429 и явную повторную попытку |
+| 10. Owner/RBAC, SET-02/05, сохранённые данные, History и чтение Integrations | `authorization-snapshot`, `sa05-owner-read-projections`, `sa02-owner-history`, `owner-system-history`, `owner-attempt-telemetry`, `sa07-integration-monitoring` и маршрут `super-admin-integrations` |
 
-## Передача
+## Границы результата и передача
 
-Мира: выполнить coordinator whole-feature review AUTH-01–AUTH-06 на stable head PR #395 `2eb3f9c303ad1b67d5348664267eca665f079cf7` против root PLAN и принятого основания AUTH-05. Вход: WORKFLOW → этот RESULT → root PLAN §9 и связанные suite sources; bounded diff PR #395, полная stack implementation видна от AUTH-01. AUTHOR PASS не является coordinator/independent PASS. AUTH-07, перенос stack в первый PR, merge, docs closeout и external activation самостоятельно не выполнялись; следующий переход определяет Мира по действующему плану. При product finding — HOLD с evidence и отдельный correction route.
+На новом head выставлены предусмотренные `run:ci` и `run:acceptance`. По прямому указанию владельца Лёва передаёт работу без ожидания и проверки статуса GitHub Actions. Таблица выше отражает собственные локальные прогоны.
+
+В обоих сценариях использованы приватные фикстуры и локальная почта. В браузере Google-only аккаунт подготовлен как тестовая фикстура. Реальные OAuth, доставка провайдером и deployed challenge относятся к внешней проверке Stage 6.
+
+Следующий шаг Миры — повторно проверить всю цепочку AUTH-01–AUTH-06 на `615d93598daf78945a86fbdc4255bc778ae3403f` с учётом исправления F01. AUTH-07 ожидает отдельного назначения после coordinator PASS. Лёва и Ада участвовали в реализации, независимый финальный reviewer назначается отдельно.
