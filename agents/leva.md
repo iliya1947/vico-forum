@@ -2,28 +2,44 @@
 
 ## Текущее назначение
 
-По прямому решению владельца реализовать **AUTH-03 — recovery/reset + password creation для Google-only** по root `PLAN.md` и `stages/AUTH-03/PLAN.md`.
+AUTH-03 / PR #392 получил **COORDINATOR HOLD** на exact head `ce75ff3629a4adae9941703a33f6d0366bd7f570`.
 
-## Основание stack
+Сначала разрешить техническое противоречие accepted root PLAN ↔ implementation; затем отдельным correction package закрыть все confirmed current-scope findings. Во время reconciliation не наращивать workaround chain.
 
-1. AUTH-02b принят на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`.
-2. Новый implementation PR создаётся с base `feat/auth-02b-email-verification`, не от main.
-3. Показывать только bounded diff AUTH-03.
+## Confirmed findings
 
-## Ключевые границы
+1. **Change-password не делает recovery stale.**
+   - `credentialChangePassword()` сериализует native SET-05 change с reset, но после успешной обычной смены пароля не инвалидирует pending `password-reset/password-create` lifecycle state.
+   - Accepted PLAN требует: после credential/password change старые recovery/password-create operations invalid; в race второй caller перечитывает основание первого commit и stale operation denied.
+   - Текущие race tests доказывают только порядок reset-first. Change-first оставляет ранее выданный reset proof пригодным для последующего overwrite нового пароля и session revocation.
+   - Требуется исправить в одной transaction с успешной SET-05 password change и проверить оба порядка гонки.
 
-1. Guest recovery обслуживает только existing active verified credential; missing/inactive/Google-only/unverified получают neutral public behavior.
-2. Reset не подтверждает email, не создаёт automatic session и после commit отзывает все target sessions.
-3. Google-only password creation — только own Account & security: active fresh session + current email mail proof + explicit password submit.
-4. Anonymous forgot/reset не может создать credential Google-only account.
-5. Shared credential service должен сохранять transaction/state/budget boundaries AUTH-02a/02b; HTTP/direct/Settings не имеют bypass.
-6. Existing SET-05 change-password сохраняет current-password contract и `revokeOtherSessions:false`.
-7. Email change и unlink не реализовывать — это AUTH-04.
-8. New facts/attempts/projections добавлять только под фактические AUTH-03 producers; sensitive values не логировать/не сериализовать.
-9. Реальные external providers/Stage-6 resources не активировать.
+2. **Recovery token architecture расходится с accepted root PLAN.**
+   - Root PLAN требует native Better Auth 1.7.7 random reset token / verification storage, связанный с Vico state, с supported hashed reset-token identifier storage.
+   - #392 вместо этого использует `signCredentialProof()` JWT и deterministic Vico lifecycle verification row; native reset issuance/storage не используется.
+   - Tagged Better Auth 1.7.7 source повторно подтверждён: native request создаёт random `reset-password:<token>` verification value, terminal consume использует single-use row.
+   - Stage AUTH-03 PLAN не объявлял supersede этого root contract.
+   - До реализации correction определить технически правильный вариант. Если принятому PLAN нужен пересмотр — сначала исправить PLAN и зафиксировать причину; нельзя молча считать implementation новой архитектурой.
 
-## Завершение
+3. **AUTH-03 observability contract неполон.**
+   - `credential-lifecycle-endpoints.deliver()` реально отправляет `password-reset/password-create` mail, но не пишет `integration.authMailOutcome`.
+   - `operational-facts.ts` и Integrations projection всё ещё допускают только `mailPurpose: "email-verification"` / `verificationMail`.
+   - Root PLAN требует mail outcome по фактическому purpose/provider/outcome по мере появления producer.
+   - Также `auth.passwordChanged` добавляет только optional `context:"reset"`, тогда как accepted closed contract предусматривает `change` для existing SET-05 producer и `reset` для recovery.
+   - Исправить без raw email/token/provider errors и без outbound probes.
 
-После implementation выполнить полный author self-check bounded AUTH-03, применимые exact-head checks/acceptance, зафиксировать stable head/evidence в `stages/AUTH-03/RESULT.md` и остановиться для coordinator checkpoint Миры. AUTH-04 самостоятельно не начинать.
+## Остальной review
 
-Лёва не является independent final whole-feature reviewer этой authentication сборки.
+Самостоятельно проверены neutral forgot eligibility, AccountState/transaction ordering, password-create session binding/freshness, raw credential/session mutation atomicity, no-auto-session reset, session revocation, Google preservation, common lifecycle budgets, sensitive URL/form handling, attempt operations/migration 0076, direct/HTTP paths и отсутствие AUTH-04 scope expansion. Дополнительных confirmed current-scope blockers не установлено.
+
+## Завершение correction
+
+После plan reconciliation и coherent correction package:
+1. полный author self-check всего bounded AUTH-03;
+2. tests должны включать change-password-first vs pending reset и обратный порядок;
+3. observability/mail regression по reset/create;
+4. применимые exact-head CI/acceptance;
+5. новый stable head + RESULT;
+6. STOP для повторного coordinator checkpoint Миры.
+
+AUTH-04 самостоятельно не начинать.
