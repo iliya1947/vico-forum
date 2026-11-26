@@ -59,3 +59,6 @@
 29. **2026-11-26:** AUTH-03 #392 на exact `ce75ff3629a4adae9941703a33f6d0366bd7f570` получил coordinator HOLD. Подтверждены change-password/recovery invalidation defect, plan↔implementation contradiction recovery-token architecture и неполная AUTH-03 mail/context observability. AUTH-04 заблокирован до correction + повторного checkpoint.
 
 30. **2026-11-26:** AUTH-03 #392 на exact `39c07e539a47b8a317b3a274132337a6dc61cfdf` прошёл повторный coordinator checkpoint Миры: PASS, 0 confirmed current-scope blocking defects. Закрыты change/reset invalidation, native opaque+hashed recovery model и AUTH-03 mail/password-context observability. CI #45730609055 и 16/16 applicable acceptance PASS. Следующая stacked-ступень AUTH-04 остаётся назначенной Лёве и активируется отдельно.
+
+
+31. **2026-11-26:** владелец назначил Аду / Business GPT-6.2 заменой Лёве для дальнейшей работы по authentication lifecycle. Поскольку Лёва уже начал AUTH-06 #395 и его exact-head checks выполняются, текущий handoff не прерывается: Лёва завершает AUTH-06 author verification и STOP. После этого дальнейшие технические обязанности и independent final whole-feature review переходят Аде; она не участвовала в implementation stack.
