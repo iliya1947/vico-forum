@@ -4,6 +4,7 @@
 2. `AUTH-02a/PLAN.md`, `AUTH-02a/STORAGE-DECISION.md`, `AUTH-02a/RESULT.md` — lifecycle transaction/state/limits/constraints foundation; coordinator PASS.
 3. `AUTH-02b/PLAN.md`, `AUTH-02b/RESULT.md` — mandatory email verification + resend + UI; coordinator PASS.
 4. `AUTH-03/PLAN.md`, `AUTH-03/RESULT.md` — recovery/reset + authenticated password creation for Google-only; coordinator PASS.
-5. `AUTH-04/PLAN.md` — **активная** stacked-ступень: own Account & security completion.
-6. Следующие stage-файлы создаются только после coordinator checkpoint предыдущей ступени.
-7. AUTH-07 — финальный review/security gate, не обычная implementation-ступень.
+5. `AUTH-04/PLAN.md`, `AUTH-04/RESULT.md` — own Account & security completion; coordinator PASS on corrected exact head.
+6. `AUTH-05/PLAN.md` — **активная** stacked-ступень: anti-abuse completion.
+7. Следующие stage-файлы создаются только после coordinator checkpoint предыдущей ступени.
+8. AUTH-07 — финальный review/security gate, не обычная implementation-ступень.
