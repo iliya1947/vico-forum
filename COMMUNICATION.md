@@ -2,31 +2,25 @@
 
 ## Общий контекст
 
-1. Authentication lifecycle выполняется stacked AUTH-01→AUTH-06, затем AUTH-07 final security gate.
-2. Better Auth остаётся identity/session provider; explicit linking only; AccountState/Owner History/Settings переиспользуются.
-3. Реальные mail/Google/anti-bot providers и Stage-6 activation остаются заблокированными.
-4. По решению владельца Ада / Business GPT-6.2 заменила Лёву для дальнейшей технической работы.
+1. Authentication lifecycle поставляется stacked AUTH-01→AUTH-06, затем AUTH-07 final security gate.
+2. Better Auth остаётся authentication/session provider; implicit Google↔credential linking запрещён; AccountState, Owner History/Monitoring и Settings переиспользуются.
+3. Реальные mail/Google/anti-bot providers и Stage-6 activation заблокированы.
+4. По прямому решению владельца дальнейшую техническую работу после Лёвы выполняет Ада / Business GPT-6.2.
 
-## Whole-feature review
+## Принятый corrected AUTH-05
 
-PR #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`: AUTH-06 AUTHOR PASS и green evidence подтверждены, но whole-feature coordinator review Миры — **HOLD**.
+AUTH-05 / PR #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — **AUTHOR PASS + COORDINATOR PASS**.
 
-Подтверждён один blocker: **F01 registration-challenge email enumeration**. В AUTH-05 email challenge existence precheck решает, выполнять ли challenge: existing duplicate может получить neutral 200 без challenge, тогда как fresh email с тем же missing/rejected/unavailable challenge получает denial/unavailable. Это публично различает существующий и новый email при открытой SET-02 регистрации и противоречит AUTH-05 no-enumeration contract.
+Whole-feature F01 устранён локальной correction: при required challenge и открытой email registration challenge admission больше не зависит от account existence до native signup; negative outcomes выровнены для existing/fresh, valid duplicate остаётся neutral. Actual SET-02 create-user gate и provider-neutral boundary сохранены. Permanent deliberate closure semantics из `docs/SETTINGS.md` не менялись.
 
-Подробный evidence и граница finding: `stages/AUTH-06/REVIEW.md`.
+Exact-head CI #45882443114 PASS; 20/20 applicable connected acceptance PASS. Подробный повторный checkpoint — `stages/AUTH-05/RESULT.md`.
 
-Существующий deliberate SET-02 closure semantics из `docs/SETTINGS.md` не является отдельным finding.
+Прежний F02 снят: correction не меняет telemetry, а permanent `docs/SUPER_ADMIN.md` прямо допускает canonical trusted ingress IP с source quality в exact-Owner-only telemetry/History. Untrusted forwarding headers и private challenge/request material authority не получили.
 
-## Correction route
+## AUTH-06 после изменения нижней ступени
 
-1. Finding принадлежит AUTH-05 product implementation → correction в PR #394.
-2. AUTH-06 #395 остаётся test/evidence package и не принимает product fix.
-3. После corrected AUTH-05: coordinator checkpoint Миры.
-4. При PASS — sync AUTH-06 на новый base и повторная author/evidence verification.
-5. Затем whole-feature coordinator review заново.
-6. AUTH-07 только после PASS.
-7. Ада после implementation correction не является independent final reviewer; финальный reviewer будет назначен отдельно.
+PR #395 всё ещё указывает на прежний exact `2eb3f9c303ad1b67d5348664267eca665f079cf7`, построенный поверх superseded AUTH-05. Его старые AUTHOR PASS/CI/acceptance остаются evidence прежней сборки, но не являются final evidence corrected stack.
 
-## Актуальный результат correction (Ада)
+Следующий отдельный переход — sync/reverification #395 поверх accepted AUTH-05 `dbbfe1c05...`, затем повторный whole-feature coordinator review. До этого AUTH-07 заблокирован.
 
-AUTH-05 #394 exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` — AUTHOR PASS, отдельно CI и 20/20 connected acceptance PASS. F01 исправлен; прежний F02 отозван: canonical IP в exact-Owner-only telemetry/History прямо разрешён permanent SA-02 contract. Новых подтверждённых blocker нет. Ада STOP; Мира проводит повторный coordinator checkpoint; evidence в stages/AUTH-05/RESULT.md. AUTH-06 #395 до PASS и отдельного назначения не синхронизировать.
+Поскольку Ада участвовала в correction implementation, independent final whole-feature reviewer должен быть другим агентом.
