@@ -1,18 +1,23 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Текущее состояние authentication lifecycle
+## Принятый stack
 
 1. AUTH-01–AUTH-04 прошли coordinator checkpoints.
-2. AUTH-05 #394 corrected exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` принят; F01 email-enumeration через registration challenge закрыт.
-3. AUTH-06 #395 синхронизирован поверх corrected AUTH-05. Exact head `615d93598daf78945a86fbdc4255bc778ae3403f`.
-4. Лёва завершил AUTHOR PASS; Мира завершила повторный whole-feature **COORDINATOR PASS**. Confirmed current-scope blockers: 0.
-5. CI #45897164115 и 20/20 applicable connected acceptance завершились SUCCESS на новом head; ключевые logs подтверждают whole-lifecycle 62/62, F01 differential и полный AUTH-06 browser flow.
-6. Repository/local-CI PASS не является external/deployed acceptance.
+2. AUTH-05 #394 corrected exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` принят; F01 закрыт.
+3. AUTH-06 #395 exact `615d93598daf78945a86fbdc4255bc778ae3403f` — AUTHOR PASS + whole-feature COORDINATOR PASS, 0 blockers.
+4. Exact-head CI и 20/20 connected acceptance на AUTH-06 — SUCCESS.
+5. Repository/local-CI evidence не является Stage-6/deployed acceptance.
 
-## Роли после реализации
+## Активная подзадача — FINAL ASSEMBLY
 
-Лёва участвовал в AUTH-06 sync/reverification. Ада участвовала в AUTH-05 correction. Поэтому ни Лёва, ни Ада не могут выполнять independent final whole-feature review этой assembled feature. Reviewer назначается отдельно после final assembly/coordinator stage.
+По прямой команде владельца **Ада / Business GPT-6.2** назначена исполнителем final assembly.
 
-## Следующий процессный переход
+Задача: перенести accepted final AUTH-06 state в первый implementation PR #388 к current main, не менять product implementation, закрыть intermediate PRs как superseded и получить final stable exact head с author self-check и применимыми CI/acceptance. Детали и done criteria: `stages/FINAL-ASSEMBLY/PLAN.md`.
 
-Final AUTH-06 head должен быть перенесён в первый implementation PR #388 согласно stacked workflow; intermediate PRs закрываются superseded. После assembly нужен stable-head final author/review/security gate. Переход пока не активирован; AUTH-07 и external Stage-6 действия не начинать.
+Если current main изменился либо assembly требует изменения accepted product code, Ада ставит HOLD и STOP вместо импровизированного исправления.
+
+После PASS assembly следующий агент — Мира для final whole-feature coordinator review. AUTH-07 пока не активирован.
+
+## Независимость
+
+Лёва участвовал в AUTH-06; Ада участвовала в AUTH-05 correction и теперь final assembly. Оба не могут быть independent final whole-feature reviewer. Reviewer назначается отдельно после coordinator PASS Миры.
