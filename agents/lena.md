@@ -1,6 +1,7 @@
 # Лена — UI progress preview: active handoff
 
-- Исполнитель текущего **P2** в service PR #369.
-- Продолжить с Draft #385 exact `56f63e1e0732a76419e4f3fd74f95e65e699de0a`.
-- Следующий bounded шаг: **P2-B8b1**.
-- Не начинать P2 заново; остальной контекст и правила взять из актуальных `AGENTS.md`, `RULES.md`, `WORKFLOW.md` и `PLAN.md`.
+- Current assignment: **SYNC-P0** for service PR #369.
+- Current main: `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
+- Preserve the accepted P0 result, synchronize its implementation line with current main, run applicable P0 evidence, then hand the new exact P0 head to Mira.
+- Do not sync P1/P2 or resume B8b1 until P0 receives the renewed coordinator PASS.
+- Read the authoritative details from current `AGENTS.md` and `WORKFLOW.md`.
