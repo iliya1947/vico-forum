@@ -170,6 +170,8 @@ function Value({name,value,locale}: {name:string;value:OwnerHistoryValue;locale:
       <span> · </span><bdi>{value}</bdi></>;
   if(typeof value==="string" && numericFields.has(name) && /^[0-9]+$/.test(value))
     return <bdi>{new Intl.NumberFormat(locale).format(BigInt(value))}</bdi>;
+  if(name==="mailPurpose"&&value==="email-change-confirmation")return <span>{t("authAccountOldPending")}</span>;
+  if(name==="mailPurpose"&&value==="email-change-verification")return <span>{t("authAccountNewPending")}</span>;
   if(value==="email-change"&&(name==="operation"||name==="reason"))return <span>{t("authAccountChangeEmail")}</span>;
   if(name==="operation"&&value==="unlink-account")return <span>{t("authAccountUnlinkGoogle")}</span>;
   if(name==="operation"&&value==="email-verification")return <span>{t("authVerificationHeading")}</span>;

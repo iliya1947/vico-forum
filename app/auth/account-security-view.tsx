@@ -17,10 +17,17 @@ export function AccountLifecycleView({ locale, userId, sessionId, email, verifie
   const [pendingRequest, setPendingRequest] = useState(false);
   const [result, setResult] = useState<"ok" | "failed" | "rate-limited" | null>(null);
   useEffect(() => {
-    if (proof.current === undefined) proof.current = takeCredentialProof("email-change");
-    setConfirming(!!proof.current && enabled);
+    const capture = () => {
+      const candidate = takeCredentialProof("email-change");
+      if (candidate || proof.current === undefined) proof.current = candidate;
+      setConfirming(!!proof.current && enabled);
+    };
+    capture();
     setHydrated(true);
+    window.addEventListener("hashchange", capture);
+    return () => window.removeEventListener("hashchange", capture);
   }, [enabled]);
+
   async function command(endpoint: string, body: Record<string, string>) {
     if (busy.current || !enabled) return;
     busy.current = true;
@@ -58,7 +65,7 @@ export function AccountLifecycleView({ locale, userId, sessionId, email, verifie
     <h3 id="account-email-heading">{t("authAccountEmail")}</h3>
     <p><bdi>{email}</bdi> · {t(verified ? "authAccountVerified" : "authAccountUnverified")}</p>
     {pending ? <p role="status">{t(pending.phase === "old-address" ? "authAccountOldPending" : "authAccountNewPending")}
-      {" "}<time dateTime={pending.expiresAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(pending.expiresAt))}</time></p> : null}
+      {" "}<time dateTime={pending.expiresAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short", timeZone: "UTC" }).format(new Date(pending.expiresAt))}</time></p> : null}
     {result ? <p role={result === "ok" ? "status" : "alert"}>
       {t(result === "ok" ? "authAccountRequestDone" : result === "rate-limited" ? "authVerificationRateLimited" : "authAccountConflict")}
     </p> : null}
