@@ -55,3 +55,5 @@
 27. **2026-11-26:** AUTH-02b в PR #391 на exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` прошёл повторный coordinator checkpoint Миры: PASS, 0 confirmed current-scope blocking defects. Credential GET leakage finding закрыт явным POST и no-JS/pre-hydration browser regression; exact-head CI и 19/19 applicable acceptance PASS. Следующая stacked-ступень AUTH-03 остаётся назначенной Лёве и активируется отдельным переходом.
 
 28. **2026-11-26:** после coordinator PASS AUTH-02b активирован AUTH-03 — recovery/reset existing credential + authenticated password creation for Google-only. Исполнитель по прямому решению владельца — Лёва / Codex-6.1 Sol; stacked base — AUTH-02b exact `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180`. Email change/unlink и external activation не входят.
+
+29. **2026-11-26:** AUTH-03 #392 на exact `ce75ff3629a4adae9941703a33f6d0366bd7f570` получил coordinator HOLD. Подтверждены change-password/recovery invalidation defect, plan↔implementation contradiction recovery-token architecture и неполная AUTH-03 mail/context observability. AUTH-04 заблокирован до correction + повторного checkpoint.
