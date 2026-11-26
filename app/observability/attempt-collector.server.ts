@@ -37,7 +37,7 @@ export class RequestAttemptCollector {
     }
     this.pending.push({
       ...input, networkIp: this.source.networkIp, networkQuality: this.source.networkQuality,
-      actorUserId: ["email-verification", "verification-send", "password-reset-request", "password-reset"].includes(input.operation)
+      actorUserId: ["email-verification", "verification-send", "password-reset-request", "password-reset", "registration-challenge"].includes(input.operation)
         ? null : this.actorId, occurredAt: new Date(),
     });
   }
@@ -51,10 +51,17 @@ export class RequestAttemptCollector {
     });
   }
 
+  recordRegistrationChallengeFailure(code: "invalid" | "unavailable"): void {
+    if (this.registrationDenied) return;
+    this.registrationDenied = true;
+    this.add({ surface: "auth", operation: "registration-challenge", directCode: code,
+      outcome: code === "invalid" ? "denied" : "unavailable" });
+  }
+
   recordHttpFailure(operation: AttemptOperation, status: number): void {
     // Better Auth may turn the same registration-policy denial into HTTP 403.
     // Keep one canonical denial record, including OAuth redirect paths.
-    if (operation === "sign-up" && this.registrationDenied) return;
+    if ((operation === "sign-up" || operation === "sign-in") && this.registrationDenied) return;
     if (!Number.isInteger(status) || status < 400 || status > 599) return;
     const outcome: AttemptOutcome = status === 429 ? "rate-limited"
       : status === 503 ? "unavailable"

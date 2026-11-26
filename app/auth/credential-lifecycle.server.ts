@@ -121,6 +121,7 @@ export class AuthCredentialLifecycle {
 
   async requestCreation(session: FreshCredentialSession, expectedEmail: string): Promise<IssuedLifecycleProof> {
     this.assertOutsideTransaction();
+    await this.budget.run({ kind: "own", purpose: "password-create", userId: session.userId }, async () => undefined);
     return this.budget.run({ kind: "mail", purpose: "password-create", userId: session.userId, email: expectedEmail },
       async () => this.state.withSubject(session.userId, async subject => {
         await this.assertFresh(session);

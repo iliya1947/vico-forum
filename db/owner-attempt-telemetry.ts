@@ -11,7 +11,7 @@ export type AttemptSurface = "auth" | "access";
 export type AttemptOperation =
   | "sign-up" | "sign-in" | "method-link" | "password-change"
   | "session-revoke" | "session-revoke-all" | "sign-out"
-  | "registration-admission" | "owner-guard" | "email-verification" | "verification-send" | "password-reset-request" | "password-reset" | "password-create" | "email-change" | "unlink-account";
+  | "registration-admission" | "registration-challenge" | "owner-guard" | "email-verification" | "verification-send" | "password-reset-request" | "password-reset" | "password-create" | "email-change" | "unlink-account";
 export type AttemptOutcome = "denied" | "failed" | "rate-limited" | "unavailable";
 export type AttemptDirectCode =
   | "unauthorized" | "forbidden" | "invalid" | "rate-limited" | "unavailable";
@@ -41,7 +41,7 @@ export class AttemptTelemetryCommitUncertainError extends Error {}
 const OPERATIONS: readonly AttemptOperation[] = [
   "sign-up", "sign-in", "method-link", "password-change",
   "session-revoke", "session-revoke-all", "sign-out",
-  "registration-admission", "owner-guard", "email-verification", "verification-send", "password-reset-request", "password-reset", "password-create", "email-change", "unlink-account",
+  "registration-admission", "registration-challenge", "owner-guard", "email-verification", "verification-send", "password-reset-request", "password-reset", "password-create", "email-change", "unlink-account",
 ];
 const OUTCOMES: readonly AttemptOutcome[] = ["denied", "failed", "rate-limited", "unavailable"];
 const DIRECT_CODES: readonly AttemptDirectCode[] = [

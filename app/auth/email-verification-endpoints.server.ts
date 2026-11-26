@@ -7,6 +7,7 @@ import { LifecycleBudgetExceededError, type AuthLifecycleBudget } from "./lifecy
 import { InvalidLifecycleProofError } from "./lifecycle-state.server";
 import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 import type { SignupVerificationEvidence } from "./signup-verification-evidence.server";
+import type { RegistrationChallengeAdmission } from "./registration-challenge-admission.server";
 import type { VerificationAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
@@ -65,6 +66,7 @@ export function emailVerificationEndpoints(
   evidence: SignupVerificationEvidence,
   unavailable: (error: unknown) => boolean,
   observeDirectFailure?: (operation: VerificationAttemptOperation, code: VerificationAttemptCode) => void,
+  challenge?: RegistrationChallengeAdmission,
 ): EmailVerificationEndpoints {
   async function command<T>(work: () => Promise<T>, directOperation?: VerificationAttemptOperation): Promise<T> {
     try { return await work(); }
@@ -108,10 +110,13 @@ export function emailVerificationEndpoints(
         // issuance call (no double spend, no refund on a failed domain operation).
         await budget.run({ kind: "signup" }, async () => undefined);
         await budget.run({ kind: "mail", purpose: "email-verification", email }, async () => {
-          const created = await evidence.run(email, () => dispatchAuthEndpoint(nativeSignup, {
-            context: ctx.context, body: ctx.body, headers: ctx.headers,
+          const { registrationChallengeProof, ...body } = ctx.body;
+          const signup = () => evidence.run(email, () => dispatchAuthEndpoint(nativeSignup, {
+            context: ctx.context, body, headers: ctx.headers,
             request: ctx.request, method: "POST", asResponse: false,
           }));
+          const created = challenge ? await challenge.email(email, registrationChallengeProof,
+            async () => !!await ctx.context.internalAdapter.findUserByEmail(email), signup) : await signup();
           if (transaction.controlFailure) throw transaction.controlFailure;
           // Native dispatch returns only after its owned transaction completes.
           // A duplicate/denied/rolled-back signup cannot issue a proof.

@@ -1669,6 +1669,7 @@ export const canonicalEnglishCatalog = {
     sa07IMailOutcomeValue: message("sa07IMailOutcomeValue", "Mail outcome", "AUTH-02b safe categorical mail observation."),
     sa07ILastVerificationMail: message("sa07ILastVerificationMail", "Last retained verification mail outcome", "AUTH-02b passive integration observation; not proof of delivery."),
     authVerificationRequired: message("authVerificationRequired", "Confirm your email before signing in.", "Email credential verification requirement."),
+    authRegistrationChallenge: message("authRegistrationChallenge", "Registration security check", "Provider-neutral fresh-registration attempt label."),
     authAccountEmail: message("authAccountEmail", "Email address", "Own account lifecycle presentation."),
     authAccountVerified: message("authAccountVerified", "Verified", "Own account lifecycle presentation."),
     authAccountUnverified: message("authAccountUnverified", "Awaiting verification", "Own account lifecycle presentation."),

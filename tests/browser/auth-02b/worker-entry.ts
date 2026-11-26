@@ -10,7 +10,7 @@ import { resolveRuntimeDatabaseConnectionStrings } from "../../../workers/databa
 import type { AuthMailTransport } from "../../../app/auth/auth-mail-contract.server";
 
 const localOrigin = "http://127.0.0.1:4242";
-export default createApplication((env, context) => {
+export const createConnectedMailRuntime: NonNullable<Parameters<typeof createApplication>[0]> = (env, context) => {
   const connectionString = resolveRuntimeDatabaseConnectionStrings(env).webConnectionString;
   const fakeTransport: AuthMailTransport = {
     async send(message) {
@@ -55,4 +55,5 @@ export default createApplication((env, context) => {
     },
   };
   return createRequestAuthMailRuntime(env, context, "test", { fakeTransport });
-});
+};
+export default createApplication(createConnectedMailRuntime);

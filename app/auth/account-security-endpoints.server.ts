@@ -9,6 +9,7 @@ import { LifecycleBudgetExceededError } from "./lifecycle-budget.server";
 import { deliverLifecycleMail, type AuthMailRuntime } from "./auth-mail.server";
 import { verificationMailDestination } from "./auth-mail-urls.server";
 import type { OwnerOperationalFactSink } from "../observability/operational-facts";
+import { readOwnSession } from "./own-session.server";
 
 type EmailBody = ReturnType<typeof changeEmail.options.body.strict>;
 type UnlinkBody = ReturnType<typeof unlinkAccount.options.body.strict>;
@@ -42,24 +43,13 @@ export function accountSecurityEndpoints(service: AccountSecurityLifecycle, unav
       if (error instanceof AccountMissingError || error instanceof AccountInactiveError) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, headers);
       if (error instanceof InvalidLifecycleProofError || error instanceof AuthMailValidationError) throw new APIError("BAD_REQUEST", { message: "Invalid or expired request" }, headers);
       if (error instanceof LifecycleBudgetExceededError) throw new APIError("TOO_MANY_REQUESTS", { message: "Too many requests" },
-        { ...headers, "Retry-After": String(error.retryAfterSeconds) });
+        { ...headers, "Retry-After": String(error.retryAfterSeconds), "X-Retry-After": String(error.retryAfterSeconds) });
       if (unavailable(error)) throw new APIError("SERVICE_UNAVAILABLE", { message: "Service unavailable" }, headers);
       throw error;
     }
   }
   async function actor(ctx: Parameters<typeof getSessionFromCtx>[0]) {
-    // Pinned getSessionFromCtx swallows adapter failures. Preserve the original
-    // read error locally while retaining native cookie and session validation.
-    let readFailure: { error: unknown } | undefined;
-    const adapter = ctx.context.internalAdapter;
-    const current = await getSessionFromCtx({ ...ctx, context: { ...ctx.context, session: null,
-      internalAdapter: { ...adapter, async findSession(...args) {
-        try { return await adapter.findSession(...args); }
-        catch (error) { readFailure = { error }; throw error; }
-      } },
-    } },
-      { disableCookieCache: true, disableRefresh: true });
-    if (readFailure) throw readFailure.error;
+    const current = await readOwnSession(ctx);
     if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, headers);
     try { observeResolvedActor?.(current.user.id); } catch { /* Passive recording. */ }
     if (ctx.headers?.get("x-vico-account-user") !== current.user.id ||

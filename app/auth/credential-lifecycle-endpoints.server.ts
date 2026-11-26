@@ -12,6 +12,7 @@ import { AccountMissingError, AccountInactiveError } from "../../db/account-stat
 import type { OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { CredentialAttemptOperation, VerificationAttemptCode } from "../observability/attempt-collector.server";
 import { LifecycleBudgetExceededError } from "./lifecycle-budget.server";
+import { readOwnSession } from "./own-session.server";
 
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
 type ResetRequest = ReturnType<typeof requestPasswordReset.options.body.strict>;
@@ -80,8 +81,7 @@ export function credentialLifecycleEndpoints(service: AuthCredentialLifecycle,
   }
 
   async function actor(ctx: Parameters<typeof getSessionFromCtx>[0]) {
-    ctx.context.session = null;
-    const current = await getSessionFromCtx(ctx, { disableRefresh: true, disableCookieCache: true });
+    const current = await readOwnSession(ctx);
     if (!current) throw new APIError("UNAUTHORIZED", { message: "Unauthorized" }, privateHeaders);
     if (ctx.headers?.get("x-vico-credential-user") !== current.user.id ||
       ctx.headers?.get("x-vico-credential-session") !== current.session.id) {

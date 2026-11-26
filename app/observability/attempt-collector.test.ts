@@ -158,4 +158,15 @@ describe("SA02 request-local collector and canonical endpoint instrumentation", 
     ]);
     expect(JSON.stringify(f.records)).not.toContain("SECRET");
   });
+  it("records one fresh-registration challenge denial without an ambient actor or duplicate auth failure", async () => {
+    const f=fixture();
+    f.collector.setResolvedActor("unrelated-account");
+    f.collector.recordRegistrationChallengeFailure("unavailable");
+    f.collector.recordRegistrationChallengeFailure("invalid");
+    f.collector.recordHttpFailure("sign-up",503);
+    f.collector.recordHttpFailure("sign-in",403);
+    await f.collector.flush();
+    expect(f.records).toMatchObject([{operation:"registration-challenge",outcome:"unavailable",directCode:"unavailable",actorUserId:null}]);
+    expect(f.records).toHaveLength(1);
+  });
 });

@@ -547,6 +547,13 @@
       "when": 1795659156581,
       "tag": "0077_auth_account_security_observation",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1795696548652,
+      "tag": "0078_auth_registration_challenge_observation",
+      "breakpoints": true
     }
   ]
 }

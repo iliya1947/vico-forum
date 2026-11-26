@@ -135,7 +135,7 @@ const LEGACY_PERSON_SQL = [
   " and (e.actor_user_id=$1 or e.target_user_id=$1)",
   "union all",
   "select 'attempt-pattern'::text,p.id::text,p.admitted_at,p.admitted_at,",
-  " case when p.surface='auth' and p.operation='registration-admission'",
+  " case when p.surface='auth' and p.operation in ('registration-admission','registration-challenge')",
   " then ARRAY['security.auth','accounts.registration','integrations.authentication']::text[]",
   " when p.surface='auth' then ARRAY['security.auth','integrations.authentication']::text[]",
   " else ARRAY['security.access']::text[] end,",

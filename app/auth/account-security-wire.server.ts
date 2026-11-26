@@ -1,14 +1,40 @@
 const ownPaths = new Set(["/change-email", "/confirm-email-change", "/unlink-account"]);
 const privateHeaders = { "Cache-Control": "private, no-store", "Referrer-Policy": "no-referrer" };
+function wirePath(request: Request, baseURL: string): string | undefined {
+  const base = new URL(baseURL).pathname.replace(/\/$/, "");
+  const path = new URL(request.url).pathname;
+  if (!path.startsWith(base + "/")) return;
+  try { return path.slice(base.length).split("/").map(part => decodeURIComponent(part).toLowerCase()).join("/").replace(/\/+$/, ""); }
+  catch { return; }
+}
+
+/** Bound registration/challenge input before the native body parser. Preserve
+ * native JSON/form media semantics and its own field validation afterwards.
+ */
+export async function validateRegistrationWire(request: Request, baseURL: string): Promise<{ response: Response } | undefined> {
+  const path = wirePath(request, baseURL);
+  if (request.method !== "POST" || !path || !["/sign-up/email", "/sign-in/social"].includes(path)) return;
+  const reader = request.clone().body?.getReader();
+  if (!reader) return;
+  try {
+    let size = 0;
+    for (;;) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      size += chunk.value.byteLength;
+      if (size > 32_768) return { response: Response.json({ message: "Invalid request" }, { status: 413, headers: privateHeaders }) };
+    }
+  } catch { return { response: Response.json({ message: "Invalid request" }, { status: 400, headers: privateHeaders }) }; }
+  finally { void reader.cancel().catch(() => {}); }
+}
 
 /** Inspect the wire representation before better-call collapses object keys.
  * These endpoints accept flat JSON objects. Their strict schemas still own
  * the field/type allowlist, for HTTP and direct calls alike.
  */
 export async function validateAccountSecurityWire(request: Request, baseURL: string): Promise<{ response: Response } | undefined> {
-  const base = new URL(baseURL).pathname.replace(/\/$/, "");
-  const path = new URL(request.url).pathname.replace(/\/+$/, "").slice(base.length);
-  if (request.method !== "POST" || !ownPaths.has(path)) return;
+  const path = wirePath(request, baseURL);
+  if (request.method !== "POST" || !path || !ownPaths.has(path)) return;
   const reject = (status: number) => ({ response: Response.json({ message: "Invalid request", code: "BAD_REQUEST" },
     { status, headers: privateHeaders }) });
   // Match the router's supported media type explicitly, including parameters.

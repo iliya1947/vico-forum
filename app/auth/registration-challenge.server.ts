@@ -29,6 +29,8 @@ export type RegistrationChallengeDecision = "not-required" | "passed" | "rejecte
 export class RegistrationChallenge {
   constructor(private readonly config: RegistrationChallengeConfig = DISABLED_REGISTRATION_CHALLENGE) {}
 
+  get required(): boolean { return this.config.mode !== "disabled"; }
+
   async verifyRegistrationChallenge(expected: RegistrationChallengeBinding,
     proof: string | undefined): Promise<RegistrationChallengeDecision> {
     if (this.config.mode === "disabled") return "not-required";
@@ -40,8 +42,16 @@ export class RegistrationChallenge {
     // Only the adapter defines accepted proof format/size, TTL and replay
     // rules. The endpoint must bound its request body independently.
     const binding = Object.freeze({ ...expected });
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const result = await this.config.verifier.verifyRegistrationChallenge({ proof, expected: binding });
+      // Bound the server exchange even when an injected verifier never settles.
+      // A late result cannot authorize this attempt or trigger an automatic retry.
+      const result = await Promise.race([
+        this.config.verifier.verifyRegistrationChallenge({ proof, expected: binding }),
+        new Promise<RegistrationChallengeResult>(resolve => {
+          timer = setTimeout(() => resolve({ status: "unavailable" }), 5000);
+        }),
+      ]);
       if (result.status === "rejected" || result.status === "unavailable") return result.status;
       if (result.status !== "passed" || !result.binding ||
         result.binding.purpose !== binding.purpose || result.binding.method !== binding.method ||
@@ -50,6 +60,13 @@ export class RegistrationChallenge {
     } catch {
       // Never expose provider errors or silently substitute a fake verifier.
       return "unavailable";
-    }
+    } finally { clearTimeout(timer); }
   }
+}
+
+/** A production configuration never synthesizes a verifier or enables a fake.
+ * Unknown configuration is closed in the same way as required without one.
+ */
+export function registrationChallengeConfig(mode: string | undefined): RegistrationChallengeConfig {
+  return mode === undefined || mode === "disabled" ? DISABLED_REGISTRATION_CHALLENGE : { mode: "required" };
 }

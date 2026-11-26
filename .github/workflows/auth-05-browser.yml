@@ -1,0 +1,110 @@
+name: AUTH-05 connected anti-abuse Worker Chromium acceptance
+
+on:
+  pull_request:
+    types:
+      - labeled
+    paths:
+      - "app/auth/**"
+      - "app/routes/credential-*.tsx"
+      - "app/routes/verify-email.tsx"
+      - "app/routes/resend-verification.tsx"
+      - "app/routes.ts"
+      - "app/localization/**"
+      - "app/observability/**"
+      - "db/**"
+      - "drizzle/**"
+      - "workers/**"
+      - "tests/browser/auth-02b/**"
+      - "tests/browser/auth-05/**"
+      - ".github/workflows/auth-05-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  anti_abuse_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_auth02b_browser_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_auth02b_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_auth02b_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_auth02b_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_auth02b_browser_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate disposable PostgreSQL and create private test mailbox
+        run: |
+          node --input-type=module -e '
+            import pg from "pg";
+            import {drizzle} from "drizzle-orm/node-postgres";
+            import {migrate} from "drizzle-orm/node-postgres/migrator";
+            const c=new pg.Client({connectionString:process.env.DATABASE_URL});
+            await c.connect();
+            try {
+              const {rows}=await c.query("select current_database() db,current_schema() schema");
+              if(rows[0]?.db!=="vico_auth02b_browser_test" || rows[0]?.schema!=="public") throw new Error("Wrong test database");
+              await migrate(drizzle(c),{migrationsFolder:"./drizzle"});
+              await c.query("create table auth02b_test_mail (seq bigint generated always as identity primary key,recipient text not null,operation_id text not null unique,subject text not null,html text not null,body_text text not null)");
+              await c.query("create table auth05_test_policy(id int primary key,mode text); insert into auth05_test_policy values(1,$q$required$q$)");
+              await c.query("create table auth05_test_proofs(digest text primary key,purpose text,method text,expires_at timestamptz,consumed boolean default false,outcome text)");
+            } finally {await c.end();}
+          '
+          python3 -m venv "$RUNNER_TEMP/auth02b-playwright"
+          "$RUNNER_TEMP/auth02b-playwright/bin/pip" install playwright==1.62.0
+      - name: Build and run actual Worker with local-only mail capture
+        run: |
+          umask 077
+          cp wrangler.jsonc "$RUNNER_TEMP/auth02b-original-wrangler.jsonc"
+          trap 'if [ -n "${preview_pid:-}" ]; then kill "$preview_pid" 2>/dev/null || true; fi; cp "$RUNNER_TEMP/auth02b-original-wrangler.jsonc" wrangler.jsonc; rm -f .dev.vars' EXIT
+          printf '%s\n' \
+            'BETTER_AUTH_SECRET=auth02b-local-only-secret-0123456789abcdef0123456789abcdef' \
+            'BETTER_AUTH_URL=http://127.0.0.1:4242' \
+            'GOOGLE_CLIENT_ID=local-unused' \
+            'GOOGLE_CLIENT_SECRET=local-unused' \
+            'AUTH_MAIL_MODE=fake' > .dev.vars
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const p="wrangler.jsonc",c=JSON.parse(readFileSync(p,"utf8"));
+            if(c.main!=="./workers/app.ts") throw new Error("Unexpected entrypoint");
+            c.main="./tests/browser/auth-05/worker-entry.ts";
+            writeFileSync(p,JSON.stringify(c,null,2));
+          '
+          pnpm build
+          pnpm exec vite preview --host 127.0.0.1 --port 4242 --strictPort > "$RUNNER_TEMP/auth02b-worker.log" 2>&1 &
+          preview_pid=$!
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl -sf --max-time 2 http://127.0.0.1:4242/en/ > /dev/null; then ready=true; break; fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then echo "Local Worker readiness failed"; exit 1; fi
+          "$RUNNER_TEMP/auth02b-playwright/bin/python" tests/browser/auth-05/check.py
+      # Do not upload the local mailbox, Worker logs, or token-bearing traces.

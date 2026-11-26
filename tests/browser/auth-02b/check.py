@@ -423,6 +423,19 @@ def run():
         record("own-google-unlink-preserves-usable-password-and-session")
         with create_page.expect_response(lambda response: response.url == base + "/api/auth/unlink-account") as unlinked:
             create_page.get_by_role("button", name="Disconnect Google").click()
+        if unlinked.value.status == 429:
+            record("own-rate-limit-expiry-and-explicit-UI-retry")
+            # Request/create + the three email phases exhaust the common own
+            # window. Honor its real expiry and perform one explicit UI retry.
+            assert private(unlinked.value).headers.get("retry-after", "").isdigit()
+            delay = int(unlinked.value.headers["retry-after"])
+            assert 1 <= delay <= 60
+            expect(create_page.get_by_role("alert")).to_contain_text("Too many requests")
+            for _ in range(delay):
+                time.sleep(1)
+            time.sleep(.2)
+            with create_page.expect_response(lambda response: response.url == base + "/api/auth/unlink-account") as unlinked:
+                create_page.get_by_role("button", name="Disconnect Google").click()
         assert private(unlinked.value).status == 200
         expect(create_page.get_by_role("button", name="Disconnect Google")).to_have_count(0)
         assert sql("select provider_id from account where user_id=$1", [ru_id]) == [{"provider_id": "credential"}]

@@ -1,9 +1,28 @@
 import { describe, expect, it, vi } from "vitest";
-import { RegistrationChallenge, type RegistrationChallengeBinding, type RegistrationChallengeVerifier } from "./registration-challenge.server";
+import { RegistrationChallenge, registrationChallengeConfig, type RegistrationChallengeBinding, type RegistrationChallengeVerifier } from "./registration-challenge.server";
 
 const binding: RegistrationChallengeBinding = { purpose: "fresh-registration", method: "email", nonce: "test-server-bound-nonce" };
 
 describe("AUTH-02a provider-neutral challenge injection", () => {
+  it("uses explicit configuration with no verifier fallback", () => {
+    expect(registrationChallengeConfig(undefined)).toEqual({ mode: "disabled" });
+    expect(registrationChallengeConfig("disabled")).toEqual({ mode: "disabled" });
+    expect(registrationChallengeConfig("required")).toEqual({ mode: "required" });
+    expect(registrationChallengeConfig("fake")).toEqual({ mode: "required" });
+  });
+  it("bounds a hung verifier and cannot use its late result", async () => {
+    vi.useFakeTimers();
+    let late!: (result: Awaited<ReturnType<RegistrationChallengeVerifier["verifyRegistrationChallenge"]>>) => void;
+    const verifier: RegistrationChallengeVerifier = { verifyRegistrationChallenge: () => new Promise(resolve => { late = resolve; }) };
+    try {
+      const result = new RegistrationChallenge({ mode: "required", verifier }).verifyRegistrationChallenge(binding, "synthetic");
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(await result).toBe("unavailable");
+      late({ status: "passed", binding });
+      await Promise.resolve();
+      expect(await result).toBe("unavailable");
+    } finally { vi.useRealTimers(); }
+  });
   it("distinguishes disabled from provider-verified, and required without a verifier fails closed", async () => {
     expect(await new RegistrationChallenge().verifyRegistrationChallenge(binding, undefined)).toBe("not-required");
     expect(await new RegistrationChallenge({ mode: "required" }).verifyRegistrationChallenge(binding, "proof"))

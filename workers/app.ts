@@ -28,6 +28,7 @@ import { ContentTranslationPresentationService } from "../app/localization/conte
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
 import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
+import type { RegistrationChallengeConfig } from "../app/auth/registration-challenge.server";
 import { authMailRuntimeContext, type AuthMailEnvironment } from "../app/auth/auth-mail.server";
 import { createRequestAuthMailRuntime } from "./auth-mail";
 import { initializeAuthContext, withAuthSessionCookies, isGuestEmailVerificationRequest } from "../app/auth/session-context";
@@ -91,9 +92,10 @@ const requestHandler = createRequestHandler(
 
 type RequestMailFactory = (env: Env & AuthMailEnvironment, context: RouterContextProvider,
   execution: Parameters<typeof createRequestAuthMailRuntime>[2]) => ReturnType<typeof createRequestAuthMailRuntime>;
+type RequestChallengeFactory = (env: Env) => RegistrationChallengeConfig | Promise<RegistrationChallengeConfig>;
 
 async function applicationFetch(request: Request, env: Env, executionContext: ExecutionContext | undefined,
-  createMailRuntime: RequestMailFactory): Promise<Response> {
+  createMailRuntime: RequestMailFactory, createChallengeRuntime?: RequestChallengeFactory): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
     context.set(authMailRuntimeContext, createMailRuntime(
@@ -114,8 +116,10 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
       createHyperdriveAuthRuntime(
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
         () => collector.recordRegistrationDenied(), facts, { ingress, mail: context.get(authMailRuntimeContext),
+          registrationChallenge: await createChallengeRuntime?.(env),
           mailObservations: operational.sink,
           observeResolvedAccountActor: userId => { collector.setResolvedActor(userId); facts.setResolvedActor(userId); },
+          observeRegistrationChallengeFailure: code => collector.recordRegistrationChallengeFailure(code),
           observeVerificationDirectFailure: (operation, code) => collector.recordVerificationDirectFailure(operation, code) },
       ), collector);
     let authHeaders: Headers;
@@ -208,7 +212,8 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
 
 /** The default entrypoint never supplies local mail fixtures. A separate CI-only
  * entrypoint can inject the existing request-local mail boundary. */
-export function createApplication(createMailRuntime: RequestMailFactory = createRequestAuthMailRuntime) {
+export function createApplication(createMailRuntime: RequestMailFactory = createRequestAuthMailRuntime,
+  createChallengeRuntime?: RequestChallengeFactory) {
   return {
     async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
       const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
@@ -223,7 +228,7 @@ export function createApplication(createMailRuntime: RequestMailFactory = create
         return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
       };
       try {
-        return protect(await applicationFetch(request, env, executionContext, createMailRuntime));
+        return protect(await applicationFetch(request, env, executionContext, createMailRuntime, createChallengeRuntime));
       } catch (error) {
         if (!privateBoundary && !guestVerification) throw error;
         if (error instanceof Response && error.status < 500) return protect(error);

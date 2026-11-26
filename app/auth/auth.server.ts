@@ -22,6 +22,8 @@ import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./sessi
 import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
 import { authLifecyclePlugin, type AuthLifecycleDependencies } from "./lifecycle-plugin.server";
 import { SignupVerificationEvidence } from "./signup-verification-evidence.server";
+import { registrationChallengeConfig } from "./registration-challenge.server";
+import type { RegistrationChallengeAdmission } from "./registration-challenge-admission.server";
 import { isGuestEmailVerificationRequest } from "./session-context";
 import {
   account,
@@ -40,6 +42,7 @@ export interface BetterAuthEnvironment {
   readonly BETTER_AUTH_URL: string;
   readonly GOOGLE_CLIENT_ID: string;
   readonly GOOGLE_CLIENT_SECRET: string;
+  readonly AUTH_REGISTRATION_CHALLENGE_MODE?: string;
 }
 
 export const betterAuthSchema = { user, session, account, verification, rateLimit };
@@ -211,11 +214,9 @@ export function betterAuthOptions(
           // duplicate acknowledgement cannot swallow a failed SQL read and
           // cause COMMIT to be attempted against a still-blocked connection.
           let result = await lifecycle.runAdapterOperation(async () => registrationAdmission(data, context));
-          // The provider-neutral challenge exchange is AUTH-05. Until it is
-          // wired, a required mode cannot silently admit fresh email signup.
-          if (!result && data.source.action === "create-user" && data.source.method === "email-password" &&
-              dependencies?.registrationChallenge?.mode === "required") {
-            result = { error: "vico_registration_challenge_unavailable", errorDescription: "Registration unavailable" };
+          if (!result && data.source.action === "create-user") {
+            const registration = (context.context as unknown as { vicoRegistrationAdmission: RegistrationChallengeAdmission }).vicoRegistrationAdmission;
+            result = await registration.admit(data.source.method === "email-password" ? "email" : "google", data.user.email ?? "");
           }
           signupEvidence.noteAdmission(result);
           return result;
@@ -246,7 +247,8 @@ export function betterAuthOptions(
     } },
     plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
       signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error),
-      { ...dependencies, googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
+      { ...dependencies, registrationChallenge: dependencies?.registrationChallenge ?? registrationChallengeConfig(env.AUTH_REGISTRATION_CHALLENGE_MODE),
+        googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
       onActorStateError)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
@@ -404,7 +406,7 @@ export function createAuth(
         try {
           const result = await validateUserInfo(data, ctx);
           if (result && typeof result === "object" && "error" in result &&
-              typeof result.error === "string") {
+              typeof result.error === "string" && !result.error.startsWith("vico_registration_challenge_")) {
             try { onAdmissionDenied?.(); }
             catch { /* Telemetry must never alter registration admission. */ }
           }

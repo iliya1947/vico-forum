@@ -1684,6 +1684,7 @@ export const reviewedCommonFingerprints = {
   sa07IMailOutcomeValue: "0c9eb0b2b260907b25833e946d27c069f0ab9cc0d56dfc29f0a794056aa7fb40",
   sa07ILastVerificationMail: "a76c35e3250d1559b00ebd7a0dc25f012633cc26bf379202dc170d8af951cb5d",
   authVerificationRequired: "38d264851baa8b2896f4871a73149e365b7b4e27e1f283d8baa3cfa538f128f3",
+  authRegistrationChallenge: "8f7b43a60aac06ab5e101eab5d9948ae8e564977ca8ec616e4e954cdaf9b0fb0",
   authAccountEmail: "9f0bd8c57f7ed64ce019cd4dd958ad00af6664f47f98172f6dad048d9fdaf6a1",
   authAccountVerified: "6e8888687554e7b6b166db5bc9582736dca283e0323630a6c93ecf72a6c2a0c2",
   authAccountUnverified: "cddefe09ffcb13e6e2ffe91dae468cbc479666686f911e866315e55eb155b649",

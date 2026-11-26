@@ -181,7 +181,7 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
     expect(recovered.monitors.every(m=>m.lastObservedAt!==null)).toBe(true);
   });
 
-  it("registration coverage starts at the earliest retained admission-denial source projected in History",async()=>{
+  it.each(["registration-admission","registration-challenge"])("registration coverage includes the retained %s source projected in History",async(operation)=>{
     const admittedAt=new Date(Date.now()-2*24*60*60*1000).toISOString();
     await client.query("insert into owner_attempt_patterns "+
       "(id,recording_epoch_start,admitted_at,pool,network_ip,network_quality,"+
@@ -189,8 +189,8 @@ describe("SA02 snapshot-consistent Owner current-state native sources",()=>{
       "values('11111111-1111-4111-8111-111111111111',"+
       "date_trunc('hour',$1::timestamptz,'UTC'),$1::timestamptz,"+
       "'anonymous','198.51.100.9','qualified','auth',"+
-      "'registration-admission','denied',403,$1::timestamptz,$1::timestamptz,1)",
-      [admittedAt]);
+      "$2,'denied',403,$1::timestamptz,$1::timestamptz,1)",
+      [admittedAt,operation]);
     const current=await reader.readCurrent();
     const registration=get(current,"accounts.registration");
     expect(registration.coverageFrom).toBe(admittedAt);

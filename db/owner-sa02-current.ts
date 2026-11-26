@@ -242,7 +242,7 @@ export class PostgresOwnerSa02Current {
               "select min(occurred_at) at from admin_history "+
               "where action='settings.registrationChanged' union all "+
               "select min(admitted_at) at from owner_attempt_patterns "+
-              "where surface='auth' and operation='registration-admission') retained"
+              "where surface='auth' and operation in ('registration-admission','registration-challenge')) retained"
             )).rows[0]?.first??null
           : null;
         // Counts and settings are current state, not retained History entries.

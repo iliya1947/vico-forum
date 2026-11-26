@@ -38,6 +38,37 @@ afterAll(async () => {
 });
 
 describe("AUTH-02a shared private lifecycle budget", () => {
+  it("limits a normalized recipient burst across separate clients and network sources", async () => {
+    const clients=Array.from({length:9},connection);
+    let mutations=0;
+    try {
+      await Promise.all(clients.map(c=>c.connect()));
+      const results=await Promise.allSettled(clients.map((c,i)=>budget(c,syntheticAttemptIngressSource("203.0.113."+(30+i)))
+        .run(mail(i%2?" MEMBER@example.test ":"member@example.test"),async()=>{mutations++;})));
+      expect(results.filter(r=>r.status==="fulfilled")).toHaveLength(3);
+      expect(results.filter(r=>r.status==="rejected").map(r=>r.reason)).toEqual(Array(6).fill(expect.any(LifecycleBudgetExceededError)));
+      expect(mutations).toBe(3);
+      expect((await persisted()).map(r=>r.count).sort((a,b)=>a-b)).toEqual([...Array(9).fill(1),3]);
+    } finally { await Promise.all(clients.map(c=>c.end())); }
+  });
+  it("does not permit an escaped asynchronous receipt after its logical operation closes", async () => {
+    const runtime=budget();
+    let release!:()=>void,escaped:Promise<string>|undefined;
+    await runtime.run(mail(),async()=>{
+      escaped=new Promise<void>(resolve=>{release=resolve;}).then(()=>runtime.run(mail(),ok));
+      void escaped.catch(()=>{});
+    });
+    release();
+    await expect(escaped).rejects.toBeInstanceOf(LifecycleBudgetInvariantError);
+    expect((await persisted()).map(row=>row.count)).toEqual([1,1]);
+  });
+  it("uses authoritative DB time despite a skewed application clock", async () => {
+    const clock=vi.spyOn(Date,"now").mockReturnValue(1);
+    try {
+      await budget().run(mail(),ok);
+      expect((await first.query("select bool_and(expires_at between clock_timestamp()+interval '590 seconds' and clock_timestamp()+interval '610 seconds') bounded from auth_lifecycle_budget")).rows[0].bounded).toBe(true);
+    } finally { clock.mockRestore(); }
+  });
   it("shares canonical target budget across network and HTTP/direct nested calls", async () => {
     const runtime = budget();
     // Both entry styles call the same service; the nested server-owned receipt
