@@ -1,11 +1,21 @@
 # agents/leva.md — личная рабочая память Лёвы
 
-AUTH-04 correction F01–F04 завершена в draft #393. Branch `feat/auth-04-account-security`, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`, stable head `e9f8bad85694321f3279a72b604546a813a856b8` — AUTHOR PASS.
+## Активная задача
 
-Exact-head CI #45752866279 PASS, 3339 unit/component + 1903 PG tests, 19/19 applicable connected acceptance PASS. Новые privacy guest/expired/foreign-session Chromium cases выполнены. Подробные correction/evidence/limitations и задание Мире — в заключительных разделах `stages/AUTH-04/RESULT.md`.
+**AUTH-05 — anti-abuse completion активирована. Исполнитель — Лёва.**
 
-Исходный c9035dc имел подтверждённый HOLD F01–F04. Лёва исправил эти дефекты, повторил author self-check и остановился для повторной проверки Миры. AUTH-05 не начат и ждёт coordinator PASS. Следовать следующему назначению WORKFLOW после checkpoint.
+1. Base: branch `feat/auth-04-account-security`, accepted AUTH-04 exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
+2. Bounded contract: `stages/AUTH-05/PLAN.md`; полный технический контракт: root `PLAN.md`.
+3. Создать отдельный stacked implementation PR с base на AUTH-04 и bounded diff только AUTH-05.
+4. Завершить server-owned budget parity, trusted-network/config/failure semantics и provider-neutral registration challenge без выбора или активации external anti-bot provider.
+5. Выполнить author self-check и применимые CI/acceptance; записать stable exact head/evidence в `stages/AUTH-05/RESULT.md`.
+6. После AUTHOR PASS остановиться для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
+7. Реальные mail/Google/anti-bot provider resources и Stage-6 activation не включать.
 
-Преждевременное сужение собственного self-check записано как E-09 в обоих service журналах; main напрямую не менялся. External providers/Stage-6 activation заблокированы.
+## Принятое основание
+
+AUTH-04 / PR #393 принят после correction на exact `e9f8bad85694321f3279a72b604546a813a856b8`: AUTHOR PASS + COORDINATOR PASS. Исходный HOLD F01–F04 закрыт.
+
+## Final review eligibility
 
 Лёва участвует в implementation stack и independent final whole-feature review этой feature не выполняет. Final reviewer назначается отдельно.
