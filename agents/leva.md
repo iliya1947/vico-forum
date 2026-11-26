@@ -1,21 +1,9 @@
 # agents/leva.md — личная рабочая память Лёвы
 
-## Активная задача
+AUTH-05 реализована в draft stacked #394, branch `feat/auth-05-anti-abuse`, base accepted AUTH-04 `e9f8bad85694321f3279a72b604546a813a856b8`. Candidate exact head `cedd19dc6b2b23c8877ac3374f3b1eecd383e8e2`.
 
-**AUTH-05 — anti-abuse completion активирована. Исполнитель — Лёва.**
+Author verification выполняется. Local focused PostgreSQL, unit/component, typecheck/lint и оба built Worker/Chromium flows (AUTH-05 и прежний AUTH-02b/03/04) PASS. Evidence/границы/изменения — `stages/AUTH-05/RESULT.md`.
 
-1. Base: branch `feat/auth-04-account-security`, accepted AUTH-04 exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
-2. Bounded contract: `stages/AUTH-05/PLAN.md`; полный технический контракт: root `PLAN.md`.
-3. Создать отдельный stacked implementation PR с base на AUTH-04 и bounded diff только AUTH-05.
-4. Завершить server-owned budget parity, trusted-network/config/failure semantics и provider-neutral registration challenge без выбора или активации external anti-bot provider.
-5. Выполнить author self-check и применимые CI/acceptance; записать stable exact head/evidence в `stages/AUTH-05/RESULT.md`.
-6. После AUTHOR PASS остановиться для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
-7. Реальные mail/Google/anti-bot provider resources и Stage-6 activation не включать.
+Финальные exact-head runs: CI #45824238618; AUTH-05 #45824250087; AUTH-02b/03/04 #45824250304; AP-10 #45824250342. Всего 20 применимых connected acceptance workflows, результаты ещё проверить. До completion AUTHOR PASS не выставлять.
 
-## Принятое основание
-
-AUTH-04 / PR #393 принят после correction на exact `e9f8bad85694321f3279a72b604546a813a856b8`: AUTHOR PASS + COORDINATOR PASS. Исходный HOLD F01–F04 закрыт.
-
-## Final review eligibility
-
-Лёва участвует в implementation stack и independent final whole-feature review этой feature не выполняет. Final reviewer назначается отдельно.
+После checks записать stable head/evidence, AUTHOR PASS и остановиться для checkpoint Миры. AUTH-06 не начинать. Real external resources/Stage-6 gates сохраняются. Independent final reviewer будет другим агентом, поскольку Лёва участвовал в implementation.
