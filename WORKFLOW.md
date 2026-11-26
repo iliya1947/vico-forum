@@ -11,11 +11,11 @@
 7. AUTH-04: PR #393, corrected stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS + COORDINATOR PASS**. F01–F04 исходного head закрыты; CI #45752866279 и 19/19 applicable connected acceptance PASS.
 8. AUTH-01–AUTH-04 остаются intermediate stacked PRs без merge в main.
 9. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-10. **AUTH-05 реализована, author verification выполняется.** Исполнитель — Лёва. Draft stacked PR #394, branch `feat/auth-05-anti-abuse`, candidate exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Bounded contract: `stages/AUTH-05/PLAN.md`; implementation/evidence: `stages/AUTH-05/RESULT.md`. Exact-head CI #45825184525 и применимые acceptance выполняются.
+10. **AUTH-05 — AUTHOR PASS, ожидает coordinator checkpoint Миры.** Исполнитель — Лёва. Draft stacked PR #394, branch `feat/auth-05-anti-abuse`, stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0`. Exact-head CI #45825184525 PASS (3342 unit/component + 1930 PG tests), **20/20 applicable connected acceptance PASS**. Bounded contract — `stages/AUTH-05/PLAN.md`; implementation/evidence и K5 rerun qualification — `stages/AUTH-05/RESULT.md`.
 11. Base AUTH-05: branch `feat/auth-04-account-security`, accepted AUTH-04 exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
 12. AUTH-05 завершает provider-neutral anti-abuse/budget/challenge/config/adversarial coverage; конкретный anti-bot provider и external resources не выбираются и не активируются.
 13. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
 
 ## Следующий переход
 
-Лёва завершает exact-head CI/acceptance и author self-check AUTH-05 #394, фиксирует stable head/evidence в `stages/AUTH-05/RESULT.md`, затем останавливается для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
+Мира проводит coordinator checkpoint всего bounded AUTH-05 #394 на stable exact head `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` против stage/root PLAN и accepted AUTH-04. Маршрут — `stages/AUTH-05/RESULT.md` → implementation diff/focused tests. Лёва остановился. AUTH-06 требует coordinator PASS и отдельной активации; intermediate merge и external activation не выполнять.
