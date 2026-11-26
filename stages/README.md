@@ -6,5 +6,6 @@
 4. `AUTH-03/PLAN.md`, `AUTH-03/RESULT.md` — recovery/reset + authenticated password creation for Google-only; coordinator PASS.
 5. `AUTH-04/PLAN.md`, `AUTH-04/RESULT.md` — own Account & security completion; coordinator PASS.
 6. `AUTH-05/PLAN.md`, `AUTH-05/RESULT.md` — anti-abuse completion; corrected exact `dbbfe1c05...`, AUTHOR PASS + COORDINATOR PASS after F01 correction.
-7. `AUTH-06/PLAN.md`, `AUTH-06/RESULT.md`, `AUTH-06/REVIEW.md` — whole-lifecycle/security acceptance; previous head superseded as final stack evidence by corrected AUTH-05. Pending separate sync/reverification activation.
-8. AUTH-07 — final pre-Stage-6 security gate only after corrected assembled AUTH-06 whole-feature coordinator PASS.
+7. `AUTH-06/PLAN.md`, `AUTH-06/RESULT.md`, `AUTH-06/REVIEW.md` — whole-lifecycle/security acceptance; exact `615d93598...`, AUTHOR PASS + whole-feature COORDINATOR PASS.
+8. `FINAL-ASSEMBLY/PLAN.md` — active: assemble accepted AUTH-01–AUTH-06 into first implementation PR #388; executor Ада.
+9. AUTH-07 — final pre-Stage-6 security gate only after final assembly author PASS and final whole-feature coordinator PASS on assembled #388.
