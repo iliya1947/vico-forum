@@ -72,3 +72,9 @@ Native запись и Vico binding одного поколения создаю
 Draft #392 обновлён до `39c07e539a47b8a317b3a274132337a6dc61cfdf`. Исправлены opaque Better Auth reset storage и Vico binding, invalidation pending reset/create при успешной SET-05 смене, closed `change` fact context и retained mail outcomes по трём активным purposes. Legacy native redirect закрыт, поэтому canonical reset proof не переносится в query string. Реальные провайдеры остаются на паузе.
 
 Локально: 69 выбранных unit/component, 49 PostgreSQL, focused lint и typecheck PASS. PostgreSQL доказал хешированный native идентификатор, replacement/expiry, блокировку reset при change-first и rollback при сбое session deletion. Worker/Chromium прошёл reset/create с fake mail и событиями обоих purposes. Exact-head CI и applicable acceptance запущены; AUTHOR PASS ожидает их завершения.
+
+### Повторный author self-check
+
+**AUTHOR PASS** на `39c07e539a47b8a317b3a274132337a6dc61cfdf`. [CI #45730609055](https://github.com/iliya1947/vico-forum/actions/runs/45730609055) и 16/16 применимых acceptance workflows PASS, включая [Worker/Chromium AUTH-02b/03](https://github.com/iliya1947/vico-forum/actions/runs/45730614967) и [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/45730614955).
+
+Повторно сверены три причины HOLD и остальной AUTH-03: shared budgets и neutral guest acknowledgement, PostgreSQL native hashed reset identifier и текущий Vico binding, одноразовый consume и rollback, SET-05 change-first/reset-first, обе session policies, privacy и mail outcome projections. Root PLAN сохранён. Настоящие внешние ресурсы не использовались. Stable head #392 передан Мире на повторный checkpoint; AUTH-04 ждёт coordinator PASS.
