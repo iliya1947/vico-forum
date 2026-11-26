@@ -1,23 +1,14 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Принятый stack
+## Принятый stack и final assembly
 
-1. AUTH-01–AUTH-04 прошли coordinator checkpoints.
-2. AUTH-05 #394 corrected exact `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6` принят; F01 закрыт.
-3. AUTH-06 #395 exact `615d93598daf78945a86fbdc4255bc778ae3403f` — AUTHOR PASS + whole-feature COORDINATOR PASS, 0 blockers.
-4. Exact-head CI и 20/20 connected acceptance на AUTH-06 — SUCCESS.
-5. Repository/local-CI evidence не является Stage-6/deployed acceptance.
+1. AUTH-01–AUTH-04 coordinator PASS; AUTH-05 corrected #394 PASS, F01 закрыт.
+2. AUTH-06 #395 exact `615d93598daf78945a86fbdc4255bc778ae3403f` — AUTHOR PASS + whole-feature COORDINATOR PASS, исторические CI/20 acceptance PASS.
+3. По назначению владельца Ада перенесла accepted head в первый PR #388 к unchanged main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Git tree идентичен, изменений product behavior нет. Intermediate #389/#391/#392/#393/#394/#395 superseded, GitHub автоматически закрыл их как merged в первую feature branch, не main.
+4. Final substantive AUTHOR PASS независимо от CI. Новые автоматизированные проверки #388: CI IN_PROGRESS, acceptance 16/20 success, 4 pending, 0 completed non-success. K5 diagnostic rerun attempt 2 без изменений.
+5. Evidence и точный маршрут — stages/FINAL-ASSEMBLY/RESULT.md и WORKFLOW.md.
+6. Следующий gate — final whole-feature coordinator review Миры только после завершения применимых checks #388; AUTH-07 пока не активирован.
 
-## Активная подзадача — FINAL ASSEMBLY
+## Независимость и ограничения
 
-По прямой команде владельца **Ада / Business GPT-6.2** назначена исполнителем final assembly.
-
-Задача: перенести accepted final AUTH-06 state в первый implementation PR #388 к current main, не менять product implementation, закрыть intermediate PRs как superseded и получить final stable exact head с author self-check и применимыми CI/acceptance. Детали и done criteria: `stages/FINAL-ASSEMBLY/PLAN.md`.
-
-Если current main изменился либо assembly требует изменения accepted product code, Ада ставит HOLD и STOP вместо импровизированного исправления.
-
-После PASS assembly следующий агент — Мира для final whole-feature coordinator review. AUTH-07 пока не активирован.
-
-## Независимость
-
-Лёва участвовал в AUTH-06; Ада участвовала в AUTH-05 correction и теперь final assembly. Оба не могут быть independent final whole-feature reviewer. Reviewer назначается отдельно после coordinator PASS Миры.
+Лёва участвовал в AUTH-06, Ада — в AUTH-05 correction/final assembly; оба не independent final reviewer. Reviewer назначается отдельно. Repository/local-CI evidence не является deployed/provider acceptance. Main merge и external/Stage-6 activation заблокированы.
