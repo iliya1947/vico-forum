@@ -62,3 +62,5 @@
 
 
 31. **2026-11-26:** владелец назначил Аду / Business GPT-6.2 заменой Лёве для дальнейшей работы по authentication lifecycle. Поскольку Лёва уже начал AUTH-06 #395 и его exact-head checks выполняются, текущий handoff не прерывается: Лёва завершает AUTH-06 author verification и STOP. После этого дальнейшие технические обязанности и independent final whole-feature review переходят Аде; она не участвовала в implementation stack.
+
+32. **2026-11-26:** whole-feature coordinator review Миры AUTH-01–AUTH-06 на #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7` завершён HOLD. Подтверждён F01: AUTH-05 required email challenge публично различает existing/fresh email из-за existence-dependent challenge bypass. Других confirmed current-scope blockers не установлено. Correction назначена Аде в AUTH-05 #394; AUTH-06 должен быть синхронизирован после нового AUTH-05 PASS. Ада после correction не является independent final reviewer.
