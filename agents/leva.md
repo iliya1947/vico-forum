@@ -1,23 +1,17 @@
 # agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
 
-## Принятое основание
+## Текущее основание
 
-AUTH-03 / PR #392 принят coordinator checkpoint Миры на exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`: **PASS**, 0 confirmed current-scope blocking defects.
+AUTH-03 #392 принят Мирой на `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
 
-Recovery model, SET-05 change/reset invalidation и AUTH-03 observability приняты; exact-head CI и 16/16 applicable acceptance использованы как supporting evidence.
+## Текущее состояние
 
-## Активная задача
+AUTH-04 реализован в draft stacked PR #393, branch `feat/auth-04-account-security`, base AUTH-03. Stable exact head `c9035dce425333d14fdf12d2418f4a8a009edabf` — AUTHOR PASS. Exact-head CI #45744054677 и 16/16 applicable acceptance PASS.
 
-**AUTH-04 — own Account & security completion активирована владельцем. Исполнитель — Лёва.**
+Полный bounded результат, ограничения synthetic mail и задание Мире находятся в `stages/AUTH-04/RESULT.md`. WORKFLOW передан на coordinator checkpoint. Лёва остановился, AUTH-05 не начат.
 
-1. Base: branch `feat/auth-03-credential-recovery`, accepted exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
-2. Bounded contract: `stages/AUTH-04/PLAN.md`; полный технический контракт: root `PLAN.md`.
-3. Создать отдельный stacked implementation PR с base на AUTH-03 и bounded diff только AUTH-04.
-4. Реализовать email/status/two-phase email change и Google unlink/last-usable-method invariant в принятых transaction/session/credential boundaries.
-5. Выполнить author self-check и применимые CI/acceptance; записать exact head/evidence в `stages/AUTH-04/RESULT.md`.
-6. После AUTHOR PASS остановиться для coordinator checkpoint Миры. AUTH-05 самостоятельно не начинать.
-7. Реальные external providers и Stage-6 resources не активировать.
+После coordinator PASS следовать новому назначению в WORKFLOW. По решению владельца Лёва остаётся исполнителем AUTH-04 → AUTH-06. Реальные external resources и Stage-6 activation заблокированы.
 
 ## Final review eligibility
 
-Лёва участвует в implementation stack и поэтому independent final whole-feature review этой authentication feature не выполняет. Final reviewer назначается отдельно.
+Лёва участвует в implementation stack и independent final whole-feature review этой feature не выполняет. Final reviewer назначается отдельно.
