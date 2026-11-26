@@ -1,21 +1,27 @@
 # agents/ada.md — личная рабочая память Ады по authentication lifecycle
 
-## Назначение
+## Активное назначение
 
-По прямому решению владельца **Ада / Business GPT-6.2 заменяет Лёву в дальнейшей работе по authentication lifecycle после завершения уже начатого Лёвой AUTH-06 handoff**.
+**AUTH-05 correction F01 — registration-challenge email enumeration.**
 
-## Входной контекст
+Владелец назначил Аду заменой Лёве для дальнейшей работы. Whole-feature coordinator review Миры на AUTH-06 #395 exact `2eb3f9c303ad1b67d5348664267eca665f079cf7` дал HOLD с одним blocker.
 
-1. AUTH-01–AUTH-05 имеют coordinator PASS.
-2. AUTH-06 выполняется в PR #395; current exact на момент назначения — `2eb3f9c303ad1b67d5348664267eca665f079cf7`.
-3. Лёва завершает только уже начатый AUTH-06 author verification и фиксирует PASS/HOLD, затем STOP.
-4. После AUTHOR PASS AUTH-06 Мира проводит whole-feature coordinator review всей assembled auth vertical.
-5. После coordinator PASS следующий independent technical/final-review handoff идёт Аде, а не Лёве.
-6. Ада не участвовала в implementation AUTH-01–AUTH-06 и поэтому может выполнять independent whole-feature review на stable exact head.
-7. Если AUTH-06 даст HOLD, correction route определяется Мирой уже с учётом назначения Ады; Лёва самостоятельно correction не начинает.
-8. AUTH-07 — final pre-Stage-6 security gate, не implementation package.
-9. External mail/Google/anti-bot resources, production activation и Stage 6 остаются заблокированными до отдельного решения владельца.
+## F01
 
-## Следующий вход
+В current AUTH-05 #394 exact `ac59e3d2e693d27806ebe732e4a52e79cd2fd3e0` email signup при required challenge предварительно проверяет existence и выполняет challenge только для fresh email. Поэтому при открытой SET-02 email registration один и тот же missing/rejected/unavailable challenge может дать:
+- existing email → native duplicate-neutral 200;
+- fresh email → challenge 403/503.
 
-Не начинать работу до handoff из WORKFLOW после завершения текущего AUTH-06 результата и coordinator review Миры.
+Это caller-observable account enumeration и противоречит AUTH-05 no-enumeration contract. Полный evidence: `stages/AUTH-06/REVIEW.md`.
+
+## Correction boundary
+
+1. Работать в AUTH-05 implementation PR #394 / branch `feat/auth-05-anti-abuse`; base AUTH-04 не менять.
+2. Исправить F01 без расширения scope и без выбора/активации внешнего challenge provider.
+3. При открытой email registration challenge admission не должен раскрывать existing vs fresh email через challenge-dependent public behavior.
+4. Сохранить neutral duplicate semantics, отсутствие user/account/session/mail mutation при denied fresh creation, server-owned budgets и provider-neutral boundary.
+5. Не менять утверждённый permanent SET-02 deliberate closure contract из `docs/SETTINGS.md`.
+6. Добавить differential regression: existing vs fresh email при missing/rejected/unavailable challenge; не ограничиваться отдельными кейсами.
+7. После author self-check и применимых focused checks записать новый stable exact head/evidence в AUTH-05 RESULT и STOP для coordinator checkpoint Миры.
+8. AUTH-06 #395 самостоятельно не синхронизировать до PASS corrected AUTH-05.
+9. Поскольку Ада участвует в correction implementation, independent final whole-feature review этой сборки ей больше не назначается.
