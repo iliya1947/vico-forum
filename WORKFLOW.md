@@ -230,3 +230,12 @@ STOP:
 - Новый исполнитель P2 — **Лена**.
 - Продолжить текущий P2 с Draft #385 exact `56f63e1e0732a76419e4f3fd74f95e65e699de0a` по актуальным `AGENTS.md`, `RULES.md`, `WORKFLOW.md` и `PLAN.md`.
 - B8b1 остаётся следующим implementation шагом, но сейчас STOP: требуется решение Миры о baseline drift (см. начало WORKFLOW). Не начинать P2 заново.
+
+## Coordinator decision — baseline sync required before P2-B8b1
+
+- The baseline drift is a real current-task dependency: current main adds product routes, permissions and Worker contexts that fall directly inside accepted PLAN P1/P2 coverage.
+- This is **not** a PLAN defect and does not require Leva. The PLAN already requires generated current routes and explicit adapters for new current infrastructure/capability contracts.
+- Do not continue P2-B8b1 on the stale stack. Synchronize from the bottom of the stack first.
+- Active next bounded step: **SYNC-P0**. Bring current main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432` into the P0 implementation line while preserving the accepted P0 feature result, then run the applicable P0 checks/browser evidence and hand the new exact P0 head to Mira for a renewed coordinator checkpoint.
+- Do not sync P1/P2 yet. Under stacked workflow, dependent upper steps are synchronized only after the changed lower P0 step passes its renewed checkpoint.
+- After P0 PASS, the next bounded synchronization step will be P1; P2 resumes only after the synchronized lower stack is accepted.
