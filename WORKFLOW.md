@@ -7,14 +7,15 @@
 3. AUTH-01: PR #388 — coordinator PASS.
 4. AUTH-02a: PR #389 — coordinator PASS.
 5. AUTH-02b: PR #391, stable exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` — coordinator PASS.
-6. AUTH-03: draft PR #392, stable exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf` — **AUTHOR PASS + COORDINATOR PASS**, 0 confirmed current-scope blocking defects.
-7. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 остаются intermediate stacked PRs без merge в main.
-8. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-9. AUTH-04 / draft #393 после correction: stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS + COORDINATOR PASS**. Exact-head CI #45752866279 PASS; **19/19 applicable connected acceptance PASS**. Evidence — `stages/AUTH-04/RESULT.md`.
-10. Исходный head `c9035dce425333d14fdf12d2418f4a8a009edabf` получил HOLD Лены с F01–F04; Мира независимо подтвердила findings и отозвала прежний PASS. Corrected head `e9f8bad85694321f3279a72b604546a813a856b8` повторно проверен Мирой: F01–F04 закрыты, новых current-scope blocking defects не установлено.
-11. Лёва остановлен после AUTH-04 correction. AUTH-05 **ещё не активирована**. Intermediate merge и external activation не выполнять.
-12. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
+6. AUTH-03: PR #392, stable exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf` — AUTHOR PASS + COORDINATOR PASS.
+7. AUTH-04: PR #393, corrected stable exact head `e9f8bad85694321f3279a72b604546a813a856b8` — **AUTHOR PASS + COORDINATOR PASS**. F01–F04 исходного head закрыты; CI #45752866279 и 19/19 applicable connected acceptance PASS.
+8. AUTH-01–AUTH-04 остаются intermediate stacked PRs без merge в main.
+9. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
+10. **AUTH-05 активирована.** Исполнитель — Лёва. Bounded contract: `stages/AUTH-05/PLAN.md`.
+11. Base AUTH-05: branch `feat/auth-04-account-security`, accepted AUTH-04 exact head `e9f8bad85694321f3279a72b604546a813a856b8`.
+12. AUTH-05 завершает provider-neutral anti-abuse/budget/challenge/config/adversarial coverage; конкретный anti-bot provider и external resources не выбираются и не активируются.
+13. Independent final whole-feature reviewer определяется отдельно, поскольку Лёва участвует в implementation stack.
 
 ## Следующий переход
 
-AUTH-04 закрыта coordinator checkpoint PASS на exact `e9f8bad85694321f3279a72b604546a813a856b8`. Следующая stacked-ступень — AUTH-05 из root PLAN; активировать её отдельным переходом. До отдельной активации implementation AUTH-05 не начинать.
+Лёва создаёт отдельный stacked implementation PR с base `feat/auth-04-account-security`, реализует bounded AUTH-05 по `stages/AUTH-05/PLAN.md`, выполняет author self-check и применимые CI/acceptance, записывает stable exact head/evidence в `stages/AUTH-05/RESULT.md` и останавливается для coordinator checkpoint Миры. AUTH-06 самостоятельно не начинать.
