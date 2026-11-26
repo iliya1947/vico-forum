@@ -12,8 +12,9 @@
 8. Exact-head CI #45730609055 PASS; 16/16 applicable connected acceptance workflows PASS, включая Worker/Chromium AUTH-02b/03 #45730614967 и AP-10 #45730614955.
 9. AUTH-01/AUTH-02a/AUTH-02b/AUTH-03 остаются intermediate stacked PRs: без merge в main и independent intermediate review.
 10. Реальные mail/anti-bot/Google production resources и Stage-6 activation остаются заблокированными.
-11. По прямому решению владельца Лёва остаётся исполнителем последующих AUTH-04 → AUTH-06; independent final whole-feature reviewer будет другим агентом.
+11. **AUTH-04 активирована владельцем.** Исполнитель — Лёва; bounded contract: `stages/AUTH-04/PLAN.md`. Base — accepted AUTH-03 branch `feat/auth-03-credential-recovery` / exact head `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
+12. По прямому решению владельца Лёва остаётся исполнителем последующих AUTH-04 → AUTH-06; independent final whole-feature reviewer будет другим агентом.
 
 ## Следующий переход
 
-Активировать **AUTH-04 — own Account & security completion** как следующую stacked-ступень с base на принятом AUTH-03 head `39c07e539a47b8a317b3a274132337a6dc61cfdf` и передать её Лёве. До отдельной активации AUTH-04 implementation не начинать.
+**AUTH-04 — own Account & security completion активирована.** Лёва создаёт отдельный stacked implementation PR с base `feat/auth-03-credential-recovery`, реализует bounded scope из `stages/AUTH-04/PLAN.md`, выполняет author self-check и применимые CI/acceptance, записывает stable exact head/evidence в `stages/AUTH-04/RESULT.md` и останавливается для coordinator checkpoint Миры. AUTH-05 самостоятельно не начинать.
