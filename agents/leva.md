@@ -1,23 +1,11 @@
-# agents/leva.md — личная рабочая память Лёвы по authentication lifecycle
+# agents/leva.md — личная рабочая память Лёвы
 
-## Активное назначение
+AUTH-04 correction F01–F04 завершена в draft #393. Branch `feat/auth-04-account-security`, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`, stable head `e9f8bad85694321f3279a72b604546a813a856b8` — AUTHOR PASS.
 
-**AUTH-04 correction активна.** Implementation PR: #393, branch `feat/auth-04-account-security`, base accepted AUTH-03 `39c07e539a47b8a317b3a274132337a6dc61cfdf`.
+Exact-head CI #45752866279 PASS, 3339 unit/component + 1903 PG tests, 19/19 applicable connected acceptance PASS. Новые privacy guest/expired/foreign-session Chromium cases выполнены. Подробные correction/evidence/limitations и задание Мире — в заключительных разделах `stages/AUTH-04/RESULT.md`.
 
-Предыдущий stable head `c9035dce425333d14fdf12d2418f4a8a009edabf` больше не принят: независимая проверка Лены дала HOLD, а Мира независимо подтвердила F01–F04 как реальные дефекты текущего scope.
+Исходный c9035dc имел подтверждённый HOLD F01–F04. Лёва исправил эти дефекты, повторил author self-check и остановился для повторной проверки Миры. AUTH-05 не начат и ждёт coordinator PASS. Следовать следующему назначению WORKFLOW после checkpoint.
 
-## Требуемый результат
-
-1. Закрыть **F01–F04** из `stages/AUTH-04/RESULT.md` без расширения AUTH-04.
-2. Добавить focused regressions, достаточные для доказательства исправлений и затронутых bounded acceptance criteria.
-3. Не ослаблять принятые AUTH-03/session/transaction/AccountState/last-usable-method boundaries.
-4. Выполнить author self-check и применимые CI/acceptance на новом stable exact head.
-5. Обновить `stages/AUTH-04/RESULT.md` exact head и evidence.
-6. После AUTHOR PASS остановиться для повторного coordinator checkpoint Миры. AUTH-05 самостоятельно не начинать.
-7. Реальные external mail/Google/anti-bot ресурсы и Stage-6 activation не включать.
-
-Технические детали findings и проверенные основания уже находятся в RESULT; способ исправления выбирает Лёва в рамках действующего PLAN.
-
-## Final review eligibility
+Преждевременное сужение собственного self-check записано как E-09 в обоих service журналах; main напрямую не менялся. External providers/Stage-6 activation заблокированы.
 
 Лёва участвует в implementation stack и independent final whole-feature review этой feature не выполняет. Final reviewer назначается отдельно.
