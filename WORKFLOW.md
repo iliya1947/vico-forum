@@ -1,12 +1,11 @@
 # WORKFLOW.md — текущее состояние и следующий переход
 
-1. PR #388 merged в `main`: merge commit `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Repository/local-CI implementation authentication lifecycle завершена по назначенному review route.
-2. Stage 6 остаётся paused: merge #388 не активирует внешние providers, production Google OAuth, secrets или deployed acceptance.
-3. Подтверждён docs closeout scope: текущие постоянные документы содержат устаревшие утверждения о deferred/non-mandatory verification/recovery и старом SET-05 boundary.
-4. Создана отдельная docs branch от post-merge main: `docs/authentication-lifecycle-closeout`.
-5. **Лена / GPT-6.2 назначена автором DOCS-CLOSEOUT** по `stages/DOCS-CLOSEOUT/PLAN.md`.
-6. Лёва STOP до AUTHOR PASS docs candidate. Марк/Лира не подключаются; текущая техническая работа только Лёва + Лена.
+1. PR #388 merged в main `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`; repository/local-CI implementation authentication lifecycle завершена по назначенному review route.
+2. DOCS-CLOSEOUT: [PR #398](https://github.com/iliya1947/vico-forum/pull/398) открыт, exact `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143`, base `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Изменены ровно восемь утверждённых docs files.
+3. **AUTHOR SELF-CHECK PASS / Лена STOP.** Результат: `stages/DOCS-CLOSEOUT/RESULT.md`. Новые CI/browser checks Леной не запускались; код и runtime не изменены.
+4. Результат передан Мире для coordinator review всего docs diff. Ранее установленный маршрут после coordinator PASS — проверка технической точности Лёвой; Лена reviewer не активирует.
+5. Stage 6 paused; внешние providers, credentials, OAuth/Owner binding, deployment не активированы. Марк/Лира не подключаются. Merge docs PR — владелец после предусмотренного review.
 
 ## Следующий переход
 
-Лена: `WORKFLOW.md` → `stages/DOCS-CLOSEOUT/PLAN.md` → выполнить docs-only closeout в `docs/authentication-lifecycle-closeout` → открыть отдельный PR в main → `stages/DOCS-CLOSEOUT/RESULT.md` → STOP → Мира.
+Мира принимает DOCS-CLOSEOUT #398 через RESULT.md, проверяет документацию на exact head, определяет дальнейший переход согласно PLAN и указаниям владельца. Лена STOP.
