@@ -1,10 +1,14 @@
 # agents/mira.md — личная рабочая память Миры по authentication lifecycle
 
-## Текущий контекст
+## Активная задача
 
-1. Final stack assembled в #388; product tree accepted.
-2. FINAL-ASSEMBLY automated HOLD вызван только K5 immediate operationId assertion.
-3. Независимо подтверждён test synchronization defect: same SHA/blobs; operationId `""` → UUID через effect; test не ждёт initialization. Product regression не установлен.
-4. K5-CORRECTION назначена Аде, test/evidence-only; plan `stages/K5-CORRECTION/PLAN.md`.
-5. После targeted K5 PASS и final exact-head CI/acceptance PASS я провожу final whole-feature coordinator review нового stable #388.
-6. AUTH-07 до моего PASS не активировать; Лёва/Ада не independent reviewer.
+K5-CORRECTION в final assembled PR #388 выполняю сама по прямой команде владельца.
+
+1. Baseline: `615d93598daf78945a86fbdc4255bc778ae3403f`.
+2. Current correction exact: `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`.
+3. Delta: только `tests/browser/sa04-attachments/check.py`, +59/-6.
+4. Product/runtime/schema/dependencies/workflow не менялись.
+5. Шесть initial operation reads ждут UUID v4 через retrying Playwright assertion; diagnostics не сохраняют raw operation IDs.
+6. Source-level correction self-check PASS; runtime verification не запускалась.
+7. Следующая отдельная подзадача — targeted K5 verification. Не смешивать её с final whole-feature review.
+8. AUTH-07/merge/Stage-6 заблокированы.
