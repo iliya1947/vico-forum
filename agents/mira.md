@@ -2,12 +2,11 @@
 
 ## Текущий статус
 
-1. Assembled #388 stable exact: `5b29469fe51e716b483d4e610dd90705f5409029`.
-2. AUTH-07 correction Лены завершён; exact-head CI и 20/20 applicable connected acceptance SUCCESS.
-3. Мира проверила correction delta и затронутые invariants; whole-feature coordinator PASS.
-4. По прямой команде владельца следующий reviewer — **Лёва**, не Марк.
-5. До отдельного решения владельца в этой задаче работаем только с Лёвой и Леной; Марк/Лира не подключаются.
-6. Лёва участвовал в AUTH-06 implementation, поэтому его review не называть independent.
-7. Лёва активирован на owner-assigned final technical review по `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-PLAN.md`.
-8. После PASS/HOLD Лёвы принять результат и остановиться перед следующим owner decision.
-9. Merge/docs/Stage-6 до этого решения заблокированы.
+1. #388 reviewed exact `5b29469fe51e716b483d4e610dd90705f5409029`.
+2. Final technical review Лёвы — HOLD: F-B2-03 и F-B2-04.
+3. Мира независимо проверила оба finding по source + AUTH-03 contract: оба current-scope confirmed.
+4. Technical-plan correction не требуется.
+5. Лена назначена исполнителем `stages/AUTH-07-CORRECTION-2/PLAN.md` в assembled #388.
+6. Лёва STOP до нового stable exact head; затем повторный owner-assigned final technical review.
+7. Марк/Лира не подключаются; текущая техническая работа только Лёва + Лена.
+8. Merge/docs/Stage-6 blocked.
