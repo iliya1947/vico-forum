@@ -7,6 +7,6 @@
 5. `AUTH-04/PLAN.md`, `AUTH-04/RESULT.md` — own Account & security completion; coordinator PASS.
 6. `AUTH-05/PLAN.md`, `AUTH-05/RESULT.md` — anti-abuse completion; corrected exact `dbbfe1c05...`, PASS.
 7. `AUTH-06/PLAN.md`, `AUTH-06/RESULT.md`, `AUTH-06/REVIEW.md` — whole-lifecycle/security acceptance; exact `615d93598...`, PASS.
-8. `FINAL-ASSEMBLY/PLAN.md`, `FINAL-ASSEMBLY/RESULT.md` — stack assembled in #388; substantive PASS, automated HOLD on K5.
-9. `K5-CORRECTION/PLAN.md`, `K5-CORRECTION/RESULT.md` — correction implemented by Мира at `71cdb70d...`; targeted runtime verification pending.
+8. `FINAL-ASSEMBLY/PLAN.md`, `FINAL-ASSEMBLY/RESULT.md` — stack assembled in #388; substantive PASS; original automated run had K5 HOLD.
+9. `K5-CORRECTION/PLAN.md`, `K5-CORRECTION/RESULT.md` — correction exact `71cdb70d...`; targeted K5 PASS; final full exact-head CI/acceptance pending.
 10. AUTH-07 — only after corrected final assembly automated PASS + final whole-feature coordinator PASS.
