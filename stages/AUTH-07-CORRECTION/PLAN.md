@@ -29,9 +29,9 @@
    - same-document replacement link после неуспешного proof.
 2. Проверить отсутствие регрессии existing password change, email-change, session controls и explicit proof binding.
 3. K5 accepted correction не ослаблять и не переделывать без нового подтверждённого основания.
-4. Исполнитель выполняет author self-check всего correction diff и только применимые exact-head CI/acceptance.
-5. Результат и новый stable exact head записать в `stages/AUTH-07-CORRECTION/RESULT.md`, затем STOP.
-6. После AUTHOR PASS corrected head проверяет Мира как whole-feature reviewer. Лена не review собственную correction implementation.
+4. Исполнитель выполняет substantive author self-check всего correction diff. По последней прямой команде владельца Лена не запускает тесты; запуск и проверка применимых exact-head CI/acceptance переданы Мире.
+5. Результат самостоятельной проверки и stable exact head записать в `stages/AUTH-07-CORRECTION/RESULT.md`, затем STOP без ожидания CI со стороны Лены.
+6. После author source self-check corrected head проверяет Мира как whole-feature coordinator reviewer; она отвечает и за automated gate. Лена не review собственную correction implementation.
 7. Марк остаётся заблокирован до PASS Миры; затем назначается independent final technical reviewer на том же exact head.
 
 ## Delivery

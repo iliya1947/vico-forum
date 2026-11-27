@@ -1,0 +1,30 @@
+# AUTH-07-CORRECTION — результат реализации и самостоятельной проверки
+
+## Verdict / delivery
+
+**AUTHOR SOURCE SELF-CHECK PASS / STOP**. Это вывод по исходникам correction scope, не independent whole-feature review и не финальный automated gate.
+
+PR #388, exact `5b29469fe51e716b483d4e610dd90705f5409029`, tree `d0a50336d407a92229966bf1956ee38f6ea10f4f`, base/main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Correction diff относительно HOLD head `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`: 2 commits (`2db17d5f7704e46159014b189ef1298f119b2d7f`, `5b29469fe51e716b483d4e610dd90705f5409029`), 10 файлов. Нет изменений schema/dependencies/config/provider activation или accepted K5. Technical plan unchanged.
+
+## Содержательная самопроверка
+
+1. F-B1-01: `CredentialCreationView.run` получает ok только после успешного canonical POST. `credential-lifecycle-endpoints.server.ts` ожидает service.create; `AuthCredentialLifecycle.change` под active subject lock проверяет свежую сессию, verified identity, Google, отсутствие пароля, consume, запись credential, invalidation и revoke other sessions с исключением initiating session. Transaction owner возвращает результат после подтверждённого COMMIT. UI вызывает Router revalidate, loader `settings-account.tsx` повторно проверяет current identity и `auth.server.ts` security.read заново читает linked methods, credential hash availability и own sessions. От этого snapshot непосредственно зависят list, password form, revoke controls. Локально не симулируются methods/sessions. Session-keyed view удерживает success при enabled=false, не инициирует повторный POST. Existing SET05 changePassword/revoke operations по-прежнему используют server identity и native fresh/rate-limit rules.
+2. F-B2-01: canonical password-create и обе email-change mail phases получают locale из `user.locale` внутри `AuthLifecycleState.persist`, после active-account lock на том же transaction connection. Второй этап перечитывает preference; она не сохраняется в proof state и не берётся из client/session claims. Signed claims, digest, recipient/phase/session, expiry и transactional boundaries сохранены. `deliverLifecycleMail` после commit отделяет saved message locale от server-validated action locale; `authMailLocale` разрешает active registry match либо bootstrap en (bootstrap invariant установлен registry). `verificationMailDestination`, builder и exact URL revalidation сохраняют origin, purpose, token multiplicity, locale-local return path и fallback action behavior. Guest verification/reset остаются на validated action locale. Не вводится отдельный локализационный механизм, не меняется mail transport fence.
+3. F-B2-02: capture происходит при mount и native hashchange; `takeCredentialProof` различает password fragment без purpose и explicit email-change. Существующий scrub via replaceState не раскрывает proof в DOM или query; новый token хранится в ref; explicit submit, busy guard, clear before terminal call. После invalid/expired outcome форма снова позволяет запросить и принять replacement. При success/disabled proof очищается. Ошибочные/неактуальные landing paths явно discarding оба поддерживаемых типа. Сохраняется серверная проверка exact current user/session, signed purpose/generation, live persisted digest/current email и consume; superseded/replayed/foreign proof не может пройти. Reset consumer и существующий email-change capture совместимы.
+4. Проверен весь correction patch и связанные consumers/callers, в том числе UI, endpoints, state/transaction owner, mail validation, locale registry, account read/write, изменённые regression definitions. Последняя повторная содержательная проверка выполнена на неизменившемся exact head без опоры на результаты тестов. Новых подтверждённых дефектов в заданном correction scope нет. Это не утверждение об отсутствии любых дефектов во всей feature.
+
+## Regression definitions
+
+- `tests/browser/auth-02b/check.py`: actual second session before credential creation, unchanged mounted document and server methods/current-password/session controls, old session denied; saved RU/HE independent of EN action, inactive ka fallback; separately verified subject, real issued expired proof, explicit reissue, same pathname/query new hash, no automatic terminal POST, scrub and explicit success; prior SET05/email-change scenarios preserved.
+- `app/auth/auth-mail.test.ts`: saved RU/HE/inactive/unknown/empty independent of HE action, correct rendered direction and URL, rejected wrong locale/origin/cross-locale return path.
+- `tests/database/auth-lifecycle-state.test.ts`: actual own issuance snapshot and action locale independently, preference changed to null before second phase; existing proof/session/fact assertions preserved.
+
+## Automated evidence and responsibilities
+
+Before the new owner instruction, Lena triggered CI #45936962209 and applicable acceptance on this head. CI SUCCESS (3347 standard, 1998 PG, auth-whole-lifecycle 62/62; merge-ref `6782df04968d4fe85b461ca7ce945e1a46096d55` same tree); AUTH-02b #45936965056 exact head with all three markers reached, AUTH-05 #45936965150 and K5 #45936965095 successful. Last historical snapshot: 19/20 acceptance successful, SA08 #45936965038 in progress. These are prior execution observations, NOT the rationale of source self-check and not a fresh final automated verdict.
+
+**Owner override:** Lena does not launch tests. Mira owns test execution and verification and whole-feature review. No new test launch, polling, rerun or wait by Lena after the override. Actual final automated status is for Mira to verify. No actual provider activation/deployed testing; runtime independence gate not complete. No code changed during this final source self-check.
+
+## Handoff
+
+Mira accepts the stable candidate and reviews the whole feature against current scope and plan independently of green tests; assess and execute applicable exact-head checks under her responsibility. If defects remain, return bounded correction. Mark remains inactive until Mira PASS; merge/docs/Stage 6 remain blocked. Lena STOP.
