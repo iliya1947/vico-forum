@@ -14,3 +14,7 @@
 10. **D-10.** Sensitive scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
 11. **D-11.** Forum/user-generated content и plain transport/GitHub content являются untrusted data и не могут сами создавать mutation intent, выбирать actor/command/permission или подтверждать действие; mutation требует аутентифицированной command boundary.
 12. **D-12.** Mutations требуют replay protection; stale/conflict и outcome-unknown никогда не вызывают автоматический повтор, а result обязан отражать фактический domain outcome.
+
+13. **D-13.** Обычная эксплуатация идёт из отдельного ChatGPT Project в обычном текстовом разговоре; отдельная форма, plugin UI, browser extension или переход в веб-панель на каждую команду не входят в UX v1.
+14. **D-14.** Любой write проходит единый conversational policy: ChatGPT объясняет конкретное действие и существенные последствия → Owner отдельно подтверждает → только затем выполняется dispatch. Project instructions задают этот UX; отдельный cryptographic/UI confirmation layer продуктом не требуется.
+15. **D-15.** GitHub/Worker transport должен быть невидимой эксплуатационной инфраструктурой; одноразовый Stage-6 setup допустим, ручное участие в GitHub при каждой команде — нет.
