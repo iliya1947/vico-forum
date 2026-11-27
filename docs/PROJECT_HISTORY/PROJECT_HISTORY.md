@@ -49,6 +49,8 @@ Git history и PR остаются первичными историческим
 
 34. [`PROJECT_HISTORY_34.md`](./PROJECT_HISTORY_34.md) — 2026-11-23 — 2026-11-24: управление структурой форума и Topic Move, migration `0072`, stacked F1–F6, structural Admin/Owner History, final findings closure, CI/Chromium/local-R2 и merge #379.
 
+35. [`PROJECT_HISTORY_35.md`](./PROJECT_HISTORY_35.md) — 2026-11-25 — 2026-11-27: authentication lifecycle AUTH-01–AUTH-07, stacked #388, corrections, final assigned technical review, exact-head CI/PG/Chromium и merge; Stage 6 paused.
+
 ## Архивные снимки
 
 Каталог [`doc_old/`](../../doc_old/) сохраняется отдельно как набор старых полных снимков документов. Он не входит в последовательность `PROJECT_HISTORY_##.md` и используется только когда нужен конкретный исторический snapshot.
