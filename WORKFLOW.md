@@ -8,11 +8,11 @@
 4. Exact-head automated gate подтверждён: CI SUCCESS; 3347 standard + 1998 PostgreSQL tests; **20/20 applicable connected acceptance SUCCESS**.
 5. **Whole-feature coordinator review Миры — PASS.** Подробности: `stages/AUTH-07/COORDINATOR-REVIEW.md`.
 6. Все три прежних AUTH-07 findings закрыты; новых current-scope blockers в correction delta не подтверждено.
-7. Лена участвовала в implementation correction и не является reviewer corrected head.
-8. Лира STOP.
-9. **Марк / Codex-6 Sol — следующий independent final technical reviewer, но пока не активирован.**
-10. Main merge, docs closeout и Stage-6 activation остаются заблокированы до independent PASS.
+7. По прямой команде владельца следующий reviewer — **Лёва / Codex-6.1 Sol**. Марк и Лира из текущего маршрута исключены; до отдельного решения владельца работаем только с Лёвой и Леной.
+8. Лёва участвовал в AUTH-06 implementation, поэтому его следующий review является **owner-assigned final technical review**, а не independent whole-feature review по стандартному workflow.
+9. Лена STOP после correction; она не review собственную implementation.
+10. Main merge, docs closeout и Stage-6 activation остаются заблокированы до отдельного следующего решения владельца после результата Лёвы.
 
 ## Следующий переход
 
-По отдельной команде владельца активировать Марка / Codex-6 Sol на independent final technical review exact `5b29469fe51e716b483d4e610dd90705f5409029`. Вход: `stages/AUTH-07/COORDINATOR-REVIEW.md` → `stages/AUTH-07/PLAN.md` и актуальный root PLAN по необходимости. Марк не меняет implementation во время review и возвращает PASS/HOLD Мире.
+**Лёва активирован** на final technical review exact `5b29469fe51e716b483d4e610dd90705f5409029`. Вход: `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-PLAN.md` → `stages/AUTH-07/COORDINATOR-REVIEW.md` → актуальный root PLAN/source-of-truth по необходимости. Review-only: implementation не менять. Результат записать в `stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md` как PASS/HOLD → STOP → вернуть Мире.
