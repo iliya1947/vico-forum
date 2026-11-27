@@ -28,3 +28,10 @@
 2. AI для администрирования и модерации.
 
 Оба направления выполняются в этом же служебном PR после текущего ChatGPT-control. Они не входят в #399; product scope и technical plan для них определяются отдельно.
+
+
+## User AI scope proposal
+
+Мира завершила первую product-scope проработку: `research/user-ai-product-scope.md`.
+
+Рекомендация для v1: semantic/hybrid Search + similar topics/solutions как обязательный общий retrieval result; on-demand question-authoring helper как bounded optional; AI chat/auto-post/thread summaries отложить. Это пока product proposal Миры до решения владельца и общего technical plan.
