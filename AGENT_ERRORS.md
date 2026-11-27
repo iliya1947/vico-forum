@@ -147,3 +147,14 @@
 ## E-16 — неутверждённая универсальная DNS policy в docs closeout
 
 Лена добавила SPF/DKIM/DMARC как общий обязательный набор без установленного product decision или проверенного универсального provider contract. Мира выявила F-DOCS-01. Исправлено в #398: применимые DNS records по актуальной документации выбранного provider; D-07/D-08 сохранены. Предотвращение: docs closeout отражает принятый contract, не вводит дополнительные operational requirements из предположений. Общий лог сохраняется в service branch для разрешённого переноса.
+
+## E-17 — лишний implementation-style reviewer назначен на docs-only closeout
+
+**Что произошло:** после AUTHOR PASS Лены и whole-docs coordinator PASS Миры по #398 Мира механически назначила Лёву на отдельный technical-accuracy review документации, перенеся implementation review-gate на docs-only PR без правила, которое требовало такой gate.
+
+**Почему это ошибка:** из обязательности независимого technical review для implementation PR не следует обязательность той же проверки для отдельного docs closeout. Назначение создавало лишнюю работу Лёве и задерживало merge уже проверенной документации.
+
+**Как предотвращать:** перед handoff проверять, относится ли конкретный gate к типу текущего артефакта. Для docs-only PR использовать фактически установленные требования задачи и AGENTS, а не автоматически копировать implementation cycle. Назначение Лёвы отменено до начала review; #398 после coordinator PASS был передан владельцу на merge.
+
+**Общий лог:** эта логическая ошибка также записана в service-branch копии `AGENT_LOGIC_ERRORS.md` для разрешённого последующего переноса в main.
+
