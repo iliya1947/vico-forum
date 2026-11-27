@@ -26,38 +26,42 @@
 
 Conclusion: no confirmed current-scope product defect from substantive review, accepted head/tree unchanged; **AUTHOR PASS**. AUTH-07/independent reviewer gate and real provider/deployed acceptance remain outside this result.
 
-## New #388 exact-head automated checks (separate gate)
+## New #388 exact-head automated checks — completed, separate gate
 
-Triggered once via run:ci and run:acceptance. New runs filtered by PR number 388, head branch, exact SHA and base. Earlier #395 runs on the same SHA are not counted; skipped label-event duplicates/control workflow excluded.
+Fresh runs selected by PR number 388, branch, head `615d93598daf78945a86fbdc4255bc778ae3403f` and base `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Earlier #395 runs on same SHA and skipped label/control workflows excluded. PR/main/tree unchanged. Both CI jobs actually checked out merge-ref `9094b1f94a7878dcaf8771d6e4160080bfa299f9`, whose tree `9cd50834cd1d86aae2a1192bd8ff9fd27aebebbd` is identical to accepted head. CI #45912881134 checks job 140225153982: 252 files / 3342 tests passed, lint/typecheck/build/migration history/Drizzle parity passed. Database job 140225153815: 123 files / 1998 tests passed including auth-whole-lifecycle 62/62, schema/manifest (76 tables), privilege/split authority and Worker smoke passed.
 
-| Workflow | Run | Observed status |
+| Workflow | Run | Actual result |
 |---|---|---|
-| AP-10 isolated browser acceptance | [45912884300](https://github.com/iliya1947/vico-forum/actions/runs/45912884300) | IN_PROGRESS |
-| AUTH-02b connected email verification Worker Chromium acceptance | [45912884327](https://github.com/iliya1947/vico-forum/actions/runs/45912884327) | SUCCESS |
-| AUTH-05 connected anti-abuse Worker Chromium acceptance | [45912884205](https://github.com/iliya1947/vico-forum/actions/runs/45912884205) | SUCCESS |
-| CI | [45912881134](https://github.com/iliya1947/vico-forum/actions/runs/45912881134) | IN_PROGRESS |
-| Forum structure whole-feature connected Chromium and local R2 | [45912884129](https://github.com/iliya1947/vico-forum/actions/runs/45912884129) | SUCCESS |
-| Own topic title connected acceptance | [45912884262](https://github.com/iliya1947/vico-forum/actions/runs/45912884262) | SUCCESS |
-| Personal Mute/Block connected acceptance | [45912884158](https://github.com/iliya1947/vico-forum/actions/runs/45912884158) | SUCCESS |
-| SA-01 Super-admin connected Chromium acceptance | [45912884330](https://github.com/iliya1947/vico-forum/actions/runs/45912884330) | SUCCESS |
-| SA-03 unified profile connected Chromium acceptance | [45912884175](https://github.com/iliya1947/vico-forum/actions/runs/45912884175) | SUCCESS |
-| SA04-J12 connected AccountState Chromium acceptance | [45912884290](https://github.com/iliya1947/vico-forum/actions/runs/45912884290) | SUCCESS |
-| SA04-K5 connected attachment Worker R2 Chromium acceptance | [45912884312](https://github.com/iliya1947/vico-forum/actions/runs/45912884312) | IN_PROGRESS (attempt 2) |
-| SA04-L3 connected authorization Owner Worker Chromium acceptance | [45912884310](https://github.com/iliya1947/vico-forum/actions/runs/45912884310) | SUCCESS |
-| SA04-M2 connected AP10 Worker Chromium AccountState acceptance | [45912884335](https://github.com/iliya1947/vico-forum/actions/runs/45912884335) | SUCCESS |
-| SA04-N connected Complaints Worker Chromium AccountState acceptance | [45912884181](https://github.com/iliya1947/vico-forum/actions/runs/45912884181) | SUCCESS |
-| SA04-S complete AccountState connected acceptance | [45912884154](https://github.com/iliya1947/vico-forum/actions/runs/45912884154) | SUCCESS |
-| SA05 whole Owner deactivation connected acceptance | [45912884243](https://github.com/iliya1947/vico-forum/actions/runs/45912884243) | SUCCESS |
-| SA06 native monitoring connected Chromium acceptance | [45912884276](https://github.com/iliya1947/vico-forum/actions/runs/45912884276) | SUCCESS |
-| SA07 Background Localization Files Data and Integrations connected Chromium acceptance | [45912884208](https://github.com/iliya1947/vico-forum/actions/runs/45912884208) | IN_PROGRESS |
-| SA08 Overview and whole-program entry connected Chromium acceptance | [45912884295](https://github.com/iliya1947/vico-forum/actions/runs/45912884295) | IN_PROGRESS |
-| Topic Bookmarks connected acceptance | [45912884211](https://github.com/iliya1947/vico-forum/actions/runs/45912884211) | SUCCESS |
-| Topic Watch connected acceptance | [45912884249](https://github.com/iliya1947/vico-forum/actions/runs/45912884249) | SUCCESS |
+| AP-10 isolated browser acceptance | [45912884300](https://github.com/iliya1947/vico-forum/actions/runs/45912884300) | PASS |
+| AUTH-02b connected email verification Worker Chromium acceptance | [45912884327](https://github.com/iliya1947/vico-forum/actions/runs/45912884327) | PASS |
+| AUTH-05 connected anti-abuse Worker Chromium acceptance | [45912884205](https://github.com/iliya1947/vico-forum/actions/runs/45912884205) | PASS |
+| CI | [45912881134](https://github.com/iliya1947/vico-forum/actions/runs/45912881134) | PASS |
+| Forum structure whole-feature connected Chromium and local R2 | [45912884129](https://github.com/iliya1947/vico-forum/actions/runs/45912884129) | PASS |
+| Own topic title connected acceptance | [45912884262](https://github.com/iliya1947/vico-forum/actions/runs/45912884262) | PASS |
+| Personal Mute/Block connected acceptance | [45912884158](https://github.com/iliya1947/vico-forum/actions/runs/45912884158) | PASS |
+| SA-01 Super-admin connected Chromium acceptance | [45912884330](https://github.com/iliya1947/vico-forum/actions/runs/45912884330) | PASS |
+| SA-03 unified profile connected Chromium acceptance | [45912884175](https://github.com/iliya1947/vico-forum/actions/runs/45912884175) | PASS |
+| SA04-J12 connected AccountState Chromium acceptance | [45912884290](https://github.com/iliya1947/vico-forum/actions/runs/45912884290) | PASS |
+| SA04-K5 connected attachment Worker R2 Chromium acceptance | [45912884312](https://github.com/iliya1947/vico-forum/actions/runs/45912884312) | FAIL (attempts 1 and 2) |
+| SA04-L3 connected authorization Owner Worker Chromium acceptance | [45912884310](https://github.com/iliya1947/vico-forum/actions/runs/45912884310) | PASS |
+| SA04-M2 connected AP10 Worker Chromium AccountState acceptance | [45912884335](https://github.com/iliya1947/vico-forum/actions/runs/45912884335) | PASS |
+| SA04-N connected Complaints Worker Chromium AccountState acceptance | [45912884181](https://github.com/iliya1947/vico-forum/actions/runs/45912884181) | PASS |
+| SA04-S complete AccountState connected acceptance | [45912884154](https://github.com/iliya1947/vico-forum/actions/runs/45912884154) | PASS |
+| SA05 whole Owner deactivation connected acceptance | [45912884243](https://github.com/iliya1947/vico-forum/actions/runs/45912884243) | PASS |
+| SA06 native monitoring connected Chromium acceptance | [45912884276](https://github.com/iliya1947/vico-forum/actions/runs/45912884276) | PASS |
+| SA07 Background Localization Files Data and Integrations connected Chromium acceptance | [45912884208](https://github.com/iliya1947/vico-forum/actions/runs/45912884208) | PASS |
+| SA08 Overview and whole-program entry connected Chromium acceptance | [45912884295](https://github.com/iliya1947/vico-forum/actions/runs/45912884295) | PASS |
+| Topic Bookmarks connected acceptance | [45912884211](https://github.com/iliya1947/vico-forum/actions/runs/45912884211) | PASS |
+| Topic Watch connected acceptance | [45912884249](https://github.com/iliya1947/vico-forum/actions/runs/45912884249) | PASS |
 
-CI: IN_PROGRESS. Acceptance: 16/20 success, 4 pending, 0 completed non-success. Snapshot only, not a final CI verdict. 
+AUTH-05 job 140225164753 checked out exact head and executed F01-open-email-registration-differential-challenge-denials. AUTH-02b job 140225165216 checked out exact head and executed AUTH06 proof refresh/back, SET05 password change/revocation, EN/RU/HE responsive LTR/RTL and explicit relogin. All 21 applicable workflows completed; CI PASS, acceptance 19/20 PASS.
 
-K5 [run 45912884312](https://github.com/iliya1947/vico-forum/actions/runs/45912884312), first failed job 140225165150: log confirms real Worker + Better Auth twelve-session fixture completed, then `tests/browser/sa04-attachments/check.py:396 assert len(operation) == 36` before the first attachment upload. Test reads editorOperationId immediately following form count and optional resume; actual returned value not recorded. Identical test blob `ca37511a35452f515b41b150919ac3d30d45551a` on previous AUTH-05 head with same prior assertion symptom (#45825205521 attempt 2 success). Previous #395 K5 #45897171830 passed attempt 1 on identical current SHA. No confirmed product defect from this symptom; possible initialization timing, not proven cause. Re-run only failed job #45912884312 accepted, attempt 2; no changes to product, assertion, or test. Preserve first failure in evidence and qualify retry, do not assume success.
+### K5 automated gate — HOLD / diagnostic evidence
 
-## Next
+- Run [45912884312](https://github.com/iliya1947/vico-forum/actions/runs/45912884312), jobs [140225165150](https://github.com/iliya1947/vico-forum/actions/runs/45912884312/job/140225165150) (attempt 1), [140225826624](https://github.com/iliya1947/vico-forum/actions/runs/45912884312/job/140225826624) (attempt 2). Both actually checked out identical #388 merge-ref `9094b1f94a7878dcaf8771d6e4160080bfa299f9`; both built real Worker, migrated PG, completed genuine twelve-session fixture, then failed at `tests/browser/sa04-attachments/check.py:396 assert len(operation) == 36`, before first upload/R2 operation. Retried only failed job; second attempt same failure. No code/test change.
+- Downloaded and inspected actual attempt-2 artifact 15160538150, failure.json: sha exactly `615d93598daf78945a86fbdc4255bc778ae3403f`, one recorded fixture case, AssertionError(), external=[], page_errors=[]. Neither actual input value nor hydration/initialization readiness was captured.
+- Prior #395 K5 [45897171830](https://github.com/iliya1947/vico-forum/actions/runs/45897171830) success, job 140173837468: actual merge-ref `fa33fc59a4de57ccb78902812fca9c942b2f6a24` whose tree identical to assembled head (AUTH-06 REVIEW); log shows initial upload, R2 security cases and SA04_K5_CONNECTED_PASS 33. Earlier #394 K5 #45825205521 attempt 2 success; relevant test blob identical (`ca37511a35452f515b41b150919ac3d30d45551a`). Historical PASS does not substitute for #388 failed gate.
+- Confirmed test synchronization gap: `app/forum/editor-attachments.tsx:137–176` initial draftId="" via useState, generated UUID only in React useEffect, canAdd gated on initialized and publication blocking before initialized. `app/forum/markdown-editor.tsx:993–997` hidden editorOperationId reflects attachments.operationId. `tests/browser/sa04-attachments/check.py:388–396` networkidle, expect form count, optional resume, immediate locator.input_value() then length assert. Form existence does not imply effect completed. Possible timing race is supported by source, but exact failing value/initialization time unavailable; product failure or actual root cause not established. Do not claim that browser test itself proves auth or R2 defect. No further blind rerun.
+- Bounded proposed next diagnostic/corrective pass (not applied): wait for UUID-shaped input using Playwright web-first assertion (bounded deadline), then read operation, keep original len assertion and every subsequent actual Worker/PG/R2 security assertion. On timeout capture safe readiness/visibility/length/page errors, not token/identity payload. Review other editor operation reads only if affected. If readiness never occurs, diagnose product path rather than mask it. This is a proposed test-only correction, not a confirmed cure or a waiver. Any accepted-tree change requires separately authorized correction route, new exact-head evidence; don't silently change assembly contract.
 
-Check actual #388 runs/jobs; if all applicable checks pass on exact head/base, record evidence and STOP for Mira's final whole-feature coordinator review. If any product defect or changed tree/base confirmed, HOLD/evidence/STOP without implementing a fix in assembly. No AUTH-07, main merge, independent final review by Ada or external activation.
+**Result: assembly identity PASS, substantive AUTHOR PASS unchanged, automated gate HOLD (K5 2 failures).** Current-scope product blockers established = 0; required automated blocker = 1. No handoff as final assembly PASS. Ada STOP pending explicit route for bounded K5 correction/evidence. Keep #388 open/unmerged, main unchanged; AUTH-07 and external/deployed activation not authorized.

@@ -2,13 +2,11 @@
 
 ## Принятый stack и final assembly
 
-1. AUTH-01–AUTH-04 coordinator PASS; AUTH-05 corrected #394 PASS, F01 закрыт.
-2. AUTH-06 #395 exact `615d93598daf78945a86fbdc4255bc778ae3403f` — AUTHOR PASS + whole-feature COORDINATOR PASS, исторические CI/20 acceptance PASS.
-3. По назначению владельца Ада перенесла accepted head в первый PR #388 к unchanged main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Git tree идентичен, изменений product behavior нет. Intermediate #389/#391/#392/#393/#394/#395 superseded, GitHub автоматически закрыл их как merged в первую feature branch, не main.
-4. Final substantive AUTHOR PASS независимо от CI. Новые автоматизированные проверки #388: CI IN_PROGRESS, acceptance 16/20 success, 4 pending, 0 completed non-success. K5 diagnostic rerun attempt 2 без изменений.
-5. Evidence и точный маршрут — stages/FINAL-ASSEMBLY/RESULT.md и WORKFLOW.md.
-6. Следующий gate — final whole-feature coordinator review Миры только после завершения применимых checks #388; AUTH-07 пока не активирован.
+1. AUTH-01–AUTH-06 accepted, F01 исправлен. #388 exact `615d93598daf78945a86fbdc4255bc778ae3403f` к main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, identical accepted #395 tree `9cd50834cd1d86aae2a1192bd8ff9fd27aebebbd`, 6 intermediate PRs superseded.
+2. Final substantive AUTHOR PASS. Новые #388 CI PASS; 19/20 connected acceptance PASS. K5 #45912884312 failed twice before attachment upload.
+3. FINAL-ASSEMBLY HOLD только по незакрытому automated gate; product defect не доказан. Установлен test synchronization gap: SSR/first render empty operationId → useEffect UUID; assertion reads without waiting. Причинная связь с конкретными failures не доказана, same-tree prior #395 K5 33/33 PASS. Evidence: stages/FINAL-ASSEMBLY/RESULT.md.
+4. Требуется отдельное решение/назначение bounded K5 test/evidence correction с сохранением всех substantive checks. Не менять accepted tree самовольно или засчитывать старый PASS вместо failed #388. До закрытия gate не переходить к final coordinator review/AUTH-07.
 
 ## Независимость и ограничения
 
-Лёва участвовал в AUTH-06, Ада — в AUTH-05 correction/final assembly; оба не independent final reviewer. Reviewer назначается отдельно. Repository/local-CI evidence не является deployed/provider acceptance. Main merge и external/Stage-6 activation заблокированы.
+Лёва участвовал в AUTH-06, Ада в AUTH-05 correction/assembly; оба не independent final reviewer. Main merge и external/Stage-6 activation заблокированы.
