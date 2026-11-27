@@ -32,3 +32,32 @@ C2 implemented in #388 commit `5b29469fe51e716b483d4e610dd90705f5409029` (tree d
 - Private AuthMailInput adds optional actionLocale: existing input.locale renders message; validateAuthMailActionURL uses separately validated action locale when supplied. Own call passes actionLocale from existing callback destination, not saved locale. Same trusted origin, purpose, path-only return, query/fragment strictness, fallback and post-commit transport outcomes. Guest/default call contract unchanged.
 - Unit regressions: five saved locale cases (RU, HE, inactive ka, unknown, empty), HE action path and same-locale return destination independent of rendering; rejects altered action locale, foreign origin and cross-locale return; fake drain and existing fetch prohibition retained. PG existing canonical direct create and mixed HTTP/direct two-phase tests assert saved/action separately, change preference to null between email phases and verify fallback independent of RU action; no removal of prior binding/session/fact assertions. Connected Chromium fixture sets RU preference with EN route; validates actual rendered RU create and old-address mail, HE RTL new-address after preference change; inactive ka replacement fixture falls back to EN; links remain EN. No changes to guest scenarios.
 - C2 source diff inspected and test definitions checked, not executed. No AUTHOR PASS. C3 must inspect FULL combined correction diff and all affected callers/tests, ensure C1 browser budget/session timing and revalidation/status/same-document semantics, check no weakening of proof capture, then launch exact-head CI and applicable connected acceptance on stable final head. Do not claim green from old head. C4 handoff only after actual gates. No fresh runtime evidence yet.
+
+
+C3 — source self-check and exact-head test launch checkpoint (2026-11-27).
+- Main AGENTS and service rules/assignment reread. #388 remains open, exact `5b29469fe51e716b483d4e610dd90705f5409029`, base/main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Full combined correction patch reviewed against HOLD head: 2 commits, 10 paths, no K5, schema, deps, config or scope change. Checked all affected references in the full #388 diff (all 200 paths, six snapshot patches unavailable and unrelated to correction). Read UI capture/send and revalidation paths, actual mail URL/template/render contract, locked subject state, guest/own dispatch, request registry wiring, fixture locale/migration, relevant mock expectations, fault/Owner race injection and browser acceptance flow. No new confirmed defect from the inspected correction delta. No local dependency/Chromium run executed. Do not claim independent review or final AUTHOR PASS yet.
+- F-B1-01 author inspection: revalidation reads server-authoritative methods/session state, success retained when enabled flips, explicit submit and keyed session retained. Connected test creates two genuine sessions before synthetic Google method conversion, asserts reloaded data on unchanged document, revoked session null and current preserved.
+- F-B2-02: password/no-purpose vs email-change/explicit-purpose captures separated; reset and guest/error scrub paths examined. New proof accepted on native hashchange and removed from URL, no automatic POST. Test uses expired issued proof, a separate verified account, 4 own attempts <=5/60s, 2 target mails <=3/600s, distinct qualified ingress matching existing connected fixture practice; prior sign-in counts considered against 3/10s native limit. Runtime behavior still needs connected evidence.
+- F-B2-01: same locked subject preference for own issuance incl second phase; no raw user-controlled preference, no proof persistence change. Mail template locale and validated URL locale separate; unchanged guest flows. Nullable DB preference already exists, registry fallback and strict URL validation unchanged. Unit five-case regression, PG canonical own methods, connected RU/HE/inactive fallback checks; original acceptance assertions preserved. Fault injections match SQL semantics not positional query count.
+- Triggered run:ci and run:acceptance on stable exact head. CI [45936962209](https://github.com/iliya1947/vico-forum/actions/runs/45936962209), jobs checks 140302269642/database 140302269390. Acceptance event 03:55:46Z, 20 applicable runs:
+  - 45936965056: AUTH-02b connected email verification Worker Chromium acceptance
+  - 45936964985: SA07 Background Localization Files Data and Integrations connected Chromium acceptance
+  - 45936964825: SA04-L3 connected authorization Owner Worker Chromium acceptance
+  - 45936965095: SA04-K5 connected attachment Worker R2 Chromium acceptance
+  - 45936965189: SA04-N connected Complaints Worker Chromium AccountState acceptance
+  - 45936965150: AUTH-05 connected anti-abuse Worker Chromium acceptance
+  - 45936964887: SA04-S complete AccountState connected acceptance
+  - 45936965045: SA06 native monitoring connected Chromium acceptance
+  - 45936964838: Topic Bookmarks connected acceptance
+  - 45936964981: SA05 whole Owner deactivation connected acceptance
+  - 45936965122: Forum structure whole-feature connected Chromium and local R2
+  - 45936964826: Personal Mute/Block connected acceptance
+  - 45936964861: Own topic title connected acceptance
+  - 45936964849: SA04-J12 connected AccountState Chromium acceptance
+  - 45936964836: SA04-M2 connected AP10 Worker Chromium AccountState acceptance
+  - 45936965130: SA-01 Super-admin connected Chromium acceptance
+  - 45936965075: Topic Watch connected acceptance
+  - 45936965038: SA08 Overview and whole-program entry connected Chromium acceptance
+  - 45936964993: SA-03 unified profile connected Chromium acceptance
+  - 45936964848: AP-10 isolated browser acceptance
+- Latest status snapshot: CI in_progress/pending; acceptance {"in_progress":15,"queued":5}. First run:ci event duplicate skipped acceptance is not proof; verify actual second-event jobs. No more source edits during checks unless confirmed defect. Next action: query exact-head actual run/jobs, primary logs, compare merge-ref tree if needed; verify all applicable gates and new AUTH07 Chromium assertions actually reached. If a real failure, diagnose fully before changing anything; don't rerun blindly. Then write RESULT and handoff ONLY on proven author PASS. C3 pending, no Mira/Mark activation.
