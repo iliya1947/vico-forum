@@ -1,3 +1,11 @@
+# K5-CORRECTION — текущий результат: ROLLED BACK / HOLD / handoff Мире
+
+По прямой команде владельца кандидат `bb19d5c238dec436a57dc174b9c422a98b4ae4f1` откачен, рабочая ветка #388 восстановлена на его непосредственного родителя `615d93598daf78945a86fbdc4255bc778ae3403f` через force-with-lease (expected SHA = candidate), без изменения других commits. Actual branch ref, PR head, tree `9cd50834cd1d86aae2a1192bd8ff9fd27aebebbd` и unchanged main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432` подтверждены. Candidate had zero workflow runs. Ни targeted K5, ни final CI/acceptance на candidate не запускались.
+
+На восстановленном head прежний substantive AUTHOR PASS, CI PASS, 19/20 applicable connected acceptance PASS; K5 #45912884312 дважды FAIL. Не выдавать historical K5 pass или author self-check откатанной correction за закрытие gate. Исходная диагностика сохраняется. Владелец отверг маршрут, требующий ручного запуска от него, и распорядился вернуть задачу Мире. **Ада STOP; Мира определяет дальнейший маршрут.**
+
+## Исторический отчёт откатанного кандидата (не текущий статус)
+
 # K5-CORRECTION — текущий результат Ады
 
 ## Exact state и scope
