@@ -1,11 +1,5 @@
-# COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
+# COMMUNICATION.md — общий актуальный контекст
 
-## Active correction
+AUTH-07-CORRECTION-2 завершена Леной на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`: AUTHOR SOURCE SELF-CHECK PASS, оба findings F-B2-03/F-B2-04 проверены по source, два файла. Runtime/automated gate нового head не проверен; Лена не запускает тесты по прямой команде владельца. Детали и ограничения — `stages/AUTH-07-CORRECTION-2/RESULT.md`.
 
-Лёва завершил final technical review #388 exact `5b29469fe51e716b483d4e610dd90705f5409029` с HOLD: F-B2-03 same-document guest reset proof и F-B2-04 потеря safe returnTo на retry.
-
-Мира независимо подтвердила оба finding как current-scope defects AUTH-03. Пересмотр технического плана не требуется.
-
-Исполнитель — **Лена / GPT-6.2** по `stages/AUTH-07-CORRECTION-2/PLAN.md`. Correction выполняется в assembled #388. Лёва STOP до нового stable exact head, затем повторяет owner-assigned final technical review.
-
-По прямому решению владельца Марк и Лира не подключаются; текущая техническая работа только Лёва + Лена. Merge/docs/Stage-6 blocked.
+Лена STOP; Лёва принимает новый stable head для повторного owner-assigned final technical review. Марк/Лира не подключаются. Merge/docs/Stage-6 blocked. Актуальное назначение — WORKFLOW.md.

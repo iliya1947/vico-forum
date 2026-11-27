@@ -1,16 +1,11 @@
 # WORKFLOW.md — текущее состояние и следующий переход
 
-## Текущее состояние
-
-1. Собранный PR #388 открыт; current reviewed exact `5b29469fe51e716b483d4e610dd90705f5409029`, base/main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. AUTH-07 coordinator review Миры ранее PASS; три прежних finding Лены закрыты.
-3. **Final technical review Лёвы — HOLD** с двумя guest password recovery defects: F-B2-03 и F-B2-04.
-4. Мира независимо проверила оба finding против actual source и AUTH-03 contract: **оба подтверждены current-scope**; technical-plan correction не требуется.
-5. Активирован единый bounded route: `stages/AUTH-07-CORRECTION-2/PLAN.md`.
-6. **Лена / GPT-6.2 назначена исполнителем correction в #388.**
-7. Лёва STOP до нового stable head; Марк и Лира не подключаются. По решению владельца текущая техническая работа ведётся только Лёвой и Леной.
-8. Merge, docs closeout и Stage-6 остаются заблокированы.
+1. Собранный PR #388 открыт, stable candidate `5d8bdaad117e59326f5eae61ea13613b0d45df7c`, tree `59901b92ce2753fb69adaa9c43ff09bbbcd70dba`, base/main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
+2. Предыдущий final technical review Лёвы — HOLD на `5b29469fe51e716b483d4e610dd90705f5409029`; оба finding F-B2-03/F-B2-04 подтверждены Мирой. Technical plan unchanged.
+3. **AUTH-07-CORRECTION-2 — AUTHOR SOURCE SELF-CHECK PASS / Лена STOP.** Оба исправления реализованы, содержательная проверка correction scope завершена. Результат и ограничения: `stages/AUTH-07-CORRECTION-2/RESULT.md`. Новые runtime/automated results не проверены. Лена тесты не запускает по прямой команде владельца; automated PASS не присвоен.
+4. **Лёва — повторный owner-assigned final technical reviewer** нового exact head. Проверить реализацию и относящийся final gate, включая необходимые exact-head evidence; соблюсти установленное владельцем разделение ответственности за тесты (не Лена). Не считать source self-check финальным PASS. Марк и Лира не подключаются.
+5. Merge, docs closeout и Stage-6 остаются заблокированы.
 
 ## Следующий переход
 
-Лена выполняет только `stages/AUTH-07-CORRECTION-2/PLAN.md` → author self-check → необходимые exact-head checks → `RESULT.md` → STOP. После AUTHOR PASS новый stable head возвращается Лёве на повторный owner-assigned final technical review. Implementation во время review не менять.
+Лёва принимает stable candidate `5d8bdaad117e59326f5eae61ea13613b0d45df7c` и выполняет повторный final technical review. При дефекте текущей задачи вернуть findings; при PASS с выполненными обязательными gates зафиксировать фактический результат. Implementation во время review не менять. Решение о merge остаётся владельцу.

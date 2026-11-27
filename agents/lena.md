@@ -1,20 +1,3 @@
 # agents/lena.md — личная рабочая память Лены
 
-## Текущее назначение
-
-**AUTH-07-CORRECTION-2 — исполнитель.**
-
-1. Основание: final technical review Лёвы на #388 exact `5b29469fe51e716b483d4e610dd90705f5409029` — HOLD с F-B2-03 и F-B2-04.
-2. Мира независимо подтвердила оба finding как current-scope; technical-plan correction не требуется.
-3. Рабочий маршрут: `WORKFLOW.md` → `stages/AUTH-07-CORRECTION-2/PLAN.md` → при необходимости `stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md`.
-4. Correction выполнять в assembled PR #388; новый implementation PR не создавать.
-5. Scope ограничен guest reset same-document proof capture, safe returnTo retry preservation и необходимыми regressions.
-6. Не менять previous AUTH-07 correction, K5, schema/dependencies/provider/Stage-6 без нового основания.
-7. После реализации: author self-check, необходимые exact-head checks, записать `stages/AUTH-07-CORRECTION-2/RESULT.md` и STOP.
-8. Затем corrected head проверяет Лёва. Лена собственную correction не review.
-
-## Correction-2 entry checkpoint
-
-D1: восстановлено текущее назначение; прочитаны AGENTS, RULES, TASK, WORKFLOW, собственный файл, CORRECTION-2 PLAN, FINAL-TECHNICAL-REVIEW и AUTH-03 PLAN. #388 exact 5b29469fe51e716b483d4e610dd90705f5409029. Оба findings подтверждены по исходникам: reset-password.tsx mount-only capture и unconditional ready=false после POST; retry link теряет уже validated returnTo, forgot loader применяет verificationReturnPath и отправляет redirectTo. D2: после чтения обязательных актуальных main docs реализовать оба исправления и focused regressions единым пакетом; учесть replacement при in-flight POST и безопасный fallback, не менять backend/предыдущую correction/K5. D3: substantive author self-check всего delta, RESULT и handoff Лёве. Прежний прямой запрет владельца запускать тесты Леной действует; не запускать. D1 завершён, код ещё не изменён. Следующая команда продолжения — D2.
-
-D2 implemented: #388 exact `2ad7cb6ee041803f9f48192392d95fefe72ba8f8`, tree `2c33cd89be2705a37b338727e25505e73cfd3665`, parent 5b29469, base/main unchanged. Read main PROJECT, PROJECT_STATE, ROADMAP, AUTHORIZATION and root PLAN completely; AUTH-03 and correction-2 contracts read previously. No new dependency/architecture/provider. Actual compare: only app/routes/reset-password.tsx and tests/browser/auth-02b/check.py. Mount/hashchange capture uses existing scrub, ref; clears pending old outcome if a replacement arrived, preserves explicit-submit only; retry link uses loader-validated returnTo. Browser regressions extend existing recovery: real proof expired via disposable DB; retry href→separate forgot page→mail safe return; same-document replacement + refresh/reopened proof, no automatic terminal POST, token scrub/DOM privacy, unsafe foreign/cross-locale fallback, explicit success, replay denial, no auto-session and original old/new sign-in assertions. Expected mail fact count incremented for actual second reset mail. No tests launched. D3 remains: complete substantive review of changed code/fixture and affected call paths against current contract, including native/common budget, actual ingress and route locators, all relevant unit/route tests, navigation/hydration/async race, verify unchanged old contracts; fix only confirmed issues, then RESULT/handoff to Leva. Do not infer PASS from tests, and no test launch by Lena per owner. No AUTHOR PASS yet.
+AUTH-07-CORRECTION-2 — **STOP / AUTHOR SOURCE SELF-CHECK PASS** на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`. D1/D2/D3 выполнены; полный correction result и limitations — `stages/AUTH-07-CORRECTION-2/RESULT.md`. Тесты на новом head не запускались; automated verdict не присвоен. Handoff Лёве через WORKFLOW и управляющий комментарий #320. Прямой запрет владельца запускать тесты Леной действует. Перед каждым следующим продолжением, включая STOP, заново читать актуальные AGENTS/RULES/TASK/WORKFLOW/свой файл: предыдущая ошибка E-15 не должна повториться.
