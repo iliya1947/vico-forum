@@ -4,23 +4,25 @@
 
 ## Активный этап
 
-Продуктовый scope сформирован; подготовка критериев передачи на техническое планирование.
+Продуктовый scope завершён и прошёл финальную внутреннюю проверку. Готовность к handoff Лёве.
 
 ## Назначение
 
 - Координатор: Мира — GPT-5.6 Sol.
 - Текущий исполнитель: Мира.
-- Технический планировщик после scope: Лёва — Codex-6.1 Sol.
+- Следующий исполнитель: Лёва — Codex-6.1 Sol, полный технический план.
 - Implementation PR: `#399`, ветка `feature/chatgpt-forum-control`.
 - Служебный PR: `#400`, ветка `service/chatgpt-forum-control`.
 
 ## Состояние
 
 1. `#399` остаётся пустой draft-заготовкой; реализация не начата.
-2. Capability inventory завершён: `research/capability-inventory.md`.
-3. Product scope v1, confirmation/risk model, exclusions, untrusted-content boundary, replay/result semantics и product acceptance зафиксированы в `research/product-scope-v1.md` и отражены в `TASK.md`/`DECISIONS.md`.
-4. CI/acceptance не запускались.
+2. Capability inventory: `research/capability-inventory.md`.
+3. Финальный product scope v1: `research/product-scope-v1.md`.
+4. Финальная scope-проверка: `research/scope-review.md` — PASS после F-01–F-03 corrections.
+5. `TASK.md` и `DECISIONS.md` отражают действующий scope.
+6. CI/acceptance не запускались, так как реализации ещё нет.
 
 ## Следующий переход
 
-Мира выполняет финальную внутреннюю проверку scope на полноту/противоречия с установленной целью и правилами проекта. Если scope проходит проверку, привести контекст в состояние handoff и передать Лёве задачу на полный технический план.
+Передать Лёве задачу на **полный технический план всей задачи** до начала реализации. Лёва должен самостоятельно выбрать технически корректную реализацию в установленных продуктовых границах, определить этапы, зависимости и критерии готовности. Реализацию в `#399` до принятия полного плана не начинать.
