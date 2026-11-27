@@ -121,7 +121,7 @@
 10. Personal theme/editor/device-local Administrator preferences.
 11. Own Account & security mutations через этот канал: password/email/Google link-unlink/own-session revocation.
 12. User-facing AI features, AI moderation decisions или autonomous moderation.
-13. Любая автоматическая массовая операция, построенная как цикл поверх единичных commands, пока для неё нет отдельной canonical bulk capability.
+13. Неподтверждённый, неограниченный или динамически расширяемый массовый цикл. Подтверждённый фиксированный набор targets допускается выполнять последовательностью существующих canonical единичных операций с per-target authorization/CAS/replay и итоговым отчётом по каждому объекту.
 
 ## 7. Confirmation model
 
