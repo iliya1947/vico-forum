@@ -312,10 +312,16 @@ def run():
         assert call(third, "sign-in/email", {"email": ru, "password": password}).status == 200
         current_ru = call(third, "get-session").json()
         ru_session_id = current_ru["session"]["id"]
+        other_create_session = context()
+        assert call(other_create_session, "sign-in/email", {"email": ru, "password": password}).status == 200
+        other_create_id = call(other_create_session, "get-session").json()["session"]["id"]
+        assert other_create_id != ru_session_id
+        assert len(sessions(ru_id)) == 2
         # Provision the method fixture without reaching a real Google resource.
         sql("update account set provider_id='google',account_id='google-fixture-'||user_id,password=null where user_id=$1 and provider_id='credential'", [ru_id])
         create_page = new_page(third)
         create_page.goto(base + "/en/settings/account")
+        expect(create_page.locator(".settings-account-sessions li")).to_have_count(2)
         with create_page.expect_response(lambda response: response.url == base + "/api/auth/request-password-create") as requested:
             create_page.get_by_role("button", name="Send a recovery link").click()
         assert private(requested.value).status == 200
@@ -327,13 +333,25 @@ def run():
         assert create_page.goto(create_link).status == 200
         expect(create_page.locator('input[name="newPassword"]')).to_be_visible()
         assert "token=" not in create_page.url
+        expect(create_page.locator(".settings-account-sessions li")).to_have_count(2)
+        create_page.evaluate("window.auth07MountedDocument = true")
         create_page.locator('input[name="newPassword"]').fill("browser-test-only-new-own-password")
         create_page.get_by_role("button", name="Add a password", exact=True).click()
         expect(create_page.get_by_role("status")).to_contain_text("Password changed.")
         assert call(third, "get-session").json()["session"]["id"] == ru_session_id
         assert sql("select provider_id from account where user_id=$1 order by provider_id", [ru_id]) == [
             {"provider_id": "credential"}, {"provider_id": "google"}]
+        expect(create_page.get_by_text("Email and password", exact=True)).to_be_visible()
+        expect(create_page.get_by_text("Google", exact=True)).to_be_visible()
+        expect(create_page.locator("#settings-current-password")).to_be_visible()
+        expect(create_page.locator(".settings-account-sessions li")).to_have_count(1)
+        expect(create_page.locator(".settings-account-revoke-form")).to_have_count(0)
+        assert create_page.evaluate("window.auth07MountedDocument === true")
+        assert sessions(ru_id) == [{"id": ru_session_id, "user_id": ru_id}]
+        assert call(other_create_session, "get-session").json() is None
+        other_create_session.close()
         record("google-method-and-initial-session-preserved")
+        record("AUTH07-password-create-revalidates-mounted-methods-and-sessions")
         credential_mail = sql("""select payload->>'mailPurpose' purpose, payload->>'mailTransport' transport,
           payload->>'mailOutcome' outcome from owner_events where kind='integration.authMailOutcome'
           and payload->>'mailPurpose' in ('password-reset','password-create') order by purpose""")
@@ -505,6 +523,68 @@ def run():
         assert call(third, "sign-in/email", {"email": changed_email, "password": changed_password}).status == 200
         assert user(changed_email)["id"] == ru_id and len(sessions(ru_id)) == 1
         record("AUTH06-explicit-relogin-after-email-password-change-and-unlink")
+
+        # A separate verified fixture keeps the previous own-rate-limit and
+        # email-change acceptance intact. Only the provider method is staged;
+        # both new mail proofs and terminal attempts use the actual Worker.
+        replacement_context = context()
+        replacement_context.set_extra_http_headers({"cf-connecting-ip": "203.0.113.96"})
+        assert call(replacement_context, "sign-in/email", {"email": he, "password": password}).status == 200
+        replacement_session = call(replacement_context, "get-session").json()["session"]["id"]
+        sql("update account set provider_id='google',account_id='google-fixture-'||user_id,password=null where user_id=$1 and provider_id='credential'", [he_id])
+        replacement_page = new_page(replacement_context)
+        replacement_page.goto(base + "/en/settings/account")
+        terminal_requests = []
+        replacement_page.on("request", lambda req: terminal_requests.append(True)
+            if urlparse(req.url).path == "/api/auth/create-password" and req.method == "POST" else None)
+        def issue_creation_link():
+            with replacement_page.expect_response(lambda response: response.url == base + "/api/auth/request-password-create") as issued:
+                replacement_page.get_by_role("button", name="Send a recovery link").click()
+            assert private(issued.value).status == 200
+            expect(replacement_page.get_by_role("status")).to_contain_text("Open the link in this browser")
+            row = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [he])[0]
+            return row["body_text"].split("\u2066")[1].split("\u2069")[0]
+
+        expired_link = issue_creation_link()
+        assert replacement_page.goto(expired_link).status == 200
+        expect(replacement_page.locator('input[name="newPassword"]')).to_be_visible()
+        assert "token=" not in replacement_page.url and not terminal_requests
+        replacement_page.evaluate("window.auth07ReplacementDocument = true")
+        # Expire only the real issued proof, not the active session or budgets.
+        assert len(sql("""update verification set expires_at=clock_timestamp()-interval '1 minute'
+            where id='vico-auth-lifecycle:v1:password-create:' || encode(sha256(convert_to($1,'UTF8')),'hex')
+            returning id""", [he_id])) == 1
+        replacement_page.locator('input[name="newPassword"]').fill("browser-test-only-expired-attempt")
+        with replacement_page.expect_response(lambda response: response.url == base + "/api/auth/create-password") as denied:
+            replacement_page.get_by_role("button", name="Add a password", exact=True).click()
+        assert private(denied.value).status == 400
+        expect(replacement_page.get_by_role("alert")).to_contain_text("Request a new link")
+        assert len(terminal_requests) == 1
+        assert sql("select provider_id from account where user_id=$1", [he_id]) == [{"provider_id": "google"}]
+        new_link = issue_creation_link()
+        old_url, new_url = urlparse(expired_link), urlparse(new_link)
+        assert (old_url.path, old_url.query) == (new_url.path, new_url.query)
+        assert old_url.fragment != new_url.fragment
+        assert replacement_page.url == new_link.split("#", 1)[0]
+        replacement_page.evaluate("(link) => { window.location.href = link; }", new_link)
+        expect(replacement_page.locator('input[name="newPassword"]')).to_be_visible()
+        expect(replacement_page).not_to_have_url(re.compile("token="))
+        assert replacement_page.evaluate("window.auth07ReplacementDocument === true")
+        assert len(terminal_requests) == 1
+        assert sessions(he_id) == [{"id": replacement_session, "user_id": he_id}]
+        replacement_page.locator('input[name="newPassword"]').fill("browser-test-only-replacement-password")
+        with replacement_page.expect_response(lambda response: response.url == base + "/api/auth/create-password") as confirmed:
+            replacement_page.get_by_role("button", name="Add a password", exact=True).click()
+        assert private(confirmed.value).status == 200
+        expect(replacement_page.get_by_text("Email and password", exact=True)).to_be_visible()
+        assert len(terminal_requests) == 2
+        assert replacement_page.evaluate("window.auth07ReplacementDocument === true")
+        assert call(replacement_context, "get-session").json()["session"]["id"] == replacement_session
+        assert sessions(he_id) == [{"id": replacement_session, "user_id": he_id}]
+        assert sql("select provider_id from account where user_id=$1 order by provider_id", [he_id]) == [
+            {"provider_id": "credential"}, {"provider_id": "google"}]
+        replacement_context.close()
+        record("AUTH07-password-create-same-document-replacement-after-expiry")
         assert not external and not errors
         browser.close()
 

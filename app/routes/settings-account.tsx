@@ -157,7 +157,10 @@ export default function SettingsAccountRoute() {
   const header = useHeaderAuthUser();
   const currentAccount = header?.id === state.accountId;
   useEffect(() => {
-    if (!currentAccount) takeCredentialProof("email-change");
+    if (!currentAccount) {
+      takeCredentialProof("email-change");
+      takeCredentialProof();
+    }
   }, [currentAccount]);
   const busy = navigation.state !== "idle";
   const otherSessions = state.sessions.filter(session => !session.current);

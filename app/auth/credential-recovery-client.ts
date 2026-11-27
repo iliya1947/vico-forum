@@ -23,7 +23,10 @@ export async function credentialRequest(endpoint: "request-password-reset" | "re
 export function takeCredentialProof(purpose = "password-create"): string | null {
   const url = new URL(window.location.href);
   const fragment = new URLSearchParams(url.hash.slice(1));
-  if (fragment.has("purpose") && fragment.get("purpose") !== purpose) return null;
+  // Email-change has an explicit discriminator; password links do not.
+  // The two mounted Settings forms must not consume each other's proof.
+  if (purpose === "email-change" ? fragment.get("purpose") !== purpose
+    : fragment.has("purpose") && fragment.get("purpose") !== purpose) return null;
   const values = fragment.getAll("token");
   if (values.length === 0) return null;
   try { window.history.replaceState(window.history.state, "", url.pathname + url.search); }

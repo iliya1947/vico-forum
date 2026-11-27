@@ -392,6 +392,7 @@ export function ForumRouteError({ recoveryAction }: { recoveryAction?: ReactNode
     // An error landing cannot authorize this proof. Discard it rather than
     // preserving it through sign-in or a retry in another session.
     takeCredentialProof("email-change");
+    takeCredentialProof();
   }, [location.hash]);
 
   const copy = status === 401
