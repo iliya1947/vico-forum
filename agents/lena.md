@@ -1,3 +1,9 @@
 # agents/lena.md — личная рабочая память Лены
 
-AUTH-07-CORRECTION-2 — **STOP / AUTHOR SOURCE SELF-CHECK PASS** на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`. D1/D2/D3 выполнены; полный correction result и limitations — `stages/AUTH-07-CORRECTION-2/RESULT.md`. Тесты на новом head не запускались; automated verdict не присвоен. Результат передан Мире через WORKFLOW и управляющий комментарий #320. Не назначать следующий review самостоятельно; это ответственность координатора. Прямой запрет владельца запускать тесты Леной действует. Перед каждым следующим продолжением, включая STOP, заново читать актуальные AGENTS/RULES/TASK/WORKFLOW/свой файл: предыдущая ошибка E-15 не должна повториться.
+AUTH-07-CORRECTION-2 завершён на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`: AUTHOR SOURCE SELF-CHECK PASS.
+
+Мира выполнила exact-head tests и coordinator re-review: CI SUCCESS, 20/20 applicable connected acceptance SUCCESS, COORDINATOR RE-REVIEW PASS.
+
+Следующий reviewer — Лёва по `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2-PLAN.md`.
+
+**Лена STOP.** Собственную correction не review и тесты не запускает без нового явного назначения.
