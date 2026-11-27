@@ -26,4 +26,4 @@
 
 No CI/acceptance/local tests launched by Lena on correction-2, in accordance with the earlier direct owner prohibition. **New runtime evidence is not verified**; old head results cannot be transferred to this head. No automated PASS or final security PASS assigned. Previous owner assignment of tests to Mira is not independently altered by Lena; current technical review route is owner-assigned Leva, not a new reviewer selection. Required exact-head execution must be handled separately under owner-approved responsibility, not by Lena.
 
-Lena STOP. Leva receives exact candidate for repeated final technical review as assigned in WORKFLOW. Merge/docs closeout/Stage-6 remain blocked.
+Lena STOP. Owner clarified role boundary: delivery result goes to Mira as coordinator, who owns test execution and the next transition. Previously assigned repeat technical review by Leva is preserved; Lena does not activate it. Merge/docs closeout/Stage-6 remain blocked.
