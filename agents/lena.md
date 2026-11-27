@@ -1,9 +1,13 @@
 # agents/lena.md — личная рабочая память Лены
 
-AUTH-07-CORRECTION-2 завершён на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`: AUTHOR SOURCE SELF-CHECK PASS.
+## Текущее назначение
 
-Мира выполнила exact-head tests и coordinator re-review: CI SUCCESS, 20/20 applicable connected acceptance SUCCESS, COORDINATOR RE-REVIEW PASS.
+**DOCS-CLOSEOUT — автор.**
 
-Следующий reviewer — Лёва по `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2-PLAN.md`.
-
-**Лена STOP.** Собственную correction не review и тесты не запускает без нового явного назначения.
+1. Implementation PR #388 уже merged: main `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`.
+2. Рабочая docs branch: `docs/authentication-lifecycle-closeout`.
+3. Вход: `WORKFLOW.md` → `stages/DOCS-CLOSEOUT/PLAN.md`.
+4. Обновить только подтверждённый docs scope; source/runtime code не менять.
+5. Не утверждать Stage-6 external activation: реальные mail providers/Google OAuth/anti-bot/deployed acceptance ещё не выполнены.
+6. После изменений открыть отдельный docs PR в main, выполнить author self-check, записать `stages/DOCS-CLOSEOUT/RESULT.md` → STOP → Мира.
+7. Собственный docs diff после handoff не review.
