@@ -372,6 +372,7 @@ def run():
             retry = fallback_page.locator('a[href*="/forgot-password"]')
             assert parse_qs(urlparse(retry.get_attribute("href")).query) == {"returnTo": ["/en"]}
             retry.click()
+            expect(fallback_page).to_have_url(base + "/en/forgot-password?returnTo=%2Fen")
             sign_in = fallback_page.locator('.credential-page a[href*="/sign-in?returnTo="]')
             expect(sign_in).to_have_attribute("href", "/en/sign-in?returnTo=%2Fen")
         fallback_page.close()
