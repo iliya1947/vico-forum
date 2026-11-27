@@ -10,6 +10,6 @@ PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601` прошёл automated 
 
 Единый bounded route: `stages/AUTH-07-CORRECTION/PLAN.md`.
 
-Исполнитель — **Лира / ChatGPT-6**. Correction выполняется в assembled #388, без нового implementation PR и без Stage-6/external activation. После author self-check и применимых exact-head checks Лира записывает RESULT и STOP.
+По прямой команде владельца исполнитель — **Лена / GPT-6.2 вместо Лиры**. Correction выполняется в assembled #388, без нового implementation PR и без Stage-6/external activation. Лира STOP.
 
-После correction новый stable head проходит повторный first AUTH-07 whole-feature review. Марк / Codex-6 Sol остаётся заблокирован до его PASS; merge, docs closeout и Stage-6 также заблокированы.
+После author self-check и применимых exact-head checks Лена записывает RESULT и STOP. Поскольку Лена участвует в correction implementation, corrected head проверяет Мира; Лена не делает review собственной реализации. После PASS Миры Марк / Codex-6 Sol назначается independent final technical reviewer. Merge, docs closeout и Stage-6 остаются заблокированы до прохождения этих gates.
