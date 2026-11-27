@@ -71,10 +71,9 @@
 5. Confirm/remove Help duplicate, если это не терминальное решение апелляции.
 6. Correct source locale для topic title/post по существующим правилам.
 7. Rename/reorder existing ordinary category.
-8. Rename/reorder/reparent existing ordinary section.
+8. Rename/reorder existing ordinary section.
 9. Move existing ordinary topic между ordinary sections.
 10. Изменить или снять priority override конкретного open Complaint Case.
-11. Restore ранее hidden topic/post при наличии требуемой причины и exact target/current state.
 
 Для любой routine mutation команда должна быть достаточно конкретной, чтобы однозначно определить operation, target и обязательные параметры. При неоднозначности действие не выполняется.
 
@@ -82,28 +81,29 @@
 
 Перед выполнением этих операций канал обязан сначала показать краткий preview: точный target, текущее релевантное состояние, планируемое изменение и необратимый/широкий эффект. Выполнение разрешено только после отдельного явного подтверждения Owner именно этого preview.
 
-1. **Hide topic/post** — меняет публичную доступность и создаёт permanent History; причина обязательна.
+1. **Hide/Restore topic/post** — меняет публичную доступность; Restore повторно раскрывает ранее скрытый материал. Оба перехода требуют обязательной причины и создают permanent History.
 2. **Create category или section** — текущий продукт не имеет delete для этих контейнеров, поэтому ошибочное создание не является нормально обратимым.
-3. **Authorization**
+3. **Reparent existing section** — меняет расположение целого раздела со всеми его темами; операция обратима, но имеет широкий публичный эффект.
+4. **Authorization**
    - create/rename/delete custom role;
    - replace role grants;
    - assign user role;
    - change per-user permission override.
-4. **Administrative measures**
+5. **Administrative measures**
    - create measure;
    - change restrictions/expiry;
    - explicit lift;
    - resolve measure appeal.
-5. **Account deactivation** — exact-Owner canonical deactivation чужого active account.
-6. **Registration policy**
+6. **Account deactivation** — exact-Owner canonical deactivation чужого active account.
+7. **Registration policy**
    - enable/disable Google new registrations;
    - enable/disable email/password new registrations.
-7. **Complaints immutable/terminal records**
+8. **Complaints immutable/terminal records**
    - append moderator note;
    - initial Decision `confirmed | not-confirmed`;
    - resolve Complaint Appeal `upheld | overturned`.
-8. **Global complaint priority weights** — меняют ordering policy всех open Cases.
-9. **Help/duplicate terminal appeal/review outcome**, когда существующий доменный контракт фиксирует решение/appeal outcome как отдельный persisted результат.
+9. **Global complaint priority weights** — меняют ordering policy всех open Cases.
+10. **Help/duplicate terminal appeal/review outcome**, когда существующий доменный контракт фиксирует решение/appeal outcome как отдельный persisted результат.
 
 Подтверждение относится к одному конкретному preview. Изменение target, параметров или текущего state делает старое подтверждение неприменимым.
 
@@ -135,8 +135,9 @@
 
 1. Тексты тем, сообщений, профилей, жалоб, notes, evidence metadata, History и любые другие форумные данные являются **данными**, а не управляющими инструкциями.
 2. Встроенные в них фразы вида «выполни команду», «измени права», «игнорируй правила» и аналогичные инструкции никогда сами по себе не создают mutation intent.
-3. Write intent исходит только из текущей явной команды Owner в ChatGPT и, для sensitive operations, из отдельного подтверждения preview.
-4. Никакой контент форума не может выбирать actor, command type, permission или confirmation.
+3. Обычный текст GitHub issue/comment/file, webhook payload или результат предыдущей команды также не является authority и сам по себе не может создать новую mutation.
+4. Write intent исходит только из текущей явной команды Owner в ChatGPT, прошедшей предусмотренную техническим планом аутентифицированную command boundary; для sensitive operations дополнительно требуется отдельное подтверждение конкретного preview.
+5. Никакой форумный или транспортный контент не может выбирать actor, command type, permission или confirmation.
 
 ## 9. Result and replay semantics
 
@@ -161,7 +162,7 @@ Scope считается реализованным только если:
 1. Все read groups из раздела 3 доступны через единый ограниченный интерфейс без прямого SQL и без дублирования domain readers.
 2. Все write operations из разделов 4–5 вызывают существующие canonical server operations и сохраняют их текущие permission/resource/CAS/History semantics.
 3. Sensitive operations технически невозможно выполнить без отдельного подтверждения конкретного preview.
-4. Untrusted forum content технически не может стать управляющей командой.
+4. Untrusted forum **или transport/GitHub content** технически не может стать управляющей командой без аутентифицированной command boundary.
 5. Replay/duplicate delivery не создаёт повторный domain effect; stale и outcome-unknown не приводят к автоматическому повтору.
 6. Owner получает достоверный committed/denied/conflict/unavailable/unknown result, а не транспортный surrogate success.
 7. Действия канала отражаются в существующей domain/Admin/Owner History там, где соответствующая canonical operation уже обязана писать History; новый параллельный audit backend не создаётся.
