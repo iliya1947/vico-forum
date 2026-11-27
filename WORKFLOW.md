@@ -1,10 +1,12 @@
 # WORKFLOW.md — текущее состояние и следующий переход
 
-1. Собранный [PR #388](https://github.com/iliya1947/vico-forum/pull/388) открыт на коммите `5d8bdaad117e59326f5eae61ea13613b0d45df7c`. Дерево `59901b92ce2753fb69adaa9c43ff09bbbcd70dba`, база `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. Лена завершила второе исправление AUTH-07. Мира приняла изменения и зафиксировала coordinator PASS. [Отчёт Миры](stages/AUTH-07/COORDINATOR-REVIEW-2.md)
-3. **Повторное финальное техническое ревью Лёвы по поручению владельца — PASS.** F-B2-03 и F-B2-04 закрыты. В Chromium подтверждены приём новой ссылки в открытой вкладке, сохранение адреса возврата и отзыв прежних сессий при успешном сбросе. При назначении учтено участие Лёвы в AUTH-06. [Заключение Лёвы](stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2.md)
-4. Лёва STOP. Лена STOP. До нового решения владельца технические назначения ограничены Лёвой и Леной.
+1. PR #388 merged в `main`: merge commit `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Repository/local-CI implementation authentication lifecycle завершена по назначенному review route.
+2. Stage 6 остаётся paused: merge #388 не активирует внешние providers, production Google OAuth, secrets или deployed acceptance.
+3. Подтверждён docs closeout scope: текущие постоянные документы содержат устаревшие утверждения о deferred/non-mandatory verification/recovery и старом SET-05 boundary.
+4. Создана отдельная docs branch от post-merge main: `docs/authentication-lifecycle-closeout`.
+5. **Лена / GPT-6.2 назначена автором DOCS-CLOSEOUT** по `stages/DOCS-CLOSEOUT/PLAN.md`.
+6. Лёва STOP до AUTHOR PASS docs candidate. Марк/Лира не подключаются; текущая техническая работа только Лёва + Лена.
 
 ## Следующий переход
 
-**Мира** принимает заключение и докладывает владельцу о результате по #388. Слияние и закрывающая документация ожидают отдельного решения владельца. Stage 6 остаётся на паузе. [Заключение и границы проверки](stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2.md)
+Лена: `WORKFLOW.md` → `stages/DOCS-CLOSEOUT/PLAN.md` → выполнить docs-only closeout в `docs/authentication-lifecycle-closeout` → открыть отдельный PR в main → `stages/DOCS-CLOSEOUT/RESULT.md` → STOP → Мира.
