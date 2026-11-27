@@ -12,3 +12,7 @@
 6. Не менять previous AUTH-07 correction, K5, schema/dependencies/provider/Stage-6 без нового основания.
 7. После реализации: author self-check, необходимые exact-head checks, записать `stages/AUTH-07-CORRECTION-2/RESULT.md` и STOP.
 8. Затем corrected head проверяет Лёва. Лена собственную correction не review.
+
+## Correction-2 entry checkpoint
+
+D1: восстановлено текущее назначение; прочитаны AGENTS, RULES, TASK, WORKFLOW, собственный файл, CORRECTION-2 PLAN, FINAL-TECHNICAL-REVIEW и AUTH-03 PLAN. #388 exact 5b29469fe51e716b483d4e610dd90705f5409029. Оба findings подтверждены по исходникам: reset-password.tsx mount-only capture и unconditional ready=false после POST; retry link теряет уже validated returnTo, forgot loader применяет verificationReturnPath и отправляет redirectTo. D2: после чтения обязательных актуальных main docs реализовать оба исправления и focused regressions единым пакетом; учесть replacement при in-flight POST и безопасный fallback, не менять backend/предыдущую correction/K5. D3: substantive author self-check всего delta, RESULT и handoff Лёве. Прежний прямой запрет владельца запускать тесты Леной действует; не запускать. D1 завершён, код ещё не изменён. Следующая команда продолжения — D2.
