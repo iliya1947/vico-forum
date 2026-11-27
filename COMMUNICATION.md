@@ -35,3 +35,10 @@
 Мира завершила первую product-scope проработку: `research/user-ai-product-scope.md`.
 
 Рекомендация для v1: semantic/hybrid Search + similar topics/solutions как обязательный общий retrieval result; on-demand question-authoring helper как bounded optional; AI chat/auto-post/thread summaries отложить. Это пока product proposal Миры до решения владельца и общего technical plan.
+
+
+## Admin/Moderation AI scope proposal
+
+Мира завершила вторую product-scope проработку: `research/admin-moderation-ai-product-scope.md`.
+
+Рекомендация v1: advisory harmful-content signals; spam/duplicate candidates на общем retrieval foundation с user-AI; on-demand complaint brief и evidence/checklist assistant. Никаких auto-hide, sanctions, priority changes, complaint decisions или user risk scoring. Private Complaint material имеет отдельный provider/data-policy gate. Это product proposal Миры до решения владельца и общего technical plan.
