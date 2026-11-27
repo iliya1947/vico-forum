@@ -2,8 +2,14 @@
 
 ## Final assembled state
 
-PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601` — automated gate PASS, но first AUTH-07 whole-feature review **HOLD**. K5 correction accepted. Три current-scope findings касаются актуальности Account & security после создания пароля, saved locale auth-писем и replacement password-create link в том же документе. Единый correction package, evidence и limitations — `stages/AUTH-07/REVIEW.md`.
+PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601` прошёл automated gate, но first AUTH-07 whole-feature review Лены завершён **HOLD**. K5 correction accepted.
 
-## Review route
+Мира независимо подтвердила все три current-scope findings: stale Account & security после password creation, игнорирование saved locale в own auth mail и отсутствие обработки replacement password-create proof в том же document. Root PLAN менять не требуется.
 
-Лена завершила review и STOP. Следующая — Мира для correction routing по WORKFLOW.md. Это не independent technical PASS: Лена участвовала в AUTH-02a и начале AUTH-02b. Марк не активирован до first review PASS нового stable head. Merge, docs closeout и Stage-6 остаются заблокированы.
+## Active correction
+
+Единый bounded route: `stages/AUTH-07-CORRECTION/PLAN.md`.
+
+Исполнитель — **Лира / ChatGPT-6**. Correction выполняется в assembled #388, без нового implementation PR и без Stage-6/external activation. После author self-check и применимых exact-head checks Лира записывает RESULT и STOP.
+
+После correction новый stable head проходит повторный first AUTH-07 whole-feature review. Марк / Codex-6 Sol остаётся заблокирован до его PASS; merge, docs closeout и Stage-6 также заблокированы.
