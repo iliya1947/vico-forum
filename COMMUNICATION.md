@@ -1,5 +1,7 @@
-# COMMUNICATION.md — текущая передача
+# COMMUNICATION.md — общий актуальный контекст
 
-**Лёва → Мира.** На коммите `5d8bdaad117e59326f5eae61ea13613b0d45df7c` повторное финальное техническое ревью завершено с **PASS**. Два дефекта гостевого восстановления пароля из предыдущего HOLD исправлены. Наблюдения в Chromium и границы исполнения записаны в заключении. [Отчёт Лёвы](stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2.md)
+PR #388 merged в main commit `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Implementation/repository-local auth lifecycle закрыт; Stage 6 external activation по-прежнему paused.
 
-Лёва и Лена завершили свои назначения. Мира сообщает результат владельцу, за которым остаются дальнейшие решения по PR и Stage 6. [Текущий маршрут](WORKFLOW.md)
+Следующая и последняя repository/local-CI часть задачи #320 — отдельный docs closeout. Branch: `docs/authentication-lifecycle-closeout`, создана от post-merge main.
+
+Автор — **Лена / GPT-6.2**. Полный bounded scope: `stages/DOCS-CLOSEOUT/PLAN.md`. После AUTHOR PASS результат возвращается Мире; затем техническая точность docs проверяется Лёвой. Марк/Лира не подключаются.
