@@ -1,18 +1,13 @@
-# WORKFLOW.md — текущее оперативное состояние, назначения, блокеры и следующий переход
+# WORKFLOW.md — текущее состояние и следующий переход
 
 ## Текущее состояние
 
-1. Service PR **#320**; assembled implementation PR #388 open/unmerged.
-2. Stable exact: `5b29469fe51e716b483d4e610dd90705f5409029`, base/main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-3. AUTH-07 bounded correction Лены завершён AUTHOR SOURCE SELF-CHECK PASS / STOP.
-4. Exact-head automated gate подтверждён: CI SUCCESS; 3347 standard + 1998 PostgreSQL tests; **20/20 applicable connected acceptance SUCCESS**.
-5. **Whole-feature coordinator review Миры — PASS.** Подробности: `stages/AUTH-07/COORDINATOR-REVIEW.md`.
-6. Все три прежних AUTH-07 findings закрыты; новых current-scope blockers в correction delta не подтверждено.
-7. По прямой команде владельца следующий reviewer — **Лёва / Codex-6.1 Sol**. Марк и Лира из текущего маршрута исключены; до отдельного решения владельца работаем только с Лёвой и Леной.
-8. Лёва участвовал в AUTH-06 implementation, поэтому его следующий review является **owner-assigned final technical review**, а не independent whole-feature review по стандартному workflow.
-9. Лена STOP после correction; она не review собственную implementation.
-10. Main merge, docs closeout и Stage-6 activation остаются заблокированы до отдельного следующего решения владельца после результата Лёвы.
+1. Собранный [PR #388](https://github.com/iliya1947/vico-forum/pull/388) открыт. Проверенный коммит `5b29469fe51e716b483d4e610dd90705f5409029`, база `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
+2. Мира завершила проверку исправлений Лены и зафиксировала coordinator PASS. Все три прежних замечания AUTH-07 закрыты. [Отчёт Миры](stages/AUTH-07/COORDINATOR-REVIEW.md)
+3. **Финальное техническое ревью Лёвы по поручению владельца — HOLD.** Подтверждены два дефекта гостевого восстановления пароля в браузере. Новая ссылка в уже открытой вкладке пропускается, а повторный запрос через интерфейс теряет безопасный адрес возврата. [Заключение Лёвы](stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md)
+4. Лёва участвовал в AUTH-06 и завершил назначенную техническую проверку. Лёва STOP. Лена STOP после предыдущих исправлений. Владелец ограничил текущий состав технических исполнителей Лёвой и Леной.
+5. Слияние, закрывающая документация и Stage 6 требуют отдельного решения владельца.
 
 ## Следующий переход
 
-**Лёва активирован** на final technical review exact `5b29469fe51e716b483d4e610dd90705f5409029`. Вход: `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-PLAN.md` → `stages/AUTH-07/COORDINATOR-REVIEW.md` → актуальный root PLAN/source-of-truth по необходимости. Review-only: implementation не менять. Результат записать в `stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md` как PASS/HOLD → STOP → вернуть Мире.
+**Мира** принимает HOLD и организует исправление F-B2-03 и F-B2-04 одним пакетом. В заключении указаны наблюдения, ожидаемое поведение и критерии повторной проверки на новом коммите. [Результат ревью](stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md)
