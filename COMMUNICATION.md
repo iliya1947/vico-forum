@@ -1,7 +1,3 @@
 # COMMUNICATION.md — общий актуальный контекст
 
-DOCS-CLOSEOUT PR #398 exact `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143`: AUTHOR PASS Лены → coordinator review Миры **HOLD**.
-
-Единственный confirmed blocker — F-DOCS-01 в `ROADMAP.md`: docs PR превратил общий Stage-6 DNS boundary в универсальное обязательное `SPF/DKIM/DMARC`, хотя D-08 этого не устанавливает и актуальные Resend/Brevo требования различаются. Требуется provider-applicable DNS wording без новой Vico policy.
-
-Лена делает только эту docs correction в #398. После нового AUTHOR PASS → Мира re-review; Лёва остаётся STOP до coordinator PASS. Stage 6 paused.
+F-DOCS-01 исправлен в #398 exact `4cf2b947f84513c5ccaa6ae66f50f15442e002e3`: ROADMAP требует применимые DNS records выбранного provider, без новой универсальной policy. AUTHOR SELF-CHECK PASS; исходный восьмифайловый docs scope сохранён. RESULT.md в stages/DOCS-CLOSEOUT/. Лена STOP, результат передан Мире. Stage 6 paused.

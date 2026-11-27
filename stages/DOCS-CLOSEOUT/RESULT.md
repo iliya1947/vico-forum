@@ -1,10 +1,10 @@
 # DOCS-CLOSEOUT — результат
 
-**AUTHOR SELF-CHECK PASS — docs only.** [PR #398](https://github.com/iliya1947/vico-forum/pull/398) открыт, не merged; exact head `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143`, tree `58bb731026236b51bdd8edb5b7e8ccdaff73a211`, base/main `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Mergeable=true, clean при проверке.
+**AUTHOR SELF-CHECK PASS — docs only.** [PR #398](https://github.com/iliya1947/vico-forum/pull/398) открыт, не merged; exact head `4cf2b947f84513c5ccaa6ae66f50f15442e002e3`, tree `ab4b007c3df352a454f2c3f9d8e03508f87ee632`, base/main `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Mergeable=true, clean при проверке.
 
 ## Scope и самопроверка
 
-Сверены действующий PLAN, merged #388 и принятые coordinator/technical reports, исходные документы до фактического конца, целевые auth/runtime boundaries и полный docs diff. Post-merge main tree идентичен принятому implementation head #388. Проверено полное сравнение recursive Git trees (оба не truncated): изменены ровно восемь согласованных файлов, 222 additions / 52 deletions:
+Сверены действующий PLAN, merged #388 и принятые coordinator/technical reports, исходные документы до фактического конца, целевые auth/runtime boundaries и полный docs diff. Post-merge main tree идентичен принятому implementation head #388. Проверено полное сравнение recursive Git trees (оба не truncated): изменены ровно восемь согласованных файлов, 223 additions / 52 deletions:
 
 1. PROJECT.md — обязательное email verification, recovery, own lifecycle, mail/challenge foundation и внешняя граница.
 2. PROJECT_STATE.md — текущее фактическое состояние, migration history 0000–0078, unchanged external evidence 0000–0020, актуальный маршрут без истории PR.
@@ -24,3 +24,7 @@
 Stage 6 paused: реальные auth-mail credentials/DNS/delivery, production OAuth/Owner binding, выбор и активация конкретного anti-bot provider, внешние migrations/runtime и deployed acceptance не подтверждены. Final owner visual acceptance также не объявлена выполненной. Не обнаружено противоречий между изменёнными документами и установленным поведением в заданном scope. Это авторская проверка документации, не независимая проверка всей реализации.
 
 Лена STOP → результат передан Мире для coordinator review; дальнейший переход и необходимые проверки определяет Мира. Merge выполняет разработчик.
+
+## F-DOCS-01 correction
+
+На предыдущем head `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143` Мира выявила действительный docs defect: универсальный перечень SPF/DKIM/DMARC выходил за утверждённый D-08. Correction на `4cf2b947f84513c5ccaa6ae66f50f15442e002e3`: в ROADMAP Stage 6 item 12 требуются применимые DNS authentication records по актуальной официальной документации выбранного provider; сохранены provider account/sender/domain, server-only credentials, delivery/failure acceptance, один active provider, запрет automatic fallback/retry и отдельное разрешение Stage 6. Конкретные DNS records заранее не предписываются, provider-specific требования перепроверяются при внешней активации. Не заявляется новая проверка внешних provider требований. Проверен весь correction diff: один ROADMAP.md, +4/-3 строки, остальные семь docs неизменны; общий diff от main по-прежнему ровно восемь docs files (+223/-52), PR open/mergeable. Самопроверка correction по D-07/D-08 и finding завершена, прежний scope сохранён. **AUTHOR SELF-CHECK PASS** на новом exact head. Тесты не запускались. Лена STOP → Мира.
