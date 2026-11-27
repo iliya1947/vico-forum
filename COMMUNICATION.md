@@ -2,22 +2,8 @@
 
 ## Final assembled state
 
-PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`:
-- base main `9f4c9c8d...`;
-- tree `6f154a2489913165c088dfa25a20818b62c13662`;
-- final CI PASS;
-- 3342 standard + 1998 PostgreSQL tests PASS;
-- auth whole-lifecycle 62/62;
-- 20/20 applicable connected acceptance PASS.
+PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601` — automated gate PASS, но first AUTH-07 whole-feature review **HOLD**. K5 correction accepted. Три current-scope findings касаются актуальности Account & security после создания пароля, saved locale auth-писем и replacement password-create link в том же документе. Единый correction package, evidence и limitations — `stages/AUTH-07/REVIEW.md`.
 
-## AUTH-07 review route
+## Review route
 
-По прямому решению владельца **Лена / GPT-6.2** назначена первым final whole-feature reviewer вместо Лиры.
-
-Лена участвовала в AUTH-02a implementation и начинала AUTH-02b, поэтому её review — обязательная first whole-feature проверка по owner assignment, но **не независимая финальная technical review**.
-
-Полный scope: `stages/AUTH-07/PLAN.md`.
-
-После PASS Лены отдельным переходом назначается **Марк / Codex-6 Sol** как independent final technical reviewer на том же exact head. Именно его review закрывает independent gate.
-
-Лира освобождена до начала review. Merge / docs closeout / Stage-6 остаются заблокированы.
+Лена завершила review и STOP. Следующая — Мира для correction routing по WORKFLOW.md. Это не independent technical PASS: Лена участвовала в AUTH-02a и начале AUTH-02b. Марк не активирован до first review PASS нового stable head. Merge, docs closeout и Stage-6 остаются заблокированы.
