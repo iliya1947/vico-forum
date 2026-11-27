@@ -11,12 +11,12 @@
 - Координатор: Мира — GPT-5.6 Sol.
 - Текущий исполнитель: Мира.
 - Технический планировщик после scope: Лёва — Codex-6.1 Sol.
-- Implementation PR: целевой `#399`, ветка `feature/chatgpt-forum-control`.
-- Служебный PR: целевой `#400`, ветка `service/chatgpt-forum-control`.
+- Implementation PR: `#399`, ветка `feature/chatgpt-forum-control`.
+- Служебный PR: `#400`, ветка `service/chatgpt-forum-control`.
 
 ## Состояние
 
-Реализация не начата. CI/acceptance не запускались.
+`#399` создан как draft-заготовка с пустым setup commit; продуктовой реализации в нём ещё нет. `#400` создан и содержит обязательное служебное рабочее пространство. CI/acceptance не запускались.
 
 ## Следующий переход
 
