@@ -98,3 +98,8 @@
 46. **2026-11-27.** После coordinator PASS Миры Лёва завершил повторное финальное техническое ревью #388 на `5d8bdaad117e59326f5eae61ea13613b0d45df7c` с **PASS**. F-B2-03 и F-B2-04 закрыты, в Chromium дополнительно проверено открытие новой ссылки во время ожидания предыдущего ответа. Лёва STOP, результат передан Мире для доклада владельцу. [Заключение](stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2.md)
 
 **2026-11-27 — DOCS-CLOSEOUT:** Лена открыла docs-only #398 exact `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143` от merged #388; восемь документов, AUTHOR SELF-CHECK PASS. Результат передан Мире, Лена STOP. Stage 6 paused, merge #398 ещё не выполнен.
+
+47. **2026-11-27:** assembled implementation PR #388 после AUTH-07 correction-2 и повторного assigned technical PASS merged в `main` commit `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`. Repository/local-CI authentication implementation завершена; external Stage-6 activation не выполнялась.
+
+48. **2026-11-27:** DOCS-CLOSEOUT #398 прошёл AUTHOR PASS Лены и whole-docs review Миры. Единственный finding F-DOCS-01 (неутверждённая универсальная SPF/DKIM/DMARC policy) исправлен provider-applicable wording; coordinator re-review PASS. #398 merged в `main` commit `c49897181388b4a78f8e8248dc6508551df576c4`. Все критерии repository/local-CI части TASK.md выполнены; #320 переведён в paused state до отдельного решения владельца о Stage 6.
+
