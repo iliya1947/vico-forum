@@ -6,3 +6,4 @@ export class ForumStateConflictError extends Error {}
 export class ForumTopicClosedError extends ForumStateConflictError {}
 export class ForumPublicationReplayConflictError extends ForumStateConflictError {}
 export class InvalidForumContentError extends Error {}
+export class ForumVisibilityReasonError extends Error {}

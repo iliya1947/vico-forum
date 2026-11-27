@@ -1,11 +1,22 @@
 /** Shared labels only; ordinary Admin and Owner readers retain separate authority. */
 export const actionLabels = {
+  "category.created": "historyCategoryCreated",
+  "category.renamed": "historyCategoryRenamed",
+  "category.reordered": "historyCategoryReordered",
+  "section.created": "historySectionCreated",
+  "section.renamed": "historySectionRenamed",
+  "section.moved": "historySectionMoved",
+  "section.reordered": "historySectionReordered",
+  "topic.moved": "historyTopicMoved",
+
   "settings.registrationChanged": "historyRegistrationChanged",
   "role.created": "historyRoleCreated", "role.renamed": "historyRoleRenamed", "role.deleted": "historyRoleDeleted",
   "role.grantsChanged": "historyGrantsChanged", "user.roleAssigned": "historyRoleAssigned", "user.overrideChanged": "historyOverrideChanged",
   "help.signalReviewed": "historySignalReviewed",
   "topic.pinned": "historyTopicPinned", "topic.unpinned": "historyTopicUnpinned", "topic.solved": "historyTopicSolved",
   "topic.closed": "historyTopicClosed", "topic.reopened": "historyTopicReopened",
+  "topic.hidden": "historyTopicHidden", "topic.restored": "historyTopicRestored",
+  "post.hidden": "historyPostHidden", "post.restored": "historyPostRestored",
   "topic.bestAnswerChanged": "historyBestAnswerChanged", "help.solutionModerationChanged": "historySolutionModerationChanged",
   "help.duplicateConfirmed": "historyDuplicateConfirmed", "help.duplicateRemoved": "historyDuplicateRemoved",
   "help.duplicateAppealResolved": "historyDuplicateAppealResolved", "topic.sourceLocaleCorrected": "historySourceLocaleCorrected", "post.sourceLocaleCorrected": "historySourceLocaleCorrected",

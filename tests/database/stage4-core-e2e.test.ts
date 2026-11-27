@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool } from "pg";
@@ -29,55 +29,6 @@ if (!["127.0.0.1", "localhost"].includes(parsedDatabaseUrl.hostname) || !parsedD
 }
 
 const schemaName = "stage4_core_e2e_test";
-const migrationFiles = [
-  "0000_tan_johnny_storm.sql",
-  "0001_seed-locales.sql",
-  "0002_ui_translation_storage.sql",
-  "0003_gorgeous_donald_blake.sql",
-  "0004_forum_domain_foundation.sql",
-  "0005_calm_proemial_gods.sql",
-  "0006_loving_sentinels.sql",
-  "0018_source_locale_correction_permissions.sql",
-  "0020_translation_generation_permission.sql",
-  "0021_forum_tags.sql",
-  "0022_forum_reply_relationships.sql",
-  "0023_forum_topic_read_states.sql",
-  "0024_forum_reply_notifications.sql",
-  "0025_forum_topic_pins.sql",
-  "0026_best_answer_independent_from_solved.sql",
-  "0027_help_solutions_foundation.sql",
-  "0028_help_solution_moderation.sql",
-    "0029_help_question_needs_details.sql",
-    "0030_help_duplicate_workflow.sql",
-    "0031_help_user_moderation_signals.sql",
-  "0032_forum_profiles.sql",
-  "0033_forum_online_presence.sql",
-  "0034_forum_editor_drafts.sql",
-  "0035_forum_attachments_foundation.sql",
-  "0036_forum_attachment_security_events.sql",
-  "0037_forum_attachment_draft_generations.sql",
-  "0038_forum_attachment_cleanup_claims.sql",
-  "0039_forum_publication_receipts.sql",
-  "0040_post_edit_history_permissions.sql",
-  "0041_published_mentions.sql",
-  "0042_attachment_edit_snapshots.sql",
-  "0043_attachment_security_read_permission.sql",
-  "0044_attachment_draft_conflict_boundaries.sql",
-  "0047_complaints_domain_foundation.sql",
-  "0048_complaint_case_links.sql",
-  "0049_admin_history.sql",
-  "0050_complaint_submission.sql",
-  "0051_forum_admin_history.sql",
-  "0052_complaints_queue.sql",
-  "0053_complaint_priority_settings.sql",
-  "0054_complaint_history_notifications.sql",
-  "0055_complaint_appeal_notifications.sql",
-  "0056_topic_closure.sql",
-  "0065_sa04_account_state_foundation.sql",
-  "0067_topic_title_edit_own.sql",
-  "0068_topic_watch.sql",
-  "0070_personal_filters.sql",
-] as const;
 
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schemaName}` });
 let clock = Date.parse("2026-09-15T00:00:00.000Z");
@@ -98,7 +49,7 @@ beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schemaName} cascade; create schema ${schemaName}`);
   await client.query(`set search_path to ${schemaName}`);
-  for (const file of migrationFiles) {
+  for (const file of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
     const sql = (await readFile(`drizzle/${file}`, "utf8")).replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
@@ -237,8 +188,8 @@ describe("Stage 4 connected forum authorization flow", () => {
       await replyState.close();
     }
     const withReply = await forum.readTopicPage(topicId);
-    expect(withReply?.posts.some((post) => post.body.originalContent === "Stale publication must roll back")).toBe(false);
-    const reply = withReply?.posts.find((post) => post.authorId === "e2e-replier");
+    expect(withReply?.posts.some((post) => post.kind !== "hidden" && post.body.originalContent === "Stale publication must roll back")).toBe(false);
+    const reply = withReply?.posts.find((post) => post.kind !== "hidden" && post.authorId === "e2e-replier");
     if (!reply) throw new Error("reply was not persisted");
     expect(reply.parentPostId).toBe(initialPostId);
 
@@ -260,7 +211,8 @@ describe("Stage 4 connected forum authorization flow", () => {
     expect(responseStatus(await markSolved("e2e-author", "Author", topicId))).toBe(302);
     const publicTopic = await forum.readTopicPage(topicId);
     expect(publicTopic).toMatchObject({ isSolved: true, bestAnswerPostId: reply.id });
-    expect(publicTopic?.posts.find((post) => post.id === reply.id)?.body.originalContent).toBe("Connected reply");
+    const visibleReply = publicTopic?.posts.find((post) => post.id === reply.id);
+    expect(visibleReply?.kind !== "hidden" ? visibleReply?.body.originalContent : undefined).toBe("Connected reply");
 
     const newerTopicId = await createTopic("e2e-author", "Author", "Newer but inactive topic");
     await client.query(
@@ -361,13 +313,15 @@ describe("Stage 4 connected forum authorization flow", () => {
       await authorization.replaceRoleGrants(
         "e2e-manager",
         "builtin-moderator",
-        INITIAL_ROLE_GRANTS.moderator.filter((permission) => permission !== "forum.solution.manageAny"),
+        INITIAL_ROLE_GRANTS.moderator.filter((permission) =>
+          permission !== "forum.solution.manageAny" && permission !== "forum.content.visibility.manage"),
       );
       const removedGrantTopic = await createTopic("e2e-author", "Author", "Grant removed");
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(403);
       expect((await forum.readTopicPage(removedGrantTopic))?.isSolved).toBe(false);
 
-      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator", [...INITIAL_ROLE_GRANTS.moderator]);
+      await authorization.replaceRoleGrants("e2e-manager", "builtin-moderator",
+          INITIAL_ROLE_GRANTS.moderator.filter(permission => permission !== "forum.content.visibility.manage"));
       expect(responseStatus(await markSolved("e2e-replier", "Replier", removedGrantTopic))).toBe(302);
 
       const deniedTopic = await createTopic("e2e-author", "Author", "Override denied");

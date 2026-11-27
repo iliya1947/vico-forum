@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -14,14 +14,10 @@ if (!["127.0.0.1", "localhost"].includes(url.hostname) || !url.pathname.endsWith
 const schema = "forum_profiles_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
 const repository = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
-const migrations = ["0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage", "0003_gorgeous_donald_blake", "0004_forum_domain_foundation", "0005_calm_proemial_gods", "0006_loving_sentinels", "0021_forum_tags", "0022_forum_reply_relationships", "0023_forum_topic_read_states", "0024_forum_reply_notifications", "0025_forum_topic_pins", "0026_best_answer_independent_from_solved", "0027_help_solutions_foundation", "0028_help_solution_moderation", "0029_help_question_needs_details", "0030_help_duplicate_workflow", "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence", "0034_forum_editor_drafts", "0035_forum_attachments_foundation", "0036_forum_attachment_security_events", "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0040_post_edit_history_permissions", "0041_published_mentions", "0042_attachment_edit_snapshots", "0065_sa04_account_state_foundation", "0068_topic_watch", "0070_personal_filters"];
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
-  for (const tag of migrations) await client.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${schema}".`));
-  // Historical fixtures use current Drizzle topic writes while selecting old migration subsets.
-  // Supply only AP-08 columns here without changing the historical migration sequence.
-  await client.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
+  for (const tag of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) await client.query((await readFile(`drizzle/${tag}`, "utf8")).replaceAll('"public".', `"${schema}".`));
   for (const id of ["profile-owner", "profile-helper", "profile-newcomer"]) {
     await client.query(`insert into "user" (id,name,email,image) values ($1,$1,$2,$3)`, [id, `${id}@private.test`, "https://example.com/avatar.png"]);
   }
@@ -195,7 +191,8 @@ describe("persisted forum profiles", () => {
     await repository.selectBestAnswer("profile-topic-a", "profile-replacement", "profile-owner", "own");
     expect(await repository.readProfile("profile-helper")).toMatchObject({ messageCount: 2, bestAnswerCount: 1 });
     expect(await repository.readProfile("profile-newcomer")).toMatchObject({ messageCount: 1, bestAnswerCount: 1 });
-    expect((await repository.readTopicPage("profile-topic-a"))?.posts[0].authorImage).toBe("https://example.com/avatar.png");
+    const firstPost=(await repository.readTopicPage("profile-topic-a"))?.posts[0];
+    expect(firstPost?.kind !== "hidden" ? firstPost?.authorImage : undefined).toBe("https://example.com/avatar.png");
   });
   it("counts Help messages and selected unsolved answers without tag multiplication", async () => {
     const before = await repository.readProfile("profile-helper");
@@ -225,7 +222,6 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
     await topic("profile-c1-topic");
     await reply("profile-c1-helper", "profile-c1-topic", "profile-helper");
     await reply("profile-c1-active", "profile-c1-topic", "profile-newcomer");
-    await client.query("begin");
     try {
       await client.query('update "user" set name=$2, image=$3 where id=$1', [
         "profile-owner", "SECRET_C1_TOPIC_AUTHOR", "https://images.example.test/SECRET_C1_TOPIC_AVATAR.png",
@@ -275,11 +271,13 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
         ],
       });
       expect(result.posts[2]).not.toHaveProperty("authorIdentityKind");
-      expect(result.posts.map(({ id, topicId, parentPostId, createdAt, attachments }) =>
-        ({ id, topicId, parentPostId, createdAt, attachments }))).toEqual(active.posts.map(
-          ({ id, topicId, parentPostId, createdAt, attachments }) =>
-            ({ id, topicId, parentPostId, createdAt, attachments }),
-        ));
+      expect(result.posts.map((post) => ({
+        id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+        createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+      }))).toEqual(active.posts.map((post) => ({
+          id: post.id, topicId: post.topicId, parentPostId: post.parentPostId,
+          createdAt: post.createdAt, attachments: post.kind === "hidden" ? undefined : post.attachments,
+        })));
       const serialized = JSON.stringify(result);
       for (const secret of [
         "SECRET_C1_TOPIC_AUTHOR", "SECRET_C1_TOPIC_AVATAR",
@@ -290,7 +288,9 @@ describe("SA04-C1 canonical topic-page public author projection", () => {
       expect(Object.keys(result.posts[0]!)).not.toContain("authorDeactivatedAt");
       expect(Object.keys(result)).not.toContain("authorRetainAtLeastUntil");
     } finally {
-      await client.query("rollback");
+      await client.query('update "user" set name=id,image=$1,deactivated_at=null,' +
+        'deactivated_by_user_id=null,retain_at_least_until=null where id in ($2,$3)',
+        ["https://example.com/avatar.png", "profile-owner", "profile-helper"]);
     }
   });
 });
@@ -329,7 +329,7 @@ describe("SA04-C2 canonical category and section topic-list authors", () => {
         ('profile-c2-owner','profile-newcomer','2026-10-05T00:00:00Z'),
         ('profile-c2-helper','profile-newcomer','2026-10-06T00:00:00Z')
     `);
-    await client.query("begin");
+    // Hierarchy readers own their read-only snapshot; fixture edits are committed between reads.
     try {
       await client.query('update "user" set name=$2, image=$3 where id=$1', [
         "profile-owner", "SECRET_C2_OWNER_NAME", "https://images.example.test/SECRET_C2_OWNER_IMAGE.png",
@@ -408,7 +408,9 @@ describe("SA04-C2 canonical category and section topic-list authors", () => {
       expect(Object.keys(lists.latestTopics[1]!)).toEqual(["id", "title", "authorName", "authorIdentityKind", "activityAt"]);
       expect(Object.keys(section.topics[0]!)).not.toContain("authorDeactivatedAt");
     } finally {
-      await client.query("rollback");
+      await client.query('update "user" set name=id,image=$1,deactivated_at=null,' +
+        'deactivated_by_user_id=null,retain_at_least_until=null where id in ($2,$3)',
+        ["https://example.com/avatar.png", "profile-owner", "profile-helper"]);
     }
   });
 });

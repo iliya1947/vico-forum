@@ -37,7 +37,15 @@ import {
 import { createHyperdriveAttemptTelemetry } from "../db/hyperdrive-attempt-telemetry";
 import { RequestAuthFactCollector } from "../app/observability/auth-fact-collector.server";
 import { createHyperdriveAuthFactWriter } from "../db/hyperdrive-auth-facts";
+import {forumStructureReaderContext} from "../app/admin/structure.server";
+import {forumStructureWriterContext} from "../app/admin/structure-actions.server";
+import {topicMoveWriterContext} from "../app/forum/topic-move.server";
+import {createHyperdriveTopicMoveWriter} from "../db/hyperdrive-topic-move";
+import {createHyperdriveForumStructureWriter} from "../db/hyperdrive-forum-structure-writer";
+import {createHyperdriveForumStructureReader} from "../db/hyperdrive-forum-structure-reader";
 import {adminForumContext} from "../app/admin/forum.server";
+import {hiddenQueueContext} from "../app/admin/visibility-queue.server";
+import {createHyperdriveHiddenQueue} from "../db/hyperdrive-private-visibility-queue";
 import {createHyperdriveAdminForum} from "../db/hyperdrive-admin-forum";
 import { adminUsersContext } from "../app/admin/users.server";
 import { createHyperdriveAdminUsers } from "../db/hyperdrive-admin-users";
@@ -72,7 +80,7 @@ import {ownerLocalizationMonitoringContext} from "../app/super-admin/request-con
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
-import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, protectFrameworkFailure } from "./private-failure-response";
+import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, isPrivateForumReadPath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -112,7 +120,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const ownerUserId = validOwnerUserId((env as Env & { VICO_OWNER_USER_ID?: string }).VICO_OWNER_USER_ID);
     const measureAdmission = withOwnerUserMeasureAdmission(ownerUserId);
     context.set(forumReaderContext, createHyperdriveForumReader(webConnectionString));
-    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink));
+    context.set(forumWriterContext, createHyperdriveForumWriter(webConnectionString, undefined, undefined, measureAdmission,operational.sink,ownerUserId));
     context.set(forumAttachmentStoreContext, createHyperdriveForumAttachmentStore(webConnectionString, undefined, measureAdmission,operational.sink));
     const attachmentBucket = (env as Env & { ATTACHMENT_R2?: R2Bucket }).ATTACHMENT_R2;
     context.set(privateAttachmentBucketContext, attachmentBucket ? privateAttachmentBucket(attachmentBucket,operational.storageCapture) : null);
@@ -146,6 +154,10 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
       authorization, webConnectionString, undefined, ownerUserId,
     );
     context.set(authorizationContext, effectiveAuthorization);
+    context.set(forumStructureReaderContext,createHyperdriveForumStructureReader(webConnectionString,effectiveAuthorization,ownerUserId));
+    context.set(forumStructureWriterContext,createHyperdriveForumStructureWriter(webConnectionString,effectiveAuthorization,ownerUserId));
+    context.set(topicMoveWriterContext,createHyperdriveTopicMoveWriter(webConnectionString,effectiveAuthorization,ownerUserId));
+    context.set(hiddenQueueContext, createHyperdriveHiddenQueue(webConnectionString, effectiveAuthorization));
     context.set(userMeasureContext, createHyperdriveUserMeasures(webConnectionString, ownerUserId));
     context.set(complaintSubmissionContext, createHyperdriveComplaintSubmission(webConnectionString, authorization, undefined, ownerUserId));
     context.set(complaintQueueContext, createHyperdriveComplaintQueue(webConnectionString, effectiveAuthorization, undefined, ownerUserId));
@@ -182,13 +194,14 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
 
 export default {
   async fetch(request, env, executionContext?: ExecutionContext) {
-    const ownerAction = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
-      || isOwnerMonitoringPath(new URL(request.url).pathname);
+    const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+      || isOwnerMonitoringPath(new URL(request.url).pathname)
+      || isPrivateForumReadPath(new URL(request.url).pathname);
     try {
       const response = await applicationFetch(request, env, executionContext);
-      return ownerAction ? protectFrameworkFailure(request, response) : response;
+      return privateBoundary ? protectFrameworkFailure(request, response) : response;
     } catch (error) {
-      if (!ownerAction) throw error;
+      if (!privateBoundary) throw error;
       if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
       const status = error instanceof Response ? error.status : 500;
       return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {

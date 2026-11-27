@@ -1,6 +1,7 @@
 import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
+import { readComplaintEvidenceObject } from "../../db/complaint-review-read";
 import { AccountMissingError } from "../../db/account-state";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client, Pool, type DatabaseError } from "pg";
 import { RouterContextProvider } from "react-router";
@@ -11,6 +12,7 @@ import { createHyperdriveForumReader, createHyperdriveForumWriter } from "../../
 import { authorizationContext } from "../../app/authorization/request-context";
 import { forumAttachmentStoreContext, privateAttachmentBucketContext } from "../../app/forum/attachment-request-context";
 import { action as uploadAction } from "../../app/routes/attachment-upload";
+import { loader as downloadAttachment } from "../../app/routes/attachment-download";
 import type { RecordAttachmentSecurityEventInput } from "../../db/forum-attachments";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { DrizzleForumAttachments, ForumAttachmentDraftConflictError, InvalidForumAttachmentError, type CreateDraftAttachmentInput } from "../../db/forum-attachments";
@@ -35,39 +37,6 @@ if (!["localhost", "127.0.0.1"].includes(url.hostname) || !url.pathname.endsWith
 const schema = "forum_attachments_test";
 const client = new Client({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
 const store = new DrizzleForumAttachments(drizzle(client), historicalForumMeasureAdmission);
-const migrations = [
-  "0000_tan_johnny_storm", "0001_seed-locales", "0002_ui_translation_storage",
-  "0003_gorgeous_donald_blake", "0004_forum_domain_foundation",
-  "0005_calm_proemial_gods", "0006_loving_sentinels",
-  "0021_forum_tags", "0022_forum_reply_relationships", "0024_forum_reply_notifications",
-  "0025_forum_topic_pins", "0026_best_answer_independent_from_solved",
-  "0027_help_solutions_foundation", "0028_help_solution_moderation",
-  "0029_help_question_needs_details", "0030_help_duplicate_workflow",
-  "0031_help_user_moderation_signals", "0032_forum_profiles", "0033_forum_online_presence",
-  "0034_forum_editor_drafts", "0035_forum_attachments_foundation",
-  "0036_forum_attachment_security_events",
-  "0037_forum_attachment_draft_generations", "0038_forum_attachment_cleanup_claims", "0039_forum_publication_receipts", "0040_post_edit_history_permissions",
-  "0041_published_mentions",
-  "0042_attachment_edit_snapshots",
-  "0043_attachment_security_read_permission",
-  "0044_attachment_draft_conflict_boundaries",
-  "0046_attachment_upload_fences",
-  "0047_complaints_domain_foundation",
-  "0048_complaint_case_links",
-  "0049_admin_history",
-  "0050_complaint_submission",
-  "0051_forum_admin_history",
-  "0052_complaints_queue",
-  "0053_complaint_priority_settings",
-  "0054_complaint_history_notifications",
-  "0055_complaint_appeal_notifications",
-  "0056_topic_closure",
-  "0065_sa04_account_state_foundation",
-  "0068_topic_watch",
-  // This legacy fixture invokes the current publication writer, whose personal
-  // suppression policy requires the three 0070 tables.
-  "0070_personal_filters",
-];
 
 const ownerId = "attachment-owner";
 const otherId = "attachment-other";
@@ -146,8 +115,8 @@ async function queuedOperations<T, U>(
 beforeAll(async () => {
   await client.connect();
   await client.query(`drop schema if exists ${schema} cascade; create schema ${schema}`);
-  for (const tag of migrations) {
-    await client.query((await readFile(`drizzle/${tag}.sql`, "utf8")).replaceAll('"public".', `"${schema}".`));
+  for (const tag of (await readdir("drizzle")).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
+    await client.query((await readFile(`drizzle/${tag}`, "utf8")).replaceAll('"public".', `"${schema}".`));
   }
 
   for (const id of [ownerId, otherId]) {
@@ -343,6 +312,158 @@ describe("forum attachment lifecycle foundation", () => {
     expect(deleted.rows).toEqual([{ id: attachmentId }]);
   });
 
+  it("gates hidden published attachments before bucket GET across download/inline/text while preserving shared and owner draft refs", async () => {
+    const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
+    const firstTopic = crypto.randomUUID(), firstPost = crypto.randomUUID();
+    const secondTopic = crypto.randomUUID(), secondPost = crypto.randomUUID();
+    for (const [topicId, postId] of [[firstTopic, firstPost], [secondTopic, secondPost]]) {
+      await forum.createTopicWithInitialPost({
+        id: topicId, sectionId: "attachment-section", authorId: ownerId,
+        titleRevision: { id: crypto.randomUUID(), originalContent: "Shared asset topic", sourceLocale: "en" },
+        initialPost: {
+          id: postId, topicId, authorId: ownerId,
+          bodyRevision: { id: crypto.randomUUID(), originalContent: "Shared asset post", sourceLocale: "en" },
+        },
+      });
+    }
+    const generation = crypto.randomUUID(), draftContext = `topic:${firstTopic}:reply`;
+    const asset = await store.createDraftAttachment(upload(draftContext, generation));
+    await client.query(
+      "insert into forum_post_attachments (post_id, attachment_id, created_at) values ($1,$3,now()),($2,$3,now())",
+      [firstPost, secondPost, asset.id],
+    );
+    const get = vi.fn(async () => ({
+      size: asset.byteSize,
+      body: new ReadableStream<Uint8Array>({
+        start(controller) { controller.enqueue(new Uint8Array(asset.byteSize)); controller.close(); },
+      }),
+    }));
+    const context = new RouterContextProvider();
+    context.set(forumAttachmentStoreContext, store as never);
+    context.set(privateAttachmentBucketContext, { get } as never);
+    const download = (postId: string | null, view: string | null = null, id = asset.id) => {
+      const query = postId === null
+        ? `operation=${generation}&context=${encodeURIComponent(draftContext)}`
+        : `post=${postId}`;
+      return downloadAttachment({
+        context, params: { attachmentId: id },
+        request: new Request(`https://forum.test/api/attachments/file/${id}?${query}${view ? "&view="+view : ""}`),
+      });
+    };
+    const denied = async (postId: string, id = asset.id) => {
+      for (const view of [null, "inline", "text"]) {
+        get.mockClear();
+        const response = await download(postId, view, id);
+        expect(response.status).toBe(404);
+        expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+        expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+        expect(await response.text()).toBe("");
+        expect(get).not.toHaveBeenCalled();
+      }
+    };
+
+    expect((await download(firstPost)).status).toBe(200);
+    expect(get).toHaveBeenCalledOnce();
+    await denied(crypto.randomUUID());
+    await denied(firstPost, crypto.randomUUID());
+
+    await client.query("update forum_posts set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [firstPost]);
+    await denied(firstPost);
+    expect((await store.readPublishedAttachment(firstPost, asset.id))).toBeNull();
+    get.mockClear();
+    expect((await download(secondPost)).status).toBe(200);
+    expect(get).toHaveBeenCalledOnce();
+
+    await client.query("update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [secondTopic]);
+    await denied(secondPost);
+    expect((await store.readPublishedAttachment(secondPost, asset.id))).toBeNull();
+    expect(await store.readDraftAttachment(ownerId, draftContext, generation, asset.id))
+      .toMatchObject({id:asset.id,objectKey:asset.objectKey});
+    context.set(authSessionContext, {user:{id:ownerId}} as AuthSession);
+    get.mockClear();
+    expect((await download(null,"text")).status).toBe(200);
+    expect(get).toHaveBeenCalledOnce();
+
+    await client.query("update forum_posts set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1", [firstPost]);
+    get.mockClear();
+    expect((await download(firstPost)).status).toBe(200);
+    expect(get).toHaveBeenCalledOnce();
+    await client.query("update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1", [firstTopic]);
+    await denied(firstPost);
+    const refs = await client.query("select post_id from forum_post_attachments where attachment_id=$1", [asset.id]);
+    expect(refs.rows.map(row=>row.post_id).sort()).toEqual([firstPost,secondPost].sort());
+    expect(await store.readDraftAttachment(ownerId,draftContext,generation,asset.id))
+      .toMatchObject({id:asset.id});
+  });
+
+  it("retains Complaint evidence object and protected Case membership when topic and post Hide", async () => {
+    const forum = new DrizzleForumRepository(drizzle(client), { cooldownMs: 0, now: () => new Date() }, historicalForumMeasureAdmission);
+    const topicId = crypto.randomUUID(), postId = crypto.randomUUID(), revisionId = crypto.randomUUID();
+    await forum.createTopicWithInitialPost({
+      id: topicId, sectionId: "attachment-section", authorId: ownerId,
+      titleRevision: { id: crypto.randomUUID(), originalContent: "Evidence topic", sourceLocale: "en" },
+      initialPost: {
+        id: postId, topicId, authorId: ownerId,
+        bodyRevision: { id: revisionId, originalContent: "Evidence post", sourceLocale: "en" },
+      },
+    });
+    const targetId = crypto.randomUUID(), caseId = crypto.randomUUID();
+    await client.query(
+      "insert into forum_complaint_targets (id,kind,topic_id,post_id,post_revision_id,affected_author_id) " +
+      "values ($1,'post',$2,$3,$4,$5)",
+      [targetId, topicId, postId, revisionId, ownerId],
+    );
+    await client.query(
+      "insert into forum_complaint_cases (id,target_id) values ($1,$2)",
+      [caseId,targetId],
+    );
+    const asset = await store.createDraftAttachment(upload(`topic:${topicId}:reply`,crypto.randomUUID()));
+    await client.query(
+      "insert into forum_complaint_evidence_attachments (target_id,attachment_id) values ($1,$2)",
+      [targetId,asset.id],
+    );
+    // Only the protected evidence reference retains this asset: it has neither
+    // a public post reference nor an active owner draft reference.
+    await client.query("delete from forum_attachment_draft_refs where attachment_id=$1",[asset.id]);
+    await client.query(
+      "update forum_attachments set created_at=now()-interval '31 days' where id=$1",
+      [asset.id],
+    );
+    const readEvidence = () => readComplaintEvidenceObject(drizzle(client),caseId,asset.id);
+    const before = await readEvidence();
+    expect(before).toMatchObject({ objectKey:asset.objectKey,fileName:asset.fileName });
+    expect(await store.readPublishedAttachment(postId,asset.id)).toBeNull();
+    await client.query(
+      "update forum_topics set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1",
+      [topicId],
+    );
+    await client.query(
+      "update forum_posts set is_hidden=true,visibility_version=1,visibility_changed_at=now() where id=$1",
+      [postId],
+    );
+    expect(await readEvidence()).toEqual(before);
+    const remove = vi.fn(async (objectKey: string) => { void objectKey; });
+    await new ForumAttachmentCleanup(drizzle(client),{delete:remove}).runOnce();
+    expect(remove).not.toHaveBeenCalledWith(asset.objectKey);
+    expect((await client.query(
+      "select object_key,cleanup_status from forum_attachments where id=$1",[asset.id],
+    )).rows).toEqual([{ object_key:asset.objectKey, cleanup_status:"active" }]);
+    expect((await client.query(
+      "select attachment_id from forum_complaint_evidence_attachments where target_id=$1",[targetId],
+    )).rows).toEqual([{attachment_id:asset.id}]);
+    expect(await readEvidence()).toEqual(before);
+    await client.query(
+      "update forum_topics set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1",
+      [topicId],
+    );
+    await client.query(
+      "update forum_posts set is_hidden=false,visibility_version=2,visibility_changed_at=now() where id=$1",
+      [postId],
+    );
+    expect(await readEvidence()).toEqual(before);
+    expect(await store.readPublishedAttachment(postId,asset.id)).toBeNull();
+  });
+
   it("rejects a terminal same-generation upload without creating its asset", async () => {
     const context = "topic:terminal-upload:reply";
     const generation = crypto.randomUUID();
@@ -490,7 +611,7 @@ describe("atomic publication of selected draft refs", () => {
       expect(created.post.id).toBe(postId);
       expect(await store.readPublishedAttachment(postId, asset.id)).toMatchObject({ id: asset.id });
       const loaded = await repository.readTopicPage(topicId);
-      expect(loaded?.posts[0]?.attachments).toEqual([{
+      expect(loaded?.posts[0]?.kind !== "hidden" ? loaded?.posts[0]?.attachments : undefined).toEqual([{
         id: asset.id, fileName: asset.fileName, byteSize: asset.byteSize,
         detectedType: asset.detectedType,
       }]);
@@ -719,9 +840,11 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     expect(responseStatus(await save(op, revisionId, "Committed but response lost", selected, []))).toBe(302);
     const conflict = await save(op, revisionId, "New unsaved buffer", selected, []);
     expect(conflict).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit", completedOperationId: op } });
-    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const current = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (current.kind === "hidden") throw new Error("expected visible published post");
     expect(responseStatus(await save(crypto.randomUUID(), current.body.id, "New unsaved buffer", [], selected))).toBe(302);
-    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (after.kind === "hidden") throw new Error("expected visible published post");
     expect(after.body.originalContent).toBe("New unsaved buffer");
     expect((after.attachments ?? []).map((file) => file.id)).toEqual(selected);
     expect((await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId))).toHaveLength(3);
@@ -769,9 +892,11 @@ describe("live action → writer/service → PostgreSQL attachment publication",
     const stale = await save(fresh, revisionId, "Current retained buffer", [...prior, b], []);
     expect(stale).toMatchObject({ init: { status: 409 }, data: { operation: "postEdit" } });
     expect(stale).not.toHaveProperty("data.completedOperationId");
-    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const baseline = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (baseline.kind === "hidden") throw new Error("expected visible baseline");
     expect(responseStatus(await save(fresh, baseline.body.id, "Current retained buffer", [b], prior))).toBe(302);
-    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.id === postId)!;
+    const after = (await reader.readTopicPage(topicId))!.posts.find((post) => post.kind !== "hidden" && post.id === postId)!;
+    if (after.kind === "hidden") throw new Error("expected visible published post");
     expect(after.body.originalContent).toBe("Current retained buffer");
     expect((after.attachments ?? []).map((file) => file.id).sort()).toEqual([...prior, b].sort());
     expect(await new DrizzleForumRepository(drizzle(client)).readPostHistory(postId, topicId)).toHaveLength(3);
@@ -848,8 +973,8 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       const resolvedTopic = kind === "reply" ? topicId! : destination.pathname.split("/").filter(Boolean).at(-1)!;
       const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(resolvedTopic);
       expect(page).toBeDefined();
-      const published = page!.posts.find((post) => post.attachments?.some((entry) => entry.id === file.id));
-      expect(published?.attachments).toEqual([{
+      const published = page!.posts.find((post) => post.kind !== "hidden" && post.attachments?.some((entry) => entry.id === file.id));
+      expect(published?.kind !== "hidden" ? published?.attachments : undefined).toEqual([{
         id: file.id, fileName: file.fileName, byteSize: file.byteSize,
         detectedType: file.detectedType,
       }]);
@@ -913,7 +1038,9 @@ describe("live action → writer/service → PostgreSQL attachment publication",
       expect((await client.query("select attachment_id from forum_post_attachments where post_id=$1", [postId])).rows)
         .toEqual([{ attachment_id: file.id }]);
       const page = await new DrizzleForumRepository(drizzle(client)).readTopicPage(receipt.rows[0]!.topic_id);
-      expect(page?.posts.find((post) => post.id === postId)?.body.originalContent).toBe("");
+      const savedPost=page?.posts.find((post)=>post.id===postId);
+      expect(savedPost?.kind).not.toBe("hidden");
+      expect(savedPost?.kind !== "hidden" ? savedPost?.body.originalContent : undefined).toBe("");
       expect(responseStatus(await action("a different body"))).toBe(409);
       expect((await client.query("select id from forum_posts where id=$1", [postId])).rowCount).toBe(1);
     },

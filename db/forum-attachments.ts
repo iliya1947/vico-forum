@@ -12,6 +12,7 @@ import {
   forumAttachmentSecurityEvents,
   forumPostAttachments,
   forumPosts,
+  forumTopics,
 } from "./schema";
 import { isEditorDraftContextKey } from "./editor-draft-context";
 import {
@@ -286,10 +287,13 @@ export class DrizzleForumAttachments {
     const [row] = await this.db.select({ attachment: forumAttachments })
       .from(forumPostAttachments)
       .innerJoin(forumPosts, eq(forumPosts.id, forumPostAttachments.postId))
+      .innerJoin(forumTopics, eq(forumTopics.id, forumPosts.topicId))
       .innerJoin(forumAttachments, eq(forumAttachments.id, forumPostAttachments.attachmentId))
       .where(and(
         eq(forumPostAttachments.postId, postId),
         eq(forumPostAttachments.attachmentId, attachmentId),
+        eq(forumPosts.isHidden, false),
+        eq(forumTopics.isHidden, false),
       )).limit(1);
     return row && row.attachment.verificationStatus === "type-checked" ? toMetadata(row.attachment) : null;
   }

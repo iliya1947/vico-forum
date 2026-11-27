@@ -122,3 +122,11 @@ describe("private framework 5xx response cache boundary", () => {
     expect(await response.text()).toBe("unexpected write fault");
   });
 });
+
+
+it.each(["/en/admin/forum","/en/admin/forum.data","/en/admin/forum/categories/c.data","/en/admin/forum/sections/s","/en/admin/forum/topics/t.data","/en/admin/forum/destinations","/he/ADMIN/FORUM/destinations.data","/ru/%61dmin/forum/topics/id/move.data","/en/admin/forum/topics/a%2Fb/%6dove///"])("protects structure private document/data responses %s",path=>{
+ for(const status of [200,400,401,403,404,500,503]) {
+  const response=protectFrameworkFailure(new Request("https://forum.test"+path),new Response("result",{status}));
+  expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+ }
+});

@@ -37,6 +37,8 @@
     "app/profile/request-context.ts",
     "app/super-admin/access.server.ts",
     "app/forum/actions.server.ts",
+    "app/forum/visibility-actions.server.ts",
+    "app/forum/topic-move.server.ts",
     "app/forum/attachment-request-context.ts",
     "app/forum/attachment-r2.ts",
     "app/forum/attachment-storage-protocol.ts",

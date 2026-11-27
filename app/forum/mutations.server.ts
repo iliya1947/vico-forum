@@ -7,6 +7,7 @@ import {
   ForumEntityNotFoundError,
   ForumStateConflictError,
   ForumTopicClosedError,
+  ForumVisibilityReasonError,
 } from "../../db/forum-errors";
 import { InvalidForumContentError } from "../../db/forum-errors";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
@@ -140,7 +141,8 @@ export async function runForumMutation<T>(
     // A persisted lifecycle change can win after the authenticated request preflight.
     if (error instanceof AccountInactiveError || error instanceof AccountMissingError)
       return mutationFailure("unauthenticated", 401);
-    if (error instanceof InvalidForumContentError) return mutationFailure("invalid", 400);
+    if (error instanceof InvalidForumContentError || error instanceof ForumVisibilityReasonError)
+      return mutationFailure("invalid", 400);
     if (error instanceof ForumEntityNotFoundError) return mutationFailure("notFound", 404);
     if (error instanceof ForumAuthorizationError || error instanceof UserMeasureRestrictedError) return mutationFailure("forbidden", 403);
     if (error instanceof ForumTopicClosedError) return mutationFailure("topicClosed", 409);
@@ -250,6 +252,6 @@ export async function solutionScope(context: RouterContextProvider, form?: FormD
 export interface PostEditConflictData {
   operation: "postEdit";
   error: "conflict";
-  post: import("../../db/forum-repository").ForumTopicPage["posts"][number];
+  post: import("../../db/forum-repository").ForumVisibleThreadPost;
   completedOperationId?: string;
 }

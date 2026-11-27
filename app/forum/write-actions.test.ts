@@ -202,6 +202,12 @@ function writer() {
     markNotificationRead: vi.fn(async () => ({ kind:"reply" as const,topicId:"topic-1",postId:"post-1" })),
     pinTopic: vi.fn(async () => undefined),
     unpinTopic: vi.fn(async () => undefined),
+    setTopicVisibility: vi.fn(async (input: { hidden: boolean; expectedVisibilityVersion: number }) => ({
+      hidden: input.hidden, visibilityVersion: input.expectedVisibilityVersion + 1, changed: true,
+    })),
+    setPostVisibility: vi.fn(async (input: { hidden: boolean; expectedVisibilityVersion: number }) => ({
+      hidden: input.hidden, visibilityVersion: input.expectedVisibilityVersion + 1, changed: true,
+    })),
     setTopicClosed: vi.fn(async (input) => ({
       isClosed: input.isClosed, closureVersion: input.expectedClosureVersion + 1, changed: true,
     })),
@@ -496,6 +502,41 @@ describe("post edit and protected history action permissions", () => {
     expect(response).toMatchObject({ init: { status: 200 } });
     expect(readPostHistory).toHaveBeenCalledWith("post-1", "topic-1");
   });
+  it("does not expose hidden history or a conflict baseline through old topic actions", async () => {
+    const wHistory = writer();
+    const historyCtx = context(wHistory, true, ["forum.post.history.read"]);
+    const readPostHistory = vi.fn(async () => []);
+    historyCtx.set(forumReaderContext, { readPostHistory } as never);
+    const denied = await topicAction({
+      request: request("/en/topics/topic-1", { intent: "readPostHistory", postId: "post-1" }),
+      params: { locale: "en", topicId: "topic-1" }, context: historyCtx,
+    });
+    expect(denied).toMatchObject({ data: { error: "notFound" },
+      init: { status: 404, headers: { "Cache-Control": "private, no-store" } } });
+    expect(JSON.stringify(denied)).not.toContain("SECRET_HIDDEN_REVISION_F3");
+    expect(readPostHistory).toHaveBeenCalledWith("post-1", "topic-1");
+
+    for (const hiddenSource of [
+      undefined,
+      { id: "topic-1", posts: [{ kind: "hidden", id: "post-1", topicId: "topic-1",
+        parentPostId: null, createdAt: new Date("2026-01-01") }] },
+    ]) {
+      const w = writer();
+      w.editPublishedPost.mockRejectedValueOnce(new ForumStateConflictError());
+      const ctx = context(w, true, ["forum.post.editOwn"]);
+      const readTopicPage = vi.fn(async () => hiddenSource);
+      ctx.set(forumReaderContext, { readTopicPage } as never);
+      const response = await topicAction({
+        request: request("/en/topics/topic-1", fields),
+        params: { locale: "en", topicId: "topic-1" }, context: ctx,
+      });
+      expect(response).toMatchObject({ data: { error: "notFound" },
+        init: { status: 404, headers: { "Cache-Control": "private, no-store" } } });
+      expect(JSON.stringify(response)).not.toContain('"operation":"postEdit"');
+      expect(readTopicPage).toHaveBeenCalledWith("topic-1");
+    }
+  });
+
 });
 
 describe("forum write route actions", () => {

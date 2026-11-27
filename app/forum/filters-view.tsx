@@ -8,9 +8,13 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 
 const FILTERS_ACTOR_TAB_KEY = "vico:filters:actor";
 export type FilterListItem =
-  | { kind: "topic"; id: string; name: string; createdAt: string;
-      authorName: string; authorIdentityKind?: "deleted"; category: { name: string };
-      section: { name: string } | null }
+  | ({ kind: "topic"; id: string; createdAt: string } & (
+      | { unavailable: true; name?: never; authorName?: never; authorIdentityKind?: never;
+          category?: never; section?: never }
+      | { unavailable?: false; name: string; authorName: string;
+          authorIdentityKind?: "deleted"; category: { name: string };
+          section: { name: string } | null }
+    ))
   | { kind: "user"; id: string; name: string; createdAt: string; identityKind?: "deleted" };
 
 function FilterRow({ item, actorId, locale, formatDate }: {
@@ -25,6 +29,7 @@ function FilterRow({ item, actorId, locale, formatDate }: {
   const handled = useRef<unknown>(null);
   const pending = fetcher.state !== "idle";
   const isTopic = item.kind === "topic";
+  const unavailableTopic = item.kind === "topic" && item.unavailable === true;
 
   useEffect(() => {
     if (pending || !submitted.current || !fetcher.data || handled.current === fetcher.data) return;
@@ -52,16 +57,23 @@ function FilterRow({ item, actorId, locale, formatDate }: {
   };
   const destination = isTopic ? forumTopicPath(locale, item.id) : forumProfilePath(locale, item.id);
   return <li className="bookmarks-list-row" aria-busy={pending || refreshing}>
-    <Link className="bookmarks-topic-link" to={destination}>
-      <strong dir="auto">{isTopic ? item.name : item.identityKind === "deleted" ? t("deletedUser") : item.name}</strong>
-      <span className="bookmarks-topic-metadata">
-        {isTopic && <>
-          <span>{t("startedBy", { author: item.authorIdentityKind === "deleted" ? t("deletedUser") : item.authorName })}</span>
-          <span><bdi dir="auto">{item.category.name}</bdi>{item.section && <> · <bdi dir="auto">{item.section.name}</bdi></>}</span>
-        </>}
+    {unavailableTopic ? (
+      <div className="bookmarks-topic-unavailable">
+        <strong>{t("personalFiltersUnavailableTopic")}</strong>
         <time dateTime={item.createdAt}>{t("personalFiltersAddedAt", { date: formatDate.format(new Date(item.createdAt)) })}</time>
-      </span>
-    </Link>
+      </div>
+    ) : (
+      <Link className="bookmarks-topic-link" to={destination}>
+        <strong dir="auto">{isTopic ? item.name : item.identityKind === "deleted" ? t("deletedUser") : item.name}</strong>
+        <span className="bookmarks-topic-metadata">
+          {item.kind === "topic" && item.unavailable !== true && <>
+            <span>{t("startedBy", { author: item.authorIdentityKind === "deleted" ? t("deletedUser") : item.authorName })}</span>
+            <span><bdi dir="auto">{item.category.name}</bdi>{item.section && <> · <bdi dir="auto">{item.section.name}</bdi></>}</span>
+          </>}
+          <time dateTime={item.createdAt}>{t("personalFiltersAddedAt", { date: formatDate.format(new Date(item.createdAt)) })}</time>
+        </span>
+      </Link>
+    )}
     <div className="bookmarks-row-actions">
       <fetcher.Form method="post" action={destination} onSubmit={event => {
         if (pending || refreshing || uncertain) { event.preventDefault(); return; }

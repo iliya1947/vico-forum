@@ -7,6 +7,7 @@ import {HELP_SOLUTIONS_SERVICE_SECTION_ID} from "../../db/forum-identifiers";
 import {createTranslationRuntime} from "../localization/runtime";
 import {canonicalEnglishCatalog} from "../localization/catalog";
 import {topicQuickActionDescriptors,TopicQuickActions,type TopicQuickActionInput} from "./quick-actions";
+import {projectAdminTopic} from "./topic-model";
 const topic:ForumTopicPage={
  id:"topic/1",sectionId:HELP_SOLUTIONS_SERVICE_SECTION_ID,authorId:"author",authorName:"Author",createdAt:new Date(),
  isSolved:true,isClosed:false,closureVersion:0,isPinned:false,bestAnswerPostId:"third",needsDetails:false,duplicateOf:null,duplicateDisputed:false,
@@ -26,6 +27,25 @@ describe("shared topic Quick actions presentation",()=>{
   expect(actions.find(a=>a.intent==="markSolutionOutdated")?.fields).toEqual({expectedBestAnswerPostId:"third"});
   expect(actions.find(a=>a.intent==="correctTitleSourceLocale")?.fields).toEqual({expectedRevisionId:"title-r1",operationScope:"any"});
   expect(actions.some(a=>a.intent==="markSolved"||a.intent==="confirmHelpDuplicate")).toBe(false);
+ });
+ it("keeps permanent answer candidate numbering while excluding hidden middle and selected best tombstones",()=>{
+  const hidden={kind:"hidden" as const,id:"second",topicId:topic.id,parentPostId:"first",createdAt:new Date()};
+  const page={...topic,isSolved:false,bestAnswerPostId:null,posts:[topic.posts[0],hidden,topic.posts[2]]};
+  const projected=projectAdminTopic(page,false);
+  const numbers=new Map(projected.posts.map((post,index)=>[post.id,index+1]));
+  const actions=topicQuickActionDescriptors({...input,topic:projected,
+    postCandidates:projected.posts.slice(1).filter(post=>post.kind!=="hidden")
+      .map(post=>({id:post.id,number:numbers.get(post.id)!}))});
+  expect(actions.filter(action=>action.intent==="selectBestAnswer").map(action=>({
+    id:action.fields.postId,number:action.postNumber,
+  }))).toEqual([{id:"third",number:3}]);
+  expect(JSON.stringify(projected.posts[1])).not.toContain("body");
+  const selected=projectAdminTopic({...page,isSolved:true,bestAnswerPostId:"second"},false);
+  const forbidden=topicQuickActionDescriptors({...input,topic:selected,
+    postCandidates:selected.posts.slice(1).filter(post=>post.kind!=="hidden")
+      .map(post=>({id:post.id,number:numbers.get(post.id)!}))});
+  expect(forbidden.some(action=>action.intent.startsWith("markSolution")
+    ||action.intent==="clearSolutionModeration")).toBe(false);
  });
  it("shows no administrative controls with only own capabilities and excludes invalid moderation state",()=>{
   expect(topicQuickActionDescriptors({...input,canManagePin:false,canManageAnySolution:false,canManageHelpDuplicate:false,canCorrectAnySourceLocale:false,canModerateHelpSolution:false})).toEqual([]);

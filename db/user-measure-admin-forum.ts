@@ -12,7 +12,7 @@ import { rawUserMeasureAuthorityLevel, rawUserMeasurePermissions } from "./user-
 import { isBoundOwner } from "../app/authorization/owner";
 
 const FORUM_ADMIN_PERMISSIONS = new Set<PermissionKey>([
-  "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny",
+  "forum.topic.pin", "forum.topic.close", "forum.content.visibility.manage", "forum.structure.manage", "forum.topic.move", "forum.solution.manageAny",
   "forum.helpNeedsDetails.manage", "forum.helpDuplicate.manage",
   "forum.sourceLocale.correctAny", "forum.post.history.read",
 ]);

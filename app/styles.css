@@ -4951,6 +4951,14 @@ p {
   box-shadow: var(--shadow-panel);
 }
 
+.topic-admin-panel {
+  /* Move picker values must not set the min-content width of the panel grid. */
+  grid-template-columns: minmax(0, 1fr);
+  min-inline-size: 0;
+  box-sizing: border-box;
+}
+.topic-move-form bdi { overflow-wrap: anywhere; }
+
 .topic-best-answer-panel {
   width: max-content;
   max-width: min(20rem, calc(100vw - 2rem));
@@ -9890,6 +9898,22 @@ a.topic-tag:focus-visible {
 .complaint-priority-form :is(button,select),.complaint-open-case { min-block-size: 44px; padding: .6rem; border: 1px solid var(--color-border); border-radius: .4rem; font: inherit; }
 .complaint-open-case { display: inline-flex; align-items: center; }
 .complaint-reason-summary { padding-inline-start: 1.3rem; }
+
+/* F5 forms: native fieldset/select min-content widths must not widen the Admin
+   page at 320px (including long opaque IDs and RTL labels). */
+.admin-forum-structure-actions, .admin-forum-structure-form,
+.admin-forum-structure-form form, .admin-forum-picker {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+}
+.admin-forum-picker input, .admin-forum-picker select,
+.admin-forum-structure-form input[type="text"] {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  box-sizing: border-box;
+}
+.admin-forum-order-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 
 /* Read-only administrative category/section browsing. */
 .admin-forum { min-inline-size: 0; }

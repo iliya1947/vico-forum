@@ -3,6 +3,7 @@ import {requireAdminForumAccess,adminBrowseQuery,adminObjectId,readAdminForum,ad
 import {AdminSectionView} from "../admin/forum";
 import {ForumRouteError} from "../forum/ui";
 export {headers,meta} from "./admin";
+export {adminSectionAction as action} from "../admin/structure-actions.server";
 export async function loader({request,params,context}:{request:Request;params:{locale?:string;sectionId?:string};context:RouterContextProvider}) {
   const access=await requireAdminForumAccess(context);
   const id=adminObjectId(params.sectionId);const query=adminBrowseQuery(request.url);

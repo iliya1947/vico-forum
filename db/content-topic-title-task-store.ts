@@ -141,12 +141,16 @@ export class DrizzleContentTopicTitlePlanningStore implements ContentTopicTitleP
           .limit(1);
 
         const [topic] = await transaction
-          .select({ currentTitleRevisionId: forumTopics.currentTitleRevisionId })
+          .select({
+            currentTitleRevisionId: forumTopics.currentTitleRevisionId,
+            isHidden: forumTopics.isHidden,
+          })
           .from(forumTopics)
           .where(eq(forumTopics.id, specification.sourceIdentity.topicId))
           .for("update");
         if (
           !topic
+          || topic.isHidden
           || topic.currentTitleRevisionId !== expectedRevision.revisionId
         ) {
           throw new ContentTopicTitlePlanningNoWorkRollback("revision-changed");

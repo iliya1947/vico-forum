@@ -54,12 +54,15 @@ export async function loader({ request, params, context }: {
       const page = await forumReaderForRequest(context).readMutedTopics(session.user.id, before);
       return data({
         locale: params.locale ?? "en", actorId: session.user.id, tab,
-        items: page.items.map(item => ({
-          kind: "topic" as const, id: item.id, name: item.title,
-          createdAt: item.mutedAt.toISOString(),
-          authorName: item.authorName, authorIdentityKind: item.authorIdentityKind,
-          category: item.category, section: item.section,
-        })),
+        items: page.items.map(item => item.unavailable
+          ? { kind: "topic" as const, id: item.id, unavailable: true as const,
+              createdAt: item.mutedAt.toISOString() }
+          : {
+              kind: "topic" as const, id: item.id, name: item.title,
+              createdAt: item.mutedAt.toISOString(),
+              authorName: item.authorName, authorIdentityKind: item.authorIdentityKind,
+              category: item.category, section: item.section,
+            }),
         next: page.next && { beforeCreatedAt: page.next.createdAt.toISOString(), beforeTargetId: page.next.targetId },
       }, { headers: { "Cache-Control": PRIVATE_CACHE } });
     }

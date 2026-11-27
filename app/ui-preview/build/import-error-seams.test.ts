@@ -40,7 +40,7 @@ describe("topic action import barriers", () => {
     const forumNames = [
       "ConcurrentRevisionError", "ForumEntityNotFoundError",
       "ForumAuthorizationError", "ForumStateConflictError",
-      "ForumTopicClosedError", "ForumPublicationReplayConflictError",
+      "ForumTopicClosedError", "ForumPublicationReplayConflictError", "ForumVisibilityReasonError",
     ] as const;
     for (const key of forumNames) expect(neutralForumErrors[key]).toBe(productionForumErrors[key]);
     expect(neutralForumErrors.InvalidForumContentError).toBe(productionContentError);
@@ -54,5 +54,22 @@ describe("topic action import barriers", () => {
     expect(neutralAttachmentId).toBe(productionAttachmentId);
     expect(neutralAttachmentId("00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(neutralAttachmentId("invalid-id")).toBe(false);
+  });
+});
+
+import * as neutralStructure from "../../../db/forum-structure-contract";
+import * as productionStructure from "../../../db/forum-structure";
+import { TopicMoveWriteUnavailableError as neutralMove } from "../../../db/topic-move-error";
+import { TopicMoveWriteUnavailableError as productionMove } from "../../../db/hyperdrive-topic-move";
+
+describe("current topic visibility and move import seams", () => {
+  it("shares the production structure error classes and counter validation", () => {
+    for (const key of ["StructureValidationError", "StructureForbiddenError", "StructureNotFoundError", "StructureInvariantError", "StructureConflictError", "parseStructureCounter"] as const) {
+      expect(neutralStructure[key]).toBe(productionStructure[key]);
+    }
+    expect(neutralStructure.parseStructureCounter("9223372036854775807")).toBe(9223372036854775807n);
+    expect(() => neutralStructure.parseStructureCounter("9223372036854775808"))
+      .toThrow(productionStructure.StructureValidationError);
+    expect(neutralMove).toBe(productionMove);
   });
 });

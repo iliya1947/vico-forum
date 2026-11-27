@@ -89,6 +89,45 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     expect(page.items[0]?.authorName).not.toBe(author);
   });
 
+  it("retains hidden own bookmarks as metadata-free unavailable rows, with safe removal and Restore", async () => {
+    const author = await person(), viewer = await person(), other = await person();
+    const hiddenTitle = "HIDDEN_BOOKMARK_TITLE_SENTINEL";
+    const x = await topic(author, "bookmark-section", hiddenTitle);
+    await repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: true });
+    await repository.setTopicBookmark({ actorId: other, topicId: x.id, bookmarked: true });
+    const saved = (await stored(viewer, x.id))[0]!.saved_at;
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.id]);
+
+    const hiddenPage = await repository.readTopicBookmarks(viewer);
+    expect(hiddenPage.items).toEqual([{ id: x.id, savedAt: saved, unavailable: true }]);
+    expect(JSON.stringify(hiddenPage)).not.toContain(hiddenTitle);
+    expect(JSON.stringify(hiddenPage)).not.toContain(author);
+    await expect(repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: true }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    expect((await stored(viewer, x.id))[0]?.saved_at).toEqual(saved);
+
+    expect(await repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: false }))
+      .toBe(false);
+    expect(await repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: false }))
+      .toBe(false);
+    expect(await repository.readTopicBookmark(viewer, x.id)).toBe(false);
+    expect(await repository.readTopicBookmark(other, x.id)).toBe(true);
+    const missing = uuid();
+    expect(await repository.setTopicBookmark({ actorId: viewer, topicId: missing, bookmarked: false }))
+      .toBe(false);
+    await expect(repository.setTopicBookmark({ actorId: viewer, topicId: missing, bookmarked: true }))
+      .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    await expect(repository.setTopicBookmark({ actorId: "missing-actor", topicId: missing, bookmarked: false }))
+      .rejects.toBeInstanceOf(AccountMissingError);
+
+    await fixture.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [x.id]);
+    const restored = await repository.readTopicBookmarks(other);
+    expect(restored.items[0]).toMatchObject({ id: x.id, title: hiddenTitle });
+    expect(restored.items[0]?.unavailable).not.toBe(true);
+    expect(await repository.setTopicBookmark({ actorId: viewer, topicId: x.id, bookmarked: true }))
+      .toBe(true);
+  });
+
   it("bounds keyset pages to 50 and respects tied millisecond times and actor scope",async()=>{
     const author=await person(),a=await person(),b=await person();
     const ids:string[]=[];
@@ -99,6 +138,8 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     const foreign=await topic(author);
     await repository.setTopicBookmark({actorId:b,topicId:foreign.id,bookmarked:true});
     await fixture.query("update forum_topic_bookmarks set saved_at='2026-11-18T12:00:00.123Z' where user_id=$1",[a]);
+    const hiddenId = ids[0]!;
+    await fixture.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [hiddenId]);
     const first=await repository.readTopicBookmarks(a);
     expect(first.items).toHaveLength(50);
     expect(first.next).not.toBeNull();
@@ -107,6 +148,7 @@ describe("Bookmarks real PostgreSQL own state and ordered list",()=>{
     expect(second.next).toBeNull();
     expect([...first.items,...second.items].map(item=>item.id)).toEqual(ids.sort().reverse());
     expect([...first.items,...second.items].some(item=>item.id===foreign.id)).toBe(false);
+    expect([...first.items,...second.items].find(item=>item.id===hiddenId)?.unavailable).toBe(true);
     await repository.setTopicBookmark({actorId:a,topicId:first.items[0]!.id,bookmarked:false});
     const refreshed=await repository.readTopicBookmarks(a);
     expect(refreshed.items).toHaveLength(50);
@@ -358,6 +400,50 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
       await Promise.all([writer.client.end(), deleter.client.end()]);
     }
   }, 30_000);
+
+  it("serializes Bookmark Add with committed Hide in both real PostgreSQL orders", async () => {
+    const author = await person(), viewer = await person();
+    for (const addFirst of [true, false]) {
+      const target = await topic(author);
+      const add = await connected(), hide = await connected();
+      const paused = addFirst ? pauseCommit(add.client) : null;
+      let write: Promise<boolean> | undefined, hidden: Promise<unknown> | undefined;
+      let hideTransaction = false;
+      try {
+        if (addFirst) {
+          write = isolated(add.client).setTopicBookmark({
+            actorId: viewer, topicId: target.id, bookmarked: true,
+          });
+          await paused!.observed;
+          hidden = hide.client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [target.id]);
+          await expectPgBlocked(hide.pid, add.pid);
+          paused!.resume();
+          expect(await write).toBe(true);
+          await hidden;
+          expect((await repository.readTopicBookmarks(viewer)).items.find(item=>item.id===target.id))
+            .toMatchObject({ id: target.id, unavailable: true });
+        } else {
+          await hide.client.query("begin");
+          hideTransaction = true;
+          await hide.client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id=$1", [target.id]);
+          write = isolated(add.client).setTopicBookmark({
+            actorId: viewer, topicId: target.id, bookmarked: true,
+          });
+          await expectPgBlocked(add.pid, hide.pid);
+          await hide.client.query("commit");
+          hideTransaction = false;
+          await expect(write).rejects.toBeInstanceOf(ForumEntityNotFoundError);
+          expect(await repository.readTopicBookmark(viewer, target.id)).toBe(false);
+        }
+      } finally {
+        paused?.resume();
+        paused?.restore();
+        if (hideTransaction) await hide.client.query("rollback");
+        await Promise.allSettled([write, hidden].filter((p): p is Promise<unknown> => !!p));
+        await Promise.all([add.client.end(), hide.client.end()]);
+      }
+    }
+  }, 45_000);
 
   it("coexists with topic title writer in both orders without topic/actor lock inversion", async () => {
     const author = await person();

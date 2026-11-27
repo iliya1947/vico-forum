@@ -10,7 +10,6 @@ import { PostgresAuthorizationRepository } from "../../db/authorization-reposito
 import { AuthorizationService, AuthorizationUnavailableError, createAuthorizationCapability } from "../../db/authorization-service";
 import { createHyperdriveAuthorization } from "../../db/hyperdrive-authorization";
 import type { PermissionKey } from "../../app/authorization/catalog";
-import { historicalForumMeasureAdmission } from "./historical-forum-measure-admission";
 import { DrizzleForumRepository } from "../../db/forum-repository";
 import { ForumAttachmentCleanup } from "../../db/forum-attachment-cleanup";
 import { RouterContextProvider } from "react-router";
@@ -92,24 +91,21 @@ describe("Package 6 populated 0054 to 0055 PostgreSQL upgrade",()=>{
       for(const file of (await readdir("drizzle")).filter(x=>/^\d{4}_.+\.sql$/.test(x)&&x<"0055_").sort()){
         await upgrade.query((await readFile(`drizzle/${file}`,"utf8")).replaceAll('"public".',`"${upgradeSchema}".`));
       }
-      // This deliberately tests pre-0055 notification history, while fixture topics
-      // are created by the current Forum writer (AP-08 + SA04-J2 expectations).
-      await upgrade.query("alter table forum_topics add column is_closed boolean not null default false, add column closure_version integer not null default 0");
-      await upgrade.query(`alter table "user"
-        add column deactivated_at timestamptz,
-        add column deactivated_by_user_id text,
-        add column retain_at_least_until timestamptz`);
+      // Historical upgrade fixtures use the actual pre-0055 SQL shape, not the current writer.
       for(const id of ["upgrade-author","upgrade-reporter-one","upgrade-reporter-two","upgrade-reviewer"])
         await upgrade.query('insert into "user"(id,name,email) values($1,$1,$2)',[id,`${id}@test.invalid`]);
-      const forumUpgrade=new DrizzleForumRepository(drizzle(upgrade),{cooldownMs:0,now:()=>new Date()},historicalForumMeasureAdmission);
-      await forumUpgrade.createCategory({id:"upgrade-category",name:"Upgrade"});
-      await forumUpgrade.createSection({id:"upgrade-section",categoryId:"upgrade-category",name:"Upgrade"});
-      await forumUpgrade.createTopicWithInitialPost({
-        id:"upgrade-topic",sectionId:"upgrade-section",authorId:"upgrade-author",
-        titleRevision:{id:"upgrade-title",originalContent:"Upgrade title",sourceLocale:"en"},
-        initialPost:{id:"upgrade-post",topicId:"upgrade-topic",authorId:"upgrade-author",
-          bodyRevision:{id:"upgrade-revision",originalContent:"Upgrade evidence",sourceLocale:"en"}}
-      });
+      await upgrade.query("begin");
+      await upgrade.query(`insert into forum_categories(id,name) values ('upgrade-category','Upgrade');
+        insert into forum_sections(id,category_id,name) values ('upgrade-section','upgrade-category','Upgrade');
+        insert into forum_topics(id,section_id,author_id,current_title_revision_id)
+          values ('upgrade-topic','upgrade-section','upgrade-author','upgrade-title');
+        insert into forum_topic_title_revisions(id,topic_id,author_id,original_content,source_locale)
+          values ('upgrade-title','upgrade-topic','upgrade-author','Upgrade title','en');
+        insert into forum_posts(id,topic_id,author_id,current_revision_id)
+          values ('upgrade-post','upgrade-topic','upgrade-author','upgrade-revision');
+        insert into forum_post_revisions(id,post_id,author_id,original_content,source_locale)
+          values ('upgrade-revision','upgrade-post','upgrade-author','Upgrade evidence','en')`);
+      await upgrade.query("commit");
       await upgrade.query(`insert into forum_complaint_targets
         (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
         values ('upgrade-target','post','upgrade-topic','upgrade-post','upgrade-revision','upgrade-author')`);
@@ -256,6 +252,160 @@ describe("complaints domain foundation / real PostgreSQL", () => {
     await expect(service().readHistoryTimeline("outsider",saved.caseId,0)).rejects.toBeInstanceOf(ComplaintForbiddenError);
   });
 
+
+  it.each([
+    { kind: "topic-title", visibility: "topic" },
+    { kind: "post", visibility: "topic" },
+    { kind: "post", visibility: "post" },
+  ] as const)(
+    "B8-A9 retains protected $kind Complaint Case, Decision, Appeal, evidence and History across $visibility Hide/Restore",
+    async ({ kind, visibility }) => {
+      const hiddenBody = "A9 PRIVATE RETAINED BODY " + randomUUID();
+      const hiddenTitle = "A9 PRIVATE RETAINED TITLE " + randomUUID();
+      const c = await content(hiddenBody, hiddenTitle);
+      const target = kind === "post" ? c.post : c.title;
+      const attachmentId = kind === "post" ? await asset(c.post.postId) : null;
+      const reportInput = report(target, "Original retained complaint explanation");
+      const saved = await service().submit("reporter-one", reportInput);
+      await service().addNote("reviewer", {
+        caseId: saved.caseId, operationId: randomUUID(), body: "Retained private Case note",
+      });
+      const caseBefore = (await client.query<{ version: number; state: string }>(
+        "select version,state from forum_complaint_cases where id=$1", [saved.caseId],
+      )).rows[0]!;
+      const pages = { reports: 0, notes: 0, evidence: 0, context: 0 };
+      const targetId = visibility === "topic" ? c.post.topicId : c.post.postId;
+      const hide = () => visibility === "topic"
+        ? forum.setTopicVisibility({
+            topicId: c.post.topicId, actorId: "reviewer", hidden: true,
+            expectedVisibilityVersion: 0, expectedRevisionId: c.title.revisionId,
+            reason: "A9 protected Complaint retention",
+          })
+        : forum.setPostVisibility({
+            topicId: c.post.topicId, postId: c.post.postId, actorId: "reviewer",
+            hidden: true, expectedVisibilityVersion: 0,
+            expectedRevisionId: c.post.revisionId, reason: "A9 protected Complaint retention",
+          });
+      const restore = () => visibility === "topic"
+        ? forum.setTopicVisibility({
+            topicId: c.post.topicId, actorId: "reviewer", hidden: false,
+            expectedVisibilityVersion: 1, expectedRevisionId: c.title.revisionId,
+            reason: "A9 verified protected retention",
+          })
+        : forum.setPostVisibility({
+            topicId: c.post.topicId, postId: c.post.postId, actorId: "reviewer",
+            hidden: false, expectedVisibilityVersion: 1,
+            expectedRevisionId: c.post.revisionId, reason: "A9 verified protected retention",
+          });
+      const expectedContent = kind === "post" ? hiddenBody : hiddenTitle;
+      const visibilityAction = visibility === "topic" ? "topic" : "post";
+
+      await expect(hide()).resolves.toMatchObject({ hidden: true, changed: true, visibilityVersion: 1 });
+      expect((await client.query(
+        "select version,state from forum_complaint_cases where id=$1", [saved.caseId],
+      )).rows[0]).toEqual(caseBefore);
+      const protectedCase = await service().readReview("reviewer", saved.caseId, pages);
+      expect(protectedCase).toMatchObject({
+        kind, state: "open",
+        reported: { revisionId: target.revisionId, originalContent: expectedContent },
+        current: { originalContent: expectedContent },
+        reports: { total: 1 },
+        notes: { total: 1, items: [{ body: "Retained private Case note" }] },
+        evidence: { total: attachmentId ? 1 : 0 },
+      });
+      expect((await service().readReviewContext(
+        "reviewer", saved.caseId, c.post.postId,
+      )).source.originalContent).toBe(hiddenBody);
+      await expect(service().readReview("outsider", saved.caseId, pages))
+        .rejects.toBeInstanceOf(ComplaintForbiddenError);
+      if (attachmentId) {
+        await expect(service().readReviewEvidence(
+          "reviewer", saved.caseId, attachmentId,
+        )).resolves.toMatchObject({
+          fileName: "evidence.txt", objectKey: `private/${attachmentId}`,
+        });
+        await expect(service().readReviewEvidence(
+          "outsider", saved.caseId, attachmentId,
+        )).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      }
+
+      const decisionId = await service().decide("reviewer", {
+        caseId: saved.caseId, operationId: randomUUID(),
+        expectedVersion: caseBefore.version, outcome: "confirmed",
+        reasoning: "Case decision independent of publication visibility",
+      });
+      const appealId = await service().appeal("content-author", {
+        caseId: saved.caseId, decisionId, operationId: randomUUID(),
+        argument: "Protected author Appeal",
+      });
+      const reviewAppeal = await service().readAppealCaseForReviewer(
+        "appeal-reviewer", saved.caseId, appealId, pages,
+      );
+      expect(reviewAppeal).toMatchObject({
+        appeal: { id: appealId, status: "pending" },
+        caseReview: { reported: { originalContent: expectedContent } },
+      });
+      await expect(service().readAppealCaseForReviewer(
+        "outsider", saved.caseId, appealId, pages,
+      )).rejects.toBeInstanceOf(ComplaintForbiddenError);
+      expect((await service().readAppealContext(
+        "appeal-reviewer", saved.caseId, appealId, c.post.postId,
+      )).source.originalContent).toBe(hiddenBody);
+      if (attachmentId) {
+        await expect(service().readAppealEvidence(
+          "appeal-reviewer", saved.caseId, appealId, attachmentId,
+        )).resolves.toMatchObject({ objectKey: `private/${attachmentId}` });
+      }
+      await service().resolveAppeal("appeal-reviewer", {
+        caseId: saved.caseId, appealId, operationId: randomUUID(),
+        outcome: "overturned", reasoning: "Protected Appeal result",
+      });
+      const own = await service().readOwnResult("content-author", saved.caseId);
+      expect(own).toMatchObject({
+        decisionId, outcome: "confirmed", effectiveOutcome: "not-confirmed",
+      });
+      await expect(service().readOwnResult("outsider", saved.caseId))
+        .rejects.toBeInstanceOf(ComplaintNotFoundError);
+      const resolved = await service().readResolvedHistory("reviewer", 0);
+      expect(resolved.cases.find(row => row.id === saved.caseId)?.text).toBe(expectedContent);
+      const timeline = await service().readHistoryTimeline("reviewer", saved.caseId, 0);
+      expect(timeline.total).toBe(5);
+      expect(timeline.events.map(event => event.kind).sort()).toEqual([
+        "appeal-resolved", "appealed", "decided", "noted", "submitted",
+      ]);
+      await expect(service().readHistoryTimeline("outsider", saved.caseId, 0))
+        .rejects.toBeInstanceOf(ComplaintForbiddenError);
+
+      await expect(restore()).resolves.toMatchObject({
+        hidden: false, changed: true, visibilityVersion: 2,
+      });
+      const after = await service().readReview("reviewer", saved.caseId, pages);
+      expect(after).toMatchObject({
+        state: "resolved", reported: { revisionId: target.revisionId, originalContent: expectedContent },
+        decision: { id: decisionId, outcome: "confirmed" },
+        reports: { total: 1 }, notes: { total: 1 },
+        evidence: { total: attachmentId ? 1 : 0 },
+      });
+      const adminEvents = (await client.query<{
+        action: string; target_label: string; context: Record<string, unknown>;
+      }>("select action,target_label,context from admin_history where target_id=$1 order by position",
+        [targetId])).rows;
+      expect(adminEvents.map(event => event.action)).toEqual([
+        visibilityAction + ".hidden", visibilityAction + ".restored",
+      ]);
+      expect(adminEvents.every(event => event.target_label === visibilityAction + ":" + targetId))
+        .toBe(true);
+      expect(JSON.stringify(adminEvents)).not.toContain(hiddenBody);
+      expect(JSON.stringify(adminEvents)).not.toContain(hiddenTitle);
+      expect((await service().readHistoryTimeline("reviewer", saved.caseId, 0)).total).toBe(5);
+      expect((await client.query(
+        "select count(*)::int as total from forum_complaint_evidence_attachments e " +
+          "join forum_complaint_targets t on t.id=e.target_id where t.topic_id=$1",
+        [c.post.topicId],
+      )).rows[0]?.total).toBe(attachmentId ? 1 : 0);
+    },
+    30_000,
+  );
 
   it("reads protected full Case evidence and topic context through a bounded private projection", async () => {
     const c = await content();

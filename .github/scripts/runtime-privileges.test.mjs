@@ -639,3 +639,13 @@ test("rejects unexpected PUBLIC privileges", () => {
     /PUBLIC must not receive unexpected custom default privileges/,
   );
 });
+
+test("F1 web structure ACL permits only bounded foundation operations", () => {
+  const web = runtimeCapabilityContracts.web.relations;
+  assert.deepEqual(web.forum_categories, ["INSERT", "SELECT", "UPDATE"]);
+  assert.deepEqual(web.forum_sections, ["INSERT", "SELECT", "UPDATE"]);
+  assert.deepEqual(web.forum_structure_state, ["SELECT", "UPDATE"]);
+  for (const name of ["forum_categories", "forum_sections", "forum_structure_state"]) {
+    assert.equal(runtimeCapabilityContracts["localization-read"].relations[name], undefined);
+  }
+});

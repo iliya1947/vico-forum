@@ -1,4 +1,5 @@
 import { SYSTEM_MONITORS } from "./owner-system-history";
+import { STRUCTURE_ADMIN_ACTION_SQL } from "./owner-structure-history";
 import { SA02_MONITORS } from "./owner-sa02-catalog";
 import {STORAGE_SLOTS} from "../app/observability/storage-observations";
 
@@ -44,10 +45,12 @@ export const TASK_FACT_MONITOR_SCOPES_SQL=`ARRAY['background.translation','integ
 
 /** Same native Admin fact may belong to several monitors, but has one identity. */
 export const ADMIN_MONITOR_SCOPES_SQL = `case
+  when a.action in (${STRUCTURE_ADMIN_ACTION_SQL}) then ARRAY['forum.structure']::text[]
   when a.action='settings.registrationChanged' then ARRAY['accounts.registration','administration.registration','integrations.authentication']::text[]
   when a.action in ('role.created','role.deleted','role.renamed','role.grantsChanged','user.roleAssigned','user.overrideChanged') then ARRAY['administration.authorization']::text[]
   when a.action in ('measure.created','measure.changed','measure.lifted','measure.appealResolved') then ARRAY['administration.measures']::text[]
   when a.action like 'help.%' or a.action in ('topic.solved','topic.bestAnswerChanged') then ARRAY['moderation.help','forum.state']::text[]
   when a.action in ('topic.sourceLocaleCorrected','post.sourceLocaleCorrected') then ARRAY['forum.content','localization.content']::text[]
+  when a.action in ('topic.hidden','topic.restored','post.hidden','post.restored') then ARRAY['forum.content','forum.state']::text[]
   when a.action in ('topic.pinned','topic.unpinned','topic.closed','topic.reopened') then ARRAY['forum.state']::text[]
   else ARRAY[]::text[] end`;
