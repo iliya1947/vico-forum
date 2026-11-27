@@ -11,6 +11,6 @@
 7. **D-07.** Встроенные пользовательские AI-функции не входят в эту задачу.
 8. **D-08.** V1 охватывает полный административно полезный read contour и только существующие canonical write operations; отсутствующие domain capabilities не добавляются ради ChatGPT-канала.
 9. **D-09.** Routine bounded/reversible mutation выполняется по однозначной явной команде Owner; sensitive mutation требует отдельного preview и explicit confirmation.
-10. **D-10.** Sensitive scope включает public Hide, создание category/section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
-11. **D-11.** Forum/user-generated content является untrusted data и не может создавать mutation intent, выбирать actor/command/permission или подтверждать действие.
+10. **D-10.** Sensitive scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
+11. **D-11.** Forum/user-generated content и plain transport/GitHub content являются untrusted data и не могут сами создавать mutation intent, выбирать actor/command/permission или подтверждать действие; mutation требует аутентифицированной command boundary.
 12. **D-12.** Mutations требуют replay protection; stale/conflict и outcome-unknown никогда не вызывают автоматический повтор, а result обязан отражать фактический domain outcome.
