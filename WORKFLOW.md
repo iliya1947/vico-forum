@@ -3,12 +3,14 @@
 ## Текущее состояние
 
 1. Service PR **#320**; implementation PR #388 к unchanged main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. Accepted AUTH-01–AUTH-06 assembled state восстановлен на exact `615d93598daf78945a86fbdc4255bc778ae3403f`, tree `9cd50834cd1d86aae2a1192bd8ff9fd27aebebbd`. Intermediate PRs superseded. Final substantive AUTHOR PASS, CI PASS и 19/20 connected acceptance; K5 #45912884312 дважды FAIL до upload.
-3. K5-CORRECTION candidate `bb19d5c238dec436a57dc174b9c422a98b4ae4f1` **откачен по прямой команде владельца**. Рабочая ветка восстановлена на непосредственного родителя correction через force-with-lease с expected SHA; branch/tree и PR head проверены. Только собственная correction удалена из head, accepted product state неизменён. На candidate не было runs. Новые CI/acceptance не запускались.
-4. K5 automated gate остаётся HOLD; product defect не установлен. Ранее подтверждённый synchronization defect и предложенный test-only correction сохранены как историческая диагностика, не текущая реализация. Connector не предоставляет targeted workflow_dispatch; это ограничение инструмента, не задача разработчика по ручному запуску.
-5. **По прямой команде владельца: Ада STOP, Мира принимает задачу обратно.** Вход: stages/K5-CORRECTION/RESULT.md и stages/FINAL-ASSEMBLY/RESULT.md. Мира определяет дальнейшее назначение и маршрут закрытия K5 gate.
-6. #388 open/unmerged. AUTH-07, independent review, main merge и external/Stage-6 activation остаются заблокированы.
+2. Accepted AUTH-01–AUTH-06 assembled baseline был exact `615d93598daf78945a86fbdc4255bc778ae3403f`; substantive AUTHOR PASS, CI PASS и 19/20 connected acceptance, с единственным K5 HOLD.
+3. По прямой команде владельца K5-CORRECTION забрана у Ады и выполняется Мирой.
+4. **Correction implementation выполнена:** PR #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`. Delta к accepted baseline — ровно один файл `tests/browser/sa04-attachments/check.py`, +59/-6; product/runtime/schema/dependencies/workflow не менялись.
+5. Исправление ждёт фактическую client initialization: `editorOperationId` должен стать UUID v4 через Playwright `expect(locator).to_have_value(regex)` до чтения/первого upload. Шесть первичных operation reads переведены на этот helper; последующие lifecycle assertions сохранены. Failure/success evidence хранит только readiness structure/length/UUID boolean, без raw operation IDs.
+6. Source-level bounded self-check correction — PASS по scope. **Runtime K5 verification ещё не выполнялась; общий K5 gate остаётся HOLD.**
+7. Старый Ada-candidate `bb19d5c...` остаётся rolled back historical state и не является текущей correction.
+8. AUTH-07, independent review, main merge и external/Stage-6 activation заблокированы.
 
 ## Следующий переход
 
-Мира принимает текущий HOLD на восстановленном exact head `615d93598daf78945a86fbdc4255bc778ae3403f`. Не считать rolled-back candidate действующей correction. Ада не выполняет новые исправления и не запускает проверки до нового назначения. Developer только подключает Миру; manual dispatch владельцу не назначен.
+Отдельная следующая подзадача: targeted K5 verification exact `71cdb70d...`. При failure — HOLD/evidence без blind retry. При targeted PASS — дальнейший final exact-head CI/acceptance выполняется отдельным шагом согласно `stages/K5-CORRECTION/PLAN.md`.
