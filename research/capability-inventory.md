@@ -45,7 +45,7 @@
 
 1. Reviewer может добавлять private note в Case.
 2. Reviewer может принять initial Decision `confirmed | not-confirmed`.
-3. Отдельный reviewer может resolve pending Complaint Appeal как `upheld | overturned`.
+3. Reviewer с `forum.complaint.appeal.review` может завершить pending Complaint Appeal как `upheld | overturned`. Другой reviewer предпочтителен. Тому, кто принял исходное Decision, каноническая команда также доступна при действующих полномочиях. [Контракт Complaints](../docs/moderation/COMPLAINTS.md#appeals-package-6-workflow-and-policy)
 4. Разрешённый actor может менять/сбрасывать priority override конкретного open Case.
 5. `forum.complaint.priority.manage` позволяет менять глобальные persisted reason-priority weights.
 6. Эти команды используют существующий Complaints service, replay/operation identity, version/CAS и transactional event semantics; новый ChatGPT-канал не должен создавать второй Complaints writer.
