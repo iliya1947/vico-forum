@@ -2,14 +2,12 @@
 
 # Мира
 
-Текущее назначение: завершить продуктовый scope управления Vico Forum из обычного ChatGPT и после собственной финальной проверки передать задачу Лёве на полный технический план.
+Продуктовый scope завершён.
 
-Завершено:
+1. `research/capability-inventory.md` — проверенная инвентаризация canonical capabilities.
+2. `research/product-scope-v1.md` — действующий product scope v1.
+3. `research/scope-review.md` — финальная проверка PASS после трёх corrections: Hide/Restore оба sensitive; section reparent sensitive; GitHub/transport content не является authority.
 
-1. `research/capability-inventory.md` — проверенная инвентаризация существующих canonical capabilities.
-2. `research/product-scope-v1.md` — product scope v1, read/write набор, sensitive confirmation, exclusions, untrusted-content и replay/result semantics.
-3. `TASK.md` и `DECISIONS.md` синхронизированы с scope.
+Следующий шаг — handoff Лёве на полный технический план. Реализацию до принятого плана не начинать.
 
-Следующий подэтап: финальная проверка scope на полноту и противоречия перед handoff Лёве.
-
-Не начинать реализацию до полного технического плана. Implementation PR задачи — #399; служебный PR — #400.
+Implementation PR задачи — #399; служебный PR — #400.
