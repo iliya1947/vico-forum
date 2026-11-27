@@ -1,68 +1,70 @@
-Этот файл фиксирует проверку Мирой технического плана Лёвы перед выбором режима поставки.
+Этот файл фиксирует актуальную проверку Мирой технического плана Лёвы перед началом реализации.
 
-# Проверка технического плана — 27.11.2026
+# Проверка технического плана — 28.11.2026
 
 ## Итог
 
-**HOLD.**
+**PASS.**
 
-План проверен целиком против `TASK.md`, `research/product-scope-v1.md`, `research/capability-inventory.md`, актуального `main` и текущей официальной документации внешних платформ. Все read/write семейства scope v1, sensitive-классификация, replay/result semantics, atomic receipt, Stage-6 boundary и $0-ограничения в целом покрыты. До реализации остаётся один блокирующий дефект текущего технического решения.
+Проверен полный `PLAN.md` на service head `bed01ed23d2c4b87faa2780ccc6e960d57f83b43` / blob `7cebc89d84c0908395a0d85da397cddac0ad9eb5` против `main` `c49897181388b4a78f8e8248dc6508551df576c4`, `TASK.md`, D-01–D-20, `research/product-scope-v1.md`, `research/user-journey-v1.md`, прежнего F-01 и актуальной официальной документации OpenAI/Better Auth.
 
-## F-01 — основной ChatGPT→GitHub delivery path зависит от запрещённой cross-plugin orchestration
+Подтверждённых блокирующих дефектов текущей задачи не осталось.
 
-### Что записано в PLAN
+## F-01 — закрыт
 
-Раздел 1 строит основной путь так:
+Прежний план зависел от цепочки Site plugin/component → `sendFollowUpMessage` → отдельный GitHub connector. Новый план этого не делает.
 
-1. Site-hosted personal plugin/component готовит и подписывает intent.
-2. Component вызывает `sendFollowUpMessage`.
-3. После этого штатное GitHub-подключение в обычном ChatGPT должно опубликовать `requestRef` в приватный inbox.
-4. GitHub webhook допускает Worker к исполнению.
+1. Один Site-hosted personal plugin экспонирует отдельные типизированные MCP tools.
+2. Каждый tool самостоятельно завершает требуемую внешнюю зависимость через собственный server path; вызов другого plugin/connector моделью не требуется.
+3. GitHub является внутренней транспортной зависимостью этого tool path.
+4. Интерактивный component и `sendFollowUpMessage` из основного пути удалены.
+5. Model-callable write operations остаются явно экспонированными отдельными tools; `prepare_task` только фиксирует неизменяемое описание уже экспонированных операций и не является generic executor скрытых capabilities.
 
-Также PLAN предполагает один model-callable entry, который открывает component и передаёт draft/read/result context.
+Это соответствует текущему OpenAI requirement tool independence/exposure и текущей архитектуре plugins/MCP, где UI необязателен:
+- https://developers.openai.com/plugins/plugin-guidelines
+- https://developers.openai.com/plugins/concepts/plugins
+- https://help.openai.com/en/articles/20001547-hosting-a-plugin-with-chatgpt-sites
 
-### Почему это реальный дефект текущей задачи
+## Product contract
 
-Актуальная официальная документация OpenAI для Plugins требует:
+План покрывает:
 
-1. Каждый public tool должен работать самостоятельно.
-2. Нельзя инструктировать модель вызвать другой plugin/connector для завершения операции; обязательные зависимости должны быть реализованы внутри собственного plugin.
-3. Каждая model-callable operation должна быть отдельным tool; generic executor/discovery surface для неявно выбираемых операций не допускается.
-4. `window.openai.sendFollowUpMessage` только просит ChatGPT опубликовать сообщение, authored by component. Это не контракт автоматического вызова GitHub connector и не гарантия записи во внешний сервис.
+1. полный утверждённый read contour;
+2. только существующие canonical writes без generic escape hatch;
+3. ordinary conversational explain → confirm → dispatch без отдельного product UI confirmation;
+4. exact Owner/session/AccountState/native permission/resource/AP-10/hierarchy/CAS/History boundaries;
+5. untrusted forum/GitHub content isolation;
+6. immutable task manifest и запрет расширять targets после confirmation;
+7. составные задачи с stop-on-first-failure и сохранением уже committed effects;
+8. массовые задачи с continue-per-target для независимых targets и per-target итогом;
+9. replay/duplicate/stale/outcome-unknown semantics без автоматического повторного effect;
+10. request-driven v1 и переиспользуемую read/analysis boundary для будущего scheduler/event trigger без реализации background monitoring сейчас;
+11. private GitHub transport, Worker primary path, Actions как ограниченный дополнительный delivery path;
+12. Stage-6 boundary и $0/no Work-Codex ordinary-use constraints.
+
+## Внешняя платформа
+
+Текущая официальная документация подтверждает:
+
+1. Sites может хостить MCP server и давать tools через plugin.
+2. Custom UI для MCP не обязателен.
+3. Установленные plugins могут вызываться ChatGPT автоматически, когда релевантны запросу.
+4. OAuth 2.1 + PKCE/S256 для authenticated MCP поддерживается; Better Auth OAuth Provider сейчас поддерживает необходимые OAuth 2.1/resource/introspection primitives.
 
 Источники:
-- https://developers.openai.com/plugins/plugin-guidelines — раздел 6.2 Tool independence and exposure.
-- https://developers.openai.com/plugins/reference — `sendFollowUpMessage` component bridge.
+- https://help.openai.com/en/articles/20001339-creating-and-using-chatgpt-sites
+- https://help.openai.com/en/articles/20001256-plugins-in-chatgpt
+- https://developers.openai.com/plugins/build/auth
+- https://better-auth.com/docs/plugins/oauth-provider
 
-Следовательно, текущий primary path нельзя считать поддерживаемым контрактом платформы. Это не Stage-6 эксплуатационный риск и не будущий hardening: именно на этой цепочке построена доставка каждой команды v1. Реализация этапов A–I поверх неё создаст архитектуру, основной путь которой противоречит действующим требованиям plugin platform.
+**Информация не проверена:** фактический режим конкретного аккаунта владельца — наличие нужного Site/plugin/OAuth permission set и отсутствие обязательной дополнительной approval-card для всех high-impact v1 tools. OpenAI прямо допускает account/app/action-dependent approval для write actions. Это не скрыто планом: раздел 9 делает эту проверку обязательным Stage-6 gate и запрещает выпуск, если утверждённый conversational UX не поддерживается. Поэтому это не defect текущего repository/local implementation stage.
 
-### Что подтверждено и не является finding
+## Режим поставки
 
-1. ChatGPT Sites действительно доступен Plus/Pro и может хостить MCP/plugin.
-2. Site-hosted plugin может иметь интерактивный UI.
-3. Widget может иметь узкий CSP/connectDomains.
-4. `sendFollowUpMessage` существует.
-5. Текущие Workers Free лимиты и Hyperdrive Free quota, указанные в плане, соответствуют актуальной документации; фактический общий остаток всё равно остаётся Stage 6.
-6. GitHub Actions для private repositories имеет included compute и поддерживает hard-stop budgets; фактический остаток/настройка остаются Stage 6.
+Выбран **stacked mode A → I**.
 
-Проблема узкая: **нельзя делать выполнение public tool зависимым от того, что модель после component-authored follow-up вызовет отдельный GitHub connector**.
+Причина: этапы образуют одну зависимую вертикаль; промежуточный merge в `main` не даёт законченного v1 и создаёт лишнюю стоимость синхронизации. Первый implementation PR — существующий `#399`; следующие bounded stages строятся поверх предыдущих. После последнего этапа итоговый head собирается обратно в `#399`, промежуточные PR закрываются как superseded, затем выполняется final author self-check → whole-feature review Миры → независимый whole-feature review Лёвы на том же stable exact head → merge владельцем.
 
-## Требуемая коррекция Лёвы
+## Следующий этап
 
-Лёва должен пересмотреть именно transport/plugin boundary, не меняя продуктовый scope.
-
-Исправленный план должен:
-
-1. сохранять private GitHub как установленный transport boundary;
-2. не зависеть от model-driven invocation другого plugin/connector для завершения public tool;
-3. иметь корректно экспонированные model-callable tools по действующим plugin rules, без generic executor для скрытого реестра операций;
-4. сохранять явное user intent/confirmation, untrusted-content isolation, Worker-primary / Actions-additional границу, $0 и Stage-6 activation;
-5. после изменения проверить, какие этапы A–I и их зависимости нужно скорректировать.
-
-Конкретную реализацию Мире навязывать не требуется: технический вариант выбирает Лёва.
-
-## Остальная проверка
-
-Других подтверждённых блокирующих findings по текущему scope после полного прохода не найдено.
-
-До исправления F-01 delivery mode не выбирается и реализация `#399` не начинается.
+Первая реализация — Stage A из принятого `PLAN.md`. До активации исполнителя код `#399` остаётся неизменным.
