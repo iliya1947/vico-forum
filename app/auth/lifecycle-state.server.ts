@@ -31,6 +31,8 @@ type State = LifecycleClaims & Readonly<{
 
 export type IssuedLifecycleProof = Readonly<{
   claims: LifecycleClaims; token: string; expiresAt: Date; recipient: string;
+  /** Account preference from the locked subject, only for authenticated own mail. */
+  savedLocale?: string | null;
 }>;
 
 /** Authoritative locked email snapshot for local signing and post-commit delivery. */
@@ -231,6 +233,17 @@ export class AuthLifecycleState {
     });
     const newEmail = intent.purpose === "email-change" ? intent.newEmail : undefined;
     const recipient = phase === "new-address" && newEmail ? newEmail : email;
+    // Read the preference while the same subject lock protects issuance,
+    // including the second email-change phase. Do not persist it in the proof
+    // record or use a stale session claim, ambient actor or callback input.
+    let savedLocale: string | null | undefined;
+    if (intent.purpose === "password-create" || intent.purpose === "email-change") {
+      const row = (await this.client.query<{ locale: string | null }>(
+        'select locale from "user" where id=$1', [userId],
+      )).rows[0];
+      if (!row) throw new LifecycleStateInvariantError();
+      savedLocale = row.locale;
+    }
     // Local signing/random generation only. Mail/network effects occur after commit.
     // The factory and later delivery must use the locked snapshot, not preflight email.
     const token = await createToken(Object.freeze({ claims, email, recipient,
@@ -256,7 +269,8 @@ export class AuthLifecycleState {
       returning expires_at at time zone 'UTC' as expires_at
     `, [id, JSON.stringify(state), lifecycleProofTtlSeconds[intent.purpose]]);
     if (result.rowCount !== 1 || !result.rows[0]) throw new LifecycleStateInvariantError();
-    return { claims, token, expiresAt: result.rows[0].expires_at, recipient };
+    return { claims, token, expiresAt: result.rows[0].expires_at, recipient,
+      ...(savedLocale !== undefined ? { savedLocale } : {}) };
   }
 
   private async match(userId: string, proof: LifecycleProof): Promise<{ id: string; row: Stored; state: State }> {

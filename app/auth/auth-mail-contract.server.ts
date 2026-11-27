@@ -9,7 +9,10 @@ export interface AuthMailResult { readonly status: AuthMailStatus }
 export interface AuthMailInput {
   readonly purpose: AuthMailPurpose;
   readonly recipient: string;
+  /** Language of the rendered message; resolved through the current registry. */
   readonly locale: string;
+  /** Server-validated action locale, independent of the recipient preference. */
+  readonly actionLocale?: string;
   readonly actionURL: string;
   /** Opaque server-generated UUID; never an email, URL or token. */
   readonly operationId: string;

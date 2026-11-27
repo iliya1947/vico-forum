@@ -127,6 +127,29 @@ describe("AUTH-01 templates and locale architecture", () => {
       expect(mail.text).not.toContain("<html");
     }
   });
+  it.each([
+    ["ru", "ru", "ltr"], ["he", "he", "rtl"], ["ka", "en", "ltr"],
+    ["unknown", "en", "ltr"], ["", "en", "ltr"],
+  ] as const)("AUTH07 renders saved %s as %s independently of the validated action locale", async (saved, rendered, direction) => {
+    const { runtime, inbox } = fakeRuntime();
+    const purpose = "password-create";
+    const actionURL = await runtime.buildActionURL({ purpose, locale: "he", token: "private-token_123",
+      returnTo: "/he/topics/example" });
+    expect(new URL(actionURL).pathname).toBe("/he/settings/account");
+    expect(new URL(actionURL).searchParams.get("returnTo")).toBe("/he/topics/example");
+    const message = { ...input(saved, purpose), actionLocale: "he", actionURL };
+    expect(await runtime.sendAuthMail(message)).toEqual({ status: "accepted" });
+    const [mail] = inbox.drain();
+    expect(mail.html).toContain(`lang="${rendered}" dir="${direction}"`);
+    expect(new DOMParser().parseFromString(mail.html, "text/html").querySelector("a")?.getAttribute("href")).toBe(actionURL);
+    expect(await runtime.sendAuthMail({ ...message, actionLocale: "ru" })).toEqual({ status: "rejected" });
+    expect(await runtime.sendAuthMail({ ...message, actionURL: actionURL.replace(origin, "https://other.example") }))
+      .toEqual({ status: "rejected" });
+    const tampered = new URL(actionURL);
+    tampered.searchParams.set("returnTo", "/ru/topics/example");
+    expect(await runtime.sendAuthMail({ ...message, actionURL: tampered.href })).toEqual({ status: "rejected" });
+    expect(inbox.drain()).toEqual([]);
+  });
   it("uses registry aliases and English fallback for another registered script, never a fixed locale list", async () => {
     const registry = new InMemoryLocaleRegistry([{
       tag: "ar", translationStatus: "partial", publicationStatus: "active", direction: "rtl",

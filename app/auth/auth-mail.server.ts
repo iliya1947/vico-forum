@@ -1,7 +1,7 @@
 import { createContext } from "react-router";
 import { OperationalFactBuffer, type AuthMailObservation, type OwnerOperationalFactSink } from "../observability/operational-facts";
 import type { IssuedLifecycleProof } from "./lifecycle-state.server";
-import type { LocaleRegistry } from "../localization/registry";
+import { localeRegistry, type LocaleRegistry } from "../localization/registry";
 import type { TranslationResourceLoader } from "../localization/resource-loader";
 import {
   AuthMailValidationError, isMailPurpose, safeMailAddress, safeMailOperationId,
@@ -89,9 +89,11 @@ export function createAuthMailRuntime(env: AuthMailEnvironment, dependencies: Au
       try {
         if (!input || !isMailPurpose(input.purpose) || !safeMailAddress(input.recipient)
           || !safeMailOperationId(input.operationId) || typeof input.actionURL !== "string"
-          || typeof input.locale !== "string") return { status: "rejected" };
+          || typeof input.locale !== "string"
+          || (input.actionLocale !== undefined && typeof input.actionLocale !== "string")) return { status: "rejected" };
         const { registry, resources } = await localization();
-        const actionURL = validateAuthMailActionURL(origin(), registry, input.purpose, input.locale, input.actionURL);
+        const actionURL = validateAuthMailActionURL(origin(), registry, input.purpose,
+          input.actionLocale ?? input.locale, input.actionURL);
         const locale = authMailLocale(input.locale, registry);
         const rendered = await renderAuthMail(input.purpose, actionURL, locale, resources);
         dispatched = true;
@@ -132,7 +134,14 @@ export async function deliverLifecycleMail(
       // An injected runtime may not implement invocation observation.
       const observed: { transport: InvokedAuthMailTransport } = { transport: "unknown" };
       try {
-        const result = await mail.sendAuthMail({ purpose, recipient: proof.recipient, locale: destination.locale,
+        // Guest actions retain their validated locale. Own messages use the
+        // locked account preference (bootstrap for an unset value), while the
+        // already validated callback locale/return path remains authoritative
+        // for the link. Registry fallback is applied independently at render.
+        const own = purpose === "password-create" || purpose.startsWith("email-change");
+        const locale = own ? proof.savedLocale ?? localeRegistry.bootstrap.tag : destination.locale;
+        const result = await mail.sendAuthMail({ purpose, recipient: proof.recipient, locale,
+          ...(own ? { actionLocale: destination.locale } : {}),
           actionURL, operationId: proof.claims.generation }, value => { observed.transport = value; });
         outcome = result.status;
         if (outcome === "disabled" && observed.transport === "unknown") observed.transport = "none";

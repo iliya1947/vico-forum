@@ -700,7 +700,9 @@ describe("AUTH-03 credential lifecycle domain", () => {
 
   it("requires exact current session and mail proof for Google-only creation through the canonical API", async () => {
     await installMethod("credential");
+    await first.query('update "user" set locale=$1 where id=$2', ["ru", userId]);
     const sent: string[] = [];
+    const mailLocales: Array<{ locale: string; actionLocale?: string }> = [];
     const facts: AuthTransitionFact[] = [];
     const auth = createAuth(drizzle(first), {
       BETTER_AUTH_URL: "http://localhost:3000", BETTER_AUTH_SECRET: secret,
@@ -712,9 +714,11 @@ describe("AUTH-03 credential lifecycle domain", () => {
       mail: {
         async buildActionURL(input) {
           expect(input.purpose).toBe("password-create");
+          expect(input.locale).toBe("en");
           return "http://localhost:3000/en/settings/account#token=" + input.token;
         },
         async sendAuthMail(input) {
+          mailLocales.push({ locale: input.locale, actionLocale: input.actionLocale });
           sent.push(new URLSearchParams(new URL(input.actionURL).hash.slice(1)).get("token")!);
           return { status: "accepted" };
         },
@@ -743,6 +747,7 @@ describe("AUTH-03 credential lifecycle domain", () => {
       .rejects.toMatchObject({ status: "CONFLICT" });
     await expect(auth.api.requestCredentialCreation({ headers: expected, body: {} })).resolves.toEqual({ status: true });
     expect(sent).toHaveLength(1);
+    expect(mailLocales).toEqual([{ locale: "ru", actionLocale: "en" }]);
     await expect(auth.api.createCredential({ headers: expected, body: { newPassword, token: sent[0] } }))
       .resolves.toEqual({ status: true });
     expect(facts).toEqual(expect.arrayContaining([
@@ -1042,9 +1047,10 @@ describe("AUTH-04 account lifecycle", () => {
   });
   it("shares HTTP and direct own-email confirmation, protects last method in the native adapter", async () => {
     const sent: Array<{ token: string; recipient: string; purpose: string }> = [];
-    const mailLocales: string[] = [];
+    const actionLocales: string[] = [];
+    const mailLocales: Array<{ locale: string; actionLocale?: string }> = [];
     const facts: AuthTransitionFact[] = [];
-    await first.query('update "user" set email_verified=true where id=$1', [userId]);
+    await first.query('update "user" set email_verified=true,locale=$2 where id=$1', [userId, "he"]);
     await first.query("insert into account(id,user_id,provider_id,account_id,password,updated_at) values ('own-password',$1,'credential',$1,$2,now()),('own-google',$1,'google','immutable-google-id',null,now())",
       [userId, await hashPassword("fixture-only-original-password")]);
     const auth = createAuth(drizzle(first), {
@@ -1052,8 +1058,9 @@ describe("AUTH-04 account lifecycle", () => {
       GOOGLE_CLIENT_ID: "fake-local-google", GOOGLE_CLIENT_SECRET: "fake-local-secret",
     }, undefined, undefined, undefined, { capture(f) { facts.push(f); }, trustedActorFor() { return null; } },
     undefined, undefined, undefined, false, undefined, { mail: {
-      async buildActionURL(input) { mailLocales.push(input.locale); return "http://localhost:3000/en/settings/account#token=" + input.token; },
+      async buildActionURL(input) { actionLocales.push(input.locale); return "http://localhost:3000/" + input.locale + "/settings/account#token=" + input.token; },
       async sendAuthMail(input) {
+        mailLocales.push({ locale: input.locale, actionLocale: input.actionLocale });
         sent.push({ token: new URL(input.actionURL).hash.slice(7), recipient: input.recipient, purpose: input.purpose });
         return { status: "accepted" };
       },
@@ -1069,8 +1076,12 @@ describe("AUTH-04 account lifecycle", () => {
       { method: "POST", headers, body: JSON.stringify({ newEmail: "changed@example.test" }) }));
     expect(requested.status).toBe(200);
     expect(sent[0]).toMatchObject({ recipient: "member@example.test", purpose: "email-change-confirmation" });
+    // A preference changed after issuance is read again for the second phase.
+    // Null is the bootstrap fallback, not the newly submitted callback locale.
+    await second.query('update "user" set locale=null where id=$1', [userId]);
     await auth.api.confirmEmailChange({ headers, body: { token: sent[0].token, callbackURL: "/ru" } });
-    expect(mailLocales).toEqual(["en", "ru"]);
+    expect(actionLocales).toEqual(["en", "ru"]);
+    expect(mailLocales).toEqual([{ locale: "he", actionLocale: "en" }, { locale: "en", actionLocale: "ru" }]);
     expect(sent[1]).toMatchObject({ recipient: "changed@example.test", purpose: "email-change-verification" });
     await auth.api.confirmEmailChange({ headers, body: { token: sent[1].token } });
     expect((await email()).email).toBe("changed@example.test");

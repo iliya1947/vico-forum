@@ -309,6 +309,8 @@ def run():
         # the guest reset's two sign-in assertions have left the shared bucket.
         time.sleep(10.1)
         record("google-only-browser-password-create")
+        # Stage the existing account preference independently of the EN route.
+        sql('update "user" set locale=$1 where id=$2 returning id', ["ru", ru_id])
         assert call(third, "sign-in/email", {"email": ru, "password": password}).status == 200
         current_ru = call(third, "get-session").json()
         ru_session_id = current_ru["session"]["id"]
@@ -326,9 +328,11 @@ def run():
             create_page.get_by_role("button", name="Send a recovery link").click()
         assert private(requested.value).status == 200
         expect(create_page.get_by_role("status")).to_contain_text("Open the link in this browser")
-        latest = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
+        latest = sql("select body_text,html from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
         create_link = latest["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert 'lang="ru" dir="ltr"' in latest["html"]
         assert urlparse(create_link).path == "/en/settings/account"
+        assert parse_qs(urlparse(create_link).query)["returnTo"] == ["/en"]
         assert "token=" in urlparse(create_link).fragment
         assert create_page.goto(create_link).status == 200
         expect(create_page.locator('input[name="newPassword"]')).to_be_visible()
@@ -368,8 +372,10 @@ def run():
         with create_page.expect_response(lambda response: response.url == base + "/api/auth/change-email") as email_requested:
             create_page.get_by_role("button", name="Request email change").click()
         assert private(email_requested.value).status == 200
-        old_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
+        old_mail = sql("select body_text,html from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [ru])[0]
         old_link = old_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert 'lang="ru" dir="ltr"' in old_mail["html"]
+        assert urlparse(old_link).path == "/en/settings/account"
         record("email-proof-guest-expired-and-other-session-privacy")
         email_token = parse_qs(urlparse(old_link).fragment)["token"][0]
         pending_before = sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id")
@@ -433,13 +439,18 @@ def run():
         assert email_token not in create_page.content()
         assert sql("select id,value from verification where value::jsonb->>'purpose'='email-change' order by id") == before_navigation
         create_page.goto(old_link)
+        sql('update "user" set locale=$1 where id=$2 returning id', ["he", ru_id])
         with create_page.expect_response(lambda response: response.url == base + "/api/auth/confirm-email-change") as old_confirmed:
             confirm_button = create_page.get_by_role("button", name="Confirm email change")
             confirm_button.focus()
             confirm_button.press("Enter")
         assert private(old_confirmed.value).status == 200
-        new_mail = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [changed_email])[0]
+        new_mail = sql("select body_text,html from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [changed_email])[0]
         new_link = new_mail["body_text"].split("\u2066")[1].split("\u2069")[0]
+        assert 'lang="he" dir="rtl"' in new_mail["html"]
+        assert urlparse(new_link).path == "/en/settings/account"
+        assert parse_qs(urlparse(new_link).query)["returnTo"] == ["/en"]
+        record("AUTH07-own-mail-saved-locale-independent-of-action")
         assert user(ru)["id"] == ru_id
         create_page.goto(new_link)
         expect(create_page.get_by_role("button", name="Confirm email change")).to_be_visible()
@@ -528,6 +539,7 @@ def run():
         # email-change acceptance intact. Only the provider method is staged;
         # both new mail proofs and terminal attempts use the actual Worker.
         replacement_context = context()
+        sql('update "user" set locale=$1 where id=$2 returning id', ["ka", he_id])
         replacement_context.set_extra_http_headers({"cf-connecting-ip": "203.0.113.96"})
         assert call(replacement_context, "sign-in/email", {"email": he, "password": password}).status == 200
         replacement_session = call(replacement_context, "get-session").json()["session"]["id"]
@@ -542,7 +554,8 @@ def run():
                 replacement_page.get_by_role("button", name="Send a recovery link").click()
             assert private(issued.value).status == 200
             expect(replacement_page.get_by_role("status")).to_contain_text("Open the link in this browser")
-            row = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [he])[0]
+            row = sql("select body_text,html from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [he])[0]
+            assert 'lang="en" dir="ltr"' in row["html"]
             return row["body_text"].split("\u2066")[1].split("\u2069")[0]
 
         expired_link = issue_creation_link()
