@@ -2,9 +2,9 @@
 
 ## Текущий контекст
 
-1. AUTH-06 #395 exact `615d93598daf78945a86fbdc4255bc778ae3403f` — AUTHOR PASS + whole-feature COORDINATOR PASS, 0 blockers.
-2. По прямому решению владельца **final assembly назначена Аде**.
-3. Ада должна собрать accepted stack в первый PR #388, закрыть intermediate PRs superseded и выполнить final author self-check + applicable exact-head checks по `stages/FINAL-ASSEMBLY/PLAN.md`.
-4. После PASS Ады я провожу новый final whole-feature coordinator review assembled #388 на stable exact head.
-5. До этого AUTH-07 не активировать.
-6. Лёва и Ада не подходят как independent final reviewer; отдельный reviewer определяется после моего PASS.
+1. Final stack assembled в #388; product tree accepted.
+2. FINAL-ASSEMBLY automated HOLD вызван только K5 immediate operationId assertion.
+3. Независимо подтверждён test synchronization defect: same SHA/blobs; operationId `""` → UUID через effect; test не ждёт initialization. Product regression не установлен.
+4. K5-CORRECTION назначена Аде, test/evidence-only; plan `stages/K5-CORRECTION/PLAN.md`.
+5. После targeted K5 PASS и final exact-head CI/acceptance PASS я провожу final whole-feature coordinator review нового stable #388.
+6. AUTH-07 до моего PASS не активировать; Лёва/Ада не independent reviewer.
