@@ -9,7 +9,7 @@ export const forumControlScopes = {
 } as const;
 
 const uuidPattern = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
-const uuid = { type: "string", pattern: uuidPattern } as const;
+const uuid = { type: "string", pattern: uuidPattern, minLength: 36, maxLength: 36 } as const;
 const index = { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER } as const;
 
 export const writeStepInputSchema = {
@@ -30,7 +30,7 @@ export function parseWriteStepInput(value: unknown): WriteStepInput | null {
   const fields = Object.keys(value);
   if (fields.length !== 3 || !writeStepInputSchema.required.every(key => Object.hasOwn(value, key))) return null;
   const { taskId, targetIndex, stepIndex } = value as Record<string, unknown>;
-  if (typeof taskId !== "string" || !new RegExp(uuidPattern).test(taskId) ||
+  if (typeof taskId !== "string" || taskId.length !== 36 || !new RegExp(uuidPattern).test(taskId) ||
       typeof targetIndex !== "number" || !Number.isSafeInteger(targetIndex) || targetIndex < 0 ||
       typeof stepIndex !== "number" || !Number.isSafeInteger(stepIndex) || stepIndex < 0) return null;
   return { taskId, targetIndex, stepIndex };
