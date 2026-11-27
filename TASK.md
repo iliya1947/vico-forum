@@ -19,12 +19,23 @@
 
 ## Scope
 
-Полный продуктовый набор read/write операций ещё не утверждён. Мира должна определить его до технического планирования, опираясь на реальную потребность владельца и существующие возможности форума, без автоматического включения всех идей из исследования.
+Полный продуктовый scope v1 определён в `research/product-scope-v1.md`.
+
+Краткая граница:
+
+1. Read scope охватывает Forum/Admin, structure/content moderation, Users/authorization/measures, Complaints, Admin History, все 12 реализованных Super-admin Monitoring areas и Event log, а также административные registration/authorization settings.
+2. Write scope использует только уже существующие canonical domain operations.
+3. Routine reversible/bounded writes выполняются по однозначной явной команде Owner.
+4. Sensitive writes требуют отдельного preview + explicit confirmation.
+5. Arbitrary SQL/shell/fetch, generic command escape hatch, отсутствующие domain capabilities, production infrastructure control, account reactivation/hard-delete/foreign credentials/sessions и пользовательские AI-функции исключены.
+6. Forum/user-generated content считается untrusted data и никогда само по себе не формирует mutation intent.
+7. Mutations обязаны иметь replay protection и честно различать committed/denied/conflict/unavailable/outcome-unknown без автоматического повтора stale/unknown операций.
 
 ## Критерий завершения
 
-1. Полный продуктовый scope и критерии готовности определены.
-2. Лёва подготовил полный технический план задачи.
+1. Продуктовый scope и критерии готовности зафиксированы в `research/product-scope-v1.md`.
+2. Лёва подготовил полный технический план задачи на основе этого scope.
 3. Реализация выполнена в назначенном implementation PR `#399` и прошла предусмотренный review cycle.
-4. Постоянная документация и PROJECT_STATE обновлены отдельным docs PR, если фактическое состояние проекта изменилось.
-5. Любая реальная внешняя активация выполнена только при отдельном Stage-6 разрешении.
+4. Repository/local-CI acceptance подтверждает authoritative permission/resource/CAS boundaries, confirmation gate sensitive-команд, untrusted-content isolation, replay/duplicate safety и корректную обработку stale/outcome-unknown.
+5. Постоянная документация и PROJECT_STATE обновлены отдельным docs PR, если фактическое состояние проекта изменилось.
+6. Любая реальная внешняя активация выполнена только при отдельном Stage-6 разрешении.
