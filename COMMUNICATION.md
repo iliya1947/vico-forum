@@ -1,5 +1,13 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-AUTH-07 correction в #388 завершена Леной на exact `5b29469fe51e716b483d4e610dd90705f5409029`. Все три confirmed findings проверены по коду; substantive author source self-check PASS, не independent review. Детали, diff и прежнее execution evidence: `stages/AUTH-07-CORRECTION/RESULT.md`. K5 accepted, technical plan unchanged.
+## Final assembled state
 
-По последней прямой команде владельца **Лена не запускает тесты; Мира отвечает за запуск и проверку CI/acceptance**. Не считать тесты заменой содержательного анализа. Старые запуски были до этой команды. Мира принимает corrected head для whole-feature coordinator review и automated gate; Лена STOP, Лира STOP. Марк только после PASS Миры. Merge/docs/Stage-6 blocked. Актуальное назначение — WORKFLOW.md.
+PR #388 stable exact `5b29469fe51e716b483d4e610dd90705f5409029`.
+
+AUTH-07 correction закрыла три findings предыдущего HOLD. Exact-head CI и 20/20 applicable connected acceptance — SUCCESS. Мира независимо проверила correction delta и затронутые invariants: **whole-feature coordinator PASS**. Подробности — `stages/AUTH-07/COORDINATOR-REVIEW.md`.
+
+## Review route
+
+Лена STOP после implementation correction. Лира STOP.
+
+Следующий обязательный gate — **Марк / Codex-6 Sol, independent final technical review** на том же exact head. Он пока не активирован. Merge, docs closeout и Stage-6 заблокированы до independent PASS.
