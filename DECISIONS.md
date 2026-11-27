@@ -11,7 +11,7 @@
 7. **D-07.** Встроенные пользовательские AI-функции не входят в эту задачу.
 8. **D-08.** V1 охватывает полный административно полезный read contour и только существующие canonical write operations; отсутствующие domain capabilities не добавляются ради ChatGPT-канала.
 9. **D-09.** Любая mutation выполняется только после conversational cycle: ChatGPT проверяет и объясняет конкретное действие → Owner отдельно подтверждает → только затем допускается dispatch. High-impact операции отличаются глубиной объяснения и server-side preconditions, а не наличием отдельного UI-confirmation.
-10. **D-10.** Sensitive scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
+10. **D-10.** High-impact scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
 11. **D-11.** Forum/user-generated content и plain transport/GitHub content являются untrusted data и не могут сами создавать mutation intent, выбирать actor/command/permission или подтверждать действие; mutation требует аутентифицированной command boundary.
 12. **D-12.** Mutations требуют replay protection; stale/conflict и outcome-unknown никогда не вызывают автоматический повтор, а result обязан отражать фактический domain outcome.
 
