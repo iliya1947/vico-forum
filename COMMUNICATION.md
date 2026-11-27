@@ -1,9 +1,16 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Final assembly и K5
+## K5 correction
 
-#388 содержит accepted AUTH-01–AUTH-06, exact `615d93598daf78945a86fbdc4255bc778ae3403f`, tree `9cd50834cd1d86aae2a1192bd8ff9fd27aebebbd`, base `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`. Author/CI PASS, acceptance 19/20; K5 #45912884312 repeated failure. Продуктовый дефект не установлен.
+1. Final assembled PR #388 остаётся open/unmerged; main unchanged.
+2. Единственный прежний automated blocker — K5 initialization assertion до первого upload.
+3. По прямому решению владельца correction выполняет Мира; Ада STOP.
+4. Новый #388 exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601` отличается от accepted `615d9359...` только `tests/browser/sa04-attachments/check.py`.
+5. Test теперь ждёт UUID operation state штатным retrying Playwright assertion вместо immediate `input_value()`; шесть initial reads синхронизированы. Safe evidence фиксирует readiness без raw operation capability. Product/runtime/schema/workflow не менялись.
+6. Runtime verification нового head ещё не выполнялась; K5 gate пока HOLD.
 
-По прямой команде владельца test-only candidate `bb19d5c238dec436a57dc174b9c422a98b4ae4f1` откачен с проверкой исходного exact head/tree. Candidate runs отсутствовали. Диагностика synchronization defect сохраняется, candidate не действует. Connector не имеет targeted dispatch; ручное действие владельцу не назначено.
+## Следующий route
 
-**Мира принимает задачу обратно, Ада STOP.** Следующий маршрут определяет Мира; evidence: stages/K5-CORRECTION/RESULT.md и stages/FINAL-ASSEMBLY/RESULT.md. AUTH-07, independent review, merge и external activation заблокированы.
+Сначала targeted K5 exact-head verification. Только после его PASS — final CI/acceptance на том же stable head. Final whole-feature coordinator review выполняется отдельной последующей подзадачей.
+
+Лёва и Ада не independent final reviewer из-за участия в implementation. AUTH-07 и Stage-6 заблокированы.
