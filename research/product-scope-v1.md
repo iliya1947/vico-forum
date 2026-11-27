@@ -75,7 +75,7 @@
 9. Move existing ordinary topic между ordinary sections.
 10. Изменить или снять priority override конкретного open Complaint Case.
 
-Для любой routine mutation команда должна быть достаточно конкретной, чтобы однозначно определить operation, target и обязательные параметры. При неоднозначности действие не выполняется.
+Для любой bounded mutation команда должна быть достаточно конкретной, чтобы однозначно определить operation, target и обязательные параметры. При неоднозначности действие не выполняется.
 
 ## 5. Write scope v1 — high-impact operations
 
@@ -168,5 +168,5 @@ Scope считается реализованным только если:
 7. Действия канала отражаются в существующей domain/Admin/Owner History там, где соответствующая canonical operation уже обязана писать History; новый параллельный audit backend не создаётся.
 8. Unsupported operations не получают generic escape hatch.
 9. Обычная эксплуатация остаётся $0 дополнительной стоимости и не использует Work/Codex allowance.
-10. Repository/local-CI acceptance подтверждает команды, permissions, replay, stale/unknown outcomes, confirmation gate и untrusted-content boundary.
+10. Repository/local-CI acceptance подтверждает команды, permissions, replay, stale/unknown outcomes и untrusted-content boundary; conversational explain→confirm→dispatch проверяется integration acceptance.
 11. Stage-6 live activation/deployed acceptance выполняются отдельно и только после явного разрешения Owner.
