@@ -2,11 +2,11 @@
 
 ## Текущий статус
 
-1. #388 stable exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`.
-2. AUTH-07-CORRECTION-2 Лены завершён AUTHOR SOURCE SELF-CHECK PASS.
-3. Мира проверила correction delta (2 файла) и closure F-B2-03/F-B2-04: COORDINATOR RE-REVIEW PASS.
-4. Exact-head CI #46010040782 SUCCESS: 3347 standard + 1998 PostgreSQL; auth-whole-lifecycle 62/62.
-5. Applicable connected acceptance 20/20 SUCCESS; AUTH-02b correction markers, K5, AP-10, SA08 PASS; failures/cancelled = 0.
-6. Лёва активирован на repeat owner-assigned final technical review по `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2-PLAN.md`.
-7. Лена STOP. Марк/Лира не подключаются; текущая техническая работа только Лёва + Лена.
-8. Merge/docs/Stage-6 blocked до результата Лёвы и следующего решения владельца.
+1. PR #388 merged в main: `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`.
+2. Repository/local-CI implementation и назначенный final technical review завершены.
+3. Stage 6 external activation остаётся paused.
+4. Мира полностью сверила post-merge PROJECT/PROJECT_STATE и релевантные source-of-truth docs и определила docs closeout scope.
+5. Отдельная branch `docs/authentication-lifecycle-closeout` создана от post-merge main.
+6. Лена назначена автором `stages/DOCS-CLOSEOUT/PLAN.md`.
+7. После AUTHOR PASS: Мира whole-docs review → при PASS Лёва technical-accuracy review → merge владельцем.
+8. Марк/Лира не подключаются.
