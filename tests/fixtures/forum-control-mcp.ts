@@ -37,7 +37,7 @@ function isFixtureWrite(name: unknown): name is FixtureWriteName {
 
 const writes = fixtureWriteNames.map(name => ({
   ...writeToolDescriptor(name),
-  description: "Synthetic local fixture only. This tool never changes forum data or sends anything to GitHub. " +
+  description: "Synthetic local fixture for " + name + ". This tool never changes forum data or sends anything to GitHub. " +
     "Invoke only after the owner confirms the exact explained task in the current conversation. Returns unavailable.",
 }));
 

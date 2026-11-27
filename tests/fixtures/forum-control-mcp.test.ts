@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { createLocalForumControlMcpFixture } from "./forum-control-mcp";
 import { forumControlScopes } from "../../app/forum-control/write-tool-contract";
