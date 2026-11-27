@@ -31,7 +31,8 @@
 3. K5 accepted correction не ослаблять и не переделывать без нового подтверждённого основания.
 4. Исполнитель выполняет author self-check всего correction diff и только применимые exact-head CI/acceptance.
 5. Результат и новый stable exact head записать в `stages/AUTH-07-CORRECTION/RESULT.md`, затем STOP.
-6. После AUTHOR PASS новый head возвращается на повторный first AUTH-07 whole-feature review; Марк остаётся заблокирован до PASS этого review.
+6. После AUTHOR PASS corrected head проверяет Мира как whole-feature reviewer. Лена не review собственную correction implementation.
+7. Марк остаётся заблокирован до PASS Миры; затем назначается independent final technical reviewer на том же exact head.
 
 ## Delivery
 
@@ -39,4 +40,4 @@ Correction выполняется в уже собранном implementation PR
 
 ## Назначение
 
-**Лира / ChatGPT-6 — исполнитель bounded correction.** Implementation до этого назначения не выполнялась.
+По прямой команде владельца **Лена / GPT-6.2 — исполнитель bounded correction вместо Лиры**.
