@@ -2,23 +2,27 @@
 
 ## Текущее состояние
 
-1. Service PR **#320**; implementation PR #388 к unchanged main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`.
-2. Final assembled auth head после K5 correction: `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`.
-3. Delta к accepted AUTH-06 assembly `615d93598...` — только `tests/browser/sa04-attachments/check.py` (+59/-6); product/runtime/schema/dependencies/workflow не менялись.
-4. Source-level K5 correction self-check — PASS.
-5. Targeted K5 verification — PASS: run #45922622929, 33/33, external/page errors отсутствуют.
-6. **Final automated gate assembled #388 — PASS.**
-   - CI #45926789854 — SUCCESS.
-   - checks: 252 files / 3342 tests PASS; lint/typecheck/build/migration metadata/parity PASS.
-   - database: 123 files / 1998 tests PASS; `auth-whole-lifecycle` 62/62; schema manifest 76 tables; runtime privilege/split-authority/credential probes PASS.
-   - 20/20 applicable connected acceptance workflows — SUCCESS.
-   - failures/cancelled/in-progress = 0.
-   - CI/K5 checkout merge-ref `d28248dbdd915c748ce86b37e28c38f99ba116cb` has tree `6f154a2489913165c088dfa25a20818b62c13662`, identical to implementation head tree.
-7. Skipped duplicate runs from the opposite label event are not counted as acceptance evidence.
-8. K5 historical two failures still lack captured exact old operation value; correction/runtime PASS is established without rewriting that unknown as fact.
-9. **Review routing blocker:** Мира implemented the K5 correction, therefore under AGENTS she cannot perform an independent whole-feature review of this same final head. The previous route “Mira final whole-feature review” is no longer valid.
-10. AUTH-07, independent final review, main merge and Stage-6/external activation remain blocked until the owner assigns a qualifying first whole-feature reviewer for exact `71cdb70d...`.
+1. Service PR **#320**; final implementation PR #388 остаётся open/unmerged.
+2. Stable final exact: `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`, base main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`, tree `6f154a2489913165c088dfa25a20818b62c13662`.
+3. K5 correction — test/evidence-only; product/runtime/schema/dependencies/workflow unchanged.
+4. Final automated gate — PASS:
+   - CI #45926789854 SUCCESS;
+   - 3342 standard tests PASS;
+   - 1998 PostgreSQL tests PASS;
+   - auth-whole-lifecycle 62/62 PASS;
+   - 20/20 applicable connected acceptance SUCCESS;
+   - relevant failures/cancelled/in-progress = 0.
+5. Мира authored final K5 correction и не может independently whole-feature-review собственный final head.
+6. Лёва и Ада участвовали в implementation и не подходят для independent final review.
+7. Лира не участвовала в auth implementation: её AUTH-01 assignment был снят до начала реализации.
+8. **AUTH-07 активирован. Первый final whole-feature review назначен Лире / GPT-6.**
+9. Handoff: `stages/AUTH-07/PLAN.md`.
+10. Review-only: implementation не менять; findings классифицировать по current-scope/future-only; первый finding не завершает review.
+11. При PASS Лира записывает `stages/AUTH-07/REVIEW.md` и STOP.
+12. Следующий отдельный route после PASS Лиры — Марк / Codex-6 Sol как independent final technical reviewer на том же exact head. Марк пока не активирован.
+13. При HOLD findings одним пакетом возвращаются в correction route; любые implementation changes требуют нового exact-head cycle.
+14. Main merge, docs closeout и external/Stage-6 activation ещё не разрешены.
 
 ## Следующий переход
 
-Owner must reassign the first final whole-feature review of assembled #388 exact `71cdb70d...` to an agent who did not implement any part being reviewed. Do not start AUTH-07 or merge before that review route is established and completed.
+Лира выполняет final whole-feature review exact `71cdb70d...` по `stages/AUTH-07/PLAN.md`. После PASS/HOLD — STOP и возврат Мире.
