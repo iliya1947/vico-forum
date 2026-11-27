@@ -1,9 +1,11 @@
 # COMMUNICATION.md — общий актуальный контекст
 
-DOCS-CLOSEOUT PR #398 exact `4cf2b947f84513c5ccaa6ae66f50f15442e002e3`.
+Authentication lifecycle repository/local-CI завершён.
 
-Лена исправила F-DOCS-01 только в ROADMAP. Мира проверила correction и ранее проверенный whole-docs scope: **COORDINATOR RE-REVIEW PASS**.
+1. #388 implementation merged: `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`.
+2. #398 docs closeout merged: `c49897181388b4a78f8e8248dc6508551df576c4`.
+3. TASK criteria текущей repository/local-CI части выполнены.
+4. Stage 6 paused; внешние providers/credentials/DNS/OAuth/Owner binding/anti-bot/deployed acceptance не активированы и не считаются выполненными.
+5. Лена STOP. Лёва STOP. Активного назначения по #320 нет.
 
-Ранее назначенный Лёве docs-only technical review отменён как лишний: implementation #388 уже прошла технический review, а отдельный docs PR после author self-check проверен Мирой целиком. Лена STOP, Лёва STOP. Stage 6 paused.
-
-#398 готов к merge владельцем.
+#320 не продолжать до отдельной команды владельца на Stage 6.
