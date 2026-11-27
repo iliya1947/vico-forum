@@ -7,17 +7,21 @@ import { SA02_FACT_MONITORS, type Sa02FactKind } from "./owner-sa02-catalog";
  */
 type Actor = { readonly actorUserId?: string | null };
 export type AuthTransitionFact =
+  | { readonly kind: "auth.emailChanged"; readonly userId: string; readonly actorUserId: string; readonly operationId: string }
+  | { readonly kind: "auth.methodUnlinked"; readonly userId: string; readonly actorUserId: string; readonly accountId: string; readonly method: "google" }
   | ({ readonly kind: "account.created"; readonly userId: string } & Actor)
   | ({ readonly kind: "auth.methodLinked"; readonly userId: string;
       readonly accountId: string; readonly method: "password" | "google";
-      readonly linkContext: "registration" | "explicit-link" | "unknown" } & Actor)
+      readonly linkContext: "registration" | "explicit-link" | "unknown" | "password-create" } & Actor)
   | ({ readonly kind: "auth.sessionCreated"; readonly userId: string;
       readonly sessionId: string } & Actor)
   | ({ readonly kind: "auth.sessionDeleted"; readonly userId: string;
       readonly sessionId: string;
-      readonly reason: "revoke-one" | "revoke-others" | "revoke-all" | "sign-out" } & Actor)
+      readonly reason: "revoke-one" | "revoke-others" | "revoke-all" | "sign-out" | "password-reset" | "password-create" | "email-change" } & Actor)
+  | { readonly kind: "auth.emailVerified"; readonly userId: string;
+      readonly operationId: string; readonly actorUserId?: null }
   | ({ readonly kind: "auth.passwordChanged"; readonly userId: string;
-      readonly accountId: string; readonly operationId: string } & Actor);
+      readonly accountId: string; readonly operationId: string; readonly context?: "reset" | "change" } & Actor);
 
 /** Upper bound per trusted Worker request, including bulk session revocation. */
 export const MAX_AUTH_FACTS_PER_REQUEST = 32;
@@ -34,11 +38,14 @@ export class AuthFactCommitUncertainError extends Error {
 const ID = /^[A-Za-z0-9._:-]{1,200}$/;
 const OPERATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const FIELDS: Record<Sa02FactKind, readonly string[]> = {
+  "auth.emailChanged": ["kind","userId","actorUserId","operationId"],
+  "auth.methodUnlinked": ["kind","userId","actorUserId","accountId","method"],
   "account.created": ["kind","userId","actorUserId"],
   "auth.methodLinked": ["kind","userId","accountId","method","linkContext","actorUserId"],
   "auth.sessionCreated": ["kind","userId","sessionId","actorUserId"],
   "auth.sessionDeleted": ["kind","userId","sessionId","reason","actorUserId"],
-  "auth.passwordChanged": ["kind","userId","accountId","operationId","actorUserId"],
+  "auth.passwordChanged": ["kind","userId","accountId","operationId","context","actorUserId"],
+  "auth.emailVerified": ["kind","userId","operationId","actorUserId"],
 };
 type Encoded = { kind: Sa02FactKind; monitor: string; entityType: string;
   entityId: string; target: string; actor: string | null;
@@ -66,14 +73,28 @@ function encode(fact: AuthTransitionFact): Encoded {
   let entityType: string, entityId: string, correlation: string | null = null;
   let payload: Record<string, string> = {}, identity: string[];
   switch (kind) {
+    case "auth.emailChanged": {
+      const f = fact as Extract<AuthTransitionFact,{kind:"auth.emailChanged"}>;
+      if (actor !== target || !OPERATION_ID.test(f.operationId)) throw new Error("Invalid own email change");
+      entityType="user"; entityId=target; correlation=f.operationId; identity=[kind,target,correlation]; break;
+    }
+    case "auth.methodUnlinked": {
+      const f = fact as Extract<AuthTransitionFact,{kind:"auth.methodUnlinked"}>;
+      if (actor !== target) throw new Error("Invalid own method unlink");
+      entityType="account"; entityId=checkedId(f.accountId);
+      payload={method:pick(f.method,["google"])}; identity=[kind,entityId]; break;
+    }
     case "account.created":
       entityType = "user"; entityId = target; identity = [kind,entityId]; break;
     case "auth.methodLinked": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.methodLinked"}>;
       entityType = "account"; entityId = checkedId(f.accountId);
       payload = { method: pick(f.method, ["password","google"]),
-        linkContext: pick(f.linkContext, ["registration","explicit-link","unknown"]) };
-      identity = [kind,entityId]; break;
+        linkContext: pick(f.linkContext, ["registration","explicit-link","unknown","password-create"]) };
+      if (f.linkContext === "password-create" && (f.method !== "password" || actor !== target)) {
+        throw new Error("Invalid own password creation fact");
+      }
+      identity = f.linkContext === "password-create" ? [kind,entityId,f.linkContext] : [kind,entityId]; break;
     }
     case "auth.sessionCreated": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.sessionCreated"}>;
@@ -83,14 +104,27 @@ function encode(fact: AuthTransitionFact): Encoded {
     case "auth.sessionDeleted": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.sessionDeleted"}>;
       entityType = "session"; entityId = checkedId(f.sessionId);
-      payload = { reason: pick(f.reason, ["revoke-one","revoke-others","revoke-all","sign-out"]) };
+      payload = { reason: pick(f.reason, ["revoke-one","revoke-others","revoke-all","sign-out","password-reset","password-create","email-change"]) };
       identity = [kind,entityId]; break;
+    }
+    case "auth.emailVerified": {
+      const f = fact as Extract<AuthTransitionFact,{kind:"auth.emailVerified"}>;
+      if (actor !== null || typeof f.operationId !== "string" || !OPERATION_ID.test(f.operationId)) {
+        throw new Error("Invalid guest email verification fact");
+      }
+      entityType = "user"; entityId = target; correlation = f.operationId;
+      identity = [kind,correlation,entityId]; break;
     }
     case "auth.passwordChanged": {
       const f = fact as Extract<AuthTransitionFact,{kind:"auth.passwordChanged"}>;
       entityType = "account"; entityId = checkedId(f.accountId);
       if (typeof f.operationId !== "string" || !OPERATION_ID.test(f.operationId)) {
         throw new Error("Invalid auth fact operation ID");
+      }
+      if (f.context !== undefined) {
+        const context = pick(f.context, ["reset", "change"]);
+        if (context === "reset" ? actor !== null : actor !== target) throw new Error("Invalid credential actor");
+        payload = { context };
       }
       correlation = f.operationId;
       identity = [kind,correlation,entityId]; break;

@@ -115,6 +115,13 @@ async function positiveWebLockProbes() {
     await client.query("INSERT INTO public.forum_sections(id,category_id,name,sort_position) VALUES ($1,$2,'ACL section',1)", [sectionId,categoryId]);
     await client.query("SELECT id FROM public.forum_sections WHERE id=$1 FOR NO KEY UPDATE", [sectionId]);
     await client.query("UPDATE public.forum_sections SET name='Renamed ACL section' WHERE id=$1", [sectionId]);
+    const budgetKey = "vico-auth-budget:v1:" + "a".repeat(64);
+    await client.query("INSERT INTO public.auth_lifecycle_budget(key,count,expires_at) VALUES ($1,1,clock_timestamp()+interval '1 minute')", [budgetKey]);
+    const consumed = await client.query("INSERT INTO public.auth_lifecycle_budget(key,count,expires_at) VALUES ($1,1,clock_timestamp()+interval '1 minute') ON CONFLICT (key) DO UPDATE SET count=auth_lifecycle_budget.count+1 RETURNING count", [budgetKey]);
+    assert.equal(consumed.rows[0]?.count, 2);
+    await client.query("UPDATE public.auth_lifecycle_budget SET expires_at=clock_timestamp()-interval '1 second' WHERE key=$1", [budgetKey]);
+    const expired = await client.query("DELETE FROM public.auth_lifecycle_budget WHERE key IN (SELECT key FROM public.auth_lifecycle_budget WHERE expires_at<=clock_timestamp() AND key=$1 FOR UPDATE SKIP LOCKED) RETURNING key", [budgetKey]);
+    assert.equal(expired.rows[0]?.key, budgetKey);
     await client.query("ROLLBACK");
   } catch (error) {
     try { await client.query("ROLLBACK"); } catch { /* Preserve the probe failure. */ }
@@ -201,6 +208,13 @@ try {
     "CREATE TABLE public.vico_forbidden_localization_probe(id integer)",
     "localization DDL",
   );
+
+  for (const statement of [
+    "SELECT key FROM public.auth_lifecycle_budget LIMIT 0",
+    "INSERT INTO public.auth_lifecycle_budget(key,count,expires_at) SELECT 'forbidden',1,clock_timestamp() WHERE false",
+    "UPDATE public.auth_lifecycle_budget SET count=count WHERE false",
+    "DELETE FROM public.auth_lifecycle_budget WHERE false",
+  ]) await expectInsufficientPrivilege(localizationRole, statement, "localization auth budget access");
 
   await expectInsufficientPrivilege(
     webRole,

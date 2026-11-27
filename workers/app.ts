@@ -2,7 +2,7 @@ import {createHyperdriveOwnerOverview} from "../db/hyperdrive-owner-overview";
 import {ownerOverviewMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
 import {ownerIntegrationsMonitoringContext} from "../app/super-admin/request-context";
-import {observeRequiredLocalizationRead,googleParametersPresent} from "../app/observability/integration-runtime";
+import {observeRequiredLocalizationRead,googleParametersPresent,mailConfigurationPresence} from "../app/observability/integration-runtime";
 import {createHyperdriveOwnerData} from "../db/hyperdrive-owner-data";
 import {ownerDataMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOperationalRecording} from "../db/hyperdrive-operational-recording";
@@ -28,7 +28,10 @@ import { ContentTranslationPresentationService } from "../app/localization/conte
 import { createHyperdriveContentTranslationBatchReader } from "../db/hyperdrive-content-translations";
 import { createHyperdriveContentGenerationAdmission } from "../db/hyperdrive-content-generation-admission";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../app/auth/auth.server";
-import { initializeAuthContext, withAuthSessionCookies } from "../app/auth/session-context";
+import type { RegistrationChallengeConfig } from "../app/auth/registration-challenge.server";
+import { authMailRuntimeContext, type AuthMailEnvironment } from "../app/auth/auth-mail.server";
+import { createRequestAuthMailRuntime } from "./auth-mail";
+import { initializeAuthContext, withAuthSessionCookies, isGuestEmailVerificationRequest } from "../app/auth/session-context";
 import { AuthSessionUnavailableError, authSessionForRequest } from "../app/auth/request-context";
 import { captureAttemptIngressSource } from "../app/observability/attempt-source";
 import {
@@ -87,12 +90,21 @@ const requestHandler = createRequestHandler(
   import.meta.env.MODE,
 );
 
-async function applicationFetch(request: Request, env: Env, executionContext?: ExecutionContext): Promise<Response> {
+type RequestMailFactory = (env: Env & AuthMailEnvironment, context: RouterContextProvider,
+  execution: Parameters<typeof createRequestAuthMailRuntime>[2]) => ReturnType<typeof createRequestAuthMailRuntime>;
+type RequestChallengeFactory = (env: Env) => RegistrationChallengeConfig | Promise<RegistrationChallengeConfig>;
+
+async function applicationFetch(request: Request, env: Env, executionContext: ExecutionContext | undefined,
+  createMailRuntime: RequestMailFactory, createChallengeRuntime?: RequestChallengeFactory): Promise<Response> {
     const requestStarted = performance.now();
     const context = new RouterContextProvider();
+    context.set(authMailRuntimeContext, createMailRuntime(
+      env as Env & AuthMailEnvironment, context, import.meta.env.DEV ? "local" : "production",
+    ));
     const { localizationConnectionString, webConnectionString } = resolveRuntimeDatabaseConnectionStrings(env);
     const operational=createHyperdriveOperationalRecording(webConnectionString);
-    const collector = new RequestAttemptCollector(captureAttemptIngressSource(request),
+    const ingress = captureAttemptIngressSource(request);
+    const collector = new RequestAttemptCollector(ingress,
       () => createHyperdriveAttemptTelemetry(webConnectionString));
     context.set(requestAttemptCollectorContext, collector);
     const facts = new RequestAuthFactCollector(
@@ -103,7 +115,12 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     const auth = withAttemptObservation(
       createHyperdriveAuthRuntime(
         webConnectionString, env as Env & BetterAuthEnvironment, undefined,
-        () => collector.recordRegistrationDenied(), facts,
+        () => collector.recordRegistrationDenied(), facts, { ingress, mail: context.get(authMailRuntimeContext),
+          registrationChallenge: await createChallengeRuntime?.(env),
+          mailObservations: operational.sink,
+          observeResolvedAccountActor: userId => { collector.setResolvedActor(userId); facts.setResolvedActor(userId); },
+          observeRegistrationChallengeFailure: code => collector.recordRegistrationChallengeFailure(code),
+          observeVerificationDirectFailure: (operation, code) => collector.recordVerificationDirectFailure(operation, code) },
       ), collector);
     let authHeaders: Headers;
     try {
@@ -167,6 +184,7 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     context.set(contentGenerationActionContext, DISABLED_CONTENT_GENERATION_ACTION_RUNTIME);
     const integrationRuntimeFacts={
       webBindingPresent:!!webConnectionString,localizationBindingPresent:!!localizationConnectionString,googleParametersPresent:googleParametersPresent(env as Env & BetterAuthEnvironment),bucketBound:!!attachmentBucket,
+      mailConfiguration:mailConfigurationPresence(env as Env & AuthMailEnvironment),
       generationEnabled:context.get(contentGenerationActionContext).enabled,generationAdmissionWired:context.get(contentGenerationAdmissionContext)!==null,providerWired:false,enqueuerWired:false,consumerWired:false,
     };
     context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),integrationRuntimeFacts,requiredLocalization.current));
@@ -192,21 +210,35 @@ async function applicationFetch(request: Request, env: Env, executionContext?: E
     }
 }
 
-export default {
-  async fetch(request, env, executionContext?: ExecutionContext) {
-    const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
-      || isOwnerMonitoringPath(new URL(request.url).pathname)
-      || isPrivateForumReadPath(new URL(request.url).pathname);
-    try {
-      const response = await applicationFetch(request, env, executionContext);
-      return privateBoundary ? protectFrameworkFailure(request, response) : response;
-    } catch (error) {
-      if (!privateBoundary) throw error;
-      if (error instanceof Response && error.status < 500) return protectFrameworkFailure(request, error);
-      const status = error instanceof Response ? error.status : 500;
-      return protectFrameworkFailure(request, new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
-        status, headers: { "Content-Type": "text/plain; charset=utf-8" },
-      }));
-    }
-  },
-} satisfies ExportedHandler<Env>;
+/** The default entrypoint never supplies local mail fixtures. A separate CI-only
+ * entrypoint can inject the existing request-local mail boundary. */
+export function createApplication(createMailRuntime: RequestMailFactory = createRequestAuthMailRuntime,
+  createChallengeRuntime?: RequestChallengeFactory) {
+  return {
+    async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
+      const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
+        || isOwnerMonitoringPath(new URL(request.url).pathname)
+        || isPrivateForumReadPath(new URL(request.url).pathname);
+      const guestVerification = isGuestEmailVerificationRequest(request);
+      const protect = (response: Response): Response => {
+        if (!guestVerification) return privateBoundary ? protectFrameworkFailure(request, response) : response;
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Referrer-Policy", "no-referrer");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      };
+      try {
+        return protect(await applicationFetch(request, env, executionContext, createMailRuntime, createChallengeRuntime));
+      } catch (error) {
+        if (!privateBoundary && !guestVerification) throw error;
+        if (error instanceof Response && error.status < 500) return protect(error);
+        const status = error instanceof Response ? error.status : 500;
+        return protect(new Response(status === 503 ? "Service unavailable" : "Unexpected server failure", {
+          status, headers: { "Content-Type": "text/plain; charset=utf-8" },
+        }));
+      }
+    },
+  } satisfies ExportedHandler<Env>;
+}
+
+export default createApplication();

@@ -15,7 +15,7 @@ export interface OwnerIntegrationsCurrent {
   database:{observedAt:string;source:'existing-system-dependency-reader';quality:'measured'|'unavailable';values:SafePayload;recording:SystemOverview['recording'];
     retainedSample:null|{id:string;observedAt:string;source:'database';schemaVersion:1;quality:string;values:SafePayload}};
   requiredLocalizationRead:RequiredLocalizationRead|null;
-  authentication:{source:'database';observedAt:string;values:IntegrationValues;googleMethodLink:RetainedIntegrationFact|null;genericSession:RetainedIntegrationFact|null};
+  authentication:{source:'database';observedAt:string;values:IntegrationValues;googleMethodLink:RetainedIntegrationFact|null;genericSession:RetainedIntegrationFact|null;verificationMail?:RetainedIntegrationFact|null;passwordResetMail?:RetainedIntegrationFact|null;passwordCreateMail?:RetainedIntegrationFact|null;emailChangeOldMail?:RetainedIntegrationFact|null;emailChangeNewMail?:RetainedIntegrationFact|null};
   storageSamples:RetainedStorageSample[];
   translation:{taskOutcome:RetainedIntegrationFact|null;providerExecution:RetainedIntegrationFact|null};
 }

@@ -8,6 +8,9 @@ import type { AttemptIngressSource } from "./attempt-source";
 
 const MAX_REQUEST_ATTEMPTS = 4;
 type DirectOperation = "password-change" | "session-revoke" | "session-revoke-all";
+export type VerificationAttemptOperation = "email-verification" | "verification-send";
+export type CredentialAttemptOperation = "password-reset-request" | "password-reset" | "password-create" | "email-change" | "unlink-account";
+export type VerificationAttemptCode = "invalid" | "rate-limited" | "unavailable" | "gap";
 type Sink = AttemptTelemetryWriter & { close(): Promise<void> };
 type WriterFactory = () => Sink;
 
@@ -34,7 +37,8 @@ export class RequestAttemptCollector {
     }
     this.pending.push({
       ...input, networkIp: this.source.networkIp, networkQuality: this.source.networkQuality,
-      actorUserId: this.actorId, occurredAt: new Date(),
+      actorUserId: ["email-verification", "verification-send", "password-reset-request", "password-reset", "registration-challenge"].includes(input.operation)
+        ? null : this.actorId, occurredAt: new Date(),
     });
   }
 
@@ -47,10 +51,17 @@ export class RequestAttemptCollector {
     });
   }
 
+  recordRegistrationChallengeFailure(code: "invalid" | "unavailable"): void {
+    if (this.registrationDenied) return;
+    this.registrationDenied = true;
+    this.add({ surface: "auth", operation: "registration-challenge", directCode: code,
+      outcome: code === "invalid" ? "denied" : "unavailable" });
+  }
+
   recordHttpFailure(operation: AttemptOperation, status: number): void {
     // Better Auth may turn the same registration-policy denial into HTTP 403.
     // Keep one canonical denial record, including OAuth redirect paths.
-    if (operation === "sign-up" && this.registrationDenied) return;
+    if ((operation === "sign-up" || operation === "sign-in") && this.registrationDenied) return;
     if (!Number.isInteger(status) || status < 400 || status > 599) return;
     const outcome: AttemptOutcome = status === 429 ? "rate-limited"
       : status === 503 ? "unavailable"
@@ -75,6 +86,14 @@ export class RequestAttemptCollector {
         : error.code === "unavailable" ? "unavailable" : "denied",
       ...(httpStatus === null ? { directCode: "unavailable" } : { httpStatus }),
     });
+  }
+
+  /** Direct canonical calls without an HTTP request have no HTTP status.
+   * Verification is guest authority even when another session is present. */
+  recordVerificationDirectFailure(operation: VerificationAttemptOperation | CredentialAttemptOperation, code: VerificationAttemptCode): void {
+    if (code === "gap") { this.recordGap("auth"); return; }
+    this.add({ surface: "auth", operation, directCode: code,
+      outcome: code === "invalid" ? "denied" : code });
   }
 
   recordOwnerGuardDenied(status: 401 | 403): void {
@@ -134,6 +153,15 @@ const AUTH_HTTP_OPERATIONS: Readonly<Record<string, AttemptOperation>> = {
   "/revoke-sessions": "session-revoke-all",
   "/revoke-other-sessions": "session-revoke-all",
   "/sign-out": "sign-out",
+  "/verify-email": "email-verification",
+  "/send-verification-email": "verification-send",
+  "/request-password-reset": "password-reset-request",
+  "/reset-password": "password-reset",
+  "/request-password-create": "password-create",
+  "/create-password": "password-create",
+  "/change-email": "email-change",
+  "/confirm-email-change": "email-change",
+  "/unlink-account": "unlink-account",
 };
 
 function httpOperation(request: Request): AttemptOperation | null {

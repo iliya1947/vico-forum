@@ -512,6 +512,48 @@
       "when": 1795446645404,
       "tag": "0072_forum_structure_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1795564800000,
+      "tag": "0073_auth_account_uniqueness",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1795564800001,
+      "tag": "0074_auth_lifecycle_budget",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1795564800002,
+      "tag": "0075_auth_verification_observation",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1795649998664,
+      "tag": "0076_auth_credential_observation",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1795659156581,
+      "tag": "0077_auth_account_security_observation",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1795696548652,
+      "tag": "0078_auth_registration_challenge_observation",
+      "breakpoints": true
     }
   ]
 }

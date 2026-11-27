@@ -137,4 +137,36 @@ describe("SA02 request-local collector and canonical endpoint instrumentation", 
     expect(await response.text()).toBe("auth rejected");
     expect(f.writer.recordGap).toHaveBeenCalledOnce();
   });
+
+  it("counts only actual terminal/resend failures, with no ambient actor or inspect success",async()=>{
+    const f=fixture();
+    f.collector.setResolvedActor("unrelated-session");
+    const runtime=withAttemptObservation({
+      getSession:async()=>({session:null,headers:new Headers()}),
+      handle:async request=>new Response(null,{status:new URL(request.url).pathname.endsWith("/send-verification-email")?429:400}),
+    },f.collector);
+    await runtime.handle(new Request("https://forum.test/api/auth/verify-email",{method:"POST"}));
+    await runtime.handle(new Request("https://forum.test/api/auth/send-verification-email",{method:"POST"}));
+    await runtime.handle(new Request("https://forum.test/api/auth/inspect-email-verification?token=SECRET"));
+    f.collector.recordVerificationDirectFailure("email-verification","invalid");
+    await f.collector.flush();
+    expect(f.records).toHaveLength(3);
+    expect(f.records).toMatchObject([
+      {operation:"email-verification",outcome:"denied",httpStatus:400,actorUserId:null},
+      {operation:"verification-send",outcome:"rate-limited",httpStatus:429,actorUserId:null},
+      {operation:"email-verification",outcome:"denied",directCode:"invalid",actorUserId:null},
+    ]);
+    expect(JSON.stringify(f.records)).not.toContain("SECRET");
+  });
+  it("records one fresh-registration challenge denial without an ambient actor or duplicate auth failure", async () => {
+    const f=fixture();
+    f.collector.setResolvedActor("unrelated-account");
+    f.collector.recordRegistrationChallengeFailure("unavailable");
+    f.collector.recordRegistrationChallengeFailure("invalid");
+    f.collector.recordHttpFailure("sign-up",503);
+    f.collector.recordHttpFailure("sign-in",403);
+    await f.collector.flush();
+    expect(f.records).toMatchObject([{operation:"registration-challenge",outcome:"unavailable",directCode:"unavailable",actorUserId:null}]);
+    expect(f.records).toHaveLength(1);
+  });
 });

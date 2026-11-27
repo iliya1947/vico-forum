@@ -231,7 +231,7 @@ export class PostgresOwnerSa02Current {
           "(source='auth' and monitor_key=$1) or "+
           "(source='account' and kind='account.deactivated' and monitor_key='accounts.users' and $1='accounts.users') or "+
           "(source='auth' and $1='security.auth' and kind in "+
-          "('auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted'))",
+          "('auth.methodLinked','auth.passwordChanged','auth.sessionCreated','auth.sessionDeleted','auth.emailVerified','auth.emailChanged','auth.methodUnlinked'))",
           [item.key])).rows[0]?.first??null;
         // Adjacent registration History also projects native policy changes and
         // admitted registration-denial attempt groups (immutable admitted_at).
@@ -242,7 +242,7 @@ export class PostgresOwnerSa02Current {
               "select min(occurred_at) at from admin_history "+
               "where action='settings.registrationChanged' union all "+
               "select min(admitted_at) at from owner_attempt_patterns "+
-              "where surface='auth' and operation='registration-admission') retained"
+              "where surface='auth' and operation in ('registration-admission','registration-challenge')) retained"
             )).rows[0]?.first??null
           : null;
         // Counts and settings are current state, not retained History entries.

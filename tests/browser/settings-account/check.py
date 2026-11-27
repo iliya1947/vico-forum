@@ -12,6 +12,10 @@ from urllib.parse import urlencode, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import expect, sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4195")
@@ -104,11 +108,9 @@ def actor(browser, name, signup=True, password=old_password):
     fields = {"email": email, "password": password}
     if signup:
         fields["name"] = "SET05 " + name
-    result = ctx.request.post(
-        base + ("/api/auth/sign-up/email" if signup else "/api/auth/sign-in/email"),
-        headers={"Origin": base, "cf-connecting-ip": client_ip},
-        data=fields,
-    )
+    result = (signup_verified_session(sql, ctx.request, base, headers={"Origin": base, "cf-connecting-ip": client_ip},
+        data=fields,) if signup else ctx.request.post(base + "/api/auth/sign-in/email", headers={"Origin": base, "cf-connecting-ip": client_ip},
+        data=fields,))
     assert result.status == 200, (name, result.status, result.text()[:250])
     page = ctx.new_page()
     page.set_default_timeout(20000)
@@ -153,7 +155,7 @@ try:
         bob_sid = session_id(bob_id, "bob")
         still_signed_in(alice)
         expect(alice.locator(".settings-account-sessions li")).to_have_count(2)
-        expect(alice.get_by_role("button", name="Connect Google")).to_have_count(1)
+        expect(alice.get_by_role("button", name="Connect Google", exact=True)).to_have_count(1)
         expect(alice.locator('.settings-account-form input[name="newPassword"]')).to_have_count(1)
         expect(alice.locator(".settings-account-revoke-form")).to_have_count(1)
         assert alice.locator(".settings-account-revoke-form input[name=sessionId]").input_value() == a2_sid
@@ -169,7 +171,7 @@ try:
         document(alice, "/en/users/" + alice_id, private=False)
         expect(alice.get_by_role("link", name="Account & security")).to_have_attribute(
             "href", "/en/settings/account")
-        expect(alice.get_by_role("button", name="Connect Google")).to_have_count(0)
+        expect(alice.get_by_role("button", name="Connect Google", exact=True)).to_have_count(0)
         still_signed_in(alice)
         record("existing-explicit-google-link-control-moved-from-profile")
 
@@ -272,9 +274,10 @@ try:
         ])
         document(google, "/en/settings/account")
         expect(google.get_by_text("Google", exact=True)).to_have_count(1)
-        expect(google.locator(".settings-account-form")).to_have_count(0)
-        expect(google.get_by_role("button", name="Connect Google")).to_have_count(0)
-        expect(google.get_by_text("no password credential", exact=False)).to_have_count(1)
+        expect(google.locator(".settings-account-form")).to_have_attribute("method", "post")
+        expect(google.get_by_role("button", name="Send a recovery link")).to_be_enabled()
+        expect(google.locator('.settings-account-form input[type="password"]')).to_have_count(0)
+        expect(google.get_by_role("button", name="Connect Google", exact=True)).to_have_count(0)
         google_html = google.content()
         for secret in ("set05-secret-access", "set05-secret-refresh", "set05-secret-id-token",
                        "external-google-account"):

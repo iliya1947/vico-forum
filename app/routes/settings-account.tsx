@@ -1,6 +1,10 @@
+import { AccountLifecycleView } from "../auth/account-security-view";
+import { useEffect } from "react";
+import { takeCredentialProof } from "../auth/credential-recovery-client";
 import { data, Form, useActionData, useLoaderData, useNavigation, type RouterContextProvider } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { UiKey } from "../localization/catalog";
+import { CredentialCreationView } from "../auth/credential-creation-view";
 import { GoogleAccountLink } from "../auth/google-account-link";
 import {
   AccountSecurityError,
@@ -27,7 +31,7 @@ export function headers({ actionHeaders }: { actionHeaders?: Headers } = {}) {
   // React Router does not forward action headers automatically. Preserve the
   // Better Auth retry timing on SSR document responses without relaxing no-store.
   const retryAfter = actionHeaders?.get("X-Retry-After");
-  return { ...settingsPrivateHeaders, ...(retryAfter
+  return { ...settingsPrivateHeaders, "Referrer-Policy": "no-referrer", ...(retryAfter
     ? { "Retry-After": retryAfter, "X-Retry-After": retryAfter } : {}) };
 }
 export function meta() { return [{ title: "Account & security · Vico Forum" }]; }
@@ -152,8 +156,15 @@ export default function SettingsAccountRoute() {
   const { t } = useTranslation("common");
   const header = useHeaderAuthUser();
   const currentAccount = header?.id === state.accountId;
+  useEffect(() => {
+    if (!currentAccount) {
+      takeCredentialProof("email-change");
+      takeCredentialProof();
+    }
+  }, [currentAccount]);
   const busy = navigation.state !== "idle";
   const otherSessions = state.sessions.filter(session => !session.current);
+  const mayCreatePassword = !state.hasPassword && state.linkedMethods.includes("google") && state.sessionAccess === "ready";
   const identityFields = <>
     <input type="hidden" name="expectedUserId" value={state.accountId} />
     <input type="hidden" name="expectedSessionId" value={state.sessionId} />
@@ -176,8 +187,14 @@ export default function SettingsAccountRoute() {
           {!state.linkedMethods.includes("google")
             ? <GoogleAccountLink callbackURL={settingsAccountPath(state.locale)} expectedUserId={state.accountId} />
             : null}
-          {!state.hasPassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
+          <CredentialCreationView key={state.sessionId} enabled={mayCreatePassword} locale={state.locale}
+            userId={state.accountId} sessionId={state.sessionId} />
+          {!state.hasPassword && !mayCreatePassword ? <p>{t("settingsSecurityNoPassword")}</p> : null}
         </section>
+        {state.email ? <AccountLifecycleView key={state.sessionId + ":account"} locale={state.locale}
+          userId={state.accountId} sessionId={state.sessionId} email={state.email}
+          verified={state.emailVerified === true} enabled={state.sessionAccess === "ready"}
+          googleAccountId={state.googleAccountId} pending={state.pendingEmailChange} /> : null}
         {state.hasPassword ? <section className="settings-account-section" aria-labelledby="settings-account-password">
           <h3 id="settings-account-password">{t("settingsSecurityPasswordHeading")}</h3>
           <Form method="post" className="settings-account-form" aria-busy={busy || undefined}>

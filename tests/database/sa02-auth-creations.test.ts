@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { Client, Pool } from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import {
   createHyperdriveAuthRuntime, type BetterAuthEnvironment, type AuthCreationObserver,
 } from "../../app/auth/auth.server";
@@ -48,6 +49,7 @@ beforeAll(async () => {
     await client.query(sql);
   }
 });
+beforeEach(async()=>{await client.query("truncate auth_lifecycle_budget, rate_limit");});
 afterAll(async () => {
   await pool.end();
   await client.query("drop schema if exists " + schema + " cascade");
@@ -65,6 +67,11 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
     const response = await auth.handle(submit("sign-up/email",
       { email, name:"Native created", password }));
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({status:true,token:null});
+    expect(response.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+    expect((await client.query('select id from session where user_id=(select id from "user" where email=$1)',[email])).rowCount).toBe(0);
+    await markVerifiedCredentialFixture(client,email);
+    expect((await auth.handle(submit("sign-in/email",{email,password}))).status).toBe(200);
     expect(await allFacts()).toHaveLength(0); // Worker-style flush is separate.
     await facts.flush();
     expect(lost).toEqual([]);
@@ -238,5 +245,91 @@ describe("SA02 actual Better Auth v1.7.7 committed-create facts", () => {
     expect(timeline.entries.filter(e=>e.origin==="system-event"&&e.source==="auth")).toHaveLength(0);
     const keys=timeline.entries.filter(e=>e.origin==="system-event").map(e=>e.monitorKey);
     expect(keys.every(key=>key?.startsWith("system."))).toBe(true);
+  });
+});
+
+describe("AUTH-02a production runtime transaction and observation boundary", () => {
+  it("rolls back new signup identity on credential insertion failure without success facts", async () => {
+    await client.query("truncate rate_limit");
+    const email = "auth02a-runtime-session-failure@example.test";
+    const queued: AuthTransitionFact[] = [];
+    let injected = false;
+    const runtime = createHyperdriveAuthRuntime(url, env, value => {
+      const connection = connected(value);
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        const statement = args[0];
+        const sql = typeof statement === "string" ? statement :
+          statement && typeof statement === "object" && "text" in statement ? statement.text : null;
+        if (!injected && typeof sql === "string" && /^insert into "account"\s/i.test(sql)) {
+          injected = true;
+          return Promise.reject(new Error("test-only credential insertion failure"));
+        }
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    }, undefined, { capture: fact => queued.push(fact), trustedActorFor: () => null });
+
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const result = await runtime.handle(submit("sign-up/email", { email, name: "Atomic failure", password }));
+      expect(injected).toBe(true);
+      expect(result.ok).toBe(false);
+      expect(result.headers.getSetCookie().some(value => value.includes("session_token="))).toBe(false);
+      expect(await result.text()).not.toContain("test-only credential insertion failure");
+      expect(log).not.toHaveBeenCalled();
+      expect(queued).toEqual([]);
+      expect((await client.query('select id from "user" where email=$1', [email])).rowCount).toBe(0);
+    } finally { log.mockRestore(); }
+  });
+
+  it("discards HTTP success, session cookies and evidence when a real COMMIT acknowledgement is lost", async () => {
+    await client.query("truncate rate_limit");
+    const email = "auth02a-runtime-uncertain@example.test";
+    const queued: AuthTransitionFact[] = [], gaps: number[] = [];
+    let committed = false;
+    let identityWritten = false;
+    let controlsAfterCommit = 0;
+    const runtime = createHyperdriveAuthRuntime(url, env, value => {
+      const connection = connected(value);
+      const original = connection.query;
+      connection.query = ((...args: unknown[]) => {
+        if (committed && typeof args[0] === "string" &&
+          /^(BEGIN|COMMIT|ROLLBACK)$/.test(args[0])) controlsAfterCommit++;
+        const statement=args[0];
+        const sql=typeof statement==="string"?statement:statement&&typeof statement==="object"&&"text" in statement?statement.text:null;
+        if(typeof sql==="string"&&/^insert into "user"\s/i.test(sql))identityWritten=true;
+        if (!committed && identityWritten && args[0] === "COMMIT") {
+          // The real PostgreSQL commit succeeds; only its acknowledgement to
+          // the lifecycle owner is lost. Do not replace it with a fake commit.
+          return Promise.resolve(Reflect.apply(original, connection, args)).then(() => {
+            committed = true;
+            throw Object.assign(new Error("test-only lost COMMIT acknowledgement"), { code: "ECONNRESET" });
+          });
+        }
+        return Reflect.apply(original, connection, args);
+      }) as typeof connection.query;
+      return connection;
+    }, undefined, { capture: fact => queued.push(fact), trustedActorFor: () => null,
+      recordGap: count => gaps.push(count) });
+
+    const result = await runtime.handle(submit("sign-up/email", { email, name: "Uncertain", password }));
+    expect(committed).toBe(true);
+    expect(result.status).toBe(503);
+    expect(result.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(result.headers.getSetCookie()).toEqual([]);
+    expect(await result.text()).not.toContain("test-only");
+    expect(controlsAfterCommit).toBe(0);
+    expect(queued).toEqual([]);
+    expect(gaps.reduce((sum, count) => sum + count, 0)).toBeGreaterThan(0);
+
+    // Independently prove the durable state; an uncertain caller must not
+    // manufacture a rollback, retry the mutation, or emit a success fact.
+    const row = (await client.query<{ id: string }>(
+      'select id from "user" where email=$1', [email],
+    )).rows[0];
+    expect(row?.id).toBeTruthy();
+    expect((await client.query("select id from account where user_id=$1", [row.id])).rowCount).toBe(1);
+    expect((await client.query("select id from session where user_id=$1", [row.id])).rowCount).toBe(0);
   });
 });

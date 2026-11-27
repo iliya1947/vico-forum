@@ -607,7 +607,11 @@ export const account = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => [index("account_userId_idx").on(table.userId)],
+  (table) => [
+    index("account_userId_idx").on(table.userId),
+    uniqueIndex("account_provider_identity_uidx").on(table.providerId, table.accountId),
+    uniqueIndex("account_credential_user_uidx").on(table.userId).where(sql`${table.providerId} = 'credential'`),
+  ],
 );
 
 export const verification = pgTable(
@@ -632,6 +636,17 @@ export const rateLimit = pgTable("rate_limit", {
   count: integer("count").notNull(),
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
+
+export const authLifecycleBudget = pgTable("auth_lifecycle_budget", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => [
+  index("auth_lifecycle_budget_cleanup_idx").on(table.expiresAt, table.key),
+  check("auth_lifecycle_budget_key_check", sql`${table.key} ~ '^vico-auth-budget:v1:[0-9a-f]{64}$'`),
+  check("auth_lifecycle_budget_count_check", sql`${table.count} > 0`),
+  check("auth_lifecycle_budget_expiry_check", sql`isfinite(${table.expiresAt})`),
+]);
 
 export const authzRoles = pgTable("authz_roles", {
   id: text("id").primaryKey(),
@@ -2059,7 +2074,8 @@ export const ownerAttemptPatterns = pgTable("owner_attempt_patterns", {
       and ${t.operation} in (
         'sign-up', 'sign-in', 'method-link', 'password-change',
         'session-revoke', 'session-revoke-all', 'sign-out',
-        'registration-admission', 'owner-guard'
+        'registration-admission', 'registration-challenge', 'owner-guard', 'email-verification', 'verification-send',
+        'password-reset-request', 'password-reset', 'password-create', 'email-change', 'unlink-account'
       )
       and ${t.outcome} in ('denied', 'failed', 'rate-limited', 'unavailable')
       and ((${t.httpStatus} between 400 and 599 and ${t.directCode} is null)

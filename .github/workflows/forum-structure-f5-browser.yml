@@ -5,6 +5,7 @@ on:
     types:
       - labeled
     paths:
+      - "tests/database/auth-whole-lifecycle.test.ts"
       - ".github/workflows/forum-structure-f5-browser.yml"
       - "tests/browser/forum-structure-f5/**"
       - "tests/browser/forum-structure-f6/**"

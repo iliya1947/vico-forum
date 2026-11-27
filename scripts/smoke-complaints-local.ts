@@ -4,6 +4,7 @@
  * No production credentials, external OAuth, remote bucket, or browser required.
  */
 import assert from "node:assert/strict";
+import { signupConnectedVerifiedSession } from "../tests/database/verified-credential-fixture";
 import {spawn} from "node:child_process";
 import {randomBytes,randomUUID} from "node:crypto";
 import {rm,writeFile} from "node:fs/promises";
@@ -23,7 +24,7 @@ if(!["127.0.0.1","localhost"].includes(dbUrl.hostname)||!dbUrl.pathname.endsWith
   throw new Error("Only loopback *_test PostgreSQL is allowed");
 // Existing CI PostgreSQL service is disposable; the built Worker already uses its public schema.
 const client=new Client({connectionString});
-const vars=resolve(".dev.vars");
+const vars=resolve("build/server/.dev.vars");
 const previewLog=resolve(".vico-p7-preview.log");
 let worker:ReturnType<typeof spawn>|undefined;
 let ownedVars=false;
@@ -46,11 +47,13 @@ async function form(path:string,cookie:string,fields:Record<string,string>){
   },body:new URLSearchParams(fields)},cookie);
 }
 async function signUp(role:string){
-  const response=await http("/api/auth/sign-up/email",{
+  const response = await signupConnectedVerifiedSession(client,
+    async req => http(new URL(req.url).pathname, {method:req.method,headers:req.headers,body:await req.text()}),
+    new Request(base+"/api/auth/sign-up/email", {
     method:"POST",headers:{Origin:base,"Content-Type":"application/json"},
     body:JSON.stringify({name:"Smoke "+role,email:role+"-"+randomUUID()+"@p7.invalid",
       password:"Test-Only-"+randomBytes(12).toString("hex")})
-  });
+  }));
   assert.ok(response.status>=200&&response.status<300,"Signup HTTP failed for "+role+": "+response.status);
   const sessionCookie=response.headers.getSetCookie()
     .find(value=>value.includes("session_token"))?.split(";")[0];
@@ -84,7 +87,7 @@ async function ready(){
 }
 async function run(){
   await setupDatabase();
-  // Cloudflare Vite preview consumes local, ignored .dev.vars; never print secrets.
+  // Vite preview reads local variables beside the generated Worker config.
   await writeFile(vars,[
     "BETTER_AUTH_SECRET="+randomBytes(32).toString("hex"),
     "BETTER_AUTH_URL="+base,
@@ -100,9 +103,10 @@ async function run(){
   closeSync(fd);
   await ready();
 
-  const [author,reporter,reviewer]=await Promise.all([
-    signUp("author"),signUp("reporter"),signUp("reviewer")
-  ]);
+  // Fixture preparation owns shared disposable budget rows; do not overlap it.
+  const author=await signUp("author");
+  const reporter=await signUp("reporter");
+  const reviewer=await signUp("reviewer");
   for(const user of [author,reporter,reviewer])
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-user') on conflict do nothing",[user.id]);
   await client.query("update authz_user_roles set role_id='builtin-moderator' where user_id=$1",[reviewer.id]);

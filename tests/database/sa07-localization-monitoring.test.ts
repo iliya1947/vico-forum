@@ -64,7 +64,11 @@ it("compares the full shipped manifest and approved source precedence with actua
 });
 it("classifies invalid bundles separately and measures fresh current state inside the sample gate",async()=>{
   await c.query("insert into ui_translation_bundles(locale,namespace,bundle_version,resources) values('de','common',$1,'{\"unknown-private-key\":\"PRIVATE_TEXT\"}')",["a".repeat(64)]);
-  const a=await current.readCurrent();expect(value(a,"localization.ui")).toMatchObject({bundlesInvalid:"1",bundlesMissing:"1"});
+  const a=await current.readCurrent();expect(value(a,"localization.ui")).toMatchObject({bundlesInvalid:"1",bundlesMissing:"3"});
+  // Two active target locales now also need the independent authMail namespace.
+  // The corrupt de/common bundle remains invalid, never counted as missing.
+  expect(a.bundles.filter(b=>b.status==="missing").map(b=>`${b.locale}/${b.namespace}`).sort())
+    .toEqual(["de/authMail","fr/authMail","fr/common"]);
   const rows=(await c.query("select id from owner_monitor_observations order by id")).rows;
   await approved("fr","heading");const b=await current.readCurrent();expect(value(b,"localization.ui").persistentManual).toBe("1");expect((await c.query("select id from owner_monitor_observations order by id")).rows).toEqual(rows);
   expect(b.monitors[0].observedAt>=a.monitors[0].observedAt).toBe(true);

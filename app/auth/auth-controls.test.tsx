@@ -86,6 +86,14 @@ function actions(): AuthClientActions {
 }
 
 describe("forum header auth controls", () => {
+  it("never copies an account mail proof into guest auth links", async () => {
+    renderControls(null, actions(), "/en/settings/account#token=private-proof&purpose=email-change");
+    for (const name of ["Sign in", "Sign up"]) {
+      const link = await screen.findByRole("link", { name });
+      expect(link.getAttribute("href")).not.toContain("private-proof");
+      expect(new URL(link.getAttribute("href")!, "https://forum.invalid").searchParams.get("returnTo")).toBe("/en/settings/account");
+    }
+  });
   it.each(["ltr", "rtl"] as const)("renders guest credential sign-in and registration links in %s", async (direction) => {
     const locale = direction === "ltr" ? "en" : "he";
     renderControls(null, actions(), `/${locale}`, direction);

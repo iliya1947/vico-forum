@@ -3,7 +3,7 @@ import { Link, useNavigate, useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
 import { ForumShell } from "../forum/ui";
 import { authClientActions, emailAuthClientActions, type AuthClientActions, type EmailAuthActions } from "./auth-client";
-import { credentialPagePath, type CredentialMode } from "./credential-path";
+import { credentialPagePath, verificationPagePath, verificationReturnPath, type CredentialMode } from "./credential-path";
 
 export function CredentialView({
   locale, mode, returnTo, registrationFlags, callbackError, emailActions = emailAuthClientActions, googleActions = authClientActions,
@@ -20,7 +20,8 @@ export function CredentialView({
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<"email" | "google" | "email-closed" | null>(null);
+  const [error, setError] = useState<"email" | "google" | "email-closed" | "rate-limited" | "unavailable" | null>(null);
+  const [awaitingVerification, setAwaitingVerification] = useState(false);
   const registration = mode === "sign-up";
   const emailAllowed = !registration || registrationFlags?.emailRegistrationEnabled === true;
   const googleAllowed = !registration || registrationFlags?.googleRegistrationEnabled === true;
@@ -40,10 +41,12 @@ export function CredentialView({
     setError(null);
     try {
       const succeeded = registration
-        ? await emailActions.signUpWithEmail(name, email, password)
+        ? await emailActions.signUpWithEmail(name, email, password, verificationReturnPath(locale, returnTo))
         : await emailActions.signInWithEmail(email, password);
       if (succeeded === "closed") { setError("email-closed"); return; }
-      if (succeeded) {
+      if (succeeded === "rate-limited" || succeeded === "unavailable") { setError(succeeded); return; }
+      if (succeeded === true) {
+        if (registration) { setAwaitingVerification(true); return; }
         await navigate(returnTo, { replace: true });
         void revalidator.revalidate();
         return;
@@ -72,12 +75,25 @@ export function CredentialView({
     }
   }
 
+  if (registration && awaitingVerification) return (
+    <ForumShell locale={locale}>
+      <section className="credential-page" aria-labelledby="credential-heading">
+        <h1 id="credential-heading">{t("authVerificationPending")}</h1>
+        <p role="status" className="credential-hint">{t("authVerificationPendingBody")}</p>
+        <div className="credential-alternatives">
+          <Link to={verificationPagePath(locale, "resend-verification", returnTo)}>{t("authVerificationResend")}</Link>
+          <Link to={credentialPagePath(locale, "sign-in", verificationReturnPath(locale, returnTo))}>{t("authVerificationSignIn")}</Link>
+        </div>
+      </section>
+    </ForumShell>
+  );
+
   return (
     <ForumShell locale={locale}>
       <section className="credential-page" aria-labelledby="credential-heading">
         <h1 id="credential-heading">{t(registration ? "authRegisterHeading" : "authEmailHeading")}</h1>
         {registration && !emailAllowed ? <p className="credential-hint" role="status">{t("authEmailRegistrationClosed")}</p> : null}
-        {emailAllowed ? <form className="credential-form" onSubmit={submit}>
+        {emailAllowed ? <form method="post" className="credential-form" onSubmit={submit}>
           {registration ? (
             <label>{t("authEmailName")}
               <input name="name" type="text" autoComplete="name" required maxLength={100} dir="auto" disabled={pending} />
@@ -101,7 +117,7 @@ export function CredentialView({
             : callbackError === "email-closed" ? "authEmailRegistrationClosed" : "authError")}
         </p> : null}
         {error ? <p role="alert" className="auth-feedback credential-error">
-          {t(error === "email-closed" ? "authEmailRegistrationClosed" : error === "google" ? "authError" : registration ? "authRegisterFailure" : "authEmailFailure")}
+          {t(error === "email-closed" ? "authEmailRegistrationClosed" : error === "google" ? "authError" : error === "rate-limited" ? "authVerificationRateLimited" : error === "unavailable" ? "authVerificationUnavailable" : registration ? "authRegisterFailure" : "authEmailFailure")}
         </p> : null}
         <div className="credential-alternatives">
           {googleAllowed ? <button type="button" className="auth-action credential-google" onClick={googleSignIn} disabled={pending}>
@@ -111,7 +127,11 @@ export function CredentialView({
             {t(registration ? "authSwitchToSignIn" : "authSwitchToRegister")}
           </Link>
         </div>
-        {emailAllowed ? <p className="credential-hint">{t("authEmailNoVerification")}</p> : null}
+        <Link to={verificationPagePath(locale, "resend-verification", returnTo)}>{t("authVerificationResend")}</Link>
+        {!registration ? <Link to={`/${encodeURIComponent(locale)}/forgot-password?returnTo=${encodeURIComponent(verificationReturnPath(locale, returnTo))}`}>
+          {t("authCredentialForgot")}
+        </Link> : null}
+        {emailAllowed && registration ? <p className="credential-hint">{t("authVerificationRequired")}</p> : null}
         <p className="credential-hint">{t("authLinkGoogleHint")}</p>
       </section>
     </ForumShell>

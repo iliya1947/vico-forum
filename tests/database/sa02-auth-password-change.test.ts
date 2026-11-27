@@ -5,6 +5,7 @@ import {
   createHyperdriveAuthRuntime, type AuthCreationObserver, type BetterAuthEnvironment,
 } from "../../app/auth/auth.server";
 import { PostgresAuthFactWriter, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import { signupVerifiedSession } from "./verified-credential-fixture";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
@@ -43,7 +44,7 @@ function authRequest(path: string, body: object, cookie?: string) {
 }
 async function createActor(email: string, events: AuthTransitionFact[]) {
   const auth = createHyperdriveAuthRuntime(url, env, connected, undefined, observer(events));
-  const response = await auth.handle(authRequest("sign-up/email", {
+  const response = await signupVerifiedSession(client, request => auth.handle(request), authRequest("sign-up/email", {
     name: "Password actor", email, password: oldPassword,
   }));
   expect(response.status).toBe(200);
@@ -75,7 +76,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Preserve actual Better Auth rate limiting within each independent test.
   // Avoid sharing a synthetic IP rate-limit budget across separate cases.
-  await client.query("truncate rate_limit");
+  await client.query("truncate rate_limit, auth_lifecycle_budget");
 });
 afterAll(async () => {
   await pool.end();
@@ -95,7 +96,7 @@ describe("SA02 native Better Auth 1.7.7 credential password changes", () => {
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       kind:"auth.passwordChanged",userId:actor.userId,
-      accountId:actor.accountId,actorUserId:actor.userId,
+      accountId:actor.accountId,actorUserId:actor.userId,context:"change",
     });
     expect(events[0]).toHaveProperty("operationId",expect.stringMatching(
       /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/));
@@ -108,7 +109,7 @@ describe("SA02 native Better Auth 1.7.7 credential password changes", () => {
       [saved.id])).rows;
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({entity_id:actor.accountId,target_user_id:actor.userId,
-      actor_user_id:actor.userId,payload:{}});
+      actor_user_id:actor.userId,payload:{context:"change"}});
     expect(rows[0].correlation_id).toBe((events[0] as { operationId:string }).operationId);
     expect(JSON.stringify(rows)).not.toContain(actor.beforeHash);
     expect(JSON.stringify(rows)).not.toContain(oldPassword);

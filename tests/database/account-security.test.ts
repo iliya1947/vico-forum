@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime, type BetterAuthEnvironment } from "../../app/auth/auth.server";
 import { AccountSecurityError, authRuntimeForRequest, authSessionForRequest, type AccountSecurityIdentity } from "../../app/auth/request-context";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
+import { installAuthLifecycleFixture, markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import { initializeAuthContext } from "../../app/auth/session-context";
 
 const url = process.env.DATABASE_URL;
@@ -29,13 +30,13 @@ const security = runtime.security!;
 type SessionActor = { id: string; cookie: string; identity: AccountSecurityIdentity };
 const password = "account-security-password-123";
 
-async function authRequest(path: string, body: object, cookie?: string): Promise<Response> {
+async function authRequest(path: string, body: object, cookie?: string, ip = "203.0.113.75"): Promise<Response> {
   return runtime.handle(new Request(`${env.BETTER_AUTH_URL}/api/auth/${path}`, {
     method: "POST",
     headers: {
       Origin: env.BETTER_AUTH_URL,
       "Content-Type": "application/json",
-      "cf-connecting-ip": "203.0.113.75",
+      "cf-connecting-ip": ip,
       ...(cookie ? { Cookie: cookie } : {}),
     },
     body: JSON.stringify(body),
@@ -55,12 +56,17 @@ async function resolvedActor(response: Response): Promise<SessionActor> {
 }
 
 async function signUp(email: string): Promise<SessionActor> {
-  return resolvedActor(await authRequest("sign-up/email", {
-    name: email.split("@")[0], email, password,
-  }));
+  const pending = await authRequest("sign-up/email", { name: email.split("@")[0], email, password });
+  expect(pending.status).toBe(200);
+  expect(await pending.json()).toEqual({status:true,token:null});
+  expect(pending.headers.getSetCookie().some(value=>value.includes("session_token="))).toBe(false);
+  await markVerifiedCredentialFixture(client,email);
+  // The new fixture sign-in must not consume the independent password-change
+  // scenario's three-attempt native sign-in bucket.
+  return resolvedActor(await signIn(email, password, "203.0.113.76"));
 }
-async function signIn(email: string, secret = password): Promise<Response> {
-  return authRequest("sign-in/email", { email, password: secret });
+async function signIn(email: string, secret = password, ip?: string): Promise<Response> {
+  return authRequest("sign-in/email", { email, password: secret }, undefined, ip);
 }
 async function errorCode(action: Promise<unknown>, code: AccountSecurityError["code"]) {
   await expect(action).rejects.toMatchObject({ name: "AccountSecurityError", code });
@@ -79,9 +85,10 @@ beforeAll(async () => {
     .replaceAll("--> statement-breakpoint", "");
   await client.query(stateMigration);
   await installRegistrationPolicyFixture(client);
+  await installAuthLifecycleFixture(client);
 });
 beforeEach(async () => {
-  await client.query('truncate "user", account, "session", verification, rate_limit cascade');
+  await client.query('truncate "user", account, "session", verification, rate_limit, auth_lifecycle_budget cascade');
 });
 afterAll(async () => {
   await client.query("set search_path to public");
@@ -147,7 +154,7 @@ describe("SET-05 request-local Better Auth security capability", () => {
     await errorCode(security.changePassword(headers(a1), a1.identity, "wrong-password",
       "different-password-123"), "invalid-password");
     await security.changePassword(headers(a1), a1.identity, password, "different-password-123");
-    expect((await signIn("password@example.test")).status).not.toBe(200);
+    expect((await signIn("password@example.test")).status).toBe(401);
     expect((await signIn("password@example.test", "different-password-123")).status).toBe(200);
     expect((await runtime.getSession(headers(a1))).session?.user.id).toBe(a1.id);
     expect((await runtime.getSession(headers(a2))).session?.user.id).toBe(a1.id);
