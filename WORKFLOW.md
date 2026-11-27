@@ -9,10 +9,11 @@
 5. Мира независимо перепроверила все три findings против root PLAN и actual source: **все три подтверждены**; Stage-6/future-only finding среди них нет.
 6. Technical-plan correction не требуется: saved-locale contract в root PLAN однозначен и не superseded.
 7. Активирован единый bounded correction route: `stages/AUTH-07-CORRECTION/PLAN.md`.
-8. **Лира / ChatGPT-6 назначена исполнителем correction в assembled PR #388.**
-9. K5 correction остаётся accepted; без нового основания её не менять.
-10. Марк / Codex-6 Sol не активирован. Independent gate, main merge, docs closeout и Stage-6 activation заблокированы.
+8. По прямой команде владельца **Лена / GPT-6.2 назначена исполнителем correction в assembled PR #388 вместо Лиры**. Лира STOP.
+9. Поскольку Лена теперь участвует в implementation correction, она не выполняет review нового corrected head.
+10. K5 correction остаётся accepted; без нового основания её не менять.
+11. Марк / Codex-6 Sol не активирован. Independent gate, main merge, docs closeout и Stage-6 activation заблокированы.
 
 ## Следующий переход
 
-Лира выполняет только bounded correction по `stages/AUTH-07-CORRECTION/PLAN.md` в #388 → author self-check → применимые exact-head CI/acceptance → `stages/AUTH-07-CORRECTION/RESULT.md` → STOP. После AUTHOR PASS новый stable head возвращается на повторный first AUTH-07 whole-feature review; Марк назначается только после PASS этого review.
+Лена выполняет только bounded correction по `stages/AUTH-07-CORRECTION/PLAN.md` в #388 → author self-check → применимые exact-head CI/acceptance → `stages/AUTH-07-CORRECTION/RESULT.md` → STOP. После AUTHOR PASS новый stable head проходит whole-feature review Миры. Только после PASS Миры отдельным следующим переходом назначается Марк / Codex-6 Sol как independent final technical reviewer на том же exact head.
