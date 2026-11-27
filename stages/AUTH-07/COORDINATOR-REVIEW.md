@@ -38,17 +38,14 @@
 
 ## Automated evidence
 
-Exact head #388: `5b29469fe51e716b483d4e610dd90705f5409029`; merge tree проверен CI на merge commit с тем же head/base.
+Exact head #388: `5b29469fe51e716b483d4e610dd90705f5409029`.
 
 1. CI #45936962209 — **SUCCESS**:
    - checks: 3347/3347 tests;
    - PostgreSQL: 1998/1998 tests;
    - database/check jobs SUCCESS.
 2. **20/20 applicable connected acceptance — SUCCESS** на этом head.
-3. AUTH-02b #45936965056 — SUCCESS и фактически прошли новые markers:
-   - `AUTH07-password-create-revalidates-mounted-methods-and-sessions`;
-   - `AUTH07-own-mail-saved-locale-independent-of-action`;
-   - `AUTH07-password-create-same-document-replacement-after-expiry`.
+3. AUTH-02b #45936965056 — SUCCESS и фактически прошли новые AUTH-07 markers.
 4. AUTH-05 #45936965150 — SUCCESS.
 5. K5 #45936965095 — SUCCESS.
 6. SA08 #45936965038 и остальные applicable connected runs — SUCCESS.
@@ -61,4 +58,8 @@ Exact head #388: `5b29469fe51e716b483d4e610dd90705f5409029`; merge tree пров
 
 **COORDINATOR WHOLE-FEATURE PASS.**
 
-Это не independent final technical PASS. Следующий gate — Марк / Codex-6 Sol как independent final technical reviewer на том же exact head. Merge, docs closeout и Stage-6 до его PASS остаются заблокированы.
+## Owner override следующего review
+
+После этого PASS владелец прямо назначил следующим reviewer **Лёву / Codex-6.1 Sol** и ограничил текущую работу Лёвой и Леной. Поскольку Лёва участвовал в AUTH-06 implementation, его следующая проверка фиксируется как owner-assigned final technical review, а не independent whole-feature PASS.
+
+Актуальный handoff: `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-PLAN.md`. Merge, docs closeout и Stage-6 до отдельного следующего решения владельца заблокированы.
