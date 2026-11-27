@@ -3,10 +3,10 @@
 ## Текущий статус
 
 1. #388 merged в main `b1a1799b5927ed647eff9a8cbd5c03282f8a2d87`.
-2. Docs PR #398 exact `b7b0d9e56e1b733fdc7a7ffd8593fc34150b5143` прошёл AUTHOR PASS Лены.
-3. Мира проверила весь 8-file docs diff: COORDINATOR HOLD только по F-DOCS-01.
-4. F-DOCS-01: ROADMAP ввёл универсальное `SPF/DKIM/DMARC` как Stage-6 requirement, не установленное D-08; provider requirements различаются. Это current docs defect, не требование выполнять Stage 6 сейчас.
-5. Остальных blocking findings в docs diff не подтверждено.
-6. Лена назначена на bounded correction в существующем #398.
-7. После нового AUTHOR PASS Мира re-review; при PASS → Лёва technical-accuracy review.
-8. Stage 6 paused; Марк/Лира не подключаются.
+2. Docs PR #398 current exact `4cf2b947f84513c5ccaa6ae66f50f15442e002e3`.
+3. Лена закрыла F-DOCS-01 bounded ROADMAP correction.
+4. Мира проверила correction: provider-applicable DNS wording соответствует D-07/D-08; иных blockers ранее в whole-docs diff не было.
+5. **COORDINATOR RE-REVIEW PASS.**
+6. Лёва назначен на technical-accuracy review всего 8-file docs diff.
+7. Лена STOP; Марк/Лира не подключаются.
+8. Stage 6 paused. После PASS Лёвы — merge #398 владельцем; затем закрыть repository/local-CI часть #320.
