@@ -1,15 +1,7 @@
 # COMMUNICATION.md — общий актуальный контекст, факты, ограничения, зависимости и незакрытые вопросы команды
 
-## Final assembly
+## Final assembly и K5 correction
 
-#388 содержит accepted AUTH-01–AUTH-06 и остаётся unmerged. Сборка не меняла product tree; intermediate PRs superseded. Final substantive author review — PASS. CI — PASS; connected acceptance — 19/20.
+Accepted stack AUTH-01–AUTH-06 на `615d93598daf78945a86fbdc4255bc778ae3403f`: author/CI PASS, acceptance 19/20, K5 repeated failure. По назначению Миры Ада внесла bounded correction только в K5 test/evidence. #388 exact `bb19d5c238dec436a57dc174b9c422a98b4ae4f1`; product tree unchanged, новый diff только tests/browser/sa04-attachments/check.py. Source-level author self-check PASS.
 
-## K5 finding
-
-Failed K5 #45912884312 не подтверждает product regression. Мира сверила успешный #395 K5 и failed #388: один head SHA, идентичные K5 workflow/test/product blobs. K5 не имеет base-dependent execution path. Product `operationId` начинает `""` и становится UUID в React effect; test читает hidden value сразу после появления формы. Это подтверждённый synchronization defect теста, который способен дать observed assertion failure. Старый artifact не записал actual value, поэтому точная причинность конкретных двух failures окончательно подтверждается corrective rerun.
-
-## Активный route
-
-Ада выполняет bounded **K5-CORRECTION** только test/evidence слоя по `stages/K5-CORRECTION/PLAN.md`. Product/runtime/schema не менять. Сначала targeted K5; если PASS — final exact-head CI + applicable acceptance assembled #388; затем STOP для Миры.
-
-Лёва и Ада не могут быть independent final reviewer. AUTH-07 и Stage-6 заблокированы.
+Targeted K5 необходим до full CI/acceptance. Connector не имеет workflow_dispatch; штатный manual K5 workflow_dispatch на ветке #388 требуется отдельно. После запуска Ада проверит actual evidence и выполнит stage plan. Details: stages/K5-CORRECTION/RESULT.md, WORKFLOW.md. AUTH-07, independent review, merge и external/Stage-6 blocked.
