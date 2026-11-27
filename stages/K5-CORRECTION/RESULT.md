@@ -1,49 +1,90 @@
-# K5-CORRECTION — targeted verification PASS, final assembled gate pending
+# K5-CORRECTION — final automated gate PASS
 
-## Current exact state
+## Exact state
 
 PR #388 / `feat/auth-01-mail-foundation`:
-- base main: `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432` — unchanged;
+- base main: `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`;
 - accepted assembly baseline: `615d93598daf78945a86fbdc4255bc778ae3403f`;
-- current correction head: `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`.
+- final correction head: `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`;
+- head tree: `6f154a2489913165c088dfa25a20818b62c13662`.
 
-Compare baseline → correction: 1 commit, 1 modified file, `tests/browser/sa04-attachments/check.py`, +59/-6. Product/runtime/schema/dependencies/workflow files не изменены.
+Baseline → correction: one commit, one modified file, `tests/browser/sa04-attachments/check.py`, +59/-6. Product/runtime/schema/dependency/workflow code unchanged.
 
-## Correction
+## Targeted K5
 
-1. Six initial editor operation reads используют retrying Playwright UUID readiness assertion вместо immediate `input_value()`.
-2. Existing length/upload/R2/lifecycle assertions и 33-case matrix не ослаблены.
-3. Success/failure evidence хранит readiness structure/length/UUID boolean без raw operation IDs.
-4. Source-level bounded correction self-check — PASS.
+Run #45922622929 — SUCCESS:
+- 33/33 connected cases;
+- `external=[]`;
+- `page_errors=[]`;
+- six readiness records all ready;
+- merge-ref tree == head tree.
 
-## Targeted K5 verification
+## Final assembled CI
 
-Для targeted-only execution создан temporary diagnostic PR #396:
-- base: accepted `615d93598daf78945a86fbdc4255bc778ae3403f`;
-- head: exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`;
-- changed files: только `tests/browser/sa04-attachments/check.py`;
-- PR закрыт без merge после evidence capture.
+Run #45926789854 — **SUCCESS**.
 
-Actual acceptance:
-- workflow run #45922622929 — **SUCCESS**;
-- job #140256622743 — **SUCCESS**;
-- `IMPLEMENTATION_SHA=71cdb70d9a5a8b0d0efc3df724d62b736dff7601`;
-- checkout merge-ref `34a02f448b719396fdb6706f6cc734f7f230bed4`;
-- merge-ref tree `6f154a2489913165c088dfa25a20818b62c13662` == implementation head tree;
-- `SA04_K5_CONNECTED_PASS 33`;
-- artifact #15165481754 `results.json`: exact SHA, 33 cases, `external=[]`, `page_errors=[]`, local-only Miniflare R2;
-- six `editor_readiness` records: all `outcome=ready`, UUID valid, uploader enabled.
+Checks job #140269856248:
+- 252/252 test files PASS;
+- 3342/3342 tests PASS;
+- accepted migration history protection PASS;
+- lint PASS;
+- typecheck PASS;
+- build + UI preview PASS;
+- migration metadata and Drizzle parity PASS.
 
-### Interpretation boundary
+Database job #140269855936:
+- 123/123 files PASS;
+- 1998/1998 tests PASS;
+- `auth-whole-lifecycle` 62/62 PASS;
+- production schema manifest 76 tables PASS;
+- runtime privilege probes PASS;
+- split-authority provisioning PASS;
+- web credential diagnostics/recovery/bootstrap probes PASS;
+- Worker/Better Auth/Hyperdrive/Complaints/AccountState/Owner smoke steps PASS.
 
-Targeted run confirms that the corrected K5 test/evidence layer and all 33 K5 connected cases pass on the new exact head. It does **not** directly prove the exact value observed during the two old failures: all six new `before` snapshots already had a valid UUID. The prior failure location + source ordering still justify the synchronization correction, but the old runtime value remains uncaptured.
+CI checkout merge-ref:
+- `d28248dbdd915c748ce86b37e28c38f99ba116cb`;
+- tree `6f154a2489913165c088dfa25a20818b62c13662`;
+- identical to implementation head tree.
 
-## Gate status
+## Final applicable connected acceptance
 
-**TARGETED K5 PASS.**
+Fresh run:acceptance event on #388 produced **20/20 applicable SUCCESS**:
+1. SA04-L3 authorization Owner.
+2. Topic Watch.
+3. AUTH-05 anti-abuse.
+4. Own topic title.
+5. SA04-J12 AccountState.
+6. SA04-M2 AP10/AccountState.
+7. SA04-S AccountState completion.
+8. SA05 Owner deactivation.
+9. SA06 native monitoring.
+10. Forum structure.
+11. Personal Mute/Block.
+12. SA-01 Super-admin.
+13. SA-03 unified profile.
+14. SA04-N Complaints.
+15. AUTH-02b email verification.
+16. Topic Bookmarks.
+17. SA04-K5 attachments.
+18. SA08 Overview.
+19. SA07 background/localization/files/data/integrations.
+20. AP-10 isolated browser.
 
-Final assembled automated gate is **not yet PASS**, because fresh full `run:ci` + applicable `run:acceptance` on #388 exact `71cdb70d...` have not yet been executed.
+Relevant failures/cancelled/in-progress: **0**. Skipped duplicates from the opposite label event are not counted.
 
-## Next subtask
+## Interpretation boundary
 
-Run one final exact-head `run:ci` + `run:acceptance` on #388, verify actual applicable jobs/runs, then stop for the separate final whole-feature coordinator review.
+The K5 correction and current automated gate are verified. The exact value seen during the two historical K5 failures was not captured and remains unknown; the successful correction does not retroactively prove that value.
+
+## Gate result
+
+**FINAL AUTOMATED GATE PASS** for exact `71cdb70d9a5a8b0d0efc3df724d62b736dff7601`.
+
+This is repository/local-CI evidence only, not deployed/provider/Stage-6 acceptance.
+
+## Review routing blocker
+
+Мира authored the K5 correction. Under current AGENTS, an agent may not conduct an independent whole-PR/whole-feature review of their own implementation. Therefore the previously planned final whole-feature review by Мира cannot be performed on this head.
+
+A qualifying non-participant must be explicitly assigned by the owner before AUTH-07 or merge proceeds.
