@@ -1,13 +1,16 @@
 # agents/leva.md — личная рабочая память Лёвы
 
-## Завершённое назначение
+## Текущее назначение
 
-AUTH-06 #395 sync/reverification завершена.
+**AUTH-07 owner-assigned final technical review.**
 
-1. Accepted head: `615d93598daf78945a86fbdc4255bc778ae3403f`, base corrected AUTH-05 `dbbfe1c05b4774c49f6b06fc4457bc422b5d39a6`.
-2. AUTHOR PASS.
-3. После handoff CI #45897164115 и 20/20 applicable connected acceptance завершились SUCCESS.
-4. Мира провела повторный whole-feature review: COORDINATOR PASS, 0 blockers.
-5. Лёва STOP. Нового назначения нет.
-6. Поскольку Лёва участвовал в AUTH-06, independent final whole-feature reviewer этой assembled feature он быть не может.
-7. AUTH-07, final assembly и external/Stage-6 actions без нового handoff не начинать.
+1. Проверяемый PR: #388.
+2. Stable exact: `5b29469fe51e716b483d4e610dd90705f5409029`.
+3. Вход: `WORKFLOW.md` → `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-PLAN.md` → `stages/AUTH-07/COORDINATOR-REVIEW.md`.
+4. Scope: assembled AUTH-01–AUTH-06 + AUTH-07 correction как одна feature.
+5. Review-only: implementation не менять.
+6. Не принимать PASS Миры, self-check Лены или green CI автоматически; существенные основания проверять самостоятельно.
+7. Лёва ранее участвовал в AUTH-06 implementation, поэтому этот review **не является independent whole-feature review** по стандартному workflow.
+8. Exact-head CI и 20/20 applicable connected acceptance уже SUCCESS; без нового основания повторно не запускать.
+9. Результат записать в `stages/AUTH-07/FINAL-TECHNICAL-REVIEW.md` как PASS/HOLD → STOP → вернуть Мире.
+10. Merge/docs/Stage-6 не выполнять.
