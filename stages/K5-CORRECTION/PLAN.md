@@ -15,7 +15,7 @@
 
 ## Исполнитель
 
-**Ада / Business GPT-6.2** по текущему handoff.
+**Мира / GPT-5.6 Sol** по прямой команде владельца.
 
 ## Scope
 
@@ -30,7 +30,7 @@
 1. Сначала targeted K5 execution на новом exact head. Если он не проходит — HOLD/STOP с evidence; не запускать blind retries.
 2. Если targeted K5 PASS, зафиксировать новый exact head и убедиться, что diff к accepted final assembly ограничен test/evidence correction.
 3. Затем выполнить предусмотренные final assembly exact-head `run:ci` и `run:acceptance` один раз на новом stable head. Это финальный автоматизированный gate assembled PR; не запускать повторно без причины.
-4. При полном PASS записать RESULT и STOP для Миры.
+4. При полном PASS записать RESULT; затем отдельной подзадачей Мира проводит final whole-feature coordinator review, не смешивая correction verification с review.
 5. AUTH-07, independent review, merge и Stage-6 actions не начинать.
 
 ## Done
@@ -40,4 +40,4 @@
 - targeted K5 PASS;
 - final #388 CI + applicable acceptance PASS на новом exact head;
 - AUTHOR PASS/HOLD записан честно;
-- Ада STOP для final whole-feature coordinator review Миры.
+- correction verification завершена отдельно от последующего final whole-feature coordinator review.
