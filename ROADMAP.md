@@ -400,8 +400,9 @@ Stage 6 впервые собирает локально готовый прод
     публичный unauthenticated bootstrap endpoint. Более широкая recovery-модель
     требует отдельного owner decision.
 12. Подготовить и проверить реальные auth-mail provider accounts, sender/domain,
-    DNS (SPF/DKIM/DMARC), server-only credentials, delivery/failure acceptance Resend/Brevo
-    (один выбранный transport одновременно). Проверить отсутствие unintended fallback/retry.
+    применимые DNS authentication records по актуальной официальной документации
+    выбранного provider, server-only credentials и delivery/failure acceptance Resend/Brevo.
+    Одновременно активен только один provider, без automatic fallback/retry.
     Активацию выполнить только по разрешённому Stage-6 плану.
 13. Определить с владельцем конкретный anti-bot provider и требования к его внешней
     активации; проверить real challenge binding, replay/timeout/fail-closed behavior и
