@@ -9,8 +9,10 @@
 1. `research/user-journey-v1.md`;
 2. обновлённый `TASK.md`;
 3. обновлённый `research/product-scope-v1.md`;
-4. `DECISIONS.md` D-13–D-15.
+4. `DECISIONS.md` D-13–D-20.
 
 Ключевая граница: обычная эксплуатация — отдельный ChatGPT Project и обычный текстовый разговор. Любой write объясняется и отдельно подтверждается владельцем в разговоре; отдельный plugin/form/browser extension/cryptographic confirmation UI не является продуктовым требованием. GitHub/Worker должны быть невидимой транспортной инфраструктурой.
+
+Единицей подтверждения является пользовательская задача, а не внутренний вызов. Составная задача может использовать несколько существующих canonical mutations; массовая — фиксированный заранее показанный набор targets. Обычная составная задача stop-on-first-failure, массовая продолжает остальные независимые targets с per-target итогом. V1 request-driven; background monitoring не реализуется, но read/analysis path не должен без необходимости закрывать будущий scheduler/event trigger.
 
 До нового handoff PLAN не исправлять и реализацию не начинать.
