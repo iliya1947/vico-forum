@@ -105,13 +105,13 @@
 9. **Global complaint priority weights** — меняют ordering policy всех open Cases.
 10. **Help/duplicate terminal appeal/review outcome**, когда существующий доменный контракт фиксирует решение/appeal outcome как отдельный persisted результат.
 
-Подтверждение относится к одной конкретно объяснённой команде. Изменение operation, target или параметров требует нового объяснения и нового подтверждения. Технический план может использовать server-side expected state/CAS для защиты от изменения состояния между подтверждением и исполнением, но не должен вводить отдельный обязательный UI.
+Подтверждение относится к одной конкретно объяснённой пользовательской задаче, а не к числу внутренних canonical mutations. Составная задача может быть разложена на несколько существующих операций; массовая задача — на тот фиксированный набор targets, который был показан владельцу до подтверждения. Изменение смысла задачи, состава targets, operation, параметров или существенных последствий требует нового объяснения и нового подтверждения. Технический план может использовать server-side expected state/CAS для защиты от изменения состояния между подтверждением и исполнением, но не должен вводить отдельный обязательный UI.
 
 ## 6. Операции, не входящие в v1
 
 1. Arbitrary SQL, shell, HTTP/fetch proxy, raw database reads или generic "execute code".
 2. Любая операция, для которой нет существующей canonical domain capability.
-3. Delete/archive/merge/bulk для forum structure/content, если этого нет в текущем продукте.
+3. Отдельные domain capabilities delete/archive/merge и специализированные bulk-операции для forum structure/content, если их нет в текущем продукте. Это не запрещает выполнять одну подтверждённую составную или массовую пользовательскую задачу последовательностью уже существующих canonical операций по правилам `research/user-journey-v1.md`.
 4. General edit-any/delete-any topic/post.
 5. Account reactivation, hard delete, retention-end purge.
 6. Forced foreign-session termination.
@@ -147,6 +147,9 @@
 4. При неизвестном результате транспортной ошибки mutation не повторяется автоматически; сначала проверяется текущее состояние/receipt/history.
 5. Повтор одного и того же подтверждённого command не должен создавать второй domain effect.
 6. Ответ Owner должен честно показывать фактический результат и идентифицировать target; нельзя сообщать success только потому, что команда была отправлена.
+7. Для обычной составной задачи действует stop-on-first-failure: после первого существенного неуспеха ещё не выполненные внутренние шаги не запускаются; уже committed эффекты автоматически не откатываются.
+8. Для массовой задачи сбой одного независимого target не останавливает остальные targets из уже подтверждённого фиксированного набора; итог возвращается per-target. Если отдельный target сам составной, внутри него действует stop-on-first-failure.
+9. V1 запускается только по запросу Owner из ChatGPT Project. Фоновый scheduler/event monitoring не входит в v1; техническая схема не должна без необходимости делать canonical read/analysis path непереиспользуемым для будущего trigger.
 
 ## 10. Privacy and output
 
@@ -170,3 +173,6 @@ Scope считается реализованным только если:
 9. Обычная эксплуатация остаётся $0 дополнительной стоимости и не использует Work/Codex allowance.
 10. Repository/local-CI acceptance подтверждает команды, permissions, replay, stale/unknown outcomes и untrusted-content boundary; conversational explain→confirm→dispatch проверяется integration acceptance.
 11. Stage-6 live activation/deployed acceptance выполняются отдельно и только после явного разрешения Owner.
+12. Acceptance покрывает одну составную задачу, разложенную на несколько canonical operations, с stop-on-first-failure и честным partial result.
+13. Acceptance покрывает массовую задачу на фиксированном подтверждённом наборе: независимый сбой одного target не останавливает остальные, новые targets после confirmation не добавляются, итог проверяется per-target.
+14. В v1 отсутствует background monitoring; архитектурная граница чтения/анализа остаётся пригодной для будущего scheduler/event trigger без добавления самого trigger в текущий scope.
