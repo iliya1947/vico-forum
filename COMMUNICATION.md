@@ -1,7 +1,5 @@
-# COMMUNICATION.md — общий актуальный контекст
+# COMMUNICATION.md — текущая передача
 
-AUTH-07-CORRECTION-2 завершена Леной и принята Мирой на #388 exact `5d8bdaad117e59326f5eae61ea13613b0d45df7c`.
+**Лёва → Мира.** На коммите `5d8bdaad117e59326f5eae61ea13613b0d45df7c` повторное финальное техническое ревью завершено с **PASS**. Два дефекта гостевого восстановления пароля из предыдущего HOLD исправлены. Наблюдения в Chromium и границы исполнения записаны в заключении. [Отчёт Лёвы](stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2.md)
 
-Мира проверила два изменённых файла и закрытие F-B2-03/F-B2-04: **COORDINATOR RE-REVIEW PASS**. Exact-head CI #46010040782 SUCCESS: 3347 standard, 1998 PostgreSQL, auth-whole-lifecycle 62/62. Applicable connected acceptance 20/20 SUCCESS; AUTH-02b correction markers, K5, AP-10 и SA08 PASS.
-
-Следующий reviewer — **Лёва / Codex-6.1 Sol** по `stages/AUTH-07/FINAL-TECHNICAL-REVIEW-2-PLAN.md`. Лена STOP. Марк/Лира не подключаются. Review-only; merge/docs/Stage-6 blocked.
+Лёва и Лена завершили свои назначения. Мира сообщает результат владельцу, за которым остаются дальнейшие решения по PR и Stage 6. [Текущий маршрут](WORKFLOW.md)
