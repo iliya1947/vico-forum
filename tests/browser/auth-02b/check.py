@@ -327,10 +327,16 @@ def run():
         retry_link = recovery_page.locator('a[href*="/forgot-password"]').get_attribute("href")
         assert urlparse(retry_link).path == "/en/forgot-password"
         assert parse_qs(urlparse(retry_link).query) == {"returnTo": [recovery_destination]}
-        retry_page = new_page(second)
+        # Separate local ingress fixture, like the later account-security
+        # cases: the original network also spends eight mail admissions
+        # before reset and needs one for the existing password-create case.
+        # Do not reset counters, increase limits or bypass admission.
+        retry_context = context()
+        retry_context.set_extra_http_headers({"cf-connecting-ip": "203.0.113.97"})
+        retry_page = new_page(retry_context)
         assert private(retry_page.goto(base + retry_link)).status == 200
         reset_link = issue_reset_link(retry_page, recovery_destination)
-        retry_page.close()
+        retry_context.close()
         assert urlparse(reset_link).fragment != urlparse(expired_reset_link).fragment
         assert recovery_page.url == reset_link.split("#", 1)[0]
         recovery_page.evaluate("(link) => { window.location.href = link; }", reset_link)
@@ -366,7 +372,7 @@ def run():
             retry = fallback_page.locator('a[href*="/forgot-password"]')
             assert parse_qs(urlparse(retry.get_attribute("href")).query) == {"returnTo": ["/en"]}
             retry.click()
-            sign_in = fallback_page.locator('a[href*="/sign-in?returnTo="]').last
+            sign_in = fallback_page.locator('.credential-page a[href*="/sign-in?returnTo="]')
             expect(sign_in).to_have_attribute("href", "/en/sign-in?returnTo=%2Fen")
         fallback_page.close()
         record("AUTH07-reset-unsafe-return-falls-back-through-forgot")

@@ -31,6 +31,7 @@ export default function ResetPasswordPage() {
     event.preventDefault();
     if (!proof.current || busy.current) return;
     const newPassword = String(new FormData(event.currentTarget).get("newPassword") ?? "");
+    event.currentTarget.reset();
     const token = proof.current;
     proof.current = null;
     busy.current = true;
@@ -47,7 +48,7 @@ export default function ResetPasswordPage() {
   }
   return <main className="credential-page" aria-labelledby="reset-password-heading">
     <h1 id="reset-password-heading">{t("authCredentialReset")}</h1>
-    {ready ? <form method="post" className="credential-form" onSubmit={event => void submit(event)}>
+    {ready || pending ? <form method="post" className="credential-form" onSubmit={event => void submit(event)}>
       <label>{t("settingsSecurityNewPassword")}
         <input name="newPassword" type="password" autoComplete="new-password" minLength={8} maxLength={128} required disabled={pending} />
       </label>
