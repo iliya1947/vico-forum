@@ -9,15 +9,23 @@ export { headers, loader };
 export default function ResetPasswordPage() {
   const { locale, returnTo } = useLoaderData<typeof loader>();
   const { t } = useTranslation("common");
-  const proof = useRef<string | null | undefined>(undefined);
+  const proof = useRef<string | null>(null);
   const busy = useRef(false);
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<CredentialRequestResult | null>(null);
   useEffect(() => {
-    proof.current ??= takeCredentialProof();
-    setReady(!!proof.current);
+    const capture = () => {
+      const candidate = takeCredentialProof();
+      if (!candidate) return;
+      proof.current = candidate;
+      setReady(true);
+      setResult(null);
+    };
+    capture();
     if (!proof.current) setResult("invalid");
+    window.addEventListener("hashchange", capture);
+    return () => window.removeEventListener("hashchange", capture);
   }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,9 +35,14 @@ export default function ResetPasswordPage() {
     proof.current = null;
     busy.current = true;
     setPending(true);
-    setResult(await credentialRequest("reset-password", { token, newPassword }));
-    setPending(false);
     setReady(false);
+    setResult(null);
+    const outcome = await credentialRequest("reset-password", { token, newPassword });
+    // A newly opened link may have arrived during this explicit POST.
+    // Never discard it or replace its ready state with the older outcome.
+    setResult(proof.current ? null : outcome);
+    setReady(!!proof.current);
+    setPending(false);
     busy.current = false;
   }
   return <main className="credential-page" aria-labelledby="reset-password-heading">
@@ -45,6 +58,6 @@ export default function ResetPasswordPage() {
     {result === "ok" ? <p role="status">{t("settingsSecurityPasswordSaved")}</p> : null}
     {result && result !== "ok" ? <p role="alert">{t(result === "rate-limited" ? "authVerificationRateLimited" : "authCredentialInvalid")}</p> : null}
     <Link to={credentialPagePath(locale, "sign-in", returnTo)}>{t("authVerificationSignIn")}</Link>
-    {result && result !== "ok" ? <Link to={`/${encodeURIComponent(locale)}/forgot-password`}>{t("authCredentialForgot")}</Link> : null}
+    {result && result !== "ok" ? <Link to={`/${encodeURIComponent(locale)}/forgot-password?returnTo=${encodeURIComponent(returnTo)}`}>{t("authCredentialForgot")}</Link> : null}
   </main>;
 }

@@ -284,24 +284,104 @@ def run():
         record("committed-verification-and-mail-facts-no-egress-or-page-errors")
         record("recovery-request-and-browser-reset")
         recovery_page = new_page(second)
-        recovery_page.goto(base + "/en/forgot-password")
-        recovery_page.locator('input[name="email"]').fill(en)
-        with recovery_page.expect_response(lambda response: response.url == base + "/api/auth/request-password-reset") as requested:
-            recovery_page.locator("form.credential-form button[type=submit]").click()
-        assert private(requested.value).status == 200
-        expect(recovery_page.get_by_role("status")).to_contain_text("check your email")
-        latest = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [en])[0]
-        reset_link = latest["body_text"].split("\u2066")[1].split("\u2069")[0]
-        assert urlparse(reset_link).path == "/en/reset-password" and "token=" in urlparse(reset_link).fragment
-        landing = recovery_page.goto(reset_link)
+        recovery_destination = "/en/settings/account"
+        reset_requests = []
+        recovery_page.on("request", lambda req: reset_requests.append(True)
+            if urlparse(req.url).path == "/api/auth/reset-password" and req.method == "POST" else None)
+
+        def issue_reset_link(page, destination):
+            page.locator('input[name="email"]').fill(en)
+            with page.expect_response(lambda response: response.url == base + "/api/auth/request-password-reset") as requested:
+                page.locator("form.credential-form button[type=submit]").click()
+            assert private(requested.value).status == 200
+            expect(page.get_by_role("status")).to_contain_text("check your email")
+            latest = sql("select body_text from auth02b_test_mail where recipient=$1 order by seq desc limit 1", [en])[0]
+            link = latest["body_text"].split("\u2066")[1].split("\u2069")[0]
+            url = urlparse(link)
+            assert url.path == "/en/reset-password" and parse_qs(url.query)["returnTo"] == [destination]
+            assert "token=" in url.fragment
+            return link
+
+        recovery_page.goto(base + "/en/forgot-password?" + urlencode({"returnTo": recovery_destination}))
+        expired_reset_link = issue_reset_link(recovery_page, recovery_destination)
+        landing = recovery_page.goto(expired_reset_link)
         assert private(landing).status == 200
         expect(recovery_page.locator('input[name="newPassword"]')).to_be_visible()
-        assert "token=" not in recovery_page.url and sessions(en_id) == old_sessions
+        assert "token=" not in recovery_page.url and sessions(en_id) == old_sessions and not reset_requests
+        recovery_page.evaluate("window.auth07ResetDocument = true")
+        before_reset = sql("select password from account where user_id=$1 and provider_id='credential'", [en_id])
+        # Expire the issued state, without changing the password, sessions or admission budgets.
+        assert len(sql("""update verification set expires_at=clock_timestamp()-interval '1 minute'
+            where id='vico-auth-lifecycle:v1:password-reset:' || encode(sha256(convert_to($1,'UTF8')),'hex')
+            returning id""", [en_id])) == 1
+        recovery_page.locator('input[name="newPassword"]').fill("browser-test-only-expired-reset")
+        with recovery_page.expect_response(lambda response: response.url == base + "/api/auth/reset-password") as denied:
+            recovery_page.get_by_role("button", name="Reset password", exact=True).click()
+        assert private(denied.value).status == 400
+        expect(recovery_page.get_by_role("alert")).to_be_visible()
+        assert len(reset_requests) == 1 and sessions(en_id) == old_sessions
+        assert sql("select password from account where user_id=$1 and provider_id='credential'", [en_id]) == before_reset
+
+        # Follow the real retry link in a separate page so the failed reset
+        # document stays mounted and can receive the newly issued fragment.
+        retry_link = recovery_page.locator('a[href*="/forgot-password"]').get_attribute("href")
+        assert urlparse(retry_link).path == "/en/forgot-password"
+        assert parse_qs(urlparse(retry_link).query) == {"returnTo": [recovery_destination]}
+        retry_page = new_page(second)
+        assert private(retry_page.goto(base + retry_link)).status == 200
+        reset_link = issue_reset_link(retry_page, recovery_destination)
+        retry_page.close()
+        assert urlparse(reset_link).fragment != urlparse(expired_reset_link).fragment
+        assert recovery_page.url == reset_link.split("#", 1)[0]
+        recovery_page.evaluate("(link) => { window.location.href = link; }", reset_link)
+        expect(recovery_page.locator('input[name="newPassword"]')).to_be_visible()
+        expect(recovery_page).not_to_have_url(re.compile("token="))
+        expect(recovery_page.get_by_role("alert")).to_have_count(0)
+        assert recovery_page.evaluate("window.auth07ResetDocument === true")
+        assert len(reset_requests) == 1 and sessions(en_id) == old_sessions
+        token = parse_qs(urlparse(reset_link).fragment)["token"][0]
+        assert token not in recovery_page.content()
+        record("AUTH07-reset-retry-preserves-return-and-same-document-replacement")
+
+        # Refresh removes the in-memory proof. Reopening the still-current
+        # mail link in the very same document must capture it again.
+        assert private(recovery_page.reload()).status == 200
+        expect(recovery_page.get_by_role("alert")).to_be_visible()
+        recovery_page.evaluate("window.auth07ResetReopenedDocument = true")
+        recovery_page.evaluate("(link) => { window.location.href = link; }", reset_link)
+        expect(recovery_page.locator('input[name="newPassword"]')).to_be_visible()
+        expect(recovery_page).not_to_have_url(re.compile("token="))
+        expect(recovery_page.get_by_role("alert")).to_have_count(0)
+        assert recovery_page.evaluate("window.auth07ResetReopenedDocument === true")
+        assert len(reset_requests) == 1 and sessions(en_id) == old_sessions
+        assert token not in recovery_page.content()
+        record("AUTH07-reset-reopened-proof-after-refresh-without-auto-POST")
+
+        # The invalid-page retry uses the loader's safe path, never the raw
+        # query. Exercise foreign and cross-locale input through both loaders.
+        fallback_page = new_page(second)
+        for unsafe in ("https://example.invalid/en/settings/account", "/ru/settings/account"):
+            assert private(fallback_page.goto(base + "/en/reset-password?" + urlencode({"returnTo": unsafe}))).status == 200
+            expect(fallback_page.get_by_role("alert")).to_be_visible()
+            retry = fallback_page.locator('a[href*="/forgot-password"]')
+            assert parse_qs(urlparse(retry.get_attribute("href")).query) == {"returnTo": ["/en"]}
+            retry.click()
+            sign_in = fallback_page.locator('a[href*="/sign-in?returnTo="]').last
+            expect(sign_in).to_have_attribute("href", "/en/sign-in?returnTo=%2Fen")
+        fallback_page.close()
+        record("AUTH07-reset-unsafe-return-falls-back-through-forgot")
+
         new_password = "browser-test-only-replaced-credential"
         recovery_page.locator('input[name="newPassword"]').fill(new_password)
-        recovery_page.get_by_role("button", name="Reset password", exact=True).click()
+        with recovery_page.expect_response(lambda response: response.url == base + "/api/auth/reset-password") as completed:
+            recovery_page.get_by_role("button", name="Reset password", exact=True).click()
+        assert private(completed.value).status == 200
         expect(recovery_page.get_by_role("status")).to_contain_text("Password changed.")
+        assert len(reset_requests) == 2 and recovery_page.evaluate("window.auth07ResetReopenedDocument === true")
+        assert parse_qs(urlparse(recovery_page.locator('a[href*="/sign-in?returnTo="]').get_attribute("href")).query) == {"returnTo": [recovery_destination]}
         assert not sessions(en_id) and not session_cookie(second)
+        replay = call(second, "reset-password", {"token": token, "newPassword": "browser-test-only-replay-denied"})
+        assert private(replay).status == 400 and not sessions(en_id) and not session_cookie(second)
         assert call(second, "sign-in/email", {"email": en, "password": password}).status == 401
         assert call(second, "sign-in/email", {"email": en, "password": new_password}).status == 200
         record("reset-revokes-sessions-and-requires-separate-sign-in")
@@ -361,6 +441,7 @@ def run():
           and payload->>'mailPurpose' in ('password-reset','password-create') order by purpose""")
         assert credential_mail == [
             {"purpose": "password-create", "transport": "fake", "outcome": "accepted"},
+            {"purpose": "password-reset", "transport": "fake", "outcome": "accepted"},
             {"purpose": "password-reset", "transport": "fake", "outcome": "accepted"},
         ]
         record("credential-mail-outcomes-retain-purpose-and-observed-transport")
