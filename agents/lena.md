@@ -20,3 +20,11 @@
 3. Не добавлены Stage B transport/read vertical и последующие возможности.
 4. Выполнены author self-check и все применимые локальные проверки для изменённого scope.
 5. Stable exact head `#399` передан Мире для coordinator checkpoint с кратким статусом и результатами проверок.
+
+## Текущая техническая проработка Stage A
+
+Implementation #399 пока на исходном head `bc8d8005734c946a0d53b928bf43c4c2e2774d10`; код не изменён.
+
+Проверено по исходникам Better Auth, tag [v1.7.7](https://github.com/better-auth/better-auth/tree/v1.7.7/packages/oauth-provider): отдельный пакет `@better-auth/oauth-provider@1.7.7` совместим по заявленному version baseline. Schema содержит OAuth client/resource/client-resource/consent/access/refresh/assertion entities; access и refresh сохраняют userId, sessionId, resources и scopes. `disableJwtPlugin` позволяет opaque access tokens с resource audience, introspection возвращает iss/aud/client_id/sub/sid/scope/exp. Native authorization-code exchange проверяет наличие и expiry сессии. Однако native refresh path в `token.ts` передаёт сохранённый sessionId в createUserTokens без самостоятельного обязательного live-session/AccountState/Owner gate; native opaque introspection в `introspect.ts` проверяет session только если sid присутствует; FK sessionId имеет ON DELETE SET NULL. Поэтому штатную выдачу/refresh/introspection нельзя считать достаточной Vico admission: обязательны exact Owner, active AccountState, существующая исходная sessionId, текущий grant/client/resource/scopes, deny missing sid. Это требования принятого плана, не новая архитектура. Реализацию guard следует выбрать после чтения текущего adapter/lifecycle кода и проверки всех issuance paths; не добавлять собственный OAuth protocol.
+
+В среде ChatGPT container отсутствует checkout, pnpm; Node v22.16.0 вместо 24.21.0, git ls-remote не разрешает github.com (DNS). GitHub connector работает. Локальная установка зависимостей, генерация миграций и runtime acceptance пока не подтверждены; не выдавать статическое чтение за выполненные checks. Stage-6 live setup запрещён.
