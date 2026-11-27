@@ -10,3 +10,7 @@
 ## Независимость и ограничения
 
 Лёва участвовал в AUTH-06, Ада в AUTH-05 correction/assembly; оба не independent final reviewer. Main merge и external/Stage-6 activation заблокированы.
+
+## Актуальное назначение владельца
+
+Мира принимает FINAL-ASSEMBLY HOLD от Ады, оценивает K5 evidence и определяет bounded correction/evidence маршрут. Ада STOP. Передача не является final coordinator PASS и не отменяет незакрытый automated gate.

@@ -65,3 +65,7 @@ AUTH-05 job 140225164753 checked out exact head and executed F01-open-email-regi
 - Bounded proposed next diagnostic/corrective pass (not applied): wait for UUID-shaped input using Playwright web-first assertion (bounded deadline), then read operation, keep original len assertion and every subsequent actual Worker/PG/R2 security assertion. On timeout capture safe readiness/visibility/length/page errors, not token/identity payload. Review other editor operation reads only if affected. If readiness never occurs, diagnose product path rather than mask it. This is a proposed test-only correction, not a confirmed cure or a waiver. Any accepted-tree change requires separately authorized correction route, new exact-head evidence; don't silently change assembly contract.
 
 **Result: assembly identity PASS, substantive AUTHOR PASS unchanged, automated gate HOLD (K5 2 failures).** Current-scope product blockers established = 0; required automated blocker = 1. No handoff as final assembly PASS. Ada STOP pending explicit route for bounded K5 correction/evidence. Keep #388 open/unmerged, main unchanged; AUTH-07 and external/deployed activation not authorized.
+
+## Handoff по прямой команде владельца
+
+Текущий результат (AUTHOR PASS, CI PASS, acceptance 19/20, K5 HOLD) передан Мире для определения дальнейшего маршрута. Не запрашивать отдельное разрешение на corrective pass у владельца вместо передачи. Мира определяет назначение и условия закрытия gate; Ада STOP. Product tree, PR #388 и результаты проверок не изменены.
