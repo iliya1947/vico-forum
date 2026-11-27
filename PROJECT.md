@@ -163,11 +163,22 @@ Watch/Bookmarks/Mute/Block, уведомления или прочитаннос
 
 ## Авторизация и права доступа
 
-Пользовательская авторизация использует Better Auth с Google OAuth и регистрацией/входом
-по email и паролю. По решению владельца от 2026-10-10 подтверждение email пока не
-обязательно; отправка писем, подтверждение адреса и восстановление пароля отложены.
-Better Auth отвечает за authentication/session и authoritative identity пользователя;
+Пользовательская аутентификация использует Better Auth с Google OAuth и регистрацией/входом
+по email и паролю. Для email/password регистрации обязательно подтверждение email:
+регистрация создаёт ожидающий подтверждения аккаунт без сессии, после подтверждения
+нужен явный вход. Реализованы повторная отправка подтверждения, восстановление/сброс
+пароля и собственное управление email, паролем, связанными способами входа и сессиями.
+Google связывается только явно из собственного аккаунта, без объединения по совпадению
+email. Better Auth отвечает за authentication/session и authoritative identity пользователя;
 application permissions разрешаются отдельно server-side.
+
+Единая auth-mail граница поддерживает адаптеры Resend/Brevo и локальный тестовый
+transport; provider-neutral anti-abuse/registration challenge foundation переиспользует
+серверную политику регистрации и DB-backed лимиты. В repository/local-CI завершены
+authentication lifecycle и pre-Stage-6 security gate. Реальная отправка писем,
+credentials/DNS, production Google OAuth, выбор/активация anti-bot provider и deployed
+acceptance остаются отдельной задачей Stage 6. Подробный контракт —
+[SETTINGS.md](docs/SETTINGS.md) и [AUTHORIZATION.md](docs/auth/AUTHORIZATION.md).
 
 Права доступа строятся как dynamic permission-based authorization:
 
@@ -222,8 +233,11 @@ Forum & roles и независимое управление регистрац�
 аккаунтов. SET-03 добавил защищённые User preferences: тему, язык аккаунта и существующие
 локальные настройки Editor/code. SET-04 добавил Administrator preferences:
 локальные настройки Admin/Attention рабочих пространств на аккаунт и устройство.
-SET-05 реализовал защищённые персональные Account & security: способы входа,
-смену существующего пароля и управление собственными сессиями через Better Auth.
+SET-05 реализовал защищённые персональные Account & security; authentication
+lifecycle расширил этот же маршрут: текущий email и статус подтверждения, двухфазная
+смена email, смена существующего пароля, создание пароля для собственного Google-only
+аккаунта, явное подключение/отключение Google и управление собственными сессиями
+через Better Auth. Отвязка не может оставить аккаунт без пригодного способа входа.
 SET-06 реализовал защищённую Privacy-настройку `/:locale/settings/privacy`:
 сохраняемый для аккаунта переключатель публичной видимости онлайн, по умолчанию
 включённый. Отключение исключает пользователя из публичного списка и счётчика

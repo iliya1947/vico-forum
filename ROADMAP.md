@@ -142,13 +142,25 @@ email-password флаги для регистрации новых аккаун�
 `/:locale/settings/administrator` с локальными per-account/device
 Admin/Attention preference controls, плотностью и второстепенными disclosure.
 SET-05 добавил authenticated Account & security с реальными Better Auth
-credential-password и own-session операциями, без новой auth schema/provider;
-смена пароля использует штатный HTTP rate-limit admission Better Auth.
+credential-password и own-session операциями; смена существующего пароля
+использует штатный HTTP rate-limit admission Better Auth. Последующий authentication
+lifecycle расширил эту страницу email/status, двухфазной сменой email, созданием
+пароля для Google-only аккаунта, explicit Google link/unlink и сохранением
+own-session controls.
 SET-06 реализовал authenticated `/:locale/settings/privacy` с сохраняемым
 account-wide «Show me online», по умолчанию ON, и серверным исключением
 скрытого пользователя из публичного списка/счётчика и heartbeat.
 Текущий Settings contract — `docs/SETTINGS.md`. Реальная Google/Owner
 binding и external acceptance остаются Stage 6.
+
+**Authentication lifecycle AUTH-01–AUTH-07 завершён в repository/local-CI.**
+Обязательное email verification без automatic sign-in, resend и password recovery,
+own email/password/link/session lifecycle, auth-mail boundary с Resend/Brevo adapters,
+provider-neutral registration challenge и DB-backed anti-abuse foundation реализованы.
+Whole-lifecycle acceptance и назначенный pre-Stage-6 technical gate пройдены.
+Миграции `0073`–`0078` находятся в repository; их external применение, real mail
+credentials/DNS/delivery, production Google OAuth, выбор/активация anti-bot provider
+и deployed acceptance относятся к Stage 6, а не к новой local implementation задаче.
 
 **Super-admin SA-01–SA-08 реализованы и merged в repository/local-CI** после Settings.
 SA-01–SA-02 поставили exact-Owner shell, System/Accounts/Security Monitoring, source-aware
@@ -357,6 +369,7 @@ Stage 6 впервые собирает локально готовый прод
 
 - Stage 4 forum MVP завершён;
 - Stage 5 translation implementation завершён в local/CI path;
+- authentication lifecycle реализован и принят в repository/local-CI; перед внешним rollout сверить фактическое состояние аккаунтов и pending migrations;
 - active development branch больше не auto-promotes каждую feature merge в production;
 - current exact versions/platform UI повторно проверены перед provisioning.
 
@@ -386,11 +399,23 @@ Stage 6 впервые собирает локально готовый прод
     не восстанавливать manager-count/last-manager invariant и не добавлять
     публичный unauthenticated bootstrap endpoint. Более широкая recovery-модель
     требует отдельного owner decision.
+12. Подготовить и проверить реальные auth-mail provider accounts, sender/domain,
+    применимые DNS authentication records по актуальной официальной документации
+    выбранного provider, server-only credentials и delivery/failure acceptance Resend/Brevo.
+    Одновременно активен только один provider, без automatic fallback/retry.
+    Активацию выполнить только по разрешённому Stage-6 плану.
+13. Определить с владельцем конкретный anti-bot provider и требования к его внешней
+    активации; проверить real challenge binding, replay/timeout/fail-closed behavior и
+    внешние abuse/rate-limit настройки. Repository foundation не выбирает provider.
+14. Выполнить deployed authentication lifecycle acceptance: обязательное подтверждение
+    email, resend, recovery/reset, own password/email/link/unlink/session flows,
+    negative cases, account/session isolation и privacy в фактическом runtime.
 
 ### Критерий завершения
 
 - pre-release candidate воспроизводимо развёрнут из зафиксированной revision;
 - real Google OAuth работает;
+- auth-mail, mandatory verification, recovery и own account security проверены во внешнем runtime; согласованная anti-bot/edge-abuse конфигурация принята;
 - forum/auth/translation runtime capabilities используют least privilege;
 - pending schema доказанно применена до schema-dependent runtime rollout;
 - exact server-side Owner binding после Google sign-in разработчика и Owner-only role/user
@@ -434,7 +459,7 @@ Refinement не должен заново открывать уже работа
 
 - production deploy воспроизводим;
 - guest/user/solved-topic core flow работает;
-- Google OAuth/session/logout работает;
+- Google OAuth/session/logout и email/password verification/recovery/account-security lifecycle работают;
 - automatic UI translation и on-demand content translation работают с безопасными fallback;
 - dynamic application roles/permissions и per-user allow/deny overrides меняются только
   exact server-bound Owner через защищённый сайт; изменения действуют без повторного login,
@@ -479,7 +504,7 @@ infrastructure diagnostics в production прекращаются; рисков�
 - классическая структура `категория → раздел → тема → сообщения`;
 - публичное чтение;
 - участие зарегистрированного пользователя;
-- Google OAuth и email/password (подтверждение email и восстановление пароля — последующие задачи);
+- Google OAuth и email/password с обязательным email verification, восстановлением пароля, own account-security lifecycle и anti-abuse; repository/local-CI реализация завершена, внешняя активация и acceptance — Stage 6;
 - Markdown/text/code;
 - solved topic + best answer;
 - dynamic DB-backed roles/permissions: built-in defaults `user/moderator/admin`, custom role
