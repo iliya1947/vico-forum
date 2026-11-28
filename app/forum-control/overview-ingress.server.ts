@@ -74,7 +74,11 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
       id = await config.github.find(receipt, current.finishedAt);
       if (!id) id = await config.github.publish(receipt);
       if (!await config.github.verify(id, receipt)) return null;
-      if (!(await storage(store => store.recordReceiptPublication(current.id, grant, current.receiptRef, id!)))) return null;
+      const recorded = await storage(store => store.recordReceiptPublication(current.id, grant, current.receiptRef,
+        id!, current.receiptCommentId));
+      if (!recorded?.receiptCommentId) return null;
+      if (recorded.receiptCommentId !== id && !await config.github.verify(recorded.receiptCommentId, receipt)) return null;
+      id = recorded.receiptCommentId;
     }
     return id;
   }
@@ -132,11 +136,13 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
     const origin = request.headers.get("Origin");
     if (origin !== null && origin !== config.origin) return reject(403);
     let requestId: string | undefined;
+    let durableStateMayExist = false;
     try {
       const grant = await admit(request);
       if (url.pathname === root + "request") {
         const input = await parseOverviewRequest(request);
         requestId = input.requestId;
+        durableStateMayExist = true;
         const row = await storage(store => store.register(input, grant));
         if (!row.acceptedAt && !row.expired) {
           try {
@@ -148,6 +154,7 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
         const body = decodeTransportJson(await readBoundedBody(request, 4096));
         if (!exactKeys(body, ["requestId"]) || !isTransportUuid(body.requestId)) throw new InvalidTransportInput();
         requestId = body.requestId;
+        durableStateMayExist = true;
       }
       const row = await storage(store => store.inspect(requestId!, grant));
       return row ? await result(request, row, grant) : reject(404);
@@ -155,7 +162,7 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
       if (error instanceof InvalidTransportInput) return reject(400);
       if (error instanceof ForumControlDenied) return reject(401);
       if (error instanceof RequestIdConflict && requestId) return reply(requestId, "conflict", "request-id-conflict");
-      return requestId ? reply(requestId, "unavailable", "transport-unavailable") : reject(503);
+      return requestId ? reply(requestId, durableStateMayExist ? "outcome-unknown" : "unavailable", "transport-unavailable") : reject(503);
     }
   };
 }

@@ -38,6 +38,17 @@ fixture_errors = []
 fixture_lock = threading.Lock()
 
 
+def deliver(comment):
+    raw = json.dumps({"action": "created", "repository": repository, "issue": issue,
+        "sender": bot, "installation": {"id": 234}, "comment": comment}).encode()
+    signature = "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
+    webhook = Request(origin + "/api/forum-control/webhook", data=raw, headers={
+        "Content-Type": "application/json", "X-GitHub-Event": "issue_comment",
+        "X-GitHub-Delivery": str(uuid.uuid4()), "X-Hub-Signature-256": signature}, method="POST")
+    with urlopen(webhook, timeout=4) as response:
+        assert response.status == 202
+
+
 class GitHubFixture(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass  # Never print request bodies or authorization headers.
@@ -97,17 +108,7 @@ class GitHubFixture(BaseHTTPRequestHandler):
                 if envelope["kind"] == "request":
                     deliveries.append(comment)
             if envelope["kind"] == "request":
-                raw = json.dumps({"action": "created", "repository": repository, "issue": issue,
-                    "sender": bot, "installation": {"id": 234}, "comment": comment}).encode()
-                signature = "sha256=" + hmac.new(secret.encode(), raw, hashlib.sha256).hexdigest()
-                delivery = str(uuid.uuid4())
-                # Actual HTTP to the built Worker, including duplicate delivery.
-                for _ in range(2):
-                    webhook = Request(origin + "/api/forum-control/webhook", data=raw, headers={
-                        "Content-Type": "application/json", "X-GitHub-Event": "issue_comment",
-                        "X-GitHub-Delivery": delivery, "X-Hub-Signature-256": signature}, method="POST")
-                    with urlopen(webhook, timeout=4) as response:
-                        assert response.status == 202
+                deliver(comment)
                 # The first request reached GitHub and its webhook, but its
                 # POST acknowledgement is deliberately lost.
                 if first_request:
@@ -222,13 +223,21 @@ def run():
         assert mcp(both["access_token"], "tools/call", {"name": "read_request_status",
             "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"] == overview
         # Same Owner, different admitted grant: no previous projection.
-        assert mcp(read_token, "tools/call", {"name": "read_request_status",
-            "arguments": {"requestId": request_id}}).json()["result"]["isError"]
+        foreign_status = mcp(read_token, "tools/call", {"name": "read_request_status",
+            "arguments": {"requestId": request_id}})
+        assert foreign_status.status == 401 or foreign_status.json()["result"]["isError"]
         with fixture_lock:
             matching = [json.loads(c["body"]) for c in comments if json.loads(c["body"])["requestId"] == request_id]
         assert {e["kind"] for e in matching} == {"request", "receipt"}
         assert len({e["ref"] for e in matching if e["kind"] == "request"}) == 1
         assert len({e["ref"] for e in matching if e["kind"] == "receipt"}) == 1
+        with fixture_lock:
+            original = next(c for c in deliveries if json.loads(c["body"])["requestId"] == request_id)
+        # Redelivery after completion must not execute another read or change
+        # the saved result. DB scenarios separately exercise concurrent claims.
+        deliver(original)
+        assert mcp(both["access_token"], "tools/call", {"name": "read_request_status",
+            "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"] == overview
         assert not fixture_errors
         print("FORUM_CONTROL_BROWSER canonical-overview-through-github-receipt", flush=True)
         assert mcp(both["access_token"], "tools/call", {"name": "pin_topic", "arguments": args}).json()["result"]["structuredContent"]["status"] == "unavailable"

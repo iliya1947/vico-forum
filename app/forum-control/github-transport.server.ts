@@ -123,7 +123,7 @@ export function createGitHubInboxClient(binding: GitHubInboxBinding,
   }
   let token: { value: string; expiresAt: number } | undefined;
 
-  async function api(path: string, bearer: string, status: number, body?: object): Promise<unknown> {
+  async function api(path: string, bearer: string, status: number, body?: object, allowMissing = false): Promise<unknown> {
     try {
       const response = await fetcher(apiOrigin + path, {
         method: body ? "POST" : "GET", redirect: "error", signal: AbortSignal.timeout(5000),
@@ -131,6 +131,7 @@ export function createGitHubInboxClient(binding: GitHubInboxBinding,
           "X-GitHub-Api-Version": apiVersion, "User-Agent": "Vico-Forum-Control", ...(body ? { "Content-Type": "application/json" } : {}) },
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
+      if (allowMissing && response.status === 404) return null;
       if (response.status !== status) throw new GitHubTransportUnavailable();
       return decodeTransportJson(await readBoundedBody(response, 1048576));
     } catch { throw new GitHubTransportUnavailable(); }
@@ -207,7 +208,7 @@ export function createGitHubInboxClient(binding: GitHubInboxBinding,
       serializeInboxEnvelope(envelope);
       if (!validId(commentId)) return false;
       const bearer = await inboxToken();
-      const result = await api(repoPath(binding) + "/issues/comments/" + commentId, bearer, 200);
+      const result = await api(repoPath(binding) + "/issues/comments/" + commentId, bearer, 200, undefined, true);
       return matchingComment(result, envelope) === commentId;
     },
   };

@@ -181,13 +181,18 @@ export class PostgresOverviewRequests {
   /** Only a server-confirmed App receipt comment can be recorded. The caller
    * verifies the exact envelope through the GitHub adapter, outside the tx. */
   recordReceiptPublication(id: string, grant: ForumControlGrant, receiptRef: string,
-    commentId: string): Promise<OverviewRequestRow | null> {
+    commentId: string, previousCommentId: string | null = null): Promise<OverviewRequestRow | null> {
     if (!validCommentId(commentId)) return Promise.resolve(null);
     return this.withRequest(id, grant, async row => {
-      if (!row.finishedAt || row.receiptRef !== receiptRef) return null;
+      if (row.expired || !row.finishedAt || row.receiptRef !== receiptRef) return null;
+      // Two publishers can race after GitHub accepted the same opaque ref.
+      // Preserve the first recorded comment unless the caller has verified
+      // that exact previous comment is missing/mismatched.
+      if (row.receiptCommentId !== previousCommentId) return row;
       const result = await this.db.query<OverviewRequestRow>(
-        "update forum_control_request set receipt_comment_id=$2 where id=$1 and finished_at is not null returning " + projection,
-        [id, commentId]);
+        "update forum_control_request set receipt_comment_id=$2 where id=$1 and finished_at is not null " +
+        "and receipt_comment_id is not distinct from $3 returning " + projection,
+        [id, commentId, previousCommentId]);
       return result.rows[0] ?? null;
     });
   }

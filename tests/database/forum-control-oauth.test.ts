@@ -326,6 +326,9 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
     expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => true)).toBeNull();
     expect(await store.recordReceiptPublication(row.id, grant, crypto.randomUUID(), "43")).toBeNull();
     expect((await store.recordReceiptPublication(row.id, grant, row.receiptRef, "43"))?.receiptCommentId).toBe("43");
+    expect((await store.recordReceiptPublication(row.id, grant, row.receiptRef, "44"))?.receiptCommentId).toBe("43");
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toBeNull();
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => false)).toBeNull();
     expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => true)).toEqual({
       status: "read-ok", result: { localMarker: "protected" },
     });

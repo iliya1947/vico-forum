@@ -141,6 +141,7 @@ describe("Stage B closed wire and signed GitHub delivery", () => {
         return Response.json([{ ...comment(body), id: 555, performed_via_github_app: { id: 999 } }, comment(body)]);
       }
       if (url.pathname === repoPath + "/issues/comments/444") return Response.json(comment(body));
+      if (url.pathname === repoPath + "/issues/comments/999") return Response.json({}, { status: 404 });
       throw Error("Unexpected fixture HTTP call");
     };
     const client = createGitHubInboxClient(binding, pair.privateKey, fake);
@@ -148,6 +149,7 @@ describe("Stage B closed wire and signed GitHub delivery", () => {
     assert.equal(await client.find(receipt, new Date("2026-11-28T12:00:00.987Z")), "444");
     assert.equal(await client.verify("444", receipt), true);
     assert.equal(await client.verify("444", envelope), false);
+    assert.equal(await client.verify("999", receipt), false);
     assert.equal(await client.verify("444/../../other", receipt), false);
     assert.equal(calls.filter(call => call.includes("access_tokens")).length, 1);
     assert.equal(calls.filter(call => call === "POST " + issuePath + "/comments").length, 1);
