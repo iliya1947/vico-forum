@@ -61,3 +61,5 @@
 
 
 32. **D-32.** Topic summary не является отдельной обязательной v1-фичей. Consultant с разрешённым контекстом текущей темы должен уметь естественно кратко объяснить или суммировать её по обычному запросу. Отдельный summary UX/кнопка/хранилище в v1 не требуются; позже такой UX должен добавляться поверх существующего Consultant/context path без существенной переделки.
+
+33. **D-33.** Технический план User AI / Vico Consultant принят Business-Мирой на service head `684de7856db99123088e0edcd55a3327ecd92356`. Выбран stacked delivery U1 → U6: первый и финально собираемый implementation PR — `#403`; каждый следующий bounded stage строится поверх принятого head предыдущего. Реализатор — Ада; CI/checks и coordinator checkpoints выполняет Business-Мира. External provider/production/Stage 6 остаются выключены до отдельного разрешения владельца.
