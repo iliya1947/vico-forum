@@ -23,3 +23,6 @@
 
 
 11. 28.11.2026 — после PASS Stage A активирован Stage B. Создан stacked draft implementation PR `#402` от принятого head Stage A; Лена назначена реализатором. Stage C остаётся заблокирован до coordinator PASS Stage B.
+
+
+12. 28.11.2026 — владелец разделил User AI и Admin/Moderation AI на самостоятельные задачи внутри #400. Business-Мира назначена координатором самостоятельной задачи №2; Лёве передан отдельный technical plan `stages/user-ai/PLAN.md`; Ада назначена будущим реализатором после принятия плана. Прежний общий embedded-AI planning отменён.
