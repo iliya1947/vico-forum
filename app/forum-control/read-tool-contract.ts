@@ -5,20 +5,22 @@ import { forumControlScopes } from "./write-tool-contract";
  * protected projections and effects are connected in later bounded stages.
  * A cursor is an opaque server-issued value, never an arbitrary query.
  */
-type Field =
+export type Field =
   | { readonly type: "string"; readonly minLength?: number; readonly maxLength: number; readonly pattern?: string; readonly enum?: readonly string[] }
+  | { readonly type: "boolean" | "null" }
+  | { readonly anyOf: readonly Field[] }
   | { readonly type: "integer"; readonly minimum: number; readonly maximum: number }
-  | { readonly type: "array"; readonly minItems: number; readonly maxItems: number; readonly items: InputSchema | Field }
+  | { readonly type: "array"; readonly minItems: number; readonly maxItems: number; readonly uniqueItems?: boolean; readonly items: Field }
   | InputSchema;
 
-type InputSchema = {
+export type InputSchema = {
   readonly type: "object";
   readonly additionalProperties: false;
   readonly properties: Readonly<Record<string, Field>>;
   readonly required: readonly string[];
 };
 
-function object<P extends Record<string, Field>>(properties: P, required: readonly (keyof P & string)[] = []) {
+export function object<P extends Record<string, Field>>(properties: P, required: readonly (keyof P & string)[] = []) {
   return { type: "object", additionalProperties: false, properties, required } as const;
 }
 const id = { type: "string", minLength: 1, maxLength: 2048 } as const;
@@ -58,6 +60,9 @@ const reads = {
   read_user_profile: object({ userId: id }, ["userId"]),
   read_user_authorization: object({ userId: id }, ["userId"]),
   read_user_measures: object({ userId: id, cursor }, ["userId"]),
+  list_measures: object({ cursor }),
+  read_measure: object({ measureId: id }, ["measureId"]),
+  read_role: object({ roleId: id }, ["roleId"]),
   read_owner_user_private_profile: object({ userId: id, cursor }, ["userId"]),
   list_complaint_cases: paginated,
   read_complaint_triage: caseId,
@@ -103,7 +108,10 @@ export function readToolInputSchema(name: ReadToolName): InputSchema {
 }
 
 export function matchesInputSchema(schema: Field, value: unknown): boolean {
+  if ("anyOf" in schema) return schema.anyOf.some(candidate => matchesInputSchema(candidate, value));
   switch (schema.type) {
+    case "boolean": return typeof value === "boolean";
+    case "null": return value === null;
     case "string":
       return typeof value === "string" && !value.includes("\0") &&
         Array.from(value).length >= (schema.minLength ?? 0) &&
@@ -115,7 +123,7 @@ export function matchesInputSchema(schema: Field, value: unknown): boolean {
         value >= schema.minimum && value <= schema.maximum;
     case "array":
       return Array.isArray(value) && value.length >= schema.minItems &&
-        value.length <= schema.maxItems && Array.from(value).every(item => matchesInputSchema(schema.items, item));
+        value.length <= schema.maxItems && (!schema.uniqueItems || new Set(value).size === value.length) && Array.from(value).every(item => matchesInputSchema(schema.items, item));
     case "object": {
       if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
       const data = value as Record<string, unknown>;
