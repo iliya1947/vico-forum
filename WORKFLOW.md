@@ -42,6 +42,6 @@ Stage A принятого `PLAN.md`: implementation и source-level author self
 
 ChatGPT-control Stage A в `#399` передан Мире на проверки; embedded-AI planning остаётся отдельным.
 
-Следующий шаг embedded-AI: базовая роль User Consultant уточнена владельцем как forum navigator/topic finder. Consultant access закрыт для использования без auth, но guest-visible через auth-gate. Память v1 — только текущая консультация с replaceable state boundary для будущего persistence. Consultant также использует три server-selected disclosure layers с наследованием User → Moderator → Administrator, чтобы model context не содержал знания более высокого уровня. Основной launcher — плавающая кнопка внизу справа с popup/side panel; контекстные входы открывают того же Consultant. Дальше по одному закрыть оставшиеся product decisions из `research/embedded-ai-concept-v1.md`. Только после утверждённого product contract planning-track Лёвы может быть возобновлён.
+Следующий шаг User AI: coordinator consistency check `research/user-ai-product-concept.md`; Moderator/Admin AI не входит в этот subtask и будет прорабатываться отдельно по следующей явной команде владельца.
 
-Embedded-AI product alignment: topic summary закрыт как implicit Consultant capability, не отдельная v1-фича. Остался один существенный product decision: минимальный обязательный scope Moderator Copilot v1.
+User AI product alignment: основные product decisions Consultant закрыты; Moderator Copilot исключён из этого subtask как отдельная задача Admin/Moderation AI.
