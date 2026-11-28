@@ -241,3 +241,12 @@ STOP:
 - Active gate: **Мира — SYNC-P0 coordinator checkpoint**, exact `95f43d5d4c0a66a8cf7568b27255e4e9c57f4485`, including CI ownership under the direct owner instruction and the new main advancement described above. Lena implementation handoff complete / STOP.
 - Do not sync P1/P2 yet. Under stacked workflow, dependent upper steps are synchronized only after the changed lower P0 step passes its renewed checkpoint.
 - After P0 PASS, the next bounded synchronization step will be P1; P2 resumes only after the synchronized lower stack is accepted.
+
+## SYNC-P0 follow-up — main advanced during checkpoint
+
+- Lena completed SYNC-P0 against assigned main `9f4c9c8d5e18f42db9b12cf23bc07322ef8f6432`; Draft #373 exact `95f43d5d4c0a66a8cf7568b27255e4e9c57f4485` preserved the accepted P0 browser proof.
+- CI run `45922581965`: database SUCCESS; lint/typecheck/shared P0 identity/P0 Vite/P0 Chromium SUCCESS. Full unit suite failed only in unmodified `app/settings/shell.test.tsx` stale Owner registration-policy UI; #373 does not change that file. Do not classify this failure as a P0 implementation defect.
+- Before coordinator PASS, main advanced again to `c49897181388b4a78f8e8248dc6508551df576c4` with authentication-lifecycle changes and four new routes. These affect current route/capability coverage and therefore must enter the lower stack before P1/P2 resynchronization.
+- Coordinator checkpoint for `95f43d5d...` is **not issued**. Active next step remains SYNC-P0, now targeting current main `c49897181388b4a78f8e8248dc6508551df576c4`.
+- Lena: update the P0 implementation line to this new baseline, preserve the same accepted P0 result, run only the applicable P0 author checks, then hand the new exact P0 head to Mira. Mira owns final CI/checkpoint.
+- Do not sync P1/P2 or resume P2-B8b1 until renewed P0 PASS.
