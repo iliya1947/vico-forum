@@ -1,6 +1,6 @@
 Этот файл фиксирует полную продуктовую концепцию встроенного AI для администрации и модерации Vico Forum до технического планирования.
 
-# Vico Staff AI — product concept proposal
+# Vico Staff AI — product concept proposal (рабочее название)
 
 Дата: 28.11.2026.
 
@@ -363,6 +363,8 @@ Forum content, Complaint text, moderator note и любой внешний те�
 
 Фактическая доступность endpoint для аккаунта владельца без платёжного метода и качество на representative RU/HE/code corpus должны быть проверены в Stage 6. До этого provider не считается активированным.
 
+Primary sources: [OpenAI Moderation](https://developers.openai.com/api/docs/guides/moderation) · [OpenAI data controls](https://developers.openai.com/api/docs/guides/your-data).
+
 ### 12.2. Generative analysis
 
 Предпочтительный бесплатный кандидат — Cloudflare Workers AI:
@@ -370,6 +372,8 @@ Forum content, Complaint text, moderator note и любой внешний те�
 - после исчерпания Free-лимита дальнейшие операции должны fail, а не переходить на платный usage;
 - часть моделей доступна только на Paid, поэтому v1 использует allowlist только фактически Free-доступных моделей;
 - Workers AI документирует zero data retention для Customer Content.
+
+Primary sources: [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) · [Workers AI data usage](https://developers.cloudflare.com/workers-ai/platform/data-usage/).
 
 ### 12.3. Retrieval
 
