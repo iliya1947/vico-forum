@@ -34,15 +34,22 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 3. Ни один из этих product-tracks не расширяет Stage A–I ChatGPT-control и его implementation PR.
 
 
-## User AI — проверка технического плана
+## User AI — U1 implementation
 
-**Задача №2 ожидает coordinator review.**
+**АКТИВЕН как самостоятельная задача №2.**
 
-- Проверяющая — Business-Мира, архитектор — Лёва.
-- План охватывает Consultant, общий retrieval, состояния сессии, privacy, UX, бюджет и приёмку. [PLAN.md](stages/user-ai/PLAN.md)
-- Проверить соответствие D-25–D-32 и каноническим Search/Help, mapping disclosure, lifecycle stale/hidden и $0 с приоритетом перевода. План предлагает stacked U1–U6. Фактическое качество моделей и лимиты аккаунта проверяются в Stage 6.
-- Future implementer — Ада. После PASS Business-Мира выбирает delivery mode и отдельно назначает первый bounded этап. Implementation PR задачи №2 ещё не создан.
+- Coordinator: Business-Мира.
+- Accepted plan: `stages/user-ai/PLAN.md`; review: `stages/user-ai/REVIEW.md`.
+- Delivery mode: stacked U1 → U6.
+- Implementer: Ада.
+- First/final assembly PR: `#403`, branch `feature/user-ai-u1`, base `main` `99b40480cb4d777298aafb1ffae7f28cf0c6085d`.
+- Initial setup head: `f121b1c775b7c454fb84a8b2d67d52e97dd6247e`.
 
+Текущий scope U1: live session/AccountState guards, current permission/disclosure snapshot, capability-filtered knowledge catalog, server-built canonical links и deterministic navigation без LLM/provider calls.
+
+Не входят: launcher/dialog UI, consultation store, semantic index/retrieval, database migrations, Workers AI, production/Stage 6, U2+, ChatGPT-control и Admin/Moderation AI.
+
+После source self-check Ада передаёт stable exact head Business-Мире, не запуская и не проверяя CI. Business-Мира запускает применимые checks и проводит coordinator checkpoint. U2 не начинать до PASS U1.
 
 ## Зафиксированные три направления AI-блока
 
@@ -52,7 +59,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 2. **User AI** — встроенный пользовательский консультант/навигация по форуму; product concept согласован отдельно.
 3. **Admin/Moderation AI** — отдельная активная product-задача; исходный scope широкий: определить практически полезные встроенные AI-функции для администрации/модерации, не ограничиваясь прежними примерами. Первый шаг — factual workload map — завершён.
 
-User AI ведётся отдельной Business-Мирой как самостоятельная задача №2; Лёва передал отдельный technical plan на проверку. Ада получает реализацию после его принятия. Общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
+User AI ведётся отдельной Business-Мирой как самостоятельная задача №2; план Лёвы принят, stacked U1 → U6 выбран, Ада реализует активный U1 в #403. Общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
 
 
 ## Admin/Moderation AI — product concept
