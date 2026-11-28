@@ -27,26 +27,20 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 Лена реализует только Stage B по принятому `PLAN.md` в `#402`: один реальный Admin Overview read должен пройти от tool через локальный GitHub webhook fixture и вернуться через receipt. Внешние credentials не используются; ingress остаётся выключен штатной конфигурацией. После author self-check Лена передаёт stable exact head Мире. CI/acceptance запускает и анализирует только Мира. Stage C до coordinator PASS Stage B не начинать.
 
-## Очередь следующих подзадач
+## Параллельные AI product-tracks
 
-После завершения текущего ChatGPT-control в этом же служебном PR:
-
-1. встроенный AI для пользователей форума;
-2. AI для администрирования и модерации.
-
-Они пока не активны и не расширяют Stage A–I или #399. Для каждой сначала выполняется отдельная product-scope проработка и техническое планирование.
+1. **User AI / Vico Consultant** — product concept согласован; дальнейшее technical planning PAUSED по текущему решению владельца.
+2. **Admin/Moderation AI** — полная product concept proposal подготовлена в `research/admin-moderation-ai-product-concept.md`; ожидает решения владельца.
+3. Ни один из этих product-tracks не расширяет Stage A–I ChatGPT-control и его implementation PR.
 
 
-## Параллельный planning-track — embedded AI
+## Embedded AI technical planning
 
-**PAUSED.** Product scope двух embedded-AI направлений ещё не утверждён владельцем. До последовательного согласования product decisions технический plan Лёвы не продолжается.
+**PAUSED.** Техническое планирование embedded AI не начинается до product acceptance.
 
-ChatGPT-control Stage A в `#399` передан Мире на проверки; embedded-AI planning остаётся отдельным.
-
-User AI coordinator consistency check завершён: PASS после удаления stale/superseded входов. Moderator/Admin AI не входит в этот subtask и будет прорабатываться отдельно по следующей явной команде владельца.
-
-User AI product alignment: COMPLETE. Действующий contract — `research/user-ai-product-concept.md`; technical planning общего embedded-AI блока остаётся PAUSED до отдельного принятия Admin/Moderation AI product contract.
-
+- User AI: действующий согласованный contract — `research/user-ai-product-concept.md`; technical planning остаётся PAUSED.
+- Admin/Moderation AI: действующая proposal — `research/admin-moderation-ai-product-concept.md`; сначала требуется решение владельца по концепции.
+- ChatGPT-control Stage B в `#402` идёт независимо и не смешивается с embedded AI.
 
 ## Зафиксированные три направления AI-блока
 
@@ -56,7 +50,7 @@ User AI product alignment: COMPLETE. Действующий contract — `resear
 2. **User AI** — встроенный пользовательский консультант/навигация по форуму; product concept согласован отдельно.
 3. **Admin/Moderation AI** — отдельная активная product-задача; исходный scope широкий: определить практически полезные встроенные AI-функции для администрации/модерации, не ограничиваясь прежними примерами. Первый шаг — factual workload map — завершён.
 
-User AI остаётся **PAUSED**. Admin/Moderation AI активирован владельцем; после завершённой workload map следующий product-шаг — оценить кандидаты функций и затем по одному согласовать минимальный v1. ChatGPT-control #399 ведётся отдельно и не смешивается с этим product-track.
+User AI technical planning остаётся **PAUSED**. Admin/Moderation AI product-discovery завершён полной concept proposal; следующий шаг — решение владельца по концепции. ChatGPT-control ведётся отдельно и не смешивается с этим product-track.
 
 
 ## Admin/Moderation AI — product concept
