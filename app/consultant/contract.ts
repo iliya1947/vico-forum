@@ -31,6 +31,7 @@ export interface ConsultantCard {
   labelKey: UiKey<"common">;
   instructionKey: UiKey<"common">;
   href: string;
+  resourceLabel?: string;
 }
 export interface ConsultantResult {
   catalogVersion: typeof CONSULTANT_CATALOG_VERSION;

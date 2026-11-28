@@ -36,6 +36,7 @@ export async function action({ request, context }: { request: Request; context: 
     await deps.assertActive(session.user.id);
     const disclosure = await deps.disclosure(session.user.id);
     const result = await navigateConsultant(input, session.user.id, disclosure, deps);
+    if (session.session.expiresAt.getTime() <= Date.now()) return failure(401, "unauthenticated");
     return Response.json(result, { headers: privacy });
   } catch (error) {
     if (error instanceof AccountInactiveError || error instanceof AccountMissingError) return failure(401, "unauthenticated");

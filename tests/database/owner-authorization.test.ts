@@ -6,6 +6,7 @@ import {
   AuthorizationForbiddenError, AuthorizationNotFoundError, PostgresAuthorizationRepository,
 } from "../../db/authorization-repository";
 import { AuthorizationService, createAuthorizationCapability } from "../../db/authorization-service";
+import { projectDisclosure } from "../../app/consultant/disclosure.server";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl || !["127.0.0.1", "localhost"].includes(new URL(databaseUrl).hostname)
@@ -45,6 +46,33 @@ afterAll(async () => {
   await pool.end();
   await client.query(`drop schema if exists ${schema} cascade`);
   await client.end();
+});
+
+describe("Consultant U1 disclosure from current PostgreSQL grants and overrides", () => {
+  it("reprojects actual custom role grants, personal allow/deny and exact Owner", async () => {
+    const actor = "consultant-disclosure-fixture";
+    const role = "consultant-disclosure-role";
+    try {
+      await client.query('insert into "user"(id,name,email) values ($1,$2,$3)', [actor, "Owner", "consultant-disclosure@example.invalid"]);
+      await client.query("insert into authz_roles(id,slug,display_name,is_system) values ($1,$1,'Owner',false)", [role]);
+      await client.query("insert into authz_user_roles(user_id,role_id) values ($1,$2)", [actor, role]);
+      const resolve = () => repository.resolveUser(actor);
+      expect(projectDisclosure(await resolve(), false).layer).toBe("User");
+      await client.query("insert into authz_role_permissions(role_id,permission_key) values ($1,'forum.complaint.review')", [role]);
+      expect(projectDisclosure(await resolve(), false).layer).toBe("Moderator");
+      await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) values ($1,'admin.users.read','allow'),($1,'forum.complaint.review','deny')", [actor]);
+      const admin = projectDisclosure(await resolve(), false);
+      expect(admin.layer).toBe("Administrator");
+      expect(admin.permissions.has("forum.complaint.review")).toBe(false);
+      expect(admin.exactOwner).toBe(false);
+      await client.query("update authz_user_permission_overrides set effect='deny' where user_id=$1 and permission_key='admin.users.read'", [actor]);
+      expect(projectDisclosure(await resolve(), false).layer).toBe("User");
+      expect(projectDisclosure(await repository.resolveUser("owner"), true)).toMatchObject({ layer: "Administrator", exactOwner: true });
+    } finally {
+      await client.query('delete from "user" where id=$1', [actor]);
+      await client.query("delete from authz_roles where id=$1", [role]);
+    }
+  });
 });
 
 describe("Stage 2 central Owner effective authority, PostgreSQL 17", () => {

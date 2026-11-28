@@ -49,13 +49,14 @@ function page(value: unknown): ConsultantPage {
 export function parseConsultantRequest(value: unknown): ConsultantRequest {
   const input = record(value, ["consultationId", "turnId", "question", "page", "continuation"]);
   const c = input.continuation === undefined ? undefined : record(input.continuation, ["selectedFeature", "selectedTopicId"]);
-  if (c?.selectedFeature !== undefined && !isConsultantFeature(c.selectedFeature)) throw new ConsultantInputError();
+  const selectedFeature = c?.selectedFeature;
+  if (selectedFeature !== undefined && !isConsultantFeature(selectedFeature)) throw new ConsultantInputError();
   return {
     consultationId: randomId(input.consultationId), turnId: randomId(input.turnId),
     question: string(input.question, CONSULTANT_MAX_QUESTION_LENGTH).trim(),
     page: page(input.page),
     ...(c === undefined ? {} : { continuation: {
-      ...(c.selectedFeature === undefined ? {} : { selectedFeature: c.selectedFeature }),
+      ...(selectedFeature === undefined ? {} : { selectedFeature }),
       ...(c.selectedTopicId === undefined ? {} : { selectedTopicId: id(c.selectedTopicId) }),
     } }),
   };

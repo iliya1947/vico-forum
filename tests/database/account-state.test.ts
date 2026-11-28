@@ -16,6 +16,7 @@ import {
   readAccountState,
 } from "../../db/account-state";
 import { user } from "../../db/schema";
+import { createHyperdriveConsultantAdmission } from "../../db/hyperdrive-consultant-admission";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
@@ -54,6 +55,19 @@ beforeEach(async () => {
 afterAll(async () => {
   await client.query(`drop schema if exists ${schema} cascade`);
   await client.end();
+});
+
+describe("Consultant U1 canonical AccountState admission", () => {
+  it("uses the same live web account row and rejects missing/deactivated actors", async () => {
+    const admit = createHyperdriveConsultantAdmission(databaseUrl, url =>
+      new Client({ connectionString: url, options: `-c search_path=${schema}` }));
+    await addUser("bound-owner");
+    await addUser("consultant-actor");
+    await expect(admit("consultant-actor")).resolves.toBeUndefined();
+    await markDeactivated("consultant-actor");
+    await expect(admit("consultant-actor")).rejects.toBeInstanceOf(AccountInactiveError);
+    await expect(admit("missing")).rejects.toBeInstanceOf(AccountMissingError);
+  });
 });
 
 describe("SA04-A2 server-only account-state read foundation", () => {

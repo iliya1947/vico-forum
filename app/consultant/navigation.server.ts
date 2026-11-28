@@ -92,7 +92,14 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
   const matches = permitted.filter(entry => entry.match.test(question));
   // Prefer specific routes over generic Search/Settings/Help. Never add denied entries to the response.
   const specific = matches.filter(entry => !["search", "help", "sections", "settings"].includes(entry.feature));
-  const selected = specific.at(-1) ?? matches.find(entry => entry.feature !== "search") ?? matches[0];
+  const priority = ["super-admin", "forum-roles", "administrator-preferences", "complaint-priorities",
+    "admin-history", "admin-roles", "admin-measures", "admin-users", "admin-forum", "admin-overview",
+    "attachment-security", "complaint-appeals", "complaint-review", "signals", "hidden-content",
+    "translation-help", "select-best-answer", "save-topic", "report", "watch", "filters", "help-ask"];
+  const followup = /^(?:open it|show it|открой|покажи|פתח|הצג)[.!?]?$/iu.test(question.trim());
+  const continued = followup ? permitted.find(entry => entry.feature === input.continuation?.selectedFeature) : undefined;
+  const selected = continued ?? priority.map(feature => specific.find(entry => entry.feature === feature)).find(Boolean)
+    ?? specific.at(-1) ?? matches.find(entry => entry.feature !== "search") ?? matches[0];
   const fallback = () => permitted.filter(entry => entry.feature === "search" || entry.feature === "help").map(card);
   let cards: ConsultantCard[] = selected ? [card(selected)] : fallback();
   let kind: ConsultantResult["kind"] = selected && disclosure.complete ? "navigation" : "fallback";
@@ -101,8 +108,10 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
     try {
       if (selected.feature === "report" && (await deps.restrictions(actor)).has("complaints.submit")) {
         cards = fallback(); kind = "fallback";
-      } else if (["report", "watch", "best-answer", "select-best-answer", "save-topic"].includes(selected.feature) && input.page.kind === "topic") {
-        const page = input.page;
+      } else if (["report", "watch", "best-answer", "select-best-answer", "save-topic"].includes(selected.feature) &&
+        (input.page.kind === "topic" || followup && input.continuation?.selectedTopicId)) {
+        const page = input.page.kind === "topic" ? input.page
+          : { kind: "topic" as const, topicId: input.continuation!.selectedTopicId!, postId: undefined };
         const topic = await deps.reader().readTopicPage(page.topicId);
         const visible = topic?.posts.filter(post => post.kind !== "hidden");
         const post = page.postId ? visible?.find(item => item.id === page.postId) : undefined;
@@ -124,19 +133,40 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
         if (selected.feature === "help-ask" && !canCreate) { cards = fallback(); kind = "fallback"; }
         else if (sectionId && sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
           const section = await deps.reader().readSection(sectionId);
-          if (section) cards = [{ ...card(selected), href: forumSectionPath(locale, section.id) }];
+          if (section && section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID && section.category.id !== HELP_SOLUTIONS_CATEGORY_ID) {
+            cards = [{ ...card(selected), labelKey: "homeForumSectionsHeading",
+              href: forumSectionPath(locale, section.id), resourceLabel: section.name.slice(0, 200) }];
+          }
         } else if (p.kind === "category" && p.categoryId !== HELP_SOLUTIONS_CATEGORY_ID) {
           const category = await deps.reader().readCategory(p.categoryId);
-          if (category) cards = [{ ...card(selected), href: forumCategoryPath(locale, category.id) }];
+          if (category && category.id !== HELP_SOLUTIONS_CATEGORY_ID) {
+            cards = [{ ...card(selected), labelKey: "homeForumSectionsHeading",
+              href: forumCategoryPath(locale, category.id), resourceLabel: category.name.slice(0, 200) }];
+          }
         } else if (p.kind === "editor" && p.destination === "help" || p.kind === "category" && p.categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
           cards = [{ feature: "help", labelKey: "helpSolutionsHeading", instructionKey: "helpSolutionsIntro", href: help }];
+        } else if (p.kind === "none" || p.kind === "search") {
+          // Only exact normalized public names are candidates; ambiguous/unknown
+          // placement falls back to ordinary category navigation or public Help.
+          const hierarchy = await deps.reader().readHomepage();
+          const normalize = (value: string) => value.normalize("NFKC").toLowerCase().trim().replace(/\s+/gu, " ");
+          const containsName = (name: string) => {
+            const value = normalize(name);
+            return value.length >= 3 && normalize(input.question).includes(value);
+          };
+          const categories = hierarchy.filter(category => category.id !== HELP_SOLUTIONS_CATEGORY_ID);
+          const sections = categories.flatMap(category => category.sections)
+            .filter(section => section.id !== HELP_SOLUTIONS_SERVICE_SECTION_ID && containsName(section.name));
+          const namedCategories = categories.filter(category => containsName(category.name));
+          const destination = sections.length === 1 ? { ...sections[0], kind: "section" as const }
+            : sections.length === 0 && namedCategories.length === 1 ? { ...namedCategories[0], kind: "category" as const } : undefined;
+          if (destination) cards = [{ ...card(selected), labelKey: "homeForumSectionsHeading",
+            href: destination.kind === "section" ? forumSectionPath(locale, destination.id) : forumCategoryPath(locale, destination.id),
+            resourceLabel: destination.name.slice(0, 200) }];
         }
         if (canCreate && kind === "navigation") {
           cards = cards.map(item => ({ ...item, instructionKey: "consultantPlacement" }));
         }
-      } else if (selected.feature === "search" && input.page.kind === "search" && input.page.term.trim()) {
-        // Do not echo submitted questions or context strings into URLs; native Search remains explicit.
-        cards = [card(selected)];
       }
     } catch (error) {
       if (!(error instanceof ForumStorageUnavailableError)) throw error;
