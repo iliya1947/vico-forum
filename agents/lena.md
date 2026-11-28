@@ -1,7 +1,8 @@
 # Лена — UI progress preview
 
-- SYNC-P1 complete and accepted.
-- Draft #375 exact `2d6224010eed6dd55026ee91c061447245ea4909`, base accepted P0 `b91adfc256dccc5a0179d173d3221fb7d5961c78` — Mira renewed coordinator PASS.
-- STOP until a separate bounded assignment.
-- P2 #385 remains unchanged; do not resume B8b1.
+- Active assignment: **SYNC-P2**.
+- Accepted lower step: #375 exact `2d6224010eed6dd55026ee91c061447245ea4909`.
+- Synchronize #385 onto renewed P1 and update P2 only as needed for current P2-required production contexts/capabilities.
+- Preserve completed P2 work through B8a; do not start B8b1 yet.
+- After source self-check, hand the stable exact P2 head to Mira. Mira runs CI/checkpoint.
 - `WORKFLOW.md` is authoritative.
