@@ -64,3 +64,17 @@
 3. Admin/Moderation AI — отдельная задача; самостоятельная product-проработка ещё не принята.
 
 По прямой команде владельца дальнейшая работа по User AI и Admin/Moderation AI остановлена до нового указания. Сейчас Мира проверяет завершённый Леной Stage A #399.
+
+
+## Stage A coordinator review — HOLD
+
+Мира проверила #399 exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`.
+
+Подтверждены три текущих finding:
+1. OAuth provider export ломает TypeScript typecheck (TS2742/TS7056).
+2. DB OAuth acceptance fixture исчерпывает canonical sign-in rate-limit и получает 429, из-за чего lifecycle tests не проходят.
+3. SA07 data-monitoring regression test остался на expected migration 0078 после добавления 0079.
+
+Полный отчёт: `stages/A/REVIEW.md`.
+
+Local OAuth Chromium run был skipped и будет запущен Мирой только после correction и успешного применимого CI на новом stable head. Stage B заблокирован.
