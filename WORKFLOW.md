@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage B принятого `PLAN.md`: реализация и source-level author self-check переданы Мире на stable exact head `617c16ab0249d5f69c73795871363be084cc49fc` в `#402`, base — принятый Stage A `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Реализованы закрытый GitHub transport, durable PostgreSQL request/receipt, общий canonical Admin Overview reader, отключённый по умолчанию Worker ingress и connected local MCP/OAuth/GitHub fixture. Новый migration target — 0080. Runtime/CI/acceptance ещё не подтверждены; Stage B PASS не присвоен.
+Stage B принятого `PLAN.md`: coordinator checkpoint Миры на exact head `617c16ab0249d5f69c73795871363be084cc49fc` завершён **HOLD**. Source review без finding, но CI выявил B-F01: после migration `0080` тест `tests/database/migrations.test.ts` всё ещё ожидает 80 migrations вместо фактических 81. Correction возвращён Лене. Stage C заблокирован.
 
 ## Назначение
 
@@ -25,7 +25,7 @@ Stage B принятого `PLAN.md`: реализация и source-level autho
 
 ## Следующий переход
 
-Мира принимает stable exact head `617c16ab0249d5f69c73795871363be084cc49fc` в `#402`, выполняет применимые CI/checks и Forum control local OAuth/GitHub Chromium acceptance, затем coordinator checkpoint всего Stage B по `PLAN.md` (включая interaction с принятым A). Scope, evidence и ограничения — последний раздел `agents/lena.md`. Лена не запускала PR CI/acceptance и не читала их результаты. Stage C до coordinator PASS не начинать.
+Лена исправляет только B-F01 из `stages/B/REVIEW.md`, выполняет source self-check и передаёт Мире новый stable exact head #402. CI/acceptance запускает и анализирует только Мира. После зелёного CI Мира запускает Forum control local OAuth/GitHub Chromium acceptance и повторяет coordinator checkpoint. **Stage C зарезервирован за Лёвой, но до PASS Stage B не активируется.**
 
 ## Параллельные AI product-tracks
 
