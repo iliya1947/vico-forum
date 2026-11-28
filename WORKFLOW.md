@@ -45,3 +45,14 @@ ChatGPT-control Stage A в `#399` передан Мире на проверки;
 User AI coordinator consistency check завершён: PASS после удаления stale/superseded входов. Moderator/Admin AI не входит в этот subtask и будет прорабатываться отдельно по следующей явной команде владельца.
 
 User AI product alignment: COMPLETE. Действующий contract — `research/user-ai-product-concept.md`; technical planning общего embedded-AI блока остаётся PAUSED до отдельного принятия Admin/Moderation AI product contract.
+
+
+## Зафиксированные три направления AI-блока
+
+По прямому уточнению владельца три направления из #300 ведутся как отдельные задачи:
+
+1. **ChatGPT-control** — управление Vico Forum владельцем из обычного ChatGPT; текущая активная реализация #399.
+2. **User AI** — встроенный пользовательский консультант/навигация по форуму; product concept согласован отдельно.
+3. **Admin/Moderation AI** — отдельная будущая product-задача; не смешивается с User AI.
+
+Дальнейшая продуктовая/техническая проработка направлений 2–3 **PAUSED** по прямой команде владельца. Текущий приоритет — coordinator review завершённого Леной Stage A #399.
