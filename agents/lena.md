@@ -154,3 +154,14 @@ Exact head #402: `617c16ab0249d5f69c73795871363be084cc49fc` (26 changed files vs
 - Extended native OAuth DB tests for repeated UUID/expiry, concurrent claim, wrong refs/grants, revocation, publication CAS and protected result admission. Local Chromium fixture now exposes actual Overview + request status; disposable Python GitHub API on 127.0.0.1:4243 stores only four-field envelopes, sends real signed HTTP webhook to built Worker, simulates lost initial POST ACK and redelivery. Private seeded marker must appear in canonical History projection and not in GitHub. Existing synthetic write tools remain fixture-only/no effects for Stage A regression; no actual write path, Stage C+ or external activation.
 
 Author source-level self-check: checked full Stage B changed source paths and their canonical dependencies, storage/receipt concurrency and expiry paths, schema/snapshot/journal/manifest consistency, ACL and composite project coverage, closed protocol/descriptor alignment, default ingress off, local fixture HTTP/secret boundaries and rate-limit scenarios against pinned Better Auth 1.7.7 (introspection 100/60s; sign-in max 3/10s; new DB scenarios each one login and isolated native limiter). Corrections before handoff: unique constraint metadata, receipt publication CAS/deleted comment recovery, closed canonical request-status schema. Programmatic exact-head structural checks all true. **Full pinned compilation, lint, PostgreSQL catalog/runtime and built Worker/Chromium acceptance on this head are unverified.** Local container lacks repo checkout/dependencies/pnpm/PG and uses Node 22.16.0 / TS 5.8.3 instead of pinned versions; earlier isolated transport checks are evidence only for their earlier head. Do not claim runtime PASS. Mira runs applicable CI/acceptance and checkpoint; Lena did not run or inspect PR checks. No production/live resources, Stage C/6 untouched.
+
+
+## Correction после coordinator HOLD Stage B
+
+Мира проверила #402 exact head `617c16ab0249d5f69c73795871363be084cc49fc`: **HOLD**.
+
+Исправить только B-F01 из `../stages/B/REVIEW.md`:
+- Stage B добавил migration `0080_forum_control_request`, поэтому clean PG17 run применяет 81 migration;
+- `tests/database/migrations.test.ts:84` всё ещё жёстко ожидает 80.
+
+Не расширять scope и не менять transport/domain behavior. После correction выполнить source self-check и передать новый stable exact head Мире. CI/acceptance не запускать. Stage C не начинать.
