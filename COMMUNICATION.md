@@ -30,12 +30,19 @@
 Оба направления выполняются в этом же служебном PR после текущего ChatGPT-control. Они не входят в #399; product scope и technical plan для них определяются отдельно.
 
 
-## User AI scope proposal
+## User AI — current product contract
 
-Мира завершила первую product-scope проработку: `research/user-ai-product-scope.md`.
+Действующая пользовательская концепция: `research/user-ai-product-concept.md`.
 
-Рекомендация для v1: semantic/hybrid Search + similar topics/solutions как обязательный общий retrieval result; on-demand question-authoring helper как bounded optional; AI chat/auto-post/thread summaries отложить. Это пока product proposal Миры до решения владельца и общего technical plan.
-
+Утверждённые границы:
+1. Vico Consultant — навигатор по форуму и поиск правильной темы/раздела/действия, а не универсальный технический советчик.
+2. Использование после авторизации; guest видит launcher и auth-gate.
+3. Память только текущей консультации; storage boundary заменяемая для будущего persistence.
+4. Disclosure layers User → Moderator → Administrator с server-side выбором и наследованием.
+5. Floating launcher внизу справа + контекстные входы в того же Consultant.
+6. Topic discovery — до трёх релевантных тем с краткой причиной.
+7. Summary не отдельная v1-фича: Consultant может естественно суммировать доступную текущую тему по запросу.
+8. Старые `research/user-ai-product-scope.md` и `research/embedded-ai-concept-v1.md` помечены superseded и не являются входом для technical planning.
 
 ## Admin/Moderation AI scope proposal
 
@@ -44,80 +51,7 @@
 Рекомендация v1: advisory harmful-content signals; spam/duplicate candidates на общем retrieval foundation с user-AI; on-demand complaint brief и evidence/checklist assistant. Никаких auto-hide, sanctions, priority changes, complaint decisions или user risk scoring. Private Complaint material имеет отдельный provider/data-policy gate. Это product proposal Миры до решения владельца и общего technical plan.
 
 
-## Embedded AI product alignment
 
-Оба research-файла остаются предложениями Миры, а не утверждённым scope:
-1. `research/user-ai-product-scope.md`;
-2. `research/admin-moderation-ai-product-scope.md`.
+## User AI consistency checkpoint
 
-Technical planning Лёвы поставлен на паузу. Следующий этап — последовательное согласование product decisions с владельцем; после этого будет собран утверждённый embedded-AI contract и только затем возобновлён technical plan.
-
-## Embedded AI product concept
-
-Предыдущие `research/user-ai-product-scope.md` и `research/admin-moderation-ai-product-scope.md` сохраняются как ранний feature inventory, но не являются product contract.
-
-Новая целостная концепция: `research/embedded-ai-concept-v1.md`.
-
-Центр user experience — приватный Vico AI Consultant: решает проблему через форумные знания + потенциально общие знания модели, показывает forum sources, объясняет текущие темы/ответы и при отсутствии решения переводит консультацию в качественный вопрос людям. Search/similar/editor/summary — capabilities этого journey, а не независимые AI-продукты.
-
-Moderation AI — отдельный permission-scoped copilot и advisory signal layer; он не разделяет protected context с User Consultant и не получает domain-write authority.
-
-Концепция пока proposal Миры. Technical planning Лёвы остаётся PAUSED до последовательного решения владельцем продуктовых развилок.
-
-
-## Уточнение владельца — роль User Consultant
-
-Владелец определил центральную роль консультанта: не универсальный технический советчик, а **навигатор по Vico Forum** — «как, где, что», поиск правильной темы/решения, выбор раздела/Help и forum feature guidance.
-
-Концепция обновлена в `research/embedded-ai-concept-v1.md` (v2). General technical Q&A и внешний web search больше не считаются core user-AI v1.
-
-
-## Решение владельца — Consultant access
-
-User Consultant доступен только authenticated users. Public Search/navigation остаются гостям без AI Consultant. Решение записано как D-26.
-
-
-## Уточнение владельца — guest visibility Consultant
-
-D-26 уточнён: Consultant не скрывается от гостей. Guest видит точку входа и auth-заглушку «зарегистрируйтесь или войдите, чтобы использовать консультанта» с переходом в существующий auth flow; сам AI/inference доступен только после авторизации.
-
-
-## Решение владельца — память Consultant
-
-D-27: память только внутри текущей консультации. Persisted history/long-term memory в v1 нет, но state/storage boundary должна быть заменяемой, чтобы такую функцию можно было добавить позже без существенной переделки consultant core.
-
-
-## Решение владельца — disclosure layers Consultant
-
-D-28: User / Moderator / Administrator — это не только уровни подсказок, а disclosure boundaries. Consultant не должен получать контекст более высокого уровня и поэтому не может «сболтнуть» его пользователю. Фактическая authorization по-прежнему остаётся в canonical server-side boundary.
-
-
-## Решение владельца — наследование Consultant layers
-
-D-29: User → Moderator → Administrator. Каждый верхний disclosure layer включает допустимый context нижних слоёв; authorization фактических routes/actions остаётся отдельной.
-
-
-## Решение владельца — Consultant launcher
-
-D-30: постоянная плавающая кнопка «Консультант» внизу справа → popup/side panel на текущей странице. Контекстные входы открывают того же Consultant. Guest видит launcher, но получает auth-gate.
-
-
-## Решение владельца — topic result set
-
-D-31: Consultant показывает до 3 релевантных тем, при необходимости выделяет лучшее совпадение, кратко объясняет релевантность; если хорошего совпадения нет — направляет к правильному месту создания новой темы.
-
-
-## Решение владельца — topic summary
-
-D-32: отдельной summary-фичи в v1 нет. Consultant должен уметь естественно кратко пересказать текущую тему по обычному запросу, если уже имеет разрешённый context. Специальный summary UX можно добавить позже без переделки core.
-
-
-## Коррекция scope — User AI и Admin/Moderation AI раздельно
-
-Мира обнаружила и исправила смешение двух отдельных задач из #300.
-
-1. Текущая концепция User AI: `research/user-ai-product-concept.md`.
-2. Старый `research/embedded-ai-concept-v1.md` помечен superseded.
-3. `research/admin-moderation-ai-product-scope.md` остаётся отдельным ранним proposal и не является продолжением текущего User AI subtask.
-4. Вопрос Moderator Copilot исключён из списка User AI decisions.
-5. Общая техническая инфраструктура может обсуждаться позже только после независимого product-scope обеих задач.
+28.11.2026: после исправления смешения задач User AI проверен как отдельный product scope. Действующий источник — `research/user-ai-product-concept.md`; старые feature/mixed концепции superseded. Admin/Moderation AI не проверялся и остаётся отдельной следующей product-задачей. Future common technical planning остаётся PAUSED до принятия Admin/Moderation product contract.
