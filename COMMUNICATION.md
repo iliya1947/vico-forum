@@ -44,8 +44,10 @@
 Рекомендация v1: advisory harmful-content signals; spam/duplicate candidates на общем retrieval foundation с user-AI; on-demand complaint brief и evidence/checklist assistant. Никаких auto-hide, sanctions, priority changes, complaint decisions или user risk scoring. Private Complaint material имеет отдельный provider/data-policy gate. Это product proposal Миры до решения владельца и общего technical plan.
 
 
-## Embedded AI technical planning
+## Embedded AI product alignment
 
-Оба product-scope proposal готовы. Единый planning contract находится в `stages/embedded-ai/SCOPE.md`.
+Оба research-файла остаются предложениями Миры, а не утверждённым scope:
+1. `research/user-ai-product-scope.md`;
+2. `research/admin-moderation-ai-product-scope.md`.
 
-Лёва назначен на полный `stages/embedded-ai/PLAN.md`. План должен найти минимальный общий foundation для retrieval + bounded generation/classification при $0, не дублировать Search/Editor/translation/Complaints и отделить public AI от protected Complaint data policy. Текущий ChatGPT-control implementation продолжает Лена независимо.
+Technical planning Лёвы поставлен на паузу. Следующий этап — последовательное согласование product decisions с владельцем; после этого будет собран утверждённый embedded-AI contract и только затем возобновлён technical plan.
