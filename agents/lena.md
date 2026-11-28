@@ -165,3 +165,7 @@ Author source-level self-check: checked full Stage B changed source paths and th
 - `tests/database/migrations.test.ts:84` всё ещё жёстко ожидает 80.
 
 Не расширять scope и не менять transport/domain behavior. После correction выполнить source self-check и передать новый stable exact head Мире. CI/acceptance не запускать. Stage C не начинать.
+
+### B-F01 — correction передан Мире
+
+Exact head #402 `9cca32e66474434abb690482598db4cd44bb3b06`, один изменённый файл относительно 617c16a: `tests/database/migrations.test.ts`. Вместо константы 80 проверяется количество фактических numbered SQL files (независимо от ledger), после повторного migrate. Сверены 81 SQL-файл, 81 journal entry, точное соответствие тегов и manifest target 0080. Проверены связанные migration contracts и SA07 на старые count expectations; новых зависимых несоответствий в проверенном объёме нет. Implementation transport/domain не изменён. CI/acceptance не запускались; runtime нового head не проверен. Мира принимает correction.

@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage B принятого `PLAN.md`: coordinator checkpoint Миры на exact head `617c16ab0249d5f69c73795871363be084cc49fc` завершён **HOLD**. Source review без finding, но CI выявил B-F01: после migration `0080` тест `tests/database/migrations.test.ts` всё ещё ожидает 80 migrations вместо фактических 81. Correction возвращён Лене. Stage C заблокирован.
+Stage B: correction B-F01 выполнен Леной в #402, новый stable exact head `9cca32e66474434abb690482598db4cd44bb3b06`. Ожидаемое число применённых миграций определяется по SQL-файлам вместо литерала 80. Source self-check correction завершён, runtime не проверен. Coordinator HOLD предыдущего head сохраняет запрет на Stage C до нового PASS.
 
 ## Назначение
 
@@ -25,7 +25,7 @@ Stage B принятого `PLAN.md`: coordinator checkpoint Миры на exact
 
 ## Следующий переход
 
-Лена исправляет только B-F01 из `stages/B/REVIEW.md`, выполняет source self-check и передаёт Мире новый stable exact head #402. CI/acceptance запускает и анализирует только Мира. После зелёного CI Мира запускает Forum control local OAuth/GitHub Chromium acceptance и повторяет coordinator checkpoint. **Stage C зарезервирован за Лёвой, но до PASS Stage B не активируется.**
+Мира принимает correction B-F01 на stable exact head `9cca32e66474434abb690482598db4cd44bb3b06` в #402; выполняет полный applicable CI, после его PASS — Forum control local OAuth/GitHub Chromium acceptance и повторный coordinator checkpoint. Контекст — последний раздел `agents/lena.md`. Stage C зарезервирован за Лёвой, до PASS не активировать.
 
 ## Параллельные AI product-tracks
 
