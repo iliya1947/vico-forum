@@ -100,6 +100,9 @@ async function positiveWebLockProbes() {
     await client.query(`SET LOCAL ROLE ${quoteIdentifier(webRole)}`);
     await client.query('SELECT 1 FROM public."user" WHERE false FOR UPDATE');
     await client.query("SELECT 1 FROM public.authz_mutation_lock WHERE false FOR UPDATE");
+    for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource"])
+      await client.query(`SELECT 1 FROM public.${table} WHERE false FOR SHARE`);
+    await client.query("SELECT 1 FROM public.forum_control_grant WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_topics WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_posts WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_attachment_upload_objects WHERE false FOR UPDATE");
@@ -192,6 +195,15 @@ try {
   );
   await positiveCapabilityProbe(webRole, runtimeCapabilityContracts.web);
   await positiveWebLockProbes();
+
+  for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource",
+    "oauth_access_token", "oauth_refresh_token", "oauth_consent", "oauth_client_assertion", "forum_control_grant"])
+    await expectInsufficientPrivilege(localizationRole, `SELECT id FROM public.${table} LIMIT 0`, "localization OAuth access");
+  for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource", "oauth_consent", "forum_control_grant"])
+    await expectInsufficientPrivilege(webRole, `DELETE FROM public.${table} WHERE false`, "web OAuth registration or grant deletion");
+  for (const table of ["oauth_client", "oauth_client_resource"])
+    await expectInsufficientPrivilege(webRole, `INSERT INTO public.${table}(id) SELECT 'forbidden' WHERE false`, "web OAuth registration creation");
+  await expectInsufficientPrivilege(webRole, "SELECT id FROM public.oauth_client_assertion LIMIT 0", "web unused client assertion storage");
 
   await expectInsufficientPrivilege(
     localizationRole,

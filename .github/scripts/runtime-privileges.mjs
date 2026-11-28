@@ -83,6 +83,17 @@ export const runtimeCapabilityContracts = Object.freeze({
       user_privacy_preferences: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       user: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
       verification: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
+      // Forum control is disabled by default. These are repository capability
+      // contracts for the local probes; deployment/provisioning requires the
+      // separate Stage 6 authorization. Client/resource/link rows are trusted
+      // pre-provisioned registrations. UPDATE is needed for their row locks.
+      oauth_client: Object.freeze(["SELECT", "UPDATE"]),
+      oauth_resource: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
+      oauth_client_resource: Object.freeze(["SELECT", "UPDATE"]),
+      oauth_access_token: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
+      oauth_refresh_token: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
+      oauth_consent: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
+      forum_control_grant: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
     }),
   }),
 });
