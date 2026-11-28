@@ -1,6 +1,7 @@
 import { prepareTaskInputSchema, requestStatusInputSchema, taskStatusInputSchema, readToolSecurity } from "./read-tool-contract";
 import { inspectedStepSchema } from "./inspection-tool-contract";
 import { writeToolDescriptor, writeToolNames } from "./write-tool-contract";
+import { adminOverviewDescriptor } from "./overview-tool-contract";
 
 const uuid = { type: "string", minLength: 36, maxLength: 36, pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" } as const;
 const digest = { type: "string", minLength: 64, maxLength: 64, pattern: "^[0-9a-f]{64}$" } as const;
@@ -75,13 +76,19 @@ const requestStatus = {
     requestId: uuid, transport,
     status: { enum: ["read-ok", "pending", "committed", "not-committed", "denied", "conflict", "stale", "unavailable", "outcome-unknown", "skipped"] },
     code,
-    receipt: { oneOf: writeToolNames.map(name => writeToolDescriptor(name).outputSchema) },
+    receipt: { oneOf: [adminOverviewDescriptor.outputSchema, ...writeToolNames.map(name => writeToolDescriptor(name).outputSchema)] },
   },
   required: ["requestId", "transport", "status", "code"],
+  allOf: [{
+    if: { properties: { status: { const: "read-ok" } } },
+    then: { required: ["receipt"], properties: { transport: { const: "published" },
+      receipt: adminOverviewDescriptor.outputSchema } },
+  }],
 } as const;
 
-/** Stage A schemas only. Stage C/E attach canonical preflight/task persistence.
- * Status never dispatches or resumes a mutation. No tool is registered here. */
+/** Preflight/task persistence is attached in later stages. Stage B connects
+ * only the Overview receipt variant of request status. Status never dispatches
+ * or resumes a domain operation. */
 export const prepareTaskDescriptor = {
   name: "prepare_task",
   description: "Prepare an immutable task from individually inspected operations. Does not execute a domain command. Records the preparation privately. Explain the full fixed task and obtain separate confirmation before dispatch.",

@@ -6,8 +6,8 @@ import { createOAuthForumControlMcpFixture } from "../../fixtures/forum-control-
 import { config, databaseName, origin } from "./config";
 import { createGitHubInboxClient, type GitHubInboxBinding } from "../../../app/forum-control/github-transport.server";
 import { createOverviewIngress, isForumControlIngress } from "../../../app/forum-control/overview-ingress.server";
-import { adminOverviewDescriptor } from "../../../app/forum-control/admin-overview.server";
-import { requestStatusInputSchema } from "../../../app/forum-control/read-tool-contract";
+import { adminOverviewDescriptor } from "../../../app/forum-control/overview-tool-contract";
+import { requestStatusDescriptor } from "../../../app/forum-control/task-tool-contract";
 import { decodeTransportJson, isRecord, readBoundedBody } from "../../../app/forum-control/transport-wire.server";
 
 const inbox: GitHubInboxBinding = {
@@ -51,6 +51,7 @@ export default {
       const secret = env.FORUM_CONTROL_FIXTURE_CLIENT_SECRET;
       const pair = await crypto.subtle.generateKey({ name: "RSASSA-PKCS1-v1_5", hash: "SHA-256",
         modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]) }, false, ["sign", "verify"]);
+      if (!("privateKey" in pair)) throw new Error("Invalid fixture key pair");
       const ingress = createOverviewIngress({ origin, oauth: config, inbox,
         webhookSecret: secret, clientSecret: secret, connectionString: webConnectionString, auth: runtime,
         github: createGitHubInboxClient(inbox, pair.privateKey, fixtureGitHubFetch) });
@@ -69,9 +70,7 @@ export default {
       const status = (source: Request, requestId: string) => transport(source, "status", { requestId });
       return createOAuthForumControlMcpFixture(config, runtime, secret, {
         descriptor: adminOverviewDescriptor,
-        statusDescriptor: { ...adminOverviewDescriptor, name: "read_request_status",
-          description: "Read the existing overview request and its verified receipt. Never execute it again.",
-          inputSchema: requestStatusInputSchema },
+        statusDescriptor: requestStatusDescriptor,
         status,
         async call(source) {
           const requestId = crypto.randomUUID();
@@ -81,7 +80,10 @@ export default {
           // the SAME ID if GitHub delivery does not finish in this window.
           for (let attempt = 0; outcome.status === "pending" && attempt < 6 && Date.now() < deadline; attempt++) {
             await new Promise(resolve => setTimeout(resolve, 200));
-            outcome = await status(source, requestId);
+            const state = await status(source, requestId);
+            outcome = isRecord(state.receipt) ? state.receipt : {
+              requestId, op: "read_admin_overview", status: state.status, code: state.code,
+            };
           }
           return outcome;
         },

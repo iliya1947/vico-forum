@@ -4,7 +4,7 @@ import { ForumControlDenied, type ForumControlGrant } from "./delegation-admissi
 import { admitForumControlAccessToken } from "./delegation-store.server";
 import type { ForumControlOAuthConfig } from "./oauth-provider.server";
 import { createAdminOverviewReader } from "./admin-overview.server";
-import { PostgresOverviewRequests, RequestIdConflict, type OverviewRequestRow } from "./request-store.server";
+import { PostgresOverviewRequests, RequestIdConflict, type OverviewRequestRow, type OverviewOutcome } from "./request-store.server";
 import { verifyRequestWebhook, type GitHubInboxBinding, type GitHubInboxClient } from "./github-transport.server";
 import { decodeTransportJson, exactKeys, InvalidTransportInput, isJsonPost, isTransportUuid,
   parseOverviewRequest, readBoundedBody, type InboxEnvelope } from "./transport-wire.server";
@@ -30,8 +30,13 @@ function envelope(row: OverviewRequestRow, kind: InboxEnvelope["kind"]): InboxEn
   return { version: 1, kind, ref: kind === "request" ? row.requestRef : row.receiptRef, requestId: row.id };
 }
 type Status = "pending" | "read-ok" | "denied" | "conflict" | "stale" | "unavailable" | "outcome-unknown";
-function reply(id: string, status: Status, code: string, result?: Record<string, unknown>) {
-  return Response.json({ requestId: id, op: "read_admin_overview", status, code, ...(result ? { result } : {}) }, { headers });
+function reply(id: string, status: Status, code: string, statusOnly = false, published?: OverviewOutcome) {
+  const receipt = { requestId: id, op: "read_admin_overview", status, code,
+    ...(published?.status === "read-ok" ? { result: published.result } : {}) };
+  if (!statusOnly) return Response.json(receipt, { headers });
+  const transport = published ? "published" : status === "pending" ? "pending"
+    : status === "outcome-unknown" ? "outcome-unknown" : "unavailable";
+  return Response.json({ requestId: id, transport, status, code, ...(published ? { receipt } : {}) }, { headers });
 }
 function reject(status: number) { return new Response(null, { status, headers }); }
 
@@ -94,25 +99,30 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
     if (finished && grant) await publishReceipt(finished, grant);
   }
 
-  async function result(request: Request, row: OverviewRequestRow, grant: ForumControlGrant): Promise<Response> {
-    if (row.expired) return reply(row.id, row.startedAt && !row.finishedAt ? "outcome-unknown" : "stale", "delivery-expired");
-    if (!row.finishedAt) return reply(row.id, "pending", row.startedAt ? "started" : row.acceptedAt ? "accepted" : "registered");
+  async function result(request: Request, row: OverviewRequestRow, grant: ForumControlGrant, statusOnly: boolean): Promise<Response> {
+    if (row.expired) return reply(row.id, row.startedAt && !row.finishedAt ? "outcome-unknown" : "stale", "delivery-expired", statusOnly);
+    if (!row.finishedAt) return reply(row.id, "pending", row.startedAt ? "started" : row.acceptedAt ? "accepted" : "registered", statusOnly);
     let commentId: string | null;
     try { commentId = await publishReceipt(row, grant); }
     catch (error) {
       if (error instanceof ForumControlDenied) throw error;
-      return reply(row.id, "pending", "receipt-unavailable");
+      return reply(row.id, "pending", "receipt-unavailable", statusOnly);
     }
-    if (!commentId) return reply(row.id, "pending", "receipt-unverified");
+    if (!commentId) return reply(row.id, "pending", "receipt-unverified", statusOnly);
     // Re-admit the actual bearer after external IO, not only a captured
     // grant snapshot. The protected read additionally checks the live grant,
     // current permission projection and matching receipt under row locks.
     const current = await admit(request);
     const outcome = await storage(store => store.readPublished(row.id, current, row.receiptRef,
       commentId!, reader.canReadResult));
-    if (!outcome) return reply(row.id, "denied", "result-unavailable");
-    return outcome.status === "read-ok" ? reply(row.id, "read-ok", "overview", outcome.result)
-      : reply(row.id, outcome.status, "overview-" + outcome.status);
+    if (!outcome) {
+      const latest = await storage(store => store.inspect(row.id, current));
+      if (latest?.expired) return reply(row.id, "stale", "delivery-expired", statusOnly);
+      if (latest && latest.receiptCommentId !== commentId) return reply(row.id, "pending", "receipt-state-changed", statusOnly);
+      return reply(row.id, "denied", "result-unavailable", statusOnly);
+    }
+    return reply(row.id, outcome.status, outcome.status === "read-ok" ? "overview" : "overview-" + outcome.status,
+      statusOnly, outcome);
   }
 
   return async (request, defer) => {
@@ -135,6 +145,7 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
     if (!isJsonPost(request)) return reject(415);
     const origin = request.headers.get("Origin");
     if (origin !== null && origin !== config.origin) return reject(403);
+    const statusOnly = url.pathname === root + "status";
     let requestId: string | undefined;
     let durableStateMayExist = false;
     try {
@@ -157,12 +168,12 @@ export function createOverviewIngress(config: OverviewIngressConfig): OverviewIn
         durableStateMayExist = true;
       }
       const row = await storage(store => store.inspect(requestId!, grant));
-      return row ? await result(request, row, grant) : reject(404);
+      return row ? await result(request, row, grant, statusOnly) : reject(404);
     } catch (error) {
       if (error instanceof InvalidTransportInput) return reject(400);
       if (error instanceof ForumControlDenied) return reject(401);
-      if (error instanceof RequestIdConflict && requestId) return reply(requestId, "conflict", "request-id-conflict");
-      return requestId ? reply(requestId, durableStateMayExist ? "outcome-unknown" : "unavailable", "transport-unavailable") : reject(503);
+      if (error instanceof RequestIdConflict && requestId) return reply(requestId, "conflict", "request-id-conflict", statusOnly);
+      return requestId ? reply(requestId, durableStateMayExist ? "outcome-unknown" : "unavailable", "transport-unavailable", statusOnly) : reject(503);
     }
   };
 }

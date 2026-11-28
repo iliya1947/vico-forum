@@ -212,16 +212,18 @@ def run():
         for _ in range(10):
             if overview["status"] != "pending":
                 break
-            overview = mcp(both["access_token"], "tools/call", {"name": "read_request_status",
+            state = mcp(both["access_token"], "tools/call", {"name": "read_request_status",
                 "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"]
+            overview = state.get("receipt", state)
         assert overview["status"] == "read-ok", "Canonical overview receipt missing"
         projection = overview["result"]["projection"]
         assert overview["result"]["source"] == "web" and overview["result"]["coverage"] == "complete"
         assert projection["counts"]["categories"] >= 1 and projection["counts"]["sections"] >= 1
         assert any(event["targetLabel"] == "stage-b-private-marker" and event["action"] == "category.created"
             for event in projection["recent"])
-        assert mcp(both["access_token"], "tools/call", {"name": "read_request_status",
-            "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"] == overview
+        state = mcp(both["access_token"], "tools/call", {"name": "read_request_status",
+            "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"]
+        assert state["transport"] == "published" and state["receipt"] == overview
         # Same Owner, different admitted grant: no previous projection.
         foreign_status = mcp(read_token, "tools/call", {"name": "read_request_status",
             "arguments": {"requestId": request_id}})
@@ -236,8 +238,9 @@ def run():
         # Redelivery after completion must not execute another read or change
         # the saved result. DB scenarios separately exercise concurrent claims.
         deliver(original)
-        assert mcp(both["access_token"], "tools/call", {"name": "read_request_status",
-            "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"] == overview
+        state = mcp(both["access_token"], "tools/call", {"name": "read_request_status",
+            "arguments": {"requestId": request_id}}).json()["result"]["structuredContent"]
+        assert state["transport"] == "published" and state["receipt"] == overview
         assert not fixture_errors
         print("FORUM_CONTROL_BROWSER canonical-overview-through-github-receipt", flush=True)
         assert mcp(both["access_token"], "tools/call", {"name": "pin_topic", "arguments": args}).json()["result"]["structuredContent"]["status"] == "unavailable"
@@ -247,6 +250,8 @@ def run():
         assert next_token["refresh_token"] != both["refresh_token"]
         assert form("revoke", token=next_token["refresh_token"], token_type_hint="refresh_token").ok
         assert mcp(next_token["access_token"], "tools/list", {}).status == 401
+        assert mcp(next_token["access_token"], "tools/call", {"name": "read_request_status",
+            "arguments": {"requestId": request_id}}).status == 401
         assert form("token", grant_type="refresh_token", refresh_token=next_token["refresh_token"], resource=resource).status >= 400
         print("FORUM_CONTROL_BROWSER scoped-tools-refresh-revoke", flush=True)
 
