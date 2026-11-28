@@ -2,7 +2,7 @@
 
 # User AI / Vico Consultant — технический план
 
-**Статус — готов к проверке Business-Мирой.** Продуктовый контракт задан D-25–D-32. Техническая база проверена по `main` `99b40480cb4d777298aafb1ffae7f28cf0c6085d`. Поиск и Help уже имеют свои canonical readers, контент хранится в immutable revisions, видимость определяется текущим состоянием темы и сообщения. Индекс Consultant будет производной поисковой проекцией. [Product concept](../../research/user-ai-product-concept.md) · [Решения](../../DECISIONS.md) · [Назначение](../../agents/mira-business-user-ai.md)
+**Статус — принят Business-Мирой: PASS.** [Coordinator review](REVIEW.md) Продуктовый контракт задан D-25–D-32. Техническая база проверена по `main` `99b40480cb4d777298aafb1ffae7f28cf0c6085d`. Поиск и Help уже имеют свои canonical readers, контент хранится в immutable revisions, видимость определяется текущим состоянием темы и сообщения. Индекс Consultant будет производной поисковой проекцией. [Product concept](../../research/user-ai-product-concept.md) · [Решения](../../DECISIONS.md) · [Назначение](../../agents/mira-business-user-ai.md)
 
 ## 1. Архитектура и путь запроса
 
