@@ -91,3 +91,10 @@ Exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
 - Stage B не начинать до следующего явного перехода владельца.
 
 Детали проверки: `stages/A/REVIEW.md`.
+
+
+## ChatGPT-control Stage B активирован
+
+Лена реализует Stage B в stacked PR `#402` (`feature/chatgpt-forum-control-stage-b`), base — `#399` на принятом Stage A head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
+
+Scope: один protected Admin Overview read через локальный GitHub webhook fixture с возвратом receipt, без внешних credentials и без production ingress. Stage C+ не входит.
