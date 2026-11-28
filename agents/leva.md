@@ -11,3 +11,9 @@ Embedded-AI technical planning **PAUSED** по решению Миры: product 
 Не продолжать `stages/embedded-ai/PLAN.md`, не менять root `PLAN.md`, `#399`, production, secrets или provider resources.
 
 После завершения продуктовой проработки Мира выдаст новый handoff с утверждённым scope.
+
+## Предстоящее назначение — Stage C
+
+По прямому решению владельца после завершения Stage B следующий bounded-этап ChatGPT-control, Stage C, будет передан Лёве.
+
+Пока не активен. Не начинать реализацию и не создавать/менять implementation PR до coordinator PASS Stage B и отдельного handoff от Миры.
