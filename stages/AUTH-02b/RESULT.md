@@ -1,0 +1,226 @@
+# AUTH-02b — реализация и проверяемые результаты
+
+## Первый bounded checkpoint: signed proof и read-only state inspection
+
+AUTH-02a coordinator PASS, stable base #389 `06656fef2d85e03c62b7ab69b03fa96ecfc68653`. Main unchanged from approved baseline. По прямому назначению владельца AUTH-02b реализует Лена.
+
+Implementation branch `feat/auth-02b-email-verification`, head `d517b1ec8ae1df18d902d13021b36be70cd45368`. Отдельный implementation PR ещё не создан; branch contains three changed files, no lower-stage edit.
+
+1. `email-verification-proof.server.ts`: public pinned Better Auth 1.7.7 `better-auth/crypto` signJWT/verifyJWT, type marker, immutable userId/purpose/pending phase/generation; no email, bearer or raw token in state. TTL shares AUTH-02a constant. Native email-only verification JWT, wrong signature/type/expired malformed token rejected.
+2. `lifecycle-state.server.ts`: extract shared matching routine for persisted current operation and new locked non-consuming inspection. GET will not consume token or change identity; terminal consumes with same validation and existing authoritative DB-clock CAS. No second state store.
+3. Native PG regression added for actual signed proof, repeated read-only validation, stale generation, legacy native token, expired/wrong signature/tamper, then consume/replay. Not executed yet.
+
+## Verified integration constraints for next step
+
+Pinned Better Auth 1.7.7 source sign-up.ts: native signup executes in runWithTransaction, invokes validateUserInfo only for actual provisioning; catches create-user 403 into synthetic response under mandatory verification; calls sendVerificationEmail inside transaction. Do not send mail from that callback or treat returned user DTO as persisted proof. Use canonical public extension/hook and actual admission/creation evidence, preserve native signup hashing/credential/CSRF, arrange issuance and mail after proven commit, and common budget before domain transaction. No copying native signup implementation, private imports or native limiter replacement. Exact public API/crypto exports and dispatch pipeline verified; specific signup orchestration still to be implemented/verified. Native GET verifyEmail must be replaced by POST terminal (same key), landing read-only; no ambient-session creation/refresh/switch. AUTH-01 mail URL contract must be adjusted coherently for new landing; keep safe locale and return path. Worker already constructs mail capability; inject same existing capability into canonical runtime.
+
+Next after first checkpoint: domain verification orchestration and canonical signup/verify/resend integration. No configuration switch yet, no public flow, no CI requested, no real egress. AUTH-03 excluded. No author PASS.
+
+
+## Второй bounded checkpoint: verification domain service и mail landing contract
+
+Implementation branch `feat/auth-02b-email-verification`, exact head `933f1e7835293fcf9827b2248d09ef5a60f885bf`. Commit содержит ровно пять файлов, GitHub compare и ref проверены. AUTH-02a base unchanged. Это сохранённый код, не execution evidence.
+
+1. `app/auth/email-verification.server.ts`: request-local AuthEmailVerification использует общие state/budget/transaction и immutable signed proof. Locked eligibility проверяет active user/current email/unverified/password method. Issue/resend сохраняют generation под lock; mail build/send после proven COMMIT, без автоматического retry. Terminal confirm принимает native updateUser callback на той же connection и проверяет actual post-update row; consume + identity update атомарны. Inspect не consume, не меняет identity, не обращается к ambient session. Service outcomes internal-only; public endpoint ещё не подключён.
+2. `app/auth/lifecycle-plugin.server.ts`: экземпляр verification service в существующем plugin context, optional mail capability; никаких новых endpoints/config switch пока нет.
+3. `app/auth/auth-mail-urls.server.ts`: verification-specific URL `/:locale/verify-email?token=...&returnTo=...`; строгая exact canonical revalidation, другие purposes unchanged. Landing route ещё предстоит реализовать.
+4. `app/auth/auth-mail.test.ts` + `tests/database/auth-lifecycle-state.test.ts`: добавлены URL negative cases и native domain regression для issue after commit, repeated inspect, native update, replay, rollback, resend, eligibility/budget, uncertain mail, concurrent consume, deactivation. Tests written but not executed. Native Better Auth 1.7.7 signup/verification/dispatch/origin middleware source and internalAdapter.updateUser verified via GitHub exact tag. Current environment cannot resolve github.com for git clone, has Node 22 rather than required 24.21; no dependency/runtime harness available locally. GitHub read/write connector works; no CI requested on this partial checkpoint.
+
+Next: implement canonical plugin endpoint orchestration, preserving native signup password hashing, body validation, CSRF and provisioning gate; budget before domain transaction, native send callback must not send, capture actual creation/closure/unavailable outcome independent of optional telemetry; after commit issue via service. Replace verifyEmail key with POST; direct/HTTP both run same service. Resolve public endpoint validation using supported exact-version exports (repo has no direct zod dependency); keep safe errors, no-store, neutral resend timing/outcomes, no ambient session refresh; inject existing Worker mail capability. Then landing/UI and observability/fixtures. No mandatory config switch, no implementation PR/CI, no production resources, no author PASS.
+
+
+## Третий bounded checkpoint: canonical server endpoints
+
+Implementation branch `feat/auth-02b-email-verification`, head `5f07e9dc4f266691c39fc118f4966bf06734d58f`, previous `933f1e7835293fcf9827b2248d09ef5a60f885bf`. Two commits, net 11 changed files; GitHub ref and compare confirmed. No execution evidence.
+
+1. Existing native signUpEmail invoked through public Better Auth 1.7.7 dispatch API; native schema/password hashing/CSRF/registration provisioning retained. Signup and mail budgets committed before identity transaction; identical nested mail admission shares receipt. SignupVerificationEvidence uses a scoped ALS frame, captures actual provisioning gate and native callback after credential link (no mail in native transaction), distinguishes synthetic duplicate/closed/error, uses native return only to corroborate fresh creation, then issues outside transaction. Public neutral {status:true,token:null}, no identity DTO.
+2. Canonical plugin replaces verifyEmail key with POST body; sendVerificationEmail POST neutral guest; new inspectEmailVerification GET read-only. Reuse native Zod schemas via public exports, no dependency change. Budget errors 429 with Retry-After, invalid proof safe 400, availability classification, private/no-store/no-referrer. Preserve exact direct API types by retaining plugin endpoint type in BetterAuth options. Existing native form CSRF and nested dispatcher are retained (the signup name-normalization hook runs again in the nested dispatcher; no second budget or identity write). Native logger disabled globally for auth because native messages may contain raw email/adapter data; Vico structured telemetry remains. Required email challenge mode fails closed until AUTH-05 challenge exchange; no provider activation.
+3. Worker injects existing request-local mail runtime; canonical guest signup/verify/resend/inspect skip pre-router ambient session lookup, preventing refresh/switch/cookie writes; ordinary paths unchanged. Runtime protects guest HTTP responses including validation/CSRF errors. Mail callback path must be canonical locale-local path-only; missing callback uses bootstrap locale, actual mail runtime revalidates active registry and return path. No locale landing yet.
+4. Config/session context/lifecycle state tests updated; forum-email-registration native PG regression rewritten for actual no-session signup, after-commit mail injection, GET rejection, repeated inspect, POST confirmation/replay, explicit sign-in, duplicate neutral, SET-02 closure/resend, direct API parity. Existing unrelated tests and connected scripts relying on auto-session signup intentionally not yet migrated; current implementation branch is incomplete and may not typecheck/pass CI until fixture migration. No test was executed. Current container Node v22.16.0, pnpm absent, github.com not resolved; required Node 24.21 and repo harness unavailable. Source for pinned Better Auth 1.7.7 dispatch/toAuthEndpoints, core endpoint wrappers/transaction, native form-CSRF and exports inspected; actual installed runtime behavior and compile not verified. No CI launched on partial stage.
+
+Next: UI/locale pending and resend/verify read-only locale landing; do not expose raw token in public DTO/History/browser storage, no-referrer and safe return, explicit confirmation and sign-in. Then verification-specific facts/attempts/schema and safe projections, migrate all unrelated native/Worker/browser fixtures to verified fixture helper, add connected acceptance incl ambient session, closure/outage, rate/CSRF and Google regressions. Verify exact type/runtime behavior and resolve defects before author PASS. No external egress, AUTH-03 or merge.
+
+
+## Четвёртый bounded checkpoint: credential/verification UI and locale
+
+Implementation branch `feat/auth-02b-email-verification`, exact head `cdb5fa15b82ce6b68295a84d8bc480e12e604679`, previous `5f07e9dc4f266691c39fc118f4966bf06734d58f`. Two commits, net 18 files; GitHub compare/ref confirmed. No execution evidence.
+
+1. CredentialView switches successful signup to neutral check-email state, clears the rendered password form, does not navigate to authenticated forum or revalidate auth as if signed in. Signup client uses one canonical POST fetch with strict neutral acknowledgement (status true, token null), no native SDK signup session assumption; existing native email sign-in/Google paths retained. Resend link on sign-in/sign-up regardless of fresh registration closure. Rate-limit/unavailable feedback separate, no provider detail.
+2. Locale routes `/:locale/verify-email` and `/:locale/resend-verification`. Verification loader returns only safe locale/returnTo; client holds proof in ref, removes original token-bearing URL via history.replaceState preserving router metadata before readonly inspection, explicit button invokes POST; proof discarded after terminal result, no automatic retry. Confirmation page isolated from header/locale navigation derived from original URL. Explicit sign-in link; guidance for existing ambient other-account session. Neutral resend acknowledgement does not claim delivery. No token in loader data/forms/browser storage. Current mail URL uses query token (initial server request and readonly API GET still contain token; no-referrer/no-store and app logging boundary apply; no claim of external access-log guarantees).
+3. Worker/session context recognizes localized verification document/data paths and avoids ambient session refresh; protects final guest verification responses, including locale redirects, with private/no-store and no-referrer. Existing sign-in document/data no-store. Mail return destination uses existing AUTH-01 path-only constraint: query and fragment intentionally dropped for verification flow, existing ordinary sign-in return behavior unchanged; local validation rejects recursive auth destinations and ambiguous paths. EN/RU/HE strings and fixed source fingerprints updated for new keys; obsolete disclosure removed. Fingerprints calculated from repository sourceFingerprint JSON semantics (old known fingerprint reproduced); runtime catalogue test not run.
+4. UI/client/route/path/session tests changed or added for neutral pending vs auth navigation, exact acknowledgement/closed/429, proof removal before inspect, explicit confirmation, duplicate token rejection, safe loader DTO/headers and ambient session skip. Not executed; no local repo dependency/runtime harness. Browser/RTL/responsive, auth flow behavior and typecheck remain unverified. Existing unrelated signup/session fixtures not yet migrated. No CI requested on partial branch, no external egress, no author PASS.
+
+Next: verification observability per bounded plan, then migrate verified fixtures, connected acceptance and complete author self-check. No AUTH-03 or merge.
+
+
+## Пятый bounded checkpoint: verification observability
+
+Implementation branch `feat/auth-02b-email-verification`, exact head `325c6799d5526d8dcb8823a891357afc475c908b`, previous `cdb5fa15b82ce6b68295a84d8bc480e12e604679`. Five commits, net 34 files; GitHub compare/ref verified. No execution evidence.
+
+1. `auth.emailVerified` uses server-verified user ID, proof generation UUID for occurrence/correlation and null actor (guest proof, never an ambient session). Confirmation transaction stages exact fact only after verified persisted update and consume; transaction owner publishes after acknowledged commit and counts uncertain commit gap. Existing RequestAuthFactCollector/append-only writer; Accounts.users, Security.auth, Integrations.authentication and target/global History preserve same source ID. No new auth fact for issuance, mail acceptance, inspect, invalid/replay or rollback.
+2. Only current attempt operations `email-verification`, `verification-send` admitted to existing bounded collector/writer; HTTP POST failures and direct service failure path, no inferred actor, no double-count on HTTP dispatch and no GET inspection success. Forward 0075 changes existing operation CHECK, adds journal and snapshot. Prior migration unchanged; snapshot structural compare confirmed only CHECK plus id/prevId changed. Actual PG application/typecheck unverified.
+3. Operational mail observation `integration.authMailOutcome` uses existing bounded operational buffer/Owner journal. Captures one actual issuance's mail boundary outcome and invoked transport category (none/unknown/fake/resend/brevo), purpose and safe operation UUID; no recipient or actor. Runtime transport observation occurs at invocation boundary, not configuration. No mail observation for not-eligible. Writer allowlists exact mail fields/values; non-mail kinds reject new mail fields. Separate global/scoped Integrations History, no target attribution; counts/last retained mail outcome and requested mode/parameter presence distinguish actual evidence from activation/delivery/health. No external probe or new monitor. Fixed pre-existing Integrations attempt aggregate predicate pool='auth' (impossible pool value) to surface='auth' so it includes actual auth attempt groups. Added EN/RU/HE labels with computed fixed fingerprints.
+4. Added regression assertions for after-commit fact, rollback/replay/concurrent suppression, accepted/uncertain mail separation, no raw data, original history IDs across scopes, new operation constraint, guest attribution and configuration presence. Tests not run; earlier fixture migration still pending; no local repository runtime. No author PASS/CI on incomplete branch. Existing auth runtime/source mapping and operational projection contract inspected; whole-feature self-check remains required before final PR.
+
+Next: inventory unrelated auth/forum tests and browser scripts dependent on auto-session signup, migrate to test-only verified fixtures without production bypass or loss of existing coverage, then connected acceptance and author verification. No AUTH-03 or merge.
+
+
+## Шестой bounded checkpoint: native PostgreSQL fixture migration
+
+Implementation branch `feat/auth-02b-email-verification`, exact head `e08f2876e620e0f213b5c6806b9ebfa714d4bab2`, previous `325c6799d5526d8dcb8823a891357afc475c908b`. Two commits, net 11 test-only files; GitHub compare/ref verified. No execution evidence.
+
+1. Shared `tests/database/verified-credential-fixture.ts`: guarded disposable local *_test DB/schema; real pending credential signup with no session, test-only verified state and exact obsolete proof cleanup, genuine separate sign-in, assert persisted identity and cookie. No application/Worker bypass. Historical minimal auth schemas get exact 0073/0074 migrations. Isolated tests clear lifecycle budgets at case boundaries where appropriate, not inside tested policy/rate-limit scenarios.
+2. Migrated account-security, auth-link-identity, auth-runtime, registration-auth-admission, sa02-auth-creations, sa02-auth-oauth-rollback, sa02-auth-password-change, sa02-auth-session-deletion, sa04-session-atomic, sa07-integration-monitoring native tests. Preserve native registration admission, same-email Google policy, session/account-state races, password and observation contracts. Fresh identity atomicity pauses/fails actual credential INSERT rather than removed signup session INSERT; uncertain-commit injection selects identity transaction instead of earlier independent budget commit; expected signup session count zero. Existing session-write regressions remain separately covered. Explicit no-cookie/pending response assertions in migrated paths.
+3. Inventory based on current exact-head code, main code-search hits and tree paths. Native migration block committed, not exhaustive executed completeness certification. Main search returned up to 50 signup HTTP hits including ~30 browser checks and local smoke scripts. Worker/browser/smoke callers still require explicit inspection/migration; native inventory completeness check remains. No typecheck, PostgreSQL tests or browser tests run. Info not verified by runtime. No implementation PR or CI requested yet.
+
+Next: inspect and migrate Worker/browser/local smoke fixtures, then compile/native completeness, connected acceptance and author self-check. No AUTH-03 or merge.
+
+
+## Седьмой bounded checkpoint: connected browser/smoke fixtures
+
+Implementation branch `feat/auth-02b-email-verification`, exact head `8177fdb532f38aedfef671fc5c002b7f1069bfc8`, previous `e08f2876e620e0f213b5c6806b9ebfa714d4bab2`. Four commits, net 38 files; branch ref and exact commit compare confirmed. No runtime execution evidence.
+
+1. Shared `tests/browser/verified_fixture.py` uses each scenario's existing SQL capability only on verified loopback disposable *_test public schema and local Worker. Real fresh signup pending/no session, exact pending credential + proof prerequisite, atomic test-only verified state and obsolete proof deletion, genuine separate sign-in and matching identity/cookie. Unrelated fixture provisioning resets only disposable lifecycle budget before setup to avoid pooling synthetic local ingress; no reset of native rate_limit, no reset inside actual policy or verification probes. No Worker/app bypass or fabricated session.
+2. Migrated 33 existing browser scripts (including Owner, moderation, account/settings, topic watch/title/bookmarks, personal filters, admin, complaints, visibility, attachments). The two existing Python scripts without signup callers (responsive and forum-structure-f6) unchanged. SET-02 browser signup now asserts neutral pending heading, unverified persisted row, zero session/cookie, denied pre-verification sign-in; only then test-only verified fixture and actual browser sign-in for unrelated registration-policy checks. Existing stale-open-page rejection and returning-login checks retained. SA04 completion's real closed-registration probe unchanged.
+3. Three local smoke scripts use shared native TS fixture helper with loopback/CI/disposable checks. Native helper's verified state and proof cleanup made a single SQL operation; public schema permitted only in guarded disposable CI. Connected helper isolates lifecycle budget before fixture setup. No production code modified. Existing HTTP/native session assertions remain on actual sign-in responses.
+4. Inspection covered known Python and smoke signup callers and direct remaining policy path. Python syntax, TypeScript typecheck, PG execution and Worker/Chromium results not verified; no CI labels/implementation PR yet. Need full completeness and author self-check on actual head, including new observer/proof contracts. Connected verification-specific flow still needs a real local-only mail/proof capture and browser terminal confirmation test; the unrelated verified fixture is not acceptance evidence for that flow.
+
+Next: implement connected verification-specific acceptance; then completeness, compile and author checks. No AUTH-03 or merge.
+
+
+## Eighth checkpoint — connected verification acceptance implementation
+
+Exact head `f98346c8184b6cd3196029f266fcf7aedb12acfe`, previous `8177fdb532f38aedfef671fc5c002b7f1069bfc8`. Three commits, net four files, branch ref confirmed. Typed application factory preserves default production handler; separate CI-only Worker injects existing request mail boundary fake transport, with guarded synthetic recipients, local origin and exact disposable DB/schema. Separate connection captures rendered messages only if committed pending identity/credential/current proof/no-session visible. New label-triggered exact-head PG17/Worker/Chromium workflow and browser scenario cover pending signup, denied early sign-in, EN/RU/HE rendered mail, duplicate privacy, closure, read-only GET, resend/stale proof, explicit POST, replay, separate login, safe return/token scrubbing, other-account session and committed Owner facts. No verification state mutation by test, no budget reset, no capture API or production configuration, no external provider or raw mailbox/log artifact. Tests not executed. Next full author self-check and applicable CI/acceptance; no AUTH-03 or merge.
+
+
+## Corrective package and first implementation PR
+
+#391 draft, exact head `f353431d280068ecd9b298ef14bcc50076d7b381`, base #389 unchanged. Commit corrects missing node composite dependency includes, adds connected Worker entry to cloudflare typecheck, isolates native signup/sign-in rate-limit buckets only during unrelated disposable fixture setup, retains actual native limiter in dedicated verification acceptance (waits for its 10s window), protects encoded/case/trailing-slash guest page aliases and outer Worker failures with private no-store/no-referrer, updates uncertain signup commit header assertion. Production rate-limit settings unchanged. Labels run:ci and run:acceptance submitted. No test success claim; further completeness and runtime evidence required.
+
+
+## First connected PASS and typecheck corrective package
+
+Prior exact `f353431d280068ecd9b298ef14bcc50076d7b381`: dedicated AUTH-02b actual Worker/PG17/Chromium workflow #45654464233 succeeded (all steps success), lint success, checks #45654463122 failed typecheck: test DB URL narrowing in function default (TS2345) and nonportable inferred endpoint/plugin declaration references to transitive Zod path (TS2742). Database and other acceptance still running at inspection; several unrelated connected sets already succeeded. New exact `63f19896e039074d767110ceaad3a69d3b2fbd37` names canonical typed endpoint map with public Better Auth 1.7.7 AuthEndpoint generics and native schema-derived types; explicit plugin return type; test DB URL narrowed without cast. No runtime/domain change intended and no dependencies changed. New run:ci submitted; no new exact-head PASS claim. Collect prior remaining outcomes and run applicable acceptance on stable corrected head.
+
+
+## AUTH-02b corrective review after #45655035999
+
+Exact `63f19896e039074d767110ceaad3a69d3b2fbd37`: lint/typecheck PASS; unit 3322/3323; DB 1869/1875 (3 current-scope failures, 1 unrelated parallel lock-test false match followed by 2 cascading aborted-transaction failures and an unhandled rejection). Prior `f353431d` connected verification workflow #45654464233 PASS; 18 connected workflow successes including SA04/SA05/SA06/SA07/SA08, AP-10 failed only in browser user-measures fixture email length. AP-10 history/settings/settings-administrator jobs passed. No claim for new head.
+
+Corrected exact `43af58080b6299584c97451d38562828148ffcce` (two commits from previous head):
+1. Native registration policy reader runs in existing AuthLifecycleTransaction adapter-operation boundary. A raw Drizzle read failure must poison the owned transaction even when native Better Auth 1.7.7 converts a gate failure to 403/synthetic acknowledgement. A real policy lock + query timeout now explicitly checks no COMMIT attempt after policy read; no identity writes, no session, existing safe 503 and sign-in/closure/invariant semantics preserved. No change to general transaction owner or deadlines.
+2. Verified Better Call 1.4.0 router catches errors from onError and otherwise independently calls console.error with raw exception even if Better Auth logger is disabled. Public onAPIError callback throws sanitized 500 APIError only for non-APIError exceptions; existing API errors and captured runtime classification remain. Existing real credential insert-failure rollback test now also checks no raw console.error and no private error body.
+3. Explicitly register both new routes in exhaustive route shape test. Migration count 76, target manifest 0075 and new owner_attempt_patterns_kind_check SHA-256. Reconstructed PG17 canonical expression of old constraint and reproduced exact existing SHA-256 a46dfc8a9e8e55b153718d5e5a800b8c73050f43559d3c046d9ccca45f880077; changed only operation-array literals and computed new 8871be12d3919941ab0c1f388c0c45e1c746f17698c3fbac79dcf4eaca409272. Actual PG17 catalog hash assertion added; full parity still to run.
+4. Account security fixture login uses separate synthetic IP, preserves native production limiter and makes wrong-password assertion precise 401. AP-10 long synthetic suffix shortened only for offending case; other addresses and privacy assertions preserved. SA07 test now observes only advisory waiter blocked by its own backend PID, guarantees probe transaction rollback and pending read settlement even on assertion failure; unchanged production Data monitoring implementation and lock/no-source-transaction assertion. Compiled expected migration updated to 0075.
+5. Both labels submitted on new exact head. No CI-only workaround, no external activation or dependency changes. Remaining: runtime evidence and complete semantic author check, then coordinator handoff.
+
+
+## Follow-up on exact-head CI #45662041414
+
+`43af58080b6299584c97451d38562828148ffcce`: 121/121 DB files, 1875/1875 PostgreSQL tests, production manifest parity (76 tables) PASS. All 19 applicable connected acceptance workflows completed successfully, including dedicated AUTH-02b #45662040794 and AP-10 #45662040841. CI nevertheless failed: checks TypeScript TS2322 because Better Auth's validateUserInfo returns Awaitable while runAdapterOperation requires Promise; database job reached P7 local HTTP smoke and failed pending signup. PostgreSQL log confirms two concurrent native rate_limit_key_unique insert violations; three parallel fixture calls each delete shared buckets before signup. Inspected every connected TS helper caller: complaints, AccountState, visibility R2. Corrective commit `1385f3fc9f49c3e6ebe1d4a0ff01c25cda66c6cc` wraps the unchanged policy callback in async; serializes entire setup operations in all three smoke callers, not actual domain concurrency probes; includes safe HTTP status in fixture failures. No production limiter change, no retry, no weakening of assertions. Both check labels submitted on new exact head. Earlier PASS evidence does not establish PASS for new head. Semantic review and exact-head checks remain pending.
+
+
+## Existing bookmark concurrency test blocks CI gate
+
+Exact `1385f3fc9f49c3e6ebe1d4a0ff01c25cda66c6cc`: CI #45669698685 checks PASS, all 19 connected acceptance workflows PASS (AUTH-02b #45669699144). Database job 139401314521 reported 121/121 files, 1875/1875 tests passed, plus one unhandled rejection in tests/database/topic-bookmarks.test.ts and PromiseRejectionHandledWarning. Both this test and db/forum-repository.ts identical to accepted base. Hide-first writer correctly rejects ForumEntityNotFoundError after releasing Hide transaction, but the test awaited COMMIT acknowledgement before attaching the rejection assertion. That interval permits Node/Vitest to report unhandled rejection despite the later successful assertion. Deactivation-first has the same ordering. Because this existing test defect blocks required CI, minimal commit `684aecbe255629d936205cd89c8fb22d46c73b93` observes those original promises immediately with an early handler, retains awaited rejects.toBeInstanceOf and PG lock/state assertions; no production changes, no retry or disabling unhandled-error detection. Both labels submitted on new head. Previous downstream P7/AccountState smoke not reached; their correction still needs actual evidence. No author PASS yet.
+
+## Незавершённый handoff Мире — техническая эскалация по решению владельца
+
+Exact `684aecbe255629d936205cd89c8fb22d46c73b93`: CI #45683149906 checks PASS; DB tests/manifest/privilege/provisioning PASS; P7 pending signup HTTP 500; subsequent smoke skipped. All 19 connected acceptance PASS on that head. Source self-check covered server signup/verification/proof/transaction/state/budget/mail chain but not complete scope; UI, projections, fixtures and negative/HTTP parity review incomplete. No AUTHOR PASS.
+
+Current exact `bbd35cb60273a2a90cce7aea997d50e4f42943cf`: diagnostic-only change in connected TS fixture; original assertions unchanged. CI #45684578593 checks PASS, database job 139453667013 FAIL at P7; PG 121/121 files, 1875/1875 tests PASS. Log: Connected signup diagnostic: {"status":500,"responseKind":"auth-unexpected-error","budget_rows":0,"budget_spends":0,"native_signup_buckets":1,"registration_open":true,"users":0,"credentials":0,"proofs":0,"sessions":0}. This establishes no persisted signup or Vico budget spend at observation, not the precise cause. No latest-head acceptance PASS. Earlier native rate-limit collision not evidenced in current failure. Compare P7 default built Worker, prior DB probes and Node HTTP path with passing fresh DB/Playwright; do not infer cause. Local execution unavailable in Lena environment.
+
+Owner directed: Leva performs full technical review instead of Lena; handoff accepted by Mira, not author PASS/coordinator PASS. Review entire bounded scope against plan/current project and integration contracts, not only CI failure. No implementation changes during review; fixes separately. After review, owner assigns the separate AUTH-02b correction/finalization implementation to Leva as well. After coordinator PASS AUTH-02b, Leva remains implementer for AUTH-03 → AUTH-06. No AUTH-03 or merge before AUTH-02b closes. Lena STOP.
+
+
+## Техническая проверка Лёвы — AUTH-02b #391, 2026-11-25
+
+Проверен `bbd35cb60273a2a90cce7aea997d50e4f42943cf` относительно принятого AUTH-02a `06656fef2d85e03c62b7ab69b03fa96ecfc68653` и bounded PLAN. **HOLD — три подтверждённых замечания.** Implementation head сохранён.
+
+1. **Блокер CI — P7 запускает собранный Worker без локального auth binding.** `.github/workflows/ci.yml:194` собирает Worker до того, как `scripts/smoke-complaints-local.ts:91` создаёт корневой `.dev.vars`. Cloudflare Vite plugin 1.54.6 переносит локальные переменные в каталог Worker при сборке, а preview читает их рядом с выходным `wrangler.json`. Локально на PG17.11, Node 24.21.0 и pnpm 12.3.4 исходный P7 воспроизвёл HTTP 500, один native bucket и ноль Vico budget/identity writes. Временная диагностика в локальном собранном файле показала `LifecycleBudgetInvariantError` на проверке типа/длины секрета в `app/auth/lifecycle-budget.server.ts:68`, до первого SQL бюджета. После восстановления исходного бандла и размещения синтетической конфигурации рядом с выходным `wrangler.json` прошёл весь неизменённый P7, включая B8-B1/B8-B3. Dedicated acceptance пишет `.dev.vars` до build, что объясняет расхождение. В отдельной фазе исправления обеспечить конфигурацию каждого built-preview smoke в нужном каталоге с корректной очисткой. SA04-J12 и SA05-2 повторяют post-build настройку корневого файла, их результат надо проверить отдельно. Общий auth secret contract и лимиты менять для этого не требуется.
+2. **Resend до гидратации раскрывает email в URL.** SSR-форма `app/routes/resend-verification.tsx:43` не задаёт method и полагается на JS-обработчик. В Chromium с отключённым JS отправка формы реально выполняет GET и добавляет email в query string. `no-store` и `no-referrer` сохраняются, но адрес попадает в URL браузера. При исправлении проверить SSR/pending-hydration путь. Та же форма credential sign-in/sign-up в `app/auth/credential-view.tsx:96` сохраняет унаследованное от AUTH-02a поведение с чувствительными полями, его следует учесть при проверке UI-пакета.
+3. **Недоступная локаль проходит входную валидацию, но срывает выпуск письма после записи поколения.** `app/auth/auth-mail-urls.server.ts:75–86` принимает канонический locale-local callback по синтаксису без знания активного registry. При сборке URL `authMailLocale` выбирает bootstrap для отсутствующего/неактивного языка, после чего исходный return path отвергается как относящийся к другому языку (строки 103–104). Проверено реальными функциями с текущим registry: допустимый EN callback даёт ссылку, синтаксически корректный FR callback при отсутствии FR в registry отвергается на этапе buildActionURL. К этому моменту signup/resend уже записывает текущее поколение, а delivery фиксирует rejected и endpoint возвращает нейтральное подтверждение. При resend предыдущий рабочий proof становится stale без нового письма. Нужна согласованная политика валидации/локализации назначения до смены поколения либо корректный fallback на bootstrap с согласованным return path.
+
+Проверены canonical HTTP/direct, обязательность email verification и отсутствие signup session, SET-02 fresh-create gate и ошибки чтения policy, порядок AccountState и транзакционные границы, GET/POST и proof generation/expiry/replay, resend и mail outcomes, Google isolation/explicit linking, локализованные UI/return paths, Owner facts/attempts и fixture diff. Локально прошли 220 unit/component-тестов, 56 PostgreSQL-тестов в шести файлах (registration/direct/SET-02, lifecycle, linking, Owner facts и integration monitoring), миграции на чистой PG17.11 и отдельный connected сценарий AUTH-02b с Worker, Playwright 1.62 и системным Chromium вместо Chrome. P7 с исходной конфигурацией FAIL; затронутый сценарий с локально проверенной конфигурацией preview PASS. Последующие общие CI smoke и полный acceptance matrix на этом head локально не запускались. CI `#45684578593` сохраняет свой зарегистрированный статус; AUTHOR PASS и coordinator PASS отсутствуют.
+
+Review-фаза завершена. Следующий назначенный этап — отдельный пакет исправлений AUTH-02b, новый stable head и проверки. AUTH-03 ждёт coordinator PASS AUTH-02b.
+
+
+## Correction/finalization — активирован у Лёвы
+
+Review-фаза завершена на exact head `bbd35cb60273a2a90cce7aea997d50e4f42943cf` с HOLD и тремя confirmed current-scope findings. По прямому решению владельца Лёва начинает отдельную implementation-фазу исправления:
+
+1. built-preview auth binding для P7 и аналогичных post-build smoke;
+2. SSR resend form должна исключить email в GET URL до гидратации;
+3. locale/return-path validation должна быть согласована с generation issuance так, чтобы не инвалидировать рабочий proof без возможности отправить новый.
+
+После coherent correction package требуется новый stable exact head, полный author self-check bounded AUTH-02b и применимые exact-head CI/acceptance. До coordinator PASS AUTH-03 не начинается.
+
+
+## Пакет исправлений AUTH-02b — 2026-11-26
+
+PR #391, head `4fbf8e829fd18c7190a540eade17bdf543a406d3`, base #389 `06656fef2d85e03c62b7ab69b03fa96ecfc68653`.
+
+1. P7, SA04-J12 и SA05-2 создают синтетический `.dev.vars` рядом с конфигурацией собранного Worker. Сохранены exclusive create и cleanup собственного файла; CI и probe проверяют фактический путь.
+2. SSR-форма resend явно отправляется POST. Локальный Chromium с отключённым JavaScript подтвердил POST без email в URL; обычная отправка остаётся в canonical API.
+3. Если запрошенная локаль больше недоступна, verification mail использует bootstrap locale и его корневой return path. Перед fallback по-прежнему валидируется исходный locale-local путь. Тест через fake runtime подтвердил принятие письма и отклонение подменённого return path.
+
+Локально прошли typecheck, выбранные unit/component проверки (55), чистые миграции PostgreSQL 17, ownership probe, P7 и SA04-J12. Exact-head CI #45710166025 и acceptance, включая AUTH-02b #45710173292, запущены. AUTHOR PASS зависит от итогов проверок.
+
+
+### Author self-check и итог exact-head проверок
+
+**AUTHOR PASS** на `4fbf8e829fd18c7190a540eade17bdf543a406d3` после сверки bounded AUTH-02b с PLAN и исправления трёх замечаний. Изменения ограничены preview test bindings, SSR resend POST и verification locale fallback с тестом fake delivery. Локально также прошёл SA05-2 (63 HTTP-запроса); файл test binding очищен. Отправка resend через canonical API по-прежнему выполняется с JavaScript.
+
+- [CI #45710166025](https://github.com/iliya1947/vico-forum/actions/runs/45710166025) PASS: checks и database, включая PG17, manifest/privilege probes, P7, SA04-J12 и SA05-2.
+- 19/19 применимых acceptance workflows PASS, включая [AUTH-02b Worker Chromium](https://github.com/iliya1947/vico-forum/actions/runs/45710173292) и [AP-10](https://github.com/iliya1947/vico-forum/actions/runs/45710173538).
+- Stable exact head передан Мире для coordinator checkpoint. AUTH-03 ждёт coordinator PASS. Реальные провайдеры и Stage-6 остаются на паузе.
+
+
+## Coordinator checkpoint Миры — HOLD
+
+Проверен stable exact head `4fbf8e829fd18c7190a540eade17bdf543a406d3` против принятого AUTH-02b PLAN и AUTH-02a base. Предыдущие три findings Лёвы на этом head закрыты; exact-head CI #45710166025 и 19/19 applicable acceptance PASS использованы как supporting evidence, но не как основание PASS.
+
+### Confirmed current-scope finding
+
+**Credential sign-in/sign-up form может отправить email и password через GET до hydration.**
+
+`app/auth/credential-view.tsx` содержит email/password `<form>` без явного `method`. У полей есть `name="email"` и `name="password"`. При submission до React hydration либо с отключённым JavaScript применяется HTML default GET, поэтому credential values могут попасть в URL/query/browser history. Это отличается от уже исправленной resend-формы и относится к текущему AUTH-02b: этот файл входит в bounded diff и именно здесь меняется signup presentation под mandatory verification.
+
+Классификация: **current-scope security defect, blocking coordinator PASS**. Это не future-only улучшение и не основание расширять AUTH-03.
+
+### Остальной coordinator review
+
+Самостоятельно проверены canonical signup/verification/resend endpoints, signup creation evidence, mandatory verification/no-session contract, read-only GET + explicit POST terminal confirmation, AccountState/transaction ordering, generation/replay/expiry, Google isolation/explicit linking, locale fallback, verification observability, forward migration 0075 и три предыдущих correction areas. Дополнительных confirmed current-scope defects не установлено.
+
+### Следующий этап
+
+Лёва исправляет только credential transport finding и добавляет regression для SSR/no-JS/pre-hydration submission semantics. После нового stable exact head, author self-check и применимых exact-head checks требуется повторный coordinator checkpoint. AUTH-03 до PASS не начинается.
+
+
+## Исправление по checkpoint Миры — 2026-11-26
+
+**AUTHOR PASS** на новом stable head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` в #391. Общая credential form для входа и регистрации получила явный `method="post"`. Гидратированный сценарий по-прежнему использует canonical auth API. Browser regression открывает обе SSR-страницы с отключённым JavaScript, перехватывает браузерную отправку и проверяет POST на URL без query string. Синтетические credentials из этого probe не отправляются в Worker.
+
+Author self-check: diff от `4fbf8e8` ограничен общим компонентом и connected регрессией. 14 component tests PASS, повторный локальный Worker/PG17/Chromium сценарий PASS. В одном локальном прогоне существующий resend шаг нажал submit до гидратации; на повторе и в GitHub Actions прошёл. [CI #45715104959](https://github.com/iliya1947/vico-forum/actions/runs/45715104959) PASS, все 19 применимых acceptance workflow PASS, включая [AUTH-02b #45715112322](https://github.com/iliya1947/vico-forum/actions/runs/45715112322) с новой регрессией.
+
+Передано Мире для повторного coordinator checkpoint по новому SHA. AUTH-03 ждёт coordinator PASS.
+
+
+## Повторный coordinator checkpoint Миры — PASS
+
+Проверен stable exact head `a668fd6d3b0df99056d517a3b2d2a4fe7cef0180` относительно предыдущего HOLD head `4fbf8e829fd18c7190a540eade17bdf543a406d3`.
+
+1. Correction delta — один commit, два файла:
+   - `app/auth/credential-view.tsx`: общая sign-in/sign-up form получила явный `method="post"`;
+   - `tests/browser/auth-02b/check.py`: added no-JS/pre-hydration regression для обеих credential pages.
+2. Browser regression реально открывает SSR sign-in/sign-up с JavaScript disabled, перехватывает native submission и требует ровно `POST` на URL без query string; synthetic credentials в Worker не отправляются.
+3. Hydrated flow остаётся на canonical auth API; mandatory-verification pending presentation не менялась.
+4. Изменение не расширяет scope в recovery/password creation или AUTH-03 и не меняет auth/session architecture.
+5. Ранее полный coordinator review bounded AUTH-02b уже проверил canonical signup/verify/resend, AccountState/transaction ordering, proof generation/replay/expiry, Google isolation, observability, migration 0075 и предыдущие correction findings; новый delta эти участки не меняет.
+6. Exact-head CI #45715104959 — PASS.
+7. 19/19 применимых acceptance workflows — PASS, включая AUTH-02b #45715112322 с новым regression.
+
+**Confirmed current-scope blocking defects: 0. COORDINATOR PASS.**
+
+AUTH-02b остаётся intermediate stacked PR без merge и independent intermediate review. PASS разрешает следующую ступень AUTH-03; по прямому решению владельца её реализует Лёва после отдельной активации.
