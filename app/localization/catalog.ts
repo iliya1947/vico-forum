@@ -16,6 +16,16 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    consultantSections: message("consultantSections", "Browse the forum sections and choose a relevant category or section.", "Consultant deterministic navigation instruction: consultantSections."),
+    consultantPlacement: message("consultantPlacement", "Choose the relevant section or Help & solutions. Use its new-topic form if available.", "Consultant deterministic navigation instruction: consultantPlacement."),
+    consultantTags: message("consultantTags", "Browse technology tags to find related discussions.", "Consultant deterministic navigation instruction: consultantTags."),
+    consultantAccount: message("consultantAccount", "Open Account & security to manage your own sign-in methods and sessions.", "Consultant deterministic navigation instruction: consultantAccount."),
+    consultantPrivacy: message("consultantPrivacy", "Open Privacy to manage your online visibility.", "Consultant deterministic navigation instruction: consultantPrivacy."),
+    consultantProfile: message("consultantProfile", "Open your profile to view or edit its available fields.", "Consultant deterministic navigation instruction: consultantProfile."),
+    consultantWatch: message("consultantWatch", "Open a topic and use Watch topic or Stop watching in its controls.", "Consultant deterministic navigation instruction: consultantWatch."),
+    consultantReport: message("consultantReport", "Open the relevant topic or message and use its report form if available.", "Consultant deterministic navigation instruction: consultantReport."),
+    consultantBestAnswer: message("consultantBestAnswer", "Open the topic. If the best-answer control is available, select the appropriate reply.", "Consultant deterministic navigation instruction: consultantBestAnswer."),
+    consultantOpenPage: message("consultantOpenPage", "Open the indicated page to use its available controls.", "Consultant deterministic navigation instruction: consultantOpenPage."),
     historyCategoryCreated: message("historyCategoryCreated", "Category created", "Forum structure History action."),
     historyCategoryRenamed: message("historyCategoryRenamed", "Category renamed", "Forum structure History action."),
     historyCategoryReordered: message("historyCategoryReordered", "Category order changed", "Forum structure History action."),

@@ -83,7 +83,8 @@ import {ownerLocalizationMonitoringContext} from "../app/super-admin/request-con
 import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profile/request-context";
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
-import { isOwnerAccountLifecyclePath, isOwnerMonitoringPath, isPrivateForumReadPath, protectFrameworkFailure } from "./private-failure-response";
+import { consultantDependenciesContext, createConsultantDependencies } from "../app/consultant/dependencies.server";
+import { isConsultantPath, isOwnerAccountLifecyclePath, isOwnerMonitoringPath, isPrivateForumReadPath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
@@ -189,6 +190,7 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
     };
     context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),integrationRuntimeFacts,requiredLocalization.current));
     context.set(ownerOverviewMonitoringContext,createHyperdriveOwnerOverview(webConnectionString,localizationConnectionString,ownerUserId,import.meta.env.MODE,integrationRuntimeFacts,requiredLocalization.current));
+    context.set(consultantDependenciesContext, createConsultantDependencies(context));
     const response = await requestHandler(request, context);
     const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.
@@ -218,7 +220,8 @@ export function createApplication(createMailRuntime: RequestMailFactory = create
     async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
       const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
         || isOwnerMonitoringPath(new URL(request.url).pathname)
-        || isPrivateForumReadPath(new URL(request.url).pathname);
+        || isPrivateForumReadPath(new URL(request.url).pathname)
+        || isConsultantPath(new URL(request.url).pathname);
       const guestVerification = isGuestEmailVerificationRequest(request);
       const protect = (response: Response): Response => {
         if (!guestVerification) return privateBoundary ? protectFrameworkFailure(request, response) : response;

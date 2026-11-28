@@ -25,6 +25,7 @@ export default [
     route("attention/complaints/:caseId/evidence/:attachmentId", "routes/complaint-review-evidence.ts"),
     route("posts/:postId/edit", "routes/post-edit.ts"),
     route("search", "routes/search.tsx"),
+    route("consultant", "routes/consultant.ts"),
     route("popular", "routes/popular.tsx"),
     route("unanswered", "routes/unanswered.tsx"),
     route("unread", "routes/unread.tsx"),
