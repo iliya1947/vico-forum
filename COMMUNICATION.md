@@ -63,3 +63,10 @@ Technical planning Лёвы поставлен на паузу. Следующи
 Moderation AI — отдельный permission-scoped copilot и advisory signal layer; он не разделяет protected context с User Consultant и не получает domain-write authority.
 
 Концепция пока proposal Миры. Technical planning Лёвы остаётся PAUSED до последовательного решения владельцем продуктовых развилок.
+
+
+## Уточнение владельца — роль User Consultant
+
+Владелец определил центральную роль консультанта: не универсальный технический советчик, а **навигатор по Vico Forum** — «как, где, что», поиск правильной темы/решения, выбор раздела/Help и forum feature guidance.
+
+Концепция обновлена в `research/embedded-ai-concept-v1.md` (v2). General technical Q&A и внешний web search больше не считаются core user-AI v1.
