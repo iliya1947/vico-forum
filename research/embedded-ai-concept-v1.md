@@ -213,10 +213,21 @@ AI для модерации остаётся отдельной permission-scop
 ## 14. Remaining product decisions
 
 После этого решения владельца ещё нужно последовательно определить:
-1. Consultant доступен гостям или только авторизованным пользователям.
+1. **РЕШЕНО:** Consultant доступен только авторизованным пользователям.
 2. Должен ли Consultant помнить conversation state между страницами/сессиями.
 3. Насколько глубоко он должен понимать permission-aware navigation для Admin/Moderator surfaces.
 4. Нужна ли отдельная постоянная точка входа «AI Consultant» или достаточно общей точки + контекстных входов.
 5. Как показывать несколько найденных тем: один лучший ответ или короткий ranked set.
 6. Нужен ли on-demand topic summary в обязательном v1.
 7. Какой минимум Moderator Copilot обязателен в первом релизе.
+
+
+## 15. Решение владельца — доступ к Consultant
+
+Consultant доступен **только авторизованным пользователям**.
+
+Следствия для product scope:
+1. Guest не получает диалоговый Consultant.
+2. Public Search и обычная публичная навигация форума остаются доступны без авторизации.
+3. Consultant может надёжно опираться на authenticated user identity, locale и доступные пользователю forum capabilities.
+4. Guest-rate-limit и анонимная AI abuse-модель для Consultant в v1 не требуются.
