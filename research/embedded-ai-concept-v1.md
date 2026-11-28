@@ -265,3 +265,14 @@ Consultant использовать могут **только авторизов
 6. технический план должен выбрать простой способ server-side mapping пользователя в один из трёх disclosure layers без копирования всей dynamic RBAC логики в prompt/model layer.
 
 Точное правило mapping custom roles/overrides в эти три слоя остаётся техническим вопросом для Лёвы после утверждения product scope.
+
+
+## 18. Решение владельца — наследование disclosure layers
+
+Disclosure layers Consultant иерархичны:
+
+1. **User** — базовый слой.
+2. **Moderator** — включает User + moderator-only knowledge/navigation context.
+3. **Administrator** — включает User + Moderator + administrator-only knowledge/navigation context.
+
+Это наследование относится только к допустимому AI knowledge/navigation context. Canonical authorization конкретных страниц и действий остаётся независимой server-side проверкой.
