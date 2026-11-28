@@ -78,3 +78,16 @@
 Полный отчёт: `stages/A/REVIEW.md`.
 
 Local OAuth Chromium run был skipped и будет запущен Мирой только после correction и успешного применимого CI на новом stable head. Stage B заблокирован.
+
+
+## Stage A #399 — PASS
+
+Exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
+
+- основной CI `46148681007`: success;
+- local OAuth Chromium acceptance `46149123687`: success;
+- A-F01–A-F03 закрыты;
+- production/Stage 6 не активированы;
+- Stage B не начинать до следующего явного перехода владельца.
+
+Детали проверки: `stages/A/REVIEW.md`.
