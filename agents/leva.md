@@ -4,19 +4,10 @@
 
 Технический replan ChatGPT-control завершён и принят Мирой. Текущая новая planning-задача не изменяет этот план и не затрагивает `#399`.
 
-## Активное назначение
+## Статус
 
-Подготовить полный технический план встроенного AI-блока по `../stages/embedded-ai/SCOPE.md`.
+Embedded-AI technical planning **PAUSED** по решению Миры: product scope ещё не утверждён владельцем.
 
-Рабочие product inputs:
-1. `../research/user-ai-product-scope.md`;
-2. `../research/admin-moderation-ai-product-scope.md`;
-3. актуальный `main` и профильные source-of-truth.
+Не продолжать `stages/embedded-ai/PLAN.md`, не менять root `PLAN.md`, `#399`, production, secrets или provider resources.
 
-Результат: `../stages/embedded-ai/PLAN.md`.
-
-Критерий готовности и обязательные вопросы находятся в `SCOPE.md`; не пересказывай их механически, а самостоятельно проверь текущий код и актуальные первичные источники для всех внешних provider/лимит/compatibility решений.
-
-Не начинать реализацию, не менять текущий root `PLAN.md`, не менять `#399`, production, secrets или внешние provider resources.
-
-После завершения передать stable plan Мире на независимую проверку через `#400`.
+После завершения продуктовой проработки Мира выдаст новый handoff с утверждённым scope.
