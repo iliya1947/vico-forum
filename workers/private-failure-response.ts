@@ -37,7 +37,8 @@ export function isOwnerAccountLifecyclePath(pathname: string): boolean {
 export function protectFrameworkFailure(request: Request, response: Response): Response {
   const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
     || isOwnerMonitoringPath(new URL(request.url).pathname)
-    || isPrivateForumReadPath(new URL(request.url).pathname);
+    || isPrivateForumReadPath(new URL(request.url).pathname)
+    || isConsultantPath(new URL(request.url).pathname);
   if (!privateBoundary && (response.status < 500 || response.status > 599)) return response;
   const privateAttachmentRead = (request.method === "GET" || request.method === "HEAD")
     && isPrivateAttachmentPath(new URL(request.url).pathname);
@@ -50,6 +51,19 @@ export function protectFrameworkFailure(request: Request, response: Response): R
     headers: new Headers(response.headers),
   });
   protectedResponse.headers.set("Cache-Control", "private, no-store");
+  if (isConsultantPath(new URL(request.url).pathname)) {
+    protectedResponse.headers.set("Referrer-Policy", "no-referrer");
+    if (response.status >= 500) {
+      // Preserve the real failure status and private headers; never let a
+      // framework error document include query/context or raw exception details.
+      protectedResponse.headers.delete("Content-Length");
+      protectedResponse.headers.delete("Content-Encoding");
+      protectedResponse.headers.set("Content-Type", "application/json; charset=utf-8");
+      return new Response(request.method === "HEAD" ? null :
+        JSON.stringify({ error: response.status === 503 ? "unavailable" : "unexpected" }),
+        { status: response.status, headers: protectedResponse.headers });
+    }
+  }
   return protectedResponse;
 }
 
@@ -73,4 +87,13 @@ export function isPrivateForumReadPath(pathname:string):boolean {
     if(p.length===6)return ["categories","sections","topics"].includes(p[4])&&!!p[5];
     return p.length===7&&p[4]==="topics"&&!!p[5]&&["move","move.data","inspect","inspect.data"].includes(p[6]);
   }catch{return false;}
+}
+
+/** Consultant is a private resource, including accepted static/data aliases. */
+export function isConsultantPath(pathname: string): boolean {
+  const parts = pathname.split("/");
+  while (parts.at(-1) === "") parts.pop();
+  try {
+    return parts.length === 3 && !!parts[1] && ["consultant", "consultant.data"].includes(decodeURIComponent(parts[2]).toLowerCase());
+  } catch { return false; }
 }

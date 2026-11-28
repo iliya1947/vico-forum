@@ -8,6 +8,20 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  consultantFilters: "073c8f27e605467dfe490c0874f97deaede7e7850c8ccd137f8a45b5ac446520",
+  consultantReadBestAnswer: "885d2068ec5ba921c8dcd70e2891ca0ef79bc6b36b95732582fb0152faa8a693",
+  consultantSaveTopic: "0a0971b5d0dac9f7eea449c38329e98a38c12aa3b6f41cbde58c98a9358d3fa1",
+  consultantTranslationHelp: "311849fd0fe5d63b19100e9783115ca54b6af0d2b9f5329d2423f9ad217fb92d",
+  consultantSections: "8da68d9e2c2ef4187dccd7fa9464cbd8bf462871e6a18f13d4b1d4e04c68111b",
+  consultantPlacement: "6842a07ec42f32da306a58572050b4e86c0b610e33077122aab76339009ce669",
+  consultantTags: "8ac22af213a0eac9c989a3a43595f610743f690f94d4ab8a71304b3f4d4b5b49",
+  consultantAccount: "847e2e79e4c229b64fdf3befafd493ca984da54fdbe50a7ebd4042fa7ad72729",
+  consultantPrivacy: "78e4d2d7cac4db49394037ba4a206422dbe2bf3336b84aea285bfc28641066ce",
+  consultantProfile: "fab66a8c432792980d020ee7fe3794c6a85c813d644d1bb1b06d87ec850a3973",
+  consultantWatch: "5b58320b9f981ccab0d045374097ad13317527903b68582988474132bf760635",
+  consultantReport: "dc32b39abac5d6b8db28742f22bb5e503f4595fac0fe047c8d0e57674430c7ad",
+  consultantBestAnswer: "3d5a6ed741338e3b7d7399fb85bf3df98fcc96960c61e2cd97ef3b3cd04cc338",
+  consultantOpenPage: "8dca80defd7cde9b1eeedaa1e6906bc6596b1b46b0d6bc96ccb74a497887eba5",
   historyCategoryCreated: "311e48a44c5479684eb29d092a2a20fa3d77ee3b118c4105c49a3ed41b169e02",
   historyCategoryRenamed: "07f9387afccf68cfb283934c0e15022bc6342278dc6e0fc1e55cabd21acd0aef",
   historyCategoryReordered: "7580f868046eda292e7c7e35ba335fe91a50296c9708a206a3aed9d73a2c542d",
