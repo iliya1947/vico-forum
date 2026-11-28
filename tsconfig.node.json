@@ -58,6 +58,7 @@
     "app/admin/user-measure-restrictions.ts",
     "app/measures/request-context.ts",
     "app/admin/access.server.ts",
+    "app/admin/overview.server.ts",
     "app/admin/history.server.ts",
     "app/admin/forum.server.ts",
     "app/admin/forum-paths.ts",

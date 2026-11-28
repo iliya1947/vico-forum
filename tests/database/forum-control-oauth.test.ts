@@ -323,14 +323,14 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
     expect(await store.claim(row.id)).toBeNull();
     expect(await store.accept(delivery)).not.toBeNull();
     expect(reads).toBe(1);
-    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toBeNull();
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => true)).toBeNull();
     expect(await store.recordReceiptPublication(row.id, grant, crypto.randomUUID(), "43")).toBeNull();
     expect((await store.recordReceiptPublication(row.id, grant, row.receiptRef, "43"))?.receiptCommentId).toBe("43");
-    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toEqual({
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => true)).toEqual({
       status: "read-ok", result: { localMarker: "protected" },
     });
     await db.query("update forum_control_request set expires_at=clock_timestamp()-interval '1 second' where id=$1", [row.id]);
-    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toBeNull();
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43", async () => true)).toBeNull();
     expect((await store.inspect(row.id, grant))?.expired).toBe(true);
     expect((await db.query("select result from forum_control_request where id=$1", [row.id])).rows[0]?.result).toBeNull();
     expect((await store.register(request, grant)).requestRef).toBe(row.requestRef);

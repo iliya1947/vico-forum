@@ -194,11 +194,12 @@ export class PostgresOverviewRequests {
 
   /** The protected payload is not returned by inspect/register/claim. The
    * caller must have freshly verified this exact receipt through the App API. */
-  readPublished(id: string, grant: ForumControlGrant, receiptRef: string, commentId: string): Promise<OverviewOutcome | null> {
-    return this.withRequest(id, grant, async row => {
+  readPublished(id: string, grant: ForumControlGrant, receiptRef: string, commentId: string,
+    admitProjection: (grant: ForumControlGrant) => Promise<boolean> = async () => false): Promise<OverviewOutcome | null> {
+    return this.withRequest(id, grant, async (row, currentGrant) => {
       if (row.expired || !row.finishedAt || row.receiptRef !== receiptRef || row.receiptCommentId !== commentId) return null;
       if (row.outcome === "denied" || row.outcome === "unavailable") return { status: row.outcome };
-      if (row.outcome !== "read-ok") return null;
+      if (row.outcome !== "read-ok" || !await admitProjection(currentGrant)) return null;
       const result = await this.db.query<{ result: unknown }>(
         "select result from forum_control_request where id=$1 and expires_at>clock_timestamp()", [id]);
       const payload = result.rows[0]?.result;
