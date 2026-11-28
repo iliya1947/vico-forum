@@ -224,10 +224,12 @@ AI для модерации остаётся отдельной permission-scop
 
 ## 15. Решение владельца — доступ к Consultant
 
-Consultant доступен **только авторизованным пользователям**.
+Consultant использовать могут **только авторизованные пользователи**, но он **видим гостям** как часть продукта.
 
 Следствия для product scope:
-1. Guest не получает диалоговый Consultant.
-2. Public Search и обычная публичная навигация форума остаются доступны без авторизации.
-3. Consultant может надёжно опираться на authenticated user identity, locale и доступные пользователю forum capabilities.
-4. Guest-rate-limit и анонимная AI abuse-модель для Consultant в v1 не требуются.
+1. Guest видит точку входа Consultant, но вместо диалога получает auth-gate с понятным сообщением уровня «Зарегистрируйтесь или войдите, чтобы использовать консультанта».
+2. Auth-gate должен вести в существующий registration/sign-in flow, без отдельной AI-регистрации.
+3. Guest не получает model inference, conversation state или AI quota.
+4. Public Search и обычная публичная навигация форума остаются доступны без авторизации.
+5. После авторизации Consultant может опираться на authenticated user identity, locale и доступные пользователю forum capabilities.
+6. Guest-rate-limit и анонимная AI abuse-модель для самого Consultant в v1 не требуются.
