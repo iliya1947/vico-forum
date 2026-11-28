@@ -1,0 +1,93 @@
+name: Forum control local OAuth Chromium acceptance
+
+on:
+  pull_request:
+    types: [labeled]
+    paths:
+      - "app/forum-control/**"
+      - "app/auth/**"
+      - "db/**"
+      - "drizzle/**"
+      - "tests/browser/forum-control/**"
+      - "tests/fixtures/forum-control-*"
+      - ".github/workflows/forum-control-browser.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local_oauth_browser:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run:acceptance'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vico_forum_control_browser_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vico_forum_control_browser_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_control_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_control_browser_test
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_WEB_HYPERDRIVE: postgresql://postgres:postgres@127.0.0.1:5432/vico_forum_control_browser_test
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 12.3.4
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install local browser harness
+        run: |
+          python3 -m venv "$RUNNER_TEMP/forum-control-playwright"
+          "$RUNNER_TEMP/forum-control-playwright/bin/pip" install playwright==1.62.0
+      - name: Run local OAuth fixture through built Worker
+        run: |
+          umask 077
+          cp wrangler.jsonc "$RUNNER_TEMP/forum-control-original-wrangler.jsonc"
+          trap 'if [ -n "${preview_pid:-}" ]; then kill "$preview_pid" 2>/dev/null || true; fi; cp "$RUNNER_TEMP/forum-control-original-wrangler.jsonc" wrangler.jsonc; rm -f .dev.vars' EXIT
+          export BETTER_AUTH_SECRET="$(openssl rand -hex 32)"
+          export FORUM_CONTROL_FIXTURE_CLIENT_SECRET="$(openssl rand -hex 32)"
+          export FORUM_CONTROL_FIXTURE_PASSWORD="$(openssl rand -hex 24)"
+          pnpm exec tsx tests/browser/forum-control/seed.ts
+          printf '%s\n' \
+            "BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET" \
+            "FORUM_CONTROL_FIXTURE_CLIENT_SECRET=$FORUM_CONTROL_FIXTURE_CLIENT_SECRET" \
+            'BETTER_AUTH_URL=http://127.0.0.1:4242' \
+            'GOOGLE_CLIENT_ID=local-unused' \
+            'GOOGLE_CLIENT_SECRET=local-unused' > .dev.vars
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const p="wrangler.jsonc",c=JSON.parse(readFileSync(p,"utf8"));
+            if(c.main!=="./workers/app.ts") throw new Error("Unexpected entrypoint");
+            c.main="./tests/browser/forum-control/worker-entry.ts";
+            c.observability={enabled:false};
+            writeFileSync(p,JSON.stringify(c,null,2));
+          '
+          pnpm build
+          pnpm exec vite preview --host 127.0.0.1 --port 4242 --strictPort > "$RUNNER_TEMP/forum-control-worker.log" 2>&1 &
+          preview_pid=$!
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl -sf --max-time 2 http://127.0.0.1:4242/ready > /dev/null; then ready=true; break; fi
+            if ! kill -0 "$preview_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then echo "Local Worker readiness failed"; exit 1; fi
+          "$RUNNER_TEMP/forum-control-playwright/bin/python" tests/browser/forum-control/check.py
+      # Never upload logs, DB data or token-bearing traces.
