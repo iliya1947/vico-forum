@@ -29,18 +29,23 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 ## Параллельные AI product-tracks
 
-1. **User AI / Vico Consultant** — product concept согласован; направление передано отдельной Мире с Business-аккаунта как координатору задачи №2. Она ведёт только User AI и не смешивает его с ChatGPT-control или Admin/Moderation AI.
+1. **User AI / Vico Consultant** — product concept согласован; отдельный technical-planning этап активирован. Координатор — Business-Мира, архитектор — Лёва, будущий реализатор после принятия плана — Ада. Задача ведётся отдельно от ChatGPT-control и Admin/Moderation AI.
 2. **Admin/Moderation AI** — полная product concept proposal подготовлена в `research/admin-moderation-ai-product-concept.md`; ожидает решения владельца.
 3. Ни один из этих product-tracks не расширяет Stage A–I ChatGPT-control и его implementation PR.
 
 
-## Embedded AI technical planning
+## User AI — technical planning
 
-**PAUSED.** Техническое планирование embedded AI не начинается до product acceptance.
+**АКТИВЕН как самостоятельная задача №2.**
 
-- User AI: действующий согласованный contract — `research/user-ai-product-concept.md`; отдельная Business-Мира назначена координатором и может продолжить это направление как самостоятельную задачу. Прежний общий embedded-AI technical planning остаётся PAUSED и не используется как единый план двух задач.
-- Admin/Moderation AI: действующая proposal — `research/admin-moderation-ai-product-concept.md`; сначала требуется решение владельца по концепции.
-- ChatGPT-control Stage B в `#402` идёт независимо и не смешивается с embedded AI.
+- Coordinator: Business-Мира.
+- Architect/planner: Лёва.
+- Принятый product input: `research/user-ai-product-concept.md`.
+- Результат: полный отдельный `stages/user-ai/PLAN.md` с архитектурой, этапами, зависимостями, acceptance criteria и рекомендацией delivery mode.
+- Future implementer: Ада, только после coordinator PASS плана и отдельного handoff bounded-этапа.
+- Implementation PR ещё не создан и реализация не активирована.
+- Root `PLAN.md`, `#399/#402`, ChatGPT-control и Admin/Moderation AI не входят в эту planning-задачу.
+- Старый `stages/embedded-ai/SCOPE.md` и общий embedded-AI planning не используются как объединённый план.
 
 ## Зафиксированные три направления AI-блока
 
@@ -50,7 +55,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 2. **User AI** — встроенный пользовательский консультант/навигация по форуму; product concept согласован отдельно.
 3. **Admin/Moderation AI** — отдельная активная product-задача; исходный scope широкий: определить практически полезные встроенные AI-функции для администрации/модерации, не ограничиваясь прежними примерами. Первый шаг — factual workload map — завершён.
 
-User AI передан отдельной Business-Мире как самостоятельная задача №2; общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
+User AI ведётся отдельной Business-Мирой как самостоятельная задача №2; Лёва готовит отдельный technical plan, а Ада получает реализацию только после его принятия. Общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
 
 
 ## Admin/Moderation AI — product concept
