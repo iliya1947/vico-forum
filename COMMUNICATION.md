@@ -80,3 +80,8 @@ User Consultant доступен только authenticated users. Public Search
 ## Уточнение владельца — guest visibility Consultant
 
 D-26 уточнён: Consultant не скрывается от гостей. Guest видит точку входа и auth-заглушку «зарегистрируйтесь или войдите, чтобы использовать консультанта» с переходом в существующий auth flow; сам AI/inference доступен только после авторизации.
+
+
+## Решение владельца — память Consultant
+
+D-27: память только внутри текущей консультации. Persisted history/long-term memory в v1 нет, но state/storage boundary должна быть заменяемой, чтобы такую функцию можно было добавить позже без существенной переделки consultant core.
