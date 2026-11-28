@@ -1,5 +1,5 @@
 import type { RouterContextProvider } from "react-router";
-import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state-errors";
 import { authSessionForRequest } from "../auth/request-context";
 import {
   AttachmentBucketUnavailableError,
@@ -14,14 +14,10 @@ import {
 } from "../forum/attachment-r2";
 import { authorizeEditorWrite } from "../forum/editor-permission.server";
 import { requireSameOrigin } from "../forum/mutations.server";
-import {
-  InvalidForumAttachmentError,
-  ForumAttachmentDraftConflictError,
-  isForumAttachmentUuid,
-  type ForumAttachmentMetadata,
-} from "../../db/forum-attachments";
-import { ForumAttachmentStorageUnavailableError } from "../../db/hyperdrive-forum-attachments";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
+import { InvalidForumAttachmentError, ForumAttachmentDraftConflictError, ForumAttachmentStorageUnavailableError } from "../../db/forum-attachment-errors";
+import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
+import type { ForumAttachmentMetadata } from "../../db/forum-attachments";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
 
 const json = (payload: unknown, status = 200): Response => Response.json(payload, {
   status,

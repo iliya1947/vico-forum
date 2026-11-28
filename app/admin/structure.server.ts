@@ -1,10 +1,9 @@
 import { createContext, type RouterContextProvider } from "react-router";
 import type { ForumStructureReader, DestinationQuery } from "../../db/forum-structure-reader";
-import { StructureForbiddenError, StructureValidationError } from "../../db/forum-structure";
-import { StructureReadUnavailableError } from "../../db/hyperdrive-forum-structure-reader";
-import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { StructureForbiddenError, StructureValidationError, StructureReadUnavailableError } from "../../db/forum-structure-contract";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state-errors";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { adminPrivateHeaders } from "./forum.server";

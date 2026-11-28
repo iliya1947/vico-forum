@@ -1,6 +1,6 @@
 import {registryForRequest} from "../localization/request-context";
 import {RegistryConnectionUnavailableError} from "../localization/persistent-registry";
-import {ComplaintStorageUnavailableError} from "../../db/hyperdrive-complaints";
+import {ComplaintStorageUnavailableError} from "../../db/complaint-storage-error";
 import {data,type RouterContextProvider} from "react-router";
 import {complaintAppealContext} from "../complaints/appeal-context";
 import {complaintReviewer,complaintHttpError,complaintPrivateHeaders} from "../complaints/queue.server";

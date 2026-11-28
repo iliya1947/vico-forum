@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useRevalidator } from "react-router";
@@ -27,8 +28,7 @@ export function CredentialCreationView({ enabled, locale, userId, sessionId }: {
     };
     capture();
     setHydrated(true);
-    window.addEventListener("hashchange", capture);
-    return () => window.removeEventListener("hashchange", capture);
+    return browserAddress().observeHashChange(capture);
   }, [enabled, created]);
   async function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

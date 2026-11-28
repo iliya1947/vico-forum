@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import { ForumAttachmentDraftConflictError } from "./forum-attachment-errors";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import {
   forumAttachmentDraftGenerations,
@@ -6,12 +7,7 @@ import {
 
 type AttachmentDraftConnection = Pick<NodePgDatabase, "delete" | "execute" | "insert" | "select">;
 
-export class ForumAttachmentDraftConflictError extends Error {
-  constructor(readonly reason: "conflict" | "gone" = "conflict") {
-    super("attachment draft generation conflict");
-    this.name = "ForumAttachmentDraftConflictError";
-  }
-}
+export { ForumAttachmentDraftConflictError } from "./forum-attachment-errors";
 
 /** Serialize reference changes even while a generation has no attachment rows yet. */
 export async function lockAttachmentDraftScope(

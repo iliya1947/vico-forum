@@ -1,8 +1,8 @@
 import {createContext,type RouterContextProvider} from "react-router";
 import type {AdminBrowseQuery,AdminForumReader} from "../../db/admin-forum";
-import {StructureValidationError} from "../../db/forum-structure";
+import {StructureValidationError} from "../../db/forum-structure-contract";
 import {STRUCTURE_CURSOR_LIMIT} from "../../db/structure-browse";
-import {AdminForumUnavailableError} from "../../db/hyperdrive-admin-forum";
+import {AdminForumUnavailableError} from "../../db/admin-forum-error";
 import {requireAdminAccess} from "./access.server";
 export const adminForumContext=createContext<AdminForumReader>();
 export const adminPrivateHeaders={"Cache-Control":"private, no-store"};

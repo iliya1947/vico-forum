@@ -1,7 +1,33 @@
-import type { ComponentType } from "react";
-import type { RouteObject } from "react-router";
+import { createElement, type ComponentType } from "react";
+import { useActionData, useMatches, useParams, useRouteError, useRouteLoaderData } from "react-router";
+import type { ActionFunctionArgs, RouteObject } from "react-router";
 import type { PreviewRouteDescriptor } from "../build/route-manifest";
-import { previewAction } from "./action-bridge";
+import { normalizePreviewActionRequest, previewAction } from "./action-bridge";
+
+/** Framework Mode gives route components props; Data Mode does not. */
+function withFrameworkComponentProps(id: string, Component: ComponentType<Record<string, unknown>>): ComponentType {
+  return function PreviewFrameworkComponent() {
+    const loaderData = useRouteLoaderData(id);
+    const actionData = useActionData();
+    const params = useParams();
+    const matches = useMatches();
+    return createElement(Component, { loaderData, actionData, params, matches });
+  };
+}
+
+/** Preserve Framework ErrorBoundary props while keeping the original useRouteError hook working. */
+function withFrameworkErrorBoundaryProps(
+  id: string,
+  ErrorBoundary: ComponentType<Record<string, unknown>>,
+): ComponentType {
+  return function PreviewFrameworkErrorBoundary() {
+    const error = useRouteError();
+    const loaderData = useRouteLoaderData(id);
+    const actionData = useActionData();
+    const params = useParams();
+    return createElement(ErrorBoundary, { error, loaderData, actionData, params });
+  };
+}
 
 /**
  * Convert the generated Framework descriptor tree into Data Router routes.
@@ -11,6 +37,7 @@ import { previewAction } from "./action-bridge";
 export function createPreviewDataRoutes(
   manifest: PreviewRouteDescriptor,
   modules: ReadonlyMap<string, Record<string, unknown>>,
+  normalizeScreenActions = false,
 ): RouteObject[] {
   const used = new Set<string>();
 
@@ -26,6 +53,11 @@ export function createPreviewDataRoutes(
       return null;
     }
     used.add(descriptor.id);
+    // Framework clientLoader has no direct Data Router export; dropping it would
+    // silently change the production loader contract.
+    if (module.clientLoader !== undefined) {
+      throw new Error("UI preview cannot adapt Framework clientLoader: " + descriptor.id);
+    }
     const hasComponent = typeof module.default === "function";
     const isResource = !hasComponent && !children.length
       && (typeof module.loader === "function" || typeof module.action === "function");
@@ -41,19 +73,33 @@ export function createPreviewDataRoutes(
       throw new Error("UI preview route has invalid middleware: " + descriptor.id);
     }
 
+    const serverAction = module.action;
+    const screenAction = typeof serverAction === "function" && normalizeScreenActions && hasComponent
+      ? (args: ActionFunctionArgs) => {
+        const request = normalizePreviewActionRequest(args.request, window.location.origin);
+        return serverAction({ ...args, request, url: new URL(request.url) });
+      }
+      : serverAction;
+
     const route = {
       id: descriptor.id,
       ...(descriptor.path === undefined ? {} : { path: descriptor.path }),
       ...(descriptor.index === undefined ? {} : { index: descriptor.index }),
       ...(descriptor.caseSensitive === undefined ? {} : { caseSensitive: descriptor.caseSensitive }),
-      ...(hasComponent ? { Component: module.default as ComponentType } : {}),
+      ...(hasComponent ? {
+        Component: withFrameworkComponentProps(descriptor.id, module.default as ComponentType<Record<string, unknown>>),
+      } : {}),
       ...(typeof module.loader === "function" ? { loader: module.loader } : {}),
       ...(typeof module.clientAction === "function"
         ? { action: previewAction(descriptor.id, module) }
-        : typeof module.action === "function" ? { action: module.action } : {}),
+        : typeof screenAction === "function" ? { action: screenAction } : {}),
       ...(module.middleware ? { middleware: module.middleware } : {}),
       ...(typeof module.ErrorBoundary === "function"
-        ? { ErrorBoundary: module.ErrorBoundary as ComponentType } : {}),
+        ? {
+          ErrorBoundary: withFrameworkErrorBoundaryProps(
+            descriptor.id, module.ErrorBoundary as ComponentType<Record<string, unknown>>,
+          ),
+        } : {}),
       ...(module.handle === undefined ? {} : { handle: module.handle }),
       ...(typeof module.shouldRevalidate === "function"
         ? { shouldRevalidate: module.shouldRevalidate } : {}),

@@ -5,7 +5,7 @@ import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { data, Link, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerSa02MonitoringForRequest } from "../super-admin/request-context";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
+import { OwnerSystemUnavailableError } from "../../db/owner-system-error";
 import { parseOwnerHistoryQuery } from "../super-admin/history-query.server";
 import { withOwnerHistoryFilters } from "../super-admin/history-query-links";
 import { OWNER_MONITORS } from "../../db/owner-monitor-catalog";

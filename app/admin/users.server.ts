@@ -1,6 +1,6 @@
 import { createContext, type RouterContextProvider } from "react-router";
 import type { AdminUsersReader } from "../../db/admin-users";
-import { AdminUsersUnavailableError } from "../../db/hyperdrive-admin-users";
+import { AdminUsersUnavailableError } from "../../db/admin-users-error";
 import { requireAdminAccess } from "./access.server";
 import { adminBrowseQuery, adminObjectId, adminPrivateHeaders } from "./forum.server";
 

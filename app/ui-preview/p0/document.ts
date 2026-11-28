@@ -50,7 +50,7 @@ export function createPreviewDocumentAdapter(
       id: match.route.id,
       pathname: match.pathname,
       params: match.params,
-      data: state.loaderData[match.route.id],
+      loaderData: state.loaderData[match.route.id],
       handle: match.route.handle,
     }));
     let meta: Record<string, unknown>[] = [];
@@ -65,7 +65,7 @@ export function createPreviewDocumentAdapter(
       if (module.meta !== undefined) {
         if (typeof module.meta !== "function") throw new TypeError("Invalid route meta export");
         meta = descriptors(module.meta({
-          data: state.loaderData[match.route.id],
+          loaderData: state.loaderData[match.route.id],
           params: match.params,
           location: state.location,
           matches: metaMatches,

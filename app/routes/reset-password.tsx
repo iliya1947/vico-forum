@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLoaderData } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -24,8 +25,7 @@ export default function ResetPasswordPage() {
     };
     capture();
     if (!proof.current) setResult("invalid");
-    window.addEventListener("hashchange", capture);
-    return () => window.removeEventListener("hashchange", capture);
+    return browserAddress().observeHashChange(capture);
   }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

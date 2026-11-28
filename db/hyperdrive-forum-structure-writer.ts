@@ -3,7 +3,8 @@ import {isPostgresAvailabilityFailure} from "../app/localization/persistent-regi
 import {createWebPool,bestEffortDiscardClient,isPostgresConnectionTimeout,isPostgresQueryTimeout} from "./postgres-deadlines";
 import {PostgresStructureWriter,type StructureWriter} from "./forum-structure";
 
-export class StructureWriteUnavailableError extends Error {}
+import { StructureWriteUnavailableError } from "./forum-structure-contract";
+export { StructureWriteUnavailableError } from "./forum-structure-contract";
 
 export function createHyperdriveForumStructureWriter(
   connectionString:string,authorization:AuthorizationCapability,ownerUserId?:string,

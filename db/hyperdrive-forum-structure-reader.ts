@@ -2,7 +2,8 @@ import type { AuthorizationCapability } from "./authorization-service";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { PostgresForumStructureReader, type ForumStructureReader } from "./forum-structure-reader";
-export class StructureReadUnavailableError extends Error {}
+import { StructureReadUnavailableError } from "./forum-structure-contract";
+export { StructureReadUnavailableError } from "./forum-structure-contract";
 export function createHyperdriveForumStructureReader(connectionString:string,authorization:AuthorizationCapability,ownerUserId?:string):ForumStructureReader {
   async function read<T>(operation:(reader:ForumStructureReader)=>Promise<T>) {
     const pool=createWebPool(connectionString);

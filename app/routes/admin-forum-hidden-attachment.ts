@@ -2,7 +2,7 @@ import type { RouterContextProvider } from "react-router";
 import { requireAdminAccess } from "../admin/access.server";
 import { readHiddenAttachment } from "../admin/visibility-queue.server";
 import { adminObjectId } from "../admin/forum.server";
-import { isForumAttachmentUuid } from "../../db/forum-attachments";
+import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
 import { deliverAttachment } from "./attachment-download";
 
 const privateHeaders={

@@ -2,11 +2,11 @@ import type { RouterContextProvider } from "react-router";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { ownerAccountLifecycleContext } from "../profile/request-context";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
-import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
-import { OwnerAccountLifecycleUnavailableError } from "../../db/hyperdrive-owner-account-lifecycle";
-import { OwnerAccountLifecycleCommitUncertainError, OwnerAccountLifecycleConflictError,
-  OwnerAccountLifecycleForbiddenError, OwnerAccountLifecycleTargetMissingError,
-  OwnerAccountLifecycleValidationError, validateOwnerAccountDeactivationInput } from "../../db/owner-account-lifecycle";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state-errors";
+import { OwnerAccountLifecycleUnavailableError, OwnerAccountLifecycleCommitUncertainError,
+  OwnerAccountLifecycleConflictError, OwnerAccountLifecycleForbiddenError,
+  OwnerAccountLifecycleTargetMissingError, OwnerAccountLifecycleValidationError,
+  validateOwnerAccountDeactivationInput } from "../../db/owner-account-lifecycle-contract";
 
 type Args = { request: Request; params: { userId?: string }; context: RouterContextProvider };
 const fields = ["intent", "expectedActorId", "targetUserId", "operationId"] as const;

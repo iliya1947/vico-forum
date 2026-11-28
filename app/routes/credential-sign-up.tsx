@@ -3,7 +3,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { credentialReturnPath } from "../auth/credential-path";
 import { CredentialView } from "../auth/credential-view";
 import { registrationSettingsContext } from "../settings/request-context";
-import { RegistrationSettingsUnavailableError } from "../../db/hyperdrive-registration-settings";
+import { RegistrationSettingsUnavailableError } from "../../db/registration-settings-error";
 
 export function headers() { return { "Cache-Control": "no-store" }; }
 

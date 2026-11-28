@@ -5,6 +5,8 @@ import { createMemoryRouter, Link, RouterProvider } from "react-router";
 import { createElement } from "react";
 import { createPagesAddressCodec } from "./pages-address";
 import { installPagesLocationAdapter } from "./pages-location";
+import { browserAddress } from "../../browser-address";
+import { takeCredentialProof } from "../../auth/credential-recovery-client";
 
 const id = { actor: "p0-preview-user", scenario: "default", initialPath: "/en/topics/p0-preview-topic" };
 
@@ -66,5 +68,52 @@ describe("React Router public createHref seam", () => {
       adapter.dispose();
       router.dispose();
     }
+  });
+});
+
+describe("shared native browser address port", () => {
+  it("decodes a native anchor without losing bootstrap identity", () => {
+    const codec = createPagesAddressCodec(new URL("https://pages.invalid/project/"), id);
+    const outer = new URL(codec.href("/en/topics/t?sort=new#old"), "https://pages.invalid");
+    outer.hash = "#post-42";
+    expect(codec.fromUrl(outer)).toBe("/en/topics/t?sort=new#post-42");
+    const canonical = new URL(codec.href(codec.fromUrl(outer)), outer.origin);
+    expect(canonical.hash).toBe("");
+    expect(canonical.searchParams.get("actor")).toBe(id.actor);
+    expect(canonical.searchParams.get("path")).toBe("/en/topics/t?sort=new#post-42");
+  });
+
+  it("captures and scrubs synthetic proof fragments without revalidation, observes later same-route changes, and restores production defaults", async () => {
+    const codec = createPagesAddressCodec(new URL(window.location.href), id);
+    const initial = "/en/reset-password?returnTo=%2Fen#token=synthetic-one";
+    const router = createMemoryRouter([{ path: "/en/reset-password" }], { initialEntries: [initial] });
+    const adapter = installPagesLocationAdapter(router, { codec });
+    const port = browserAddress();
+    let changes = 0;
+    const stop = port.observeHashChange(() => { changes += 1; });
+    try {
+      expect(port.read().hash).toBe("#token=synthetic-one");
+      expect(takeCredentialProof()).toBe("synthetic-one");
+      expect(port.read().hash).toBe("");
+      expect(router.state.location.hash).toBe("#token=synthetic-one");
+      expect(takeCredentialProof()).toBeNull();
+      expect(changes).toBe(0);
+      expect(codec.fromUrl(new URL(port.href("/en/sign-in?returnTo=%2Fen"), window.location.origin)))
+        .toBe("/en/sign-in?returnTo=%2Fen");
+      await router.navigate("/en/reset-password?returnTo=%2Fen#token=synthetic-two");
+      expect(changes).toBe(1);
+      expect(takeCredentialProof()).toBe("synthetic-two");
+      expect(port.read().hash).toBe("");
+      expect(changes).toBe(1);
+      stop();
+      await router.navigate("/en/reset-password?returnTo=%2Fen#token=synthetic-three");
+      expect(changes).toBe(1);
+    } finally {
+      stop();
+      adapter.dispose();
+      router.dispose();
+    }
+    expect(browserAddress().href("/en/sign-in")).toBe("/en/sign-in");
+    expect(browserAddress().read().href).toBe(window.location.href);
   });
 });

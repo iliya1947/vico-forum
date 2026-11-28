@@ -14,10 +14,14 @@ export interface RegistrationSettings extends RegistrationFlags {
 export interface RegistrationSettingsUpdate extends RegistrationFlags {
   expectedVersion: number;
 }
-export class RegistrationSettingsForbiddenError extends Error {}
-export class RegistrationSettingsConflictError extends Error {}
-export class RegistrationSettingsValidationError extends Error {}
-export class RegistrationSettingsInvariantError extends Error {}
+import {
+  RegistrationSettingsForbiddenError, RegistrationSettingsConflictError,
+  RegistrationSettingsValidationError, RegistrationSettingsInvariantError,
+} from "./registration-settings-error";
+export {
+  RegistrationSettingsForbiddenError, RegistrationSettingsConflictError,
+  RegistrationSettingsValidationError, RegistrationSettingsInvariantError,
+} from "./registration-settings-error";
 
 interface RegistrationRow {
   google_registration_enabled: boolean;

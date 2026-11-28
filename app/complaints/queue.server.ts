@@ -3,10 +3,10 @@ import { data, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
-import { ComplaintStorageUnavailableError } from "../../db/hyperdrive-complaints";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
+import { ComplaintStorageUnavailableError } from "../../db/complaint-storage-error";
 import { ComplaintConflictError, ComplaintForbiddenError, ComplaintInputError, ComplaintNotFoundError } from "../../db/complaints-domain";
 
 export const complaintPrivateHeaders = {"Cache-Control":"private, no-store"};

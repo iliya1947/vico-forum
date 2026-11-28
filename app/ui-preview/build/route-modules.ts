@@ -11,21 +11,26 @@ function collectRoutes(route: PreviewRouteDescriptor): PreviewRouteDescriptor[] 
 }
 
 /**
- * The build plugin is the only place where Framework routes become browser
- * imports. P0 limits which modules are bundled, not which paths/IDs exist:
- * subsequent runtime stages can use the same manifest without a second router.
+ * The generated registry always derives route IDs and import paths from the
+ * actual Framework descriptor tree. A bounded module selection is optional:
+ * P0 uses it for its proof, while the full P1 registry needs no route list.
  */
 export function createPreviewRouteModuleSource(
   manifest: PreviewRouteDescriptor,
   appDirectory: string,
-  moduleIds: readonly string[],
+  moduleIds?: readonly string[],
 ): string {
-  const byId = new Map(collectRoutes(manifest).map((route) => [route.id, route]));
-  if (new Set(moduleIds).size !== moduleIds.length) {
-    throw new Error("UI preview proof contains duplicate module IDs");
+  const allRoutes = collectRoutes(manifest);
+  const byId = new Map(allRoutes.map((route) => [route.id, route]));
+  if (byId.size !== allRoutes.length) {
+    throw new Error("UI preview route registry contains duplicate IDs");
+  }
+  const includedIds = moduleIds ?? allRoutes.map((route) => route.id);
+  if (new Set(includedIds).size !== includedIds.length) {
+    throw new Error("UI preview route registry contains duplicate module IDs");
   }
 
-  const entries = moduleIds.map((id) => {
+  const entries = includedIds.map((id) => {
     const route = byId.get(id);
     if (!route) throw new Error("UI preview unknown route module ID: " + id);
     // Absolute filesystem imports are resolved by Vite at build time. The
@@ -39,7 +44,7 @@ export function createPreviewRouteModuleSource(
     "export const routeModules = { " + entries.join(", ") + " };",
     "export function importRoute(id) {",
     '  const load = routeModules[id];',
-    '  if (!load) throw new Error("UI preview route is not bundled in P0: " + id);',
+    '  if (!load) throw new Error("UI preview route is not bundled: " + id);',
     '  return load();',
     "}",
   ].join("\n");
@@ -48,7 +53,7 @@ export function createPreviewRouteModuleSource(
 export function previewRoutesPlugin(
   config: readonly RouteConfigEntry[],
   appDirectory: string,
-  moduleIds: readonly string[],
+  moduleIds?: readonly string[],
 ): Plugin {
   const manifest = createPreviewRouteManifest(config, appDirectory);
   const source = createPreviewRouteModuleSource(manifest, appDirectory, moduleIds);

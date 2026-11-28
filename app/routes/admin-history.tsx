@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { requireAdminAccess } from "../admin/access.server";
 import { historyForRequest, parseHistoryCursor } from "../admin/history.server";
 import { historyPagePath } from "../admin/history-path";
-import { AdminHistoryUnavailableError } from "../../db/hyperdrive-admin-history";
+import { AdminHistoryUnavailableError } from "../../db/admin-history-error";
 import { AdminShell } from "../admin/shell";
 import { HistoryEvents } from "../admin/history";
 import { ForumRouteError } from "../forum/ui";

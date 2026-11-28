@@ -1,7 +1,8 @@
 import { isPermissionKey, PERMISSION_CATALOG, type PermissionKey } from "../app/authorization/catalog";
 import { PostgresAuthorizationRepository, type OverrideEffect, type UserAuthorization } from "./authorization-repository";
 
-export class InvalidAuthorizationInputError extends Error {}
+import { InvalidAuthorizationInputError } from "./authorization-error";
+export { InvalidAuthorizationInputError } from "./authorization-error";
 
 export { AuthorizationUnavailableError } from "./authorization-error";
 

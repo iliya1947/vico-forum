@@ -1,3 +1,5 @@
+import { browserAddress } from "../browser-address";
+
 export type CredentialRequestResult = "ok" | "invalid" | "unavailable" | "rate-limited";
 
 export async function credentialRequest(endpoint: "request-password-reset" | "reset-password" | "request-password-create" | "create-password",
@@ -21,7 +23,8 @@ export async function credentialRequest(endpoint: "request-password-reset" | "re
 }
 
 export function takeCredentialProof(purpose = "password-create"): string | null {
-  const url = new URL(window.location.href);
+  const address = browserAddress();
+  const url = address.read();
   const fragment = new URLSearchParams(url.hash.slice(1));
   // Email-change has an explicit discriminator; password links do not.
   // The two mounted Settings forms must not consume each other's proof.
@@ -29,7 +32,7 @@ export function takeCredentialProof(purpose = "password-create"): string | null 
     : fragment.has("purpose") && fragment.get("purpose") !== purpose) return null;
   const values = fragment.getAll("token");
   if (values.length === 0) return null;
-  try { window.history.replaceState(window.history.state, "", url.pathname + url.search); }
+  try { address.replace(url.pathname + url.search); }
   catch { return null; }
   return values.length === 1 && /^[A-Za-z0-9._~-]{1,2048}$/.test(values[0]) ? values[0] : null;
 }

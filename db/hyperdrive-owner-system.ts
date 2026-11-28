@@ -11,7 +11,8 @@ import { PostgresOwnerNativeCurrent, type NativeCurrentState } from "./owner-nat
 import type { NativeMonitorArea } from "./owner-monitor-catalog";
 import {PostgresOwnerTaskMonitoring,type OwnerTaskCurrent} from "./owner-task-monitoring";
 
-export class OwnerSystemUnavailableError extends Error {}
+import { OwnerSystemUnavailableError } from "./owner-system-error";
+export { OwnerSystemUnavailableError } from "./owner-system-error";
 
 /** Exact-Owner-only SA02 reads; access control is enforced by each route before invoking them. */
 export interface OwnerSa02Monitoring {

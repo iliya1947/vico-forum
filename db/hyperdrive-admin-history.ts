@@ -1,7 +1,8 @@
 import { PostgresAdminHistoryReader, type AdminHistoryReader } from "./admin-history";
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../app/localization/persistent-registry";
-export class AdminHistoryUnavailableError extends Error {}
+import { AdminHistoryUnavailableError } from "./admin-history-error";
+export { AdminHistoryUnavailableError } from "./admin-history-error";
 export function createHyperdriveAdminHistory(connectionString: string): AdminHistoryReader {
   return { async read(cursor, limit) {
     const pool = createWebPool(connectionString);

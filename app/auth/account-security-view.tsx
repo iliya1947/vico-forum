@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRevalidator } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -24,8 +25,7 @@ export function AccountLifecycleView({ locale, userId, sessionId, email, verifie
     };
     capture();
     setHydrated(true);
-    window.addEventListener("hashchange", capture);
-    return () => window.removeEventListener("hashchange", capture);
+    return browserAddress().observeHashChange(capture);
   }, [enabled]);
 
   async function command(endpoint: string, body: Record<string, string>) {

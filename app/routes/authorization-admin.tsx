@@ -5,10 +5,13 @@ import { adminAccess } from "../admin/access";
 import { PERMISSION_CATALOG } from "../authorization/catalog";
 import { canMutateAuthorization, isBoundOwner } from "../authorization/owner";
 import { requireSameOrigin, requiredFormText } from "../forum/mutations.server";
-import { AuthorizationForbiddenError, AuthorizationNotFoundError, AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError } from "../../db/authorization-repository";
-import { AuthorizationUnavailableError, InvalidAuthorizationInputError } from "../../db/authorization-service";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
+import {
+  AuthorizationForbiddenError, AuthorizationNotFoundError,
+  AuthorizationRoleAssignedError, AuthorizationRoleSlugConflictError,
+  AuthorizationUnavailableError, InvalidAuthorizationInputError,
+} from "../../db/authorization-error";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
 import {
   AuthorizationAdminView,
   type AuthorizationFailure,

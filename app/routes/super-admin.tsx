@@ -1,7 +1,7 @@
 import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { requireSuperAdmin, superAdminPrivateHeaders } from "../super-admin/access.server";
 import { ownerOverviewMonitoringContext } from "../super-admin/request-context";
-import { OwnerSystemUnavailableError } from "../../db/hyperdrive-owner-system";
+import { OwnerSystemUnavailableError } from "../../db/owner-system-error";
 import { SuperAdminOverview } from "../super-admin/overview";
 import { ForumRouteError } from "../forum/ui";
 export function headers() { return superAdminPrivateHeaders; }

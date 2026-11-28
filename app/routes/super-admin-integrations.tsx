@@ -1,7 +1,7 @@
 import {data,useLoaderData,type RouterContextProvider} from "react-router";
 import {requireSuperAdmin,superAdminPrivateHeaders} from "../super-admin/access.server";
 import {ownerIntegrationsMonitoringContext} from "../super-admin/request-context";
-import {OwnerSystemUnavailableError} from "../../db/hyperdrive-owner-system";
+import {OwnerSystemUnavailableError} from "../../db/owner-system-error";
 import {SuperAdminIntegrations} from "../super-admin/integration-current";
 import {ForumRouteError} from "../forum/ui";
 export {headers,meta} from "./super-admin";

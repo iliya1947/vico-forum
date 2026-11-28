@@ -19,3 +19,18 @@ export function parseStructureCounter(value: unknown): bigint {
   if (number > BIGINT_MAX) throw new StructureValidationError("Invalid structure counter");
   return number;
 }
+
+export function validateStructureName(value: unknown): string {
+  if (typeof value !== "string" || /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(value)) {
+    throw new StructureValidationError("Invalid structure name");
+  }
+  const name = value.trim();
+  if (!name || Array.from(name).length > 200 || new TextEncoder().encode(name).byteLength > 800) {
+    throw new StructureValidationError("Invalid structure name");
+  }
+  return name;
+}
+
+export class StructureReadUnavailableError extends Error {}
+
+export class StructureWriteUnavailableError extends Error {}

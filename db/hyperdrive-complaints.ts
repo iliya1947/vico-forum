@@ -1,3 +1,4 @@
+import { ComplaintStorageUnavailableError } from "./complaint-storage-error";
 import type { Client } from "pg";
 import { AccountStateUnavailableError } from "./account-state";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -9,7 +10,7 @@ import { withOwnerUserMeasureAdmission } from "./user-measure-policy";
 import type { AuthorizationCapability } from "./authorization-service";
 import type { ComplaintSubmission } from "../app/complaints/request-context";
 
-export class ComplaintStorageUnavailableError extends Error {}
+export { ComplaintStorageUnavailableError } from "./complaint-storage-error";
 
 export function createHyperdriveComplaintSubmission(connectionString: string, authorization: AuthorizationCapability,
   clientFactory: () => Client = () => createWebClient(connectionString), ownerUserId?: string): ComplaintSubmission {

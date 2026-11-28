@@ -10,19 +10,9 @@ import {
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
 export const STRUCTURE_PERMISSION = "forum.structure.manage" as const;
-import { BIGINT_MAX, StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter } from "./forum-structure-contract";
-export { StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter } from "./forum-structure-contract";
+import { BIGINT_MAX, StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter, validateStructureName } from "./forum-structure-contract";
+export { StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter, validateStructureName } from "./forum-structure-contract";
 
-export function validateStructureName(value: unknown): string {
-  if (typeof value !== "string" || /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(value)) {
-    throw new StructureValidationError("Invalid structure name");
-  }
-  const name = value.trim();
-  if (!name || Array.from(name).length > 200 || new TextEncoder().encode(name).byteLength > 800) {
-    throw new StructureValidationError("Invalid structure name");
-  }
-  return name;
-}
 function identity(value: unknown): string {
   if (typeof value !== "string" || !value || /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(value)) {
     throw new StructureValidationError("Invalid structure identity");

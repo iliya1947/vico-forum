@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -94,7 +95,7 @@ export function AdminTopicView({
               <header className="topic-message-author">
                 {post.id === original?.id ? <strong className="original-question-label">{t("originalQuestion")}</strong> : null}
                 {post.id === topic.bestAnswerPostId ? <strong className="best-answer-label">{t("bestAnswer")}</strong> : null}
-                <a className="topic-message-anchor" href={`${publicTopic}#post-${encodeURIComponent(post.id)}`}>
+                <a className="topic-message-anchor" href={browserAddress().href(`${publicTopic}#post-${encodeURIComponent(post.id)}`)}>
                   {t("postNumber", { number })}
                 </a>
                 <time dateTime={post.createdAt}>{timestamp(post.createdAt)}</time>
@@ -123,7 +124,7 @@ export function AdminTopicView({
                   ? <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong> : null}
                 {post.solutionModerationStatus === "outdated"
                   ? <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong> : null}
-                <a className="topic-message-anchor" href={`${publicTopic}#post-${encodeURIComponent(post.id)}`}>
+                <a className="topic-message-anchor" href={browserAddress().href(`${publicTopic}#post-${encodeURIComponent(post.id)}`)}>
                   {t("postNumber", { number })}
                 </a>
                 <time dateTime={post.createdAt}>{timestamp(post.createdAt)}</time>

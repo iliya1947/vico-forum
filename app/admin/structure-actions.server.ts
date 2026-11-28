@@ -3,15 +3,14 @@ import {authSessionForRequest} from "../auth/request-context";
 import {authorizationForRequest} from "../authorization/request-context";
 import {requireSameOrigin} from "../forum/mutations.server";
 import {structureIdentity} from "../../db/structure-browse";
-import {AuthorizationUnavailableError} from "../../db/authorization-service";
-import {AccountInactiveError,AccountMissingError,AccountStateUnavailableError} from "../../db/account-state";
-import {UserMeasureRestrictedError} from "../../db/user-measure-policy";
+import {AuthorizationUnavailableError} from "../../db/authorization-error";
+import {AccountInactiveError,AccountMissingError,AccountStateUnavailableError} from "../../db/account-state-errors";
+import {UserMeasureRestrictedError} from "../../db/user-measures-error";
 import {
   parseStructureCounter,validateStructureName,
-  StructureConflictError,StructureForbiddenError,StructureNotFoundError,StructureValidationError,
-  type CategoryStructure,type SectionStructure,type StructureWriter,type StructureResult,
-} from "../../db/forum-structure";
-import {StructureWriteUnavailableError} from "../../db/hyperdrive-forum-structure-writer";
+  StructureConflictError,StructureForbiddenError,StructureNotFoundError,StructureValidationError,StructureWriteUnavailableError,
+} from "../../db/forum-structure-contract";
+import type {CategoryStructure,SectionStructure,StructureWriter,StructureResult} from "../../db/forum-structure";
 import {adminPrivateHeaders} from "./forum.server";
 
 export const forumStructureWriterContext=createContext<StructureWriter>();

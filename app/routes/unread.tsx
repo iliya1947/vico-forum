@@ -5,7 +5,7 @@ import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumRouteError } from "../forum/ui";
 import { UnreadView } from "../forum/views";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 
 export function meta() {
   return [{ title: "Unread · Vico Forum" }];

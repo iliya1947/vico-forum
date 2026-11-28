@@ -4,7 +4,8 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { PostgresRegistrationSettingsRepository, type RegistrationSettingsUpdate } from "./registration-settings";
 
-export class RegistrationSettingsUnavailableError extends Error {}
+import { RegistrationSettingsUnavailableError } from "./registration-settings-error";
+export { RegistrationSettingsUnavailableError } from "./registration-settings-error";
 
 function classifiedAvailability(error: unknown): boolean {
   const seen = new Set<unknown>();

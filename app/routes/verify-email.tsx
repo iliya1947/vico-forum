@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useEffect, useRef, useState } from "react";
 import { data, useLoaderData } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -25,13 +26,14 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     let active = true;
     if (token.current === undefined) {
-      const url = new URL(window.location.href);
+      const address = browserAddress();
+      const url = address.read();
       const values = url.searchParams.getAll("token");
       token.current = values.length === 1 && /^[A-Za-z0-9._~-]{1,2048}$/.test(values[0]) ? values[0] : null;
       try {
         // Keep React Router history metadata; no router navigation/revalidation
         // and no token in browser storage or a rendered form.
-        window.history.replaceState(window.history.state, "", verificationPagePath(locale, "verify-email", returnTo));
+        address.replace(verificationPagePath(locale, "verify-email", returnTo));
       } catch { token.current = null; }
     }
     if (!token.current) { setState("invalid"); return; }
@@ -73,8 +75,8 @@ export default function VerifyEmailPage() {
       <p className="credential-hint">{t("authVerificationSessionNote")}</p>
     </> : null}
     {state !== "loading" && state !== "confirming" ? <div className="credential-alternatives">
-      {state !== "confirmed" ? <a href={verificationPagePath(locale, "resend-verification", returnTo)}>{t("authVerificationResend")}</a> : null}
-      <a href={credentialPagePath(locale, "sign-in", returnTo)}>{t("authVerificationSignIn")}</a>
+      {state !== "confirmed" ? <a href={browserAddress().href(verificationPagePath(locale, "resend-verification", returnTo))}>{t("authVerificationResend")}</a> : null}
+      <a href={browserAddress().href(credentialPagePath(locale, "sign-in", returnTo))}>{t("authVerificationSignIn")}</a>
     </div> : null}
   </main>;
 }
