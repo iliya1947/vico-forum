@@ -3966,13 +3966,15 @@
           "name": "forum_control_request_receipt_ref_unique",
           "columns": [
             "receipt_ref"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         {
           "name": "forum_control_request_request_ref_unique",
           "columns": [
             "request_ref"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       ],
       "foreignKeys": [],
