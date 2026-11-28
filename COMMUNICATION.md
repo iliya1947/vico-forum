@@ -70,3 +70,8 @@ Moderation AI — отдельный permission-scoped copilot и advisory signa
 Владелец определил центральную роль консультанта: не универсальный технический советчик, а **навигатор по Vico Forum** — «как, где, что», поиск правильной темы/решения, выбор раздела/Help и forum feature guidance.
 
 Концепция обновлена в `research/embedded-ai-concept-v1.md` (v2). General technical Q&A и внешний web search больше не считаются core user-AI v1.
+
+
+## Решение владельца — Consultant access
+
+User Consultant доступен только authenticated users. Public Search/navigation остаются гостям без AI Consultant. Решение записано как D-26.
