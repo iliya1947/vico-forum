@@ -24,7 +24,8 @@ import type { UserAuthorization } from "../../db/authorization-repository";
 import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
 import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "../../db/forum-identifiers";
-import { CONSULTANT_CATALOG_VERSION, CONSULTANT_FEATURES, CONSULTANT_MAX_BODY_BYTES, consultantPath, type ConsultantPage, type ConsultantRequest, type ConsultantResult } from "./contract";
+import { CONSULTANT_CATALOG_VERSION, CONSULTANT_MAX_BODY_BYTES, consultantPath, type ConsultantPage, type ConsultantRequest, type ConsultantResult } from "./contract";
+import { CONSULTANT_FEATURES } from "./features.server";
 import { consultantDependenciesContext, createConsultantDependencies } from "./dependencies.server";
 import { projectDisclosure } from "./disclosure.server";
 import { permittedNavigationCatalog } from "./navigation.server";
@@ -106,6 +107,7 @@ describe("Consultant U1 private request admission", () => {
     const expired = session();
     const cases = [
       { env: setup({ user: null }), req: request(), status: 401 },
+      { env: setup({ user: { ...expired, session: { ...expired.session, userId: "other" } } }), req: request(), status: 401 },
       { env: setup({ user: { ...expired, session: { ...expired.session, expiresAt: new Date(0) } } }), req: request(), status: 401 },
       { env: setup(), req: request(base, { origin: "https://else.test" }), status: 403 },
       { env: setup(), req: request(base, { origin: null }), status: 403 },
@@ -263,13 +265,15 @@ describe("Consultant deterministic canonical navigation", () => {
   it("reuses the public ordinary structure for placement and never links the Help service section", async () => {
     const env = setup();
     env.readHomepage.mockResolvedValue([
-      { id: "development", name: "Development", sectionCount: 1, topicCount: 0, messageCount: 0,
-        sections: [{ id: "cloudflare", name: "Cloudflare Workers", topicCount: 0, messageCount: 0 }] },
+      { id: "development", name: "Development", sectionCount: 2, topicCount: 0, messageCount: 0,
+        sections: [{ id: "cloudflare", name: "Cloudflare Workers", topicCount: 0, messageCount: 0 },
+          { id: "java", name: "Java", topicCount: 0, messageCount: 0 }] },
       { id: HELP_SOLUTIONS_CATEGORY_ID, name: "Help", sectionCount: 1, topicCount: 0, messageCount: 0,
         sections: [{ id: HELP_SOLUTIONS_SERVICE_SECTION_ID, name: "Private service section", topicCount: 0, messageCount: 0 }] },
     ]);
     expect((await ask(env, "Which section for Cloudflare Workers?")).cards[0]).toMatchObject({
       href: "/en/sections/cloudflare", resourceLabel: "Cloudflare Workers", instructionKey: "consultantPlacement" });
+    expect((await ask(env, "Which section for JavaScript?")).cards[0]?.href).toBe("/en");
     expect((await ask(env, "Which section?", { kind: "section", sectionId: HELP_SOLUTIONS_SERVICE_SECTION_ID })).cards[0]?.href).toBe("/en");
     expect(env.readSection).not.toHaveBeenCalled();
     const restricted = setup({ restrictions: ["topics.create"] });

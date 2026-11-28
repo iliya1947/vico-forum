@@ -1,4 +1,5 @@
-import { CONSULTANT_MAX_BODY_BYTES, CONSULTANT_MAX_QUESTION_LENGTH, isConsultantFeature, type ConsultantPage, type ConsultantRequest } from "./contract";
+import { CONSULTANT_MAX_BODY_BYTES, CONSULTANT_MAX_QUESTION_LENGTH, type ConsultantPage, type ConsultantRequest } from "./contract";
+import { isConsultantFeature } from "./features.server";
 
 export class ConsultantInputError extends Error {
   constructor(readonly status: 400 | 413 | 415 = 400) { super("Invalid consultant request"); }

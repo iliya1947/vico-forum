@@ -4,11 +4,8 @@ export const CONSULTANT_CATALOG_VERSION = 1;
 export const CONSULTANT_MAX_BODY_BYTES = 8192;
 export const CONSULTANT_MAX_QUESTION_LENGTH = 1000;
 
-export const CONSULTANT_FEATURES = ["search","help","sections","tags","popular","unanswered","bookmarks","filters","language","account","privacy","profile","notifications","unread","settings","watch","report","best-answer","hidden-content","signals","complaint-review","complaint-appeals","attachment-security","admin-overview","admin-forum","admin-users","admin-measures","admin-roles","admin-history","complaint-priorities","administrator-preferences","forum-roles","super-admin","select-best-answer","save-topic","translation-help","help-ask"] as const;
-export type ConsultantFeature = typeof CONSULTANT_FEATURES[number];
-export function isConsultantFeature(value: unknown): value is ConsultantFeature {
-  return typeof value === "string" && (CONSULTANT_FEATURES as readonly string[]).includes(value);
-}
+import type { ConsultantFeature } from "./features.server";
+export type { ConsultantFeature } from "./features.server";
 
 export type ConsultantPage =
   | { kind: "none" }

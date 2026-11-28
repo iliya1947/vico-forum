@@ -156,9 +156,16 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
           // placement falls back to ordinary category navigation or public Help.
           const hierarchy = await deps.reader().readHomepage();
           const normalize = (value: string) => value.normalize("NFKC").toLowerCase().trim().replace(/\s+/gu, " ");
+          const normalizedQuestion = normalize(input.question);
           const containsName = (name: string) => {
             const value = normalize(name);
-            return value.length >= 3 && normalize(input.question).includes(value);
+            if (value.length < 3) return false;
+            const word = /[\p{L}\p{N}\p{M}]/u;
+            for (let at = normalizedQuestion.indexOf(value); at >= 0; at = normalizedQuestion.indexOf(value, at + value.length)) {
+              if (!word.test(normalizedQuestion[at - 1] ?? "") &&
+                !word.test(normalizedQuestion[at + value.length] ?? "")) return true;
+            }
+            return false;
           };
           const categories = hierarchy.filter(category => category.id !== HELP_SOLUTIONS_CATEGORY_ID);
           const sections = categories.flatMap(category => category.sections)
