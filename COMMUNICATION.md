@@ -95,3 +95,8 @@ D-28: User / Moderator / Administrator — это не только уровни
 ## Решение владельца — наследование Consultant layers
 
 D-29: User → Moderator → Administrator. Каждый верхний disclosure layer включает допустимый context нижних слоёв; authorization фактических routes/actions остаётся отдельной.
+
+
+## Решение владельца — Consultant launcher
+
+D-30: постоянная плавающая кнопка «Консультант» внизу справа → popup/side panel на текущей странице. Контекстные входы открывают того же Consultant. Guest видит launcher, но получает auth-gate.
