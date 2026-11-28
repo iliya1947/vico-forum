@@ -118,3 +118,12 @@ Scope: один protected Admin Overview read через локальный GitH
 По прямой команде владельца следующий этап ChatGPT-control после Stage B назначен **Лёве**.
 
 Условие активации: только после coordinator PASS Stage B. До этого Stage C не начинать и отдельный implementation PR не создавать.
+
+
+## ChatGPT-control Stage B — coordinator HOLD
+
+#402 exact head `617c16ab0249d5f69c73795871363be084cc49fc`.
+
+Source review Stage B: без подтверждённых finding. CI `46173253647` выявил один current-scope blocker: migration `0080` увеличил clean migration count до 81, но `tests/database/migrations.test.ts` остался на expected 80. Остальные Stage-B transport DB tests 7/7 PASS; checks job проходит lint/typecheck/tests/build/metadata/Drizzle parity.
+
+Correction B-F01 возвращён Лене. Acceptance не запускать до зелёного CI; Stage C остаётся заблокирован.
