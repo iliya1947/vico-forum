@@ -17,17 +17,20 @@
 3. Актуальные `AGENTS.md`, `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md` и профильные source-of-truth из `main`.
 4. `research/user-ai-product-scope.md`, `research/embedded-ai-concept-v1.md` и `stages/embedded-ai/SCOPE.md` — superseded для задачи №2.
 
-## Активное назначение — coordinator U1
+## Активное назначение — U1 correction
 
-Technical plan Лёвы принят: **PASS**. [План](../stages/user-ai/PLAN.md) · [Review](../stages/user-ai/REVIEW.md)
+Technical plan Лёвы принят: **PASS**. [План](../stages/user-ai/PLAN.md) · [Plan review](../stages/user-ai/REVIEW.md)
 
-Выбран stacked delivery U1 → U6. Активный bounded-этап — U1 в draft implementation PR `#403`, branch `feature/user-ai-u1`, base `main` `99b40480cb4d777298aafb1ffae7f28cf0c6085d`. Реализатор — Ада.
+Delivery mode: stacked U1 → U6. Реализатор — Ада. Первый/final assembly PR — `#403`, branch `feature/user-ai-u1`, base `main` `99b40480cb4d777298aafb1ffae7f28cf0c6085d`.
 
-Business-Мира:
-1. не затрагивает ChatGPT-control и Admin/Moderation AI;
-2. после author self-check Ады получает stable exact head;
-3. сама запускает применимые CI/checks и анализирует результат;
-4. проводит coordinator checkpoint U1 против принятого плана;
-5. активирует U2 только после PASS U1.
+Coordinator checkpoint U1 на exact head `f17bd79edb3c2b35aee47ac5669513dbd404bfda`: **HOLD**. [U1 review](../stages/user-ai/U1-REVIEW.md)
 
-External provider, production resources, secrets и Stage 6 не активированы.
+Подтверждён finding U1-F01: основной CI `46175857633` упал на ESLint `no-regex-spaces` в новом `app/consultant/consultant.test.ts:291:58`. Source review всего U1 diff других подтверждённых блокирующих findings не выявил.
+
+Текущий переход:
+1. Ада исправляет только U1-F01 и выполняет source self-check.
+2. Ада передаёт новый stable exact head Business-Мире, не запуская и не анализируя CI/acceptance.
+3. Business-Мира заново запускает применимые checks и повторяет coordinator checkpoint всего U1.
+4. U2 остаётся заблокирован до PASS U1.
+
+Business-Мира не затрагивает ChatGPT-control и Admin/Moderation AI. External provider, production resources, secrets и Stage 6 не активированы.
