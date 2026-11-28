@@ -3,10 +3,8 @@ import { requireAdminAccess } from "../admin/access.server";
 import { AdminOverview } from "../admin/overview";
 import { ForumRouteError } from "../forum/ui";
 import { forumReaderForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
 import { historyForRequest } from "../admin/history.server";
-import { AdminHistoryUnavailableError } from "../../db/hyperdrive-admin-history";
-import type { AdminHistoryPage } from "../../db/admin-history";
+import { readAdminOverview } from "../admin/overview.server";
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import type { Route } from "./+types/admin";
@@ -24,22 +22,10 @@ export function meta({ matches }: Pick<Route.MetaArgs, "matches">) {
 }
 export async function loader({params,context}: {params: {locale?: string}; context: RouterContextProvider}) {
   const access=await requireAdminAccess(context);
-  let counts;
-  try {
-    counts=access.canManageMeasures && !access.canReadForum && !access.canManageAuthorization &&
-      !access.canReadUsers && !access.canReadHistory
-      ? null : await forumReaderForRequest(context).readAdminOverviewCounts();
-  }
-  catch (error) {
-    if (!(error instanceof ForumStorageUnavailableError)) throw error;
-    counts=null;
-  }
-  let recent: AdminHistoryPage | null = null;
-  if (access.canReadHistory) {
-    try { recent = await historyForRequest(context).read(undefined, 5); }
-    catch (error) { if (!(error instanceof AdminHistoryUnavailableError)) throw error; }
-  }
-  return data({locale:params.locale ?? "en",access,counts,...(access.canReadHistory ? {recent} : {})},{headers:{"Cache-Control":"private, no-store"}});
+  const overview = await readAdminOverview(access, { readAdminOverviewCounts: () => forumReaderForRequest(context).readAdminOverviewCounts() }, {
+    read: (cursor, limit) => historyForRequest(context).read(cursor, limit),
+  });
+  return data({locale:params.locale ?? "en",access,...overview},{headers:{"Cache-Control":"private, no-store"}});
 }
 export default function AdminRoute() { return <AdminOverview {...useLoaderData<typeof loader>()} />; }
 export const ErrorBoundary=ForumRouteError;

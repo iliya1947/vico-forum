@@ -1,3 +1,4 @@
+import { isForumControlIngress, type OverviewIngress } from "../app/forum-control/overview-ingress.server";
 import {createHyperdriveOwnerOverview} from "../db/hyperdrive-owner-overview";
 import {ownerOverviewMonitoringContext} from "../app/super-admin/request-context";
 import {createHyperdriveOwnerIntegrations} from "../db/hyperdrive-owner-integrations";
@@ -213,9 +214,15 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
 /** The default entrypoint never supplies local mail fixtures. A separate CI-only
  * entrypoint can inject the existing request-local mail boundary. */
 export function createApplication(createMailRuntime: RequestMailFactory = createRequestAuthMailRuntime,
-  createChallengeRuntime?: RequestChallengeFactory) {
+  createChallengeRuntime?: RequestChallengeFactory, forumControl?: OverviewIngress) {
   return {
     async fetch(request: Request, env: Env, executionContext?: ExecutionContext) {
+      if (isForumControlIngress(new URL(request.url).pathname)) {
+        // Disabled in the default production composition; no credentials or
+        // environment toggle can activate it at Stage B.
+        return forumControl ? forumControl(request, executionContext ? task => executionContext.waitUntil(task) : undefined)
+          : new Response(null, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+      }
       const privateBoundary = isOwnerAccountLifecyclePath(new URL(request.url).pathname)
         || isOwnerMonitoringPath(new URL(request.url).pathname)
         || isPrivateForumReadPath(new URL(request.url).pathname);

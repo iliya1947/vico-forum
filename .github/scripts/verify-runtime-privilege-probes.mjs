@@ -103,6 +103,7 @@ async function positiveWebLockProbes() {
     for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource"])
       await client.query(`SELECT 1 FROM public.${table} WHERE false FOR SHARE`);
     await client.query("SELECT 1 FROM public.forum_control_grant WHERE false FOR UPDATE");
+    await client.query("SELECT 1 FROM public.forum_control_request WHERE false FOR UPDATE SKIP LOCKED");
     await client.query("SELECT 1 FROM public.forum_topics WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_posts WHERE false FOR UPDATE");
     await client.query("SELECT 1 FROM public.forum_attachment_upload_objects WHERE false FOR UPDATE");
@@ -197,7 +198,7 @@ try {
   await positiveWebLockProbes();
 
   for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource",
-    "oauth_access_token", "oauth_refresh_token", "oauth_consent", "oauth_client_assertion", "forum_control_grant"])
+    "oauth_access_token", "oauth_refresh_token", "oauth_consent", "oauth_client_assertion", "forum_control_grant", "forum_control_request"])
     await expectInsufficientPrivilege(localizationRole, `SELECT id FROM public.${table} LIMIT 0`, "localization OAuth access");
   for (const table of ["oauth_client", "oauth_resource", "oauth_client_resource", "oauth_consent", "forum_control_grant"])
     await expectInsufficientPrivilege(webRole, `DELETE FROM public.${table} WHERE false`, "web OAuth registration or grant deletion");

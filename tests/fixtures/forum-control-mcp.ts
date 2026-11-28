@@ -2,8 +2,23 @@ import {
   forumControlScopes, parseWriteStepInput, writeToolDescriptor,
 } from "../../app/forum-control/write-tool-contract";
 import {
-  isValidReadToolInput, readToolInputSchema, readToolSecurity,
+  isValidReadToolInput, readToolInputSchema, readToolSecurity, matchesInputSchema, requestStatusInputSchema,
 } from "../../app/forum-control/read-tool-contract";
+
+import { decodeTransportJson, readBoundedBody } from "../../app/forum-control/transport-wire.server";
+
+interface ConnectedDescriptor {
+  readonly name: string;
+  readonly description: string;
+  readonly inputSchema: object;
+  readonly outputSchema: object;
+}
+export interface ConnectedOverview {
+  readonly descriptor: ConnectedDescriptor;
+  readonly statusDescriptor: ConnectedDescriptor;
+  call(request: Request): Promise<Record<string, unknown>>;
+  status(request: Request, requestId: string): Promise<Record<string, unknown>>;
+}
 
 /** Test-only MCP subset; never mounted by the production Worker.
  * The caller supplies the authenticated scope resolver, not model arguments.
@@ -41,9 +56,8 @@ const writes = fixtureWriteNames.map(name => ({
     "Invoke only after the owner confirms the exact explained task in the current conversation. Returns unavailable.",
 }));
 
-const tools = [overview, ...writes];
-
-export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureAdmission) {
+export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureAdmission, connected?: ConnectedOverview) {
+  const tools = connected ? [connected.descriptor, connected.statusDescriptor, ...writes] : [overview, ...writes];
   if (!["127.0.0.1", "localhost", "[::1]"].includes(endpoint.hostname) ||
       endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
     throw new Error("The local MCP fixture requires a loopback endpoint");
@@ -69,7 +83,7 @@ export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureA
     const requestedVersion = request.headers.get("MCP-Protocol-Version");
     if (requestedVersion && requestedVersion !== version) return new Response(null, { status: 400, headers });
     let message: unknown;
-    try { message = await request.json(); }
+    try { message = decodeTransportJson(await readBoundedBody(request, 16384)); }
     catch { return json({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } }, 400); }
     if (!message || typeof message !== "object" || Array.isArray(message)) {
       return json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request" } }, 400);
@@ -91,7 +105,7 @@ export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureA
     if (body.method === "ping") return result({});
     if (body.method === "tools/list") {
       return result({ tools: tools.filter(tool => scopes.has(
-        tool.name === overview.name ? forumControlScopes.read : forumControlScopes.write)) });
+        tool.name === overview.name || tool.name === "read_request_status" ? forumControlScopes.read : forumControlScopes.write)) });
     }
     if (body.method !== "tools/call") return error(-32601, "Method not found");
     if (!body.params || typeof body.params !== "object" || Array.isArray(body.params)) {
@@ -110,7 +124,17 @@ export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureA
     if (name === overview.name) {
       if (!scopes.has(forumControlScopes.read)) return toolError("Insufficient scope");
       if (!isValidReadToolInput(name, args)) return error(-32602, "Invalid tool arguments");
+      if (connected) {
+        try { return toolResult(await connected.call(request)); }
+        catch { return toolError("Overview transport unavailable"); }
+      }
       return toolResult({ fixture: true, status: "read-ok", topics: 3, users: 2 });
+    }
+    if (name === "read_request_status" && connected) {
+      if (!scopes.has(forumControlScopes.read)) return toolError("Insufficient scope");
+      if (!matchesInputSchema(requestStatusInputSchema, args)) return error(-32602, "Invalid tool arguments");
+      try { return toolResult(await connected.status(request, (args as { requestId: string }).requestId)); }
+      catch { return toolError("Request status unavailable"); }
     }
     if (!isFixtureWrite(name)) return error(-32602, "Unknown tool");
     if (!scopes.has(forumControlScopes.write)) return toolError("Insufficient scope");

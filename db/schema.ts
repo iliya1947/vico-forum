@@ -2399,3 +2399,25 @@ export const forumControlGrant = pgTable("forum_control_grant", {
   index("forum_control_grant_client_id_idx").on(table.clientId),
 ]);
 
+/** Durable transport evidence, deliberately not cascaded with a deleted grant.
+ * Grant admission is always fresh; the UUID tombstone survives revocation. */
+export const forumControlRequest = pgTable("forum_control_request", {
+  id: uuid("id").primaryKey(),
+  requestRef: uuid("request_ref").notNull().unique("forum_control_request_request_ref_unique"),
+  receiptRef: uuid("receipt_ref").notNull().unique("forum_control_request_receipt_ref_unique"),
+  grantId: text("grant_id").notNull(),
+  ownerId: text("owner_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  digest: text("digest").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  requestCommentId: text("request_comment_id"),
+  receiptCommentId: text("receipt_comment_id"),
+  outcome: text("outcome"),
+  result: jsonb("result"),
+}, (table) => [
+  index("forum_control_request_expires_at_idx").on(table.expiresAt),
+]);
