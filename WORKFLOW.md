@@ -42,6 +42,6 @@ Stage A принятого `PLAN.md`: implementation и source-level author self
 
 ChatGPT-control Stage A в `#399` передан Мире на проверки; embedded-AI planning остаётся отдельным.
 
-Следующий шаг User AI: coordinator consistency check `research/user-ai-product-concept.md`; Moderator/Admin AI не входит в этот subtask и будет прорабатываться отдельно по следующей явной команде владельца.
+User AI coordinator consistency check завершён: PASS после удаления stale/superseded входов. Moderator/Admin AI не входит в этот subtask и будет прорабатываться отдельно по следующей явной команде владельца.
 
-User AI product alignment: основные product decisions Consultant закрыты; Moderator Copilot исключён из этого subtask как отдельная задача Admin/Moderation AI.
+User AI product alignment: COMPLETE. Действующий contract — `research/user-ai-product-concept.md`; technical planning общего embedded-AI блока остаётся PAUSED до отдельного принятия Admin/Moderation AI product contract.
