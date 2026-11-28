@@ -169,3 +169,50 @@ export const readToolSecurity = {
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   _meta: { securitySchemes: [{ type: "oauth2", scopes: [forumControlScopes.read] }] },
 } as const;
+
+/** Stage A common read envelope. Stage C supplies each named reader's closed
+ * canonical projection, not an arbitrary object/string result. A descriptor
+ * is not published until that reader is connected. */
+type ClosedProjectionSchema = {
+  readonly type: "object";
+  readonly additionalProperties: false;
+  readonly properties: Readonly<Record<string, object>>;
+  readonly required: readonly string[];
+};
+
+export function readToolDescriptor(name: ReadToolName, description: string, projection: ClosedProjectionSchema) {
+  if (projection.type !== "object" || projection.additionalProperties !== false) {
+    throw new Error("Read tool requires a closed projection schema");
+  }
+  return {
+    name,
+    description: description + " Reads the requested protected projection through a private transport request; it never performs a domain mutation.",
+    inputSchema: readToolInputSchema(name),
+    outputSchema: {
+      type: "object", additionalProperties: false,
+      properties: {
+        requestId: { ...uuid }, op: { const: name },
+        status: { enum: ["read-ok", "pending", "denied", "conflict", "stale", "unavailable", "outcome-unknown"] },
+        code: { type: "string", minLength: 1, maxLength: 128 },
+        result: {
+          type: "object", additionalProperties: false,
+          properties: {
+            observedAt: { type: "string", format: "date-time" },
+            coverage: { enum: ["complete", "partial", "unavailable"] },
+            source: { enum: ["web", "localization", "combined", "placeholder"] },
+            nextCursor: { anyOf: [cursor, { type: "null" }] },
+            projection,
+          },
+          required: ["observedAt", "coverage", "source", "nextCursor", "projection"],
+        },
+      },
+      required: ["requestId", "op", "status", "code"],
+      allOf: [{
+        if: { properties: { status: { const: "read-ok" } } },
+        then: { required: ["result"] },
+        else: { not: { required: ["result"] } },
+      }],
+    },
+    ...readToolSecurity,
+  } as const;
+}
