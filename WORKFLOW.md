@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage B принятого `PLAN.md` **активирован**. Реализация идёт отдельной stacked-ступенью `#402`, ветка `feature/chatgpt-forum-control-stage-b`, base — принятый Stage A `#399` exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Текущий head `#402` — `94fb002e8726f842833b3965f1b2bee362fe572e`: реализованы и локально проверены закрытый transport wire и GitHub App/webhook boundary. Durable registration/Worker/Overview/receipt ещё не подключены.
+Stage B принятого `PLAN.md`: реализация и source-level author self-check переданы Мире на stable exact head `617c16ab0249d5f69c73795871363be084cc49fc` в `#402`, base — принятый Stage A `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Реализованы закрытый GitHub transport, durable PostgreSQL request/receipt, общий canonical Admin Overview reader, отключённый по умолчанию Worker ingress и connected local MCP/OAuth/GitHub fixture. Новый migration target — 0080. Runtime/CI/acceptance ещё не подтверждены; Stage B PASS не присвоен.
 
 ## Назначение
 
@@ -25,7 +25,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 ## Следующий переход
 
-Лена продолжает Stage B в `#402` с head `94fb002e8726f842833b3965f1b2bee362fe572e`: связать готовый GitHub transport с durable PostgreSQL registration/acceptance/claim/receipt lifecycle, Worker ingress и одним canonical Admin Overview reader; провести сквозной локальный fixture и author self-check. Контекст — последний раздел `agents/lena.md`. Внешние credentials не используются; ingress остаётся выключен штатной конфигурацией. После author self-check Лена передаёт stable exact head Мире. CI/acceptance запускает и анализирует только Мира. Stage C до coordinator PASS Stage B не начинать.
+Мира принимает stable exact head `617c16ab0249d5f69c73795871363be084cc49fc` в `#402`, выполняет применимые CI/checks и Forum control local OAuth/GitHub Chromium acceptance, затем coordinator checkpoint всего Stage B по `PLAN.md` (включая interaction с принятым A). Scope, evidence и ограничения — последний раздел `agents/lena.md`. Лена не запускала PR CI/acceptance и не читала их результаты. Stage C до coordinator PASS не начинать.
 
 ## Параллельные AI product-tracks
 
