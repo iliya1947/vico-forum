@@ -50,3 +50,6 @@
 
 
 28. **D-28.** User Consultant использует три server-selected disclosure layers: User, Moderator, Administrator. Их цель — не только UX-навигация, но и предотвращение лишнего раскрытия через AI: модель получает только knowledge/navigation context своего слоя. Layer выбирается trusted server-side логикой, не prompt/model input. Canonical authorization остаётся отдельной обязательной проверкой фактического доступа и действий. Точный mapping dynamic roles/overrides → disclosure layer определяется в technical plan без дублирования всей RBAC в Consultant.
+
+
+29. **D-29.** Disclosure layers User → Moderator → Administrator наследуются снизу вверх: Moderator включает User context, Administrator включает User + Moderator context. Наследование определяет только допустимый knowledge/navigation context Consultant и не заменяет canonical authorization конкретных страниц/действий.
