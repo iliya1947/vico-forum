@@ -15,6 +15,13 @@ const request = (method: string, params: object = {}, origin?: string) => new Re
   body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
 });
 
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected JSON object");
+  return value as Record<string, unknown>;
+}
+async function body(response: Response) { return record(await response.json()); }
+async function result(response: Response) { return record((await body(response)).result); }
+
 describe("local forum-control fixture", () => {
   it("rejects unknown fields and actor/confirmation injection on read and preparation", () => {
     expect(new Set(readToolNames).size).toBe(readToolNames.length);
@@ -39,21 +46,27 @@ describe("local forum-control fixture", () => {
     const denied = createLocalForumControlMcpFixture(endpoint, async () => null);
     expect((await denied(request("tools/list"))).status).toBe(401);
     expect((await read(request("tools/list", {}, "https://invalid.example"))).status).toBe(403);
-    const list = await (await read(request("tools/list"))).json();
-    expect(list.result.tools.map((tool: { name: string }) => tool.name)).toEqual(["read_admin_overview"]);
-    const result = await (await read(request("tools/call", { name: "read_admin_overview", arguments: {} }))).json();
-    expect(result.result.structuredContent).toEqual({ fixture: true, status: "read-ok", topics: 3, users: 2 });
-    const blocked = await (await read(request("tools/call", { name: "pin_topic", arguments: step }))).json();
-    expect(blocked.result.isError).toBe(true);
-    const noRead = await (await write(request("tools/call", { name: "read_admin_overview" }))).json();
-    expect(noRead.result.isError).toBe(true);
+    const list = await result(await read(request("tools/list")));
+    if (!Array.isArray(list.tools)) throw new Error("Expected tool list");
+    expect(list.tools.map((tool: unknown) => record(tool).name)).toEqual(["read_admin_overview"]);
+    const overview = await result(await read(request("tools/call", { name: "read_admin_overview", arguments: {} })));
+    expect(overview.structuredContent).toEqual({ fixture: true, status: "read-ok", topics: 3, users: 2 });
+    const blocked = await result(await read(request("tools/call", { name: "pin_topic", arguments: step })));
+    expect(blocked.isError).toBe(true);
+    const noRead = await result(await write(request("tools/call", { name: "read_admin_overview" })));
+    expect(noRead.isError).toBe(true);
     for (const name of ["pin_topic", "create_custom_role", "deactivate_account"]) {
-      const response = await (await write(request("tools/call", { name, arguments: step }))).json();
-      expect(response.result.structuredContent).toMatchObject({
+      const response = await result(await write(request("tools/call", { name, arguments: step })));
+      expect(response.structuredContent).toMatchObject({
         op: name, status: "unavailable", code: "local-fixture-no-domain-effect",
       });
     }
-    const generic = await (await write(request("tools/call", { name: "execute", arguments: step }))).json();
-    expect(generic.error.code).toBe(-32602);
+    const generic = await body(await write(request("tools/call", { name: "execute", arguments: step })));
+    expect(record(generic.error).code).toBe(-32602);
+    const injected = await body(await read(new Request(endpoint, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", actor: "owner", confirmed: true }),
+    })));
+    expect(record(injected.error).code).toBe(-32600);
   });
 });

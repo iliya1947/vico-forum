@@ -78,7 +78,8 @@ export function createLocalForumControlMcpFixture(endpoint: URL, admit: FixtureA
     const id = typeof body.id === "string" || Number.isSafeInteger(body.id) ? body.id : null;
     const error = (code: number, message: string) => json({ jsonrpc: "2.0", id, error: { code, message } });
     const result = (value: unknown) => json({ jsonrpc: "2.0", id, result: value });
-    if (body.jsonrpc !== "2.0" || typeof body.method !== "string") return error(-32600, "Invalid Request");
+    if (Object.keys(body).some(key => !["jsonrpc", "id", "method", "params"].includes(key)) ||
+        body.jsonrpc !== "2.0" || typeof body.method !== "string") return error(-32600, "Invalid Request");
     if (!Object.hasOwn(body, "id")) {
       return new Response(null, { status: body.method === "notifications/initialized" ? 202 : 400, headers });
     }

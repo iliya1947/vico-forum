@@ -26,10 +26,13 @@ const config: ForumControlOAuthConfig = {
   redirectUri: "http://localhost:8765/callback", repositoryId: "123",
   loginPage: origin + "/login", consentPage: origin + "/consent",
 };
-const runtime = createHyperdriveAuthRuntime(url, {
-  BETTER_AUTH_SECRET: secret, BETTER_AUTH_URL: origin,
-  GOOGLE_CLIENT_ID: "fixture-google", GOOGLE_CLIENT_SECRET: "fixture-google-secret",
-}, connection, undefined, undefined, undefined, config);
+function runtimeFor(binding: ForumControlOAuthConfig) {
+  return createHyperdriveAuthRuntime(url!, {
+    BETTER_AUTH_SECRET: secret, BETTER_AUTH_URL: origin,
+    GOOGLE_CLIENT_ID: "fixture-google", GOOGLE_CLIENT_SECRET: "fixture-google-secret",
+  }, connection, undefined, undefined, undefined, binding);
+}
+const runtime = runtimeFor(config);
 const mcp = createOAuthForumControlMcpFixture(config, runtime, clientSecret);
 const scopes = [forumControlScopes.read, forumControlScopes.write, "offline_access"];
 
@@ -78,8 +81,8 @@ async function login(userId = config.ownerUserId): Promise<string> {
   return cookie;
 }
 
-function form(endpoint: string, params: Record<string, string>) {
-  return runtime.handle(new Request(config.issuer + "/oauth2/" + endpoint, {
+function form(endpoint: string, params: Record<string, string>, auth = runtime) {
+  return auth.handle(new Request(config.issuer + "/oauth2/" + endpoint, {
     method: "POST", body: new URLSearchParams({ client_id: config.clientId, client_secret: clientSecret, ...params }),
   }));
 }
@@ -136,9 +139,19 @@ async function exchange(cookie: string, allowedScopes: string[]): Promise<Tokens
   expect(typeof tokens.access_token).toBe("string");
   return tokens;
 }
-const introspect = (token: string) => form("introspect", { token, token_type_hint: "access_token" });
-const refresh = (token: string) => form("token", { grant_type: "refresh_token", refresh_token: token, resource: config.resource });
-const call = (token: string, name: string, args: object = {}) => mcp(new Request(config.resource, {
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Expected JSON object");
+  return value as Record<string, unknown>;
+}
+async function json(response: Response): Promise<Record<string, unknown>> {
+  return record(await response.json());
+}
+async function toolResult(response: Response) {
+  return record((await json(response)).result);
+}
+const introspect = (token: string, auth = runtime) => form("introspect", { token, token_type_hint: "access_token" }, auth);
+const refresh = (token: string, auth = runtime) => form("token", { grant_type: "refresh_token", refresh_token: token, resource: config.resource }, auth);
+const call = (token: string, name: string, args: object = {}, handler = mcp, endpoint = config.resource) => handler(new Request(endpoint, {
   method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": "application/json",
     Accept: "application/json, text/event-stream" },
   body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
@@ -150,9 +163,14 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
     const owner = await login();
     const foreign = await login("fixture-nonowner");
     const rejected = await authorize(foreign, scopes);
-    if (rejected.response.headers.get("Location")?.includes("/consent?")) {
+    const foreignLocation = rejected.response.headers.get("Location");
+    expect(foreignLocation ?? "").not.toContain("code=");
+    if (foreignLocation && new URL(foreignLocation, origin).pathname === "/consent") {
       const refused = await consent(foreign, rejected.response);
       expect(refused.status).toBeGreaterThanOrEqual(400);
+    } else {
+      expect(rejected.response.status >= 400 ||
+        (foreignLocation !== null && new URL(foreignLocation, origin).searchParams.has("error"))).toBe(true);
     }
     const invalidResource = await authorize(owner, scopes, { resource: "https://wrong.example/mcp" });
     expect(invalidResource.response.headers.get("Location") ?? "").not.toContain("code=");
@@ -170,20 +188,20 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
   it("uses native-issued scopes and original session; refresh rotates and native revoke blocks both tools and refresh", async () => {
     const cookie = await login();
     const read = await exchange(cookie, [forumControlScopes.read]);
-    const readResult = await (await call(read.access_token, "read_admin_overview")).json();
-    expect(readResult.result.structuredContent.status).toBe("read-ok");
-    expect((await (await call(read.access_token, "pin_topic", step)).json()).result.isError).toBe(true);
+    const readResult = await toolResult(await call(read.access_token, "read_admin_overview"));
+    expect(record(readResult.structuredContent).status).toBe("read-ok");
+    expect((await toolResult(await call(read.access_token, "pin_topic", step))).isError).toBe(true);
     const both = await exchange(cookie, scopes);
     expect(typeof both.refresh_token).toBe("string");
-    const first = await (await introspect(both.access_token)).json();
+    const first = await json(await introspect(both.access_token));
     expect(first).toMatchObject({ active: true, sub: config.ownerUserId, client_id: config.clientId });
-    const writeResult = await (await call(both.access_token, "pin_topic", step)).json();
-    expect(writeResult.result.structuredContent.status).toBe("unavailable");
+    const writeResult = await toolResult(await call(both.access_token, "pin_topic", step));
+    expect(record(writeResult.structuredContent).status).toBe("unavailable");
     const renewed = await refresh(both.refresh_token);
     expect(renewed.status).toBe(200);
     const next = await renewed.json() as Tokens;
     expect(next.refresh_token).not.toBe(both.refresh_token);
-    expect((await (await introspect(next.access_token)).json()).sid).toBe(first.sid);
+    expect((await json(await introspect(next.access_token))).sid).toBe(first.sid);
     const revoked = await form("revoke", { token: next.refresh_token, token_type_hint: "refresh_token" });
     expect(revoked.ok).toBe(true);
     expect(await (await introspect(next.access_token)).json()).toEqual({ active: false });
@@ -194,11 +212,66 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
   it("never switches to a replacement Owner session after the original is deleted", async () => {
     const original = await login();
     const tokens = await exchange(original, scopes);
-    const claims = await (await introspect(tokens.access_token)).json();
+    const claims = await json(await introspect(tokens.access_token));
+    if (typeof claims.sid !== "string") throw new Error("Missing original session");
     const replacement = await login();
     expect(replacement).not.toBe(original);
     await db.query("delete from session where id=$1", [claims.sid]);
     expect(await (await introspect(tokens.access_token)).json()).toEqual({ active: false });
+    expect((await call(tokens.access_token, "read_admin_overview")).status).toBe(401);
+    expect((await refresh(tokens.refresh_token)).status).toBeGreaterThanOrEqual(400);
+  });
+
+  it("denies a previously issued grant on current Owner or audience change, and inactive AccountState", async () => {
+    const cookie = await login();
+    const tokens = await exchange(cookie, scopes);
+    const claims = await json(await introspect(tokens.access_token));
+    if (typeof claims.sid !== "string") throw new Error("Missing original session");
+    expect(claims.active).toBe(true);
+    const changedOwner = { ...config, ownerUserId: "fixture-nonowner" };
+    const otherRuntime = runtimeFor(changedOwner);
+    const otherMcp = createOAuthForumControlMcpFixture(changedOwner, otherRuntime, clientSecret);
+    expect(await json(await introspect(tokens.access_token, otherRuntime))).toEqual({ active: false });
+    expect((await call(tokens.access_token, "read_admin_overview", {}, otherMcp)).status).toBe(401);
+    expect((await refresh(tokens.refresh_token, otherRuntime)).status).toBeGreaterThanOrEqual(400);
+
+    const wrongAudience = { ...config, resource: "http://localhost:8765/other-mcp" };
+    const audienceRuntime = runtimeFor(wrongAudience);
+    const audienceMcp = createOAuthForumControlMcpFixture(wrongAudience, audienceRuntime, clientSecret);
+    expect(await json(await introspect(tokens.access_token, audienceRuntime))).toEqual({ active: false });
+    expect((await call(tokens.access_token, "read_admin_overview", {}, audienceMcp, wrongAudience.resource)).status).toBe(401);
+
+    // Keep the original session present to isolate AccountState admission
+    // from the provider's native session-deletion and expiry checks.
+    await db.query('update "user" set deactivated_at=now(),deactivated_by_user_id=$2,retain_at_least_until=now()+interval \'2 years\' where id=$1',
+      [config.ownerUserId, "fixture-nonowner"]);
+    try {
+      expect((await db.query("select id from session where id=$1", [claims.sid])).rowCount).toBe(1);
+      expect(await json(await introspect(tokens.access_token))).toEqual({ active: false });
+      expect((await call(tokens.access_token, "read_admin_overview")).status).toBe(401);
+      expect((await refresh(tokens.refresh_token)).status).toBeGreaterThanOrEqual(400);
+    } finally {
+      // Synthetic state only; no application reactivation capability.
+      await db.query('update "user" set deactivated_at=null,deactivated_by_user_id=null,retain_at_least_until=null where id=$1',
+        [config.ownerUserId]);
+    }
+  });
+
+  it("revokes an exact delegation through the Owner-only server capability", async () => {
+    const cookie = await login();
+    const tokens = await exchange(cookie, scopes);
+    const claims = await json(await introspect(tokens.access_token));
+    if (typeof claims.sid !== "string") throw new Error("Missing original session");
+    const grants = await db.query<{ id: string }>("select id from forum_control_grant where session_id=$1 and revoked_at is null", [claims.sid]);
+    expect(grants.rows).toHaveLength(1);
+    const grantId = grants.rows[0].id;
+    const capability = runtime.forumControl;
+    if (!capability) throw new Error("Missing local OAuth grant capability");
+    const foreign = await login("fixture-nonowner");
+    await expect(capability.revokeGrant(new Headers({ Cookie: foreign }), grantId)).rejects.toThrow();
+    expect(await capability.revokeGrant(new Headers({ Cookie: cookie }), grantId)).toBe(true);
+    expect(await capability.revokeGrant(new Headers({ Cookie: cookie }), grantId)).toBe(false);
+    expect(await json(await introspect(tokens.access_token))).toEqual({ active: false });
     expect((await call(tokens.access_token, "read_admin_overview")).status).toBe(401);
     expect((await refresh(tokens.refresh_token)).status).toBeGreaterThanOrEqual(400);
   });

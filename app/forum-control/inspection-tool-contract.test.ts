@@ -25,6 +25,10 @@ describe("individual inspection contracts", () => {
     const id = "e8a018dd-8428-45d0-8a39-95a2f9bbab01";
     const data = { measureId: id, appealId: id, outcome: "rejected", explanation: "Evidence", remedy: null, restrictions: null, expiresAt: null };
     expect(isValidInspectionInput("resolve_measure_appeal", data)).toBe(true);
+    const measure = { userId: "user", restrictions: ["admin.forum"], reason: "Reason", expiresAt: "2026-12-01T12:00:00+02:00" };
+    expect(isValidInspectionInput("create_measure", measure)).toBe(true);
+    expect(isValidInspectionInput("create_measure", { ...measure, expiresAt: "2026-12-01T12:00:00" })).toBe(false);
+    expect(isValidInspectionInput("create_measure", { ...measure, expiresAt: "2026-12-01Tinvalid" })).toBe(false);
     expect(isValidInspectionInput("resolve_measure_appeal", { ...data, remedy: "lift" })).toBe(false);
     expect(isValidInspectionInput("resolve_measure_appeal", { ...data, outcome: "accepted", remedy: "change", restrictions: ["admin.forum", "admin.forum"] })).toBe(false);
   });

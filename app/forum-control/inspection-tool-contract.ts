@@ -20,7 +20,7 @@ const direction = enumString(["up", "down"]);
 const resolution = enumString(["accepted", "rejected"]);
 const restrictions = array(enumString(USER_MEASURE_RESTRICTION_IDS), 1, USER_MEASURE_RESTRICTION_IDS.length);
 const permissions = array(enumString(PERMISSION_CATALOG), 0, PERMISSION_CATALOG.length);
-const expiresAt = nullable({ ...text(64), pattern: "^\\d{4}-\\d{2}-\\d{2}T" });
+const expiresAt = nullable({ ...text(64), pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?(?:Z|[+-]\\d{2}:\\d{2})$" });
 const priority = { type: "integer", minimum: 1, maximum: 3 } as const;
 
 function fields<P extends Record<string, Field>>(properties: P) {

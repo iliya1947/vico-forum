@@ -7,7 +7,7 @@ import {
   ForumControlDenied, requireLiveSession, validForumControlScopes,
   type ForumControlBinding,
 } from "./delegation-admission.server";
-import { hashForumControlToken } from "./delegation-store.server";
+import { hashForumControlToken, requireRegisteredClientResource } from "./delegation-store.server";
 import { forumControlScopes } from "./write-tool-contract";
 import {
   oauthClient, oauthResource, oauthClientResource, oauthRefreshToken,
@@ -137,6 +137,7 @@ export async function admitForumControlAuthorizationCode(connection: Pick<Client
     throw new ForumControlDenied();
   }
   await requireLiveSession(connection, value.userId, value.sessionId, true);
+  await requireRegisteredClientResource(connection, config);
 }
 
 /** Consent mutations have their own session/client/resource checks, including
@@ -150,4 +151,5 @@ export async function admitForumControlConsent(connection: Pick<Client, "query">
     !Array.isArray(data.resources) || data.resources.length !== 1 || data.resources[0] !== config.resource ||
     !Array.isArray(data.scopes) || !validForumControlScopes(data.scopes)) throw new ForumControlDenied();
   await requireLiveSession(connection, data.userId, data.referenceId, true);
+  await requireRegisteredClientResource(connection, config);
 }

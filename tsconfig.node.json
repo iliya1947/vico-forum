@@ -12,6 +12,7 @@
     "app/forum-control/**/*.ts",
     "tests/fixtures/forum-control-mcp.ts",
     "tests/fixtures/forum-control-oauth.ts",
+    "tests/browser/forum-control/config.ts",
     "tests/browser/forum-control/seed.ts",
     "app/auth/session-write-guard.ts",
     "app/auth/lifecycle-transaction.server.ts",

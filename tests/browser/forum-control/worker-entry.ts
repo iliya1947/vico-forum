@@ -41,8 +41,13 @@ export default {
       <p role=status></p><script>
       document.querySelector('form').onsubmit=async e=>{
         e.preventDefault(); const data=Object.fromEntries(new FormData(e.currentTarget));
+        if(location.search) data.oauth_query=location.search.slice(1);
         const response=await fetch('/api/auth/sign-in/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
-        document.querySelector('[role=status]').textContent=response.ok?'Signed in':'Sign-in denied';
+        if(!response.ok){document.querySelector('[role=status]').textContent='Sign-in denied';return;}
+        if(!location.search){document.querySelector('[role=status]').textContent='Signed in';return;}
+        const reply=await response.json();const next=typeof reply.url==='string'?new URL(reply.url,location.origin):null;
+        if(next&&next.origin===location.origin&&next.pathname==='/consent')location.assign(next.href);
+        else document.querySelector('[role=status]').textContent='Sign-in denied';
       };</script>`);
     if (url.pathname === "/consent") return page(`
       <h1>Local forum control consent</h1><p id=scopes></p>
