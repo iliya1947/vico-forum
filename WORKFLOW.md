@@ -57,3 +57,12 @@ User AI product alignment: COMPLETE. Действующий contract — `resear
 3. **Admin/Moderation AI** — отдельная активная product-задача; исходный scope широкий: определить практически полезные встроенные AI-функции для администрации/модерации, не ограничиваясь прежними примерами. Первый шаг — factual workload map — завершён.
 
 User AI остаётся **PAUSED**. Admin/Moderation AI активирован владельцем; после завершённой workload map следующий product-шаг — оценить кандидаты функций и затем по одному согласовать минимальный v1. ChatGPT-control #399 ведётся отдельно и не смешивается с этим product-track.
+
+
+## Admin/Moderation AI — product concept
+
+Product discovery завершён до полной концепции-предложения Миры: `research/admin-moderation-ai-product-concept.md`.
+
+Модель: advisory Vico Staff AI = Radar + Context Assistant. Рекомендуемый минимальный release scope: Public Safety Radar, Complaint/Appeal Brief, Admin/Owner Analyst; Related/Placement Helper включается при наличии общего лёгкого retrieval foundation. AI не получает write authority, protected/private data ограничены отдельными tiers, generative staff functions on-demand, paid fallback отсутствует.
+
+Статус: **ожидает решения владельца по концепции**. Technical planning и implementation не начинать до принятия product concept.
