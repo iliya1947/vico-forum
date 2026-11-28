@@ -2,7 +2,8 @@
 
 - Service PR: #369.
 - Delivery: stacked P0→P5, then P6.
-- Renewed P0 after baseline synchronization: Draft #373 exact `b91adfc256dccc5a0179d173d3221fb7d5961c78` on main `c49897181388b4a78f8e8248dc6508551df576c4` — **Mira coordinator PASS**.
-- Exact-head CI `46144819604`: checks/database SUCCESS; 261 files / 3371 tests PASS; P0 Chromium proof intact with zero external/resource leakage.
-- Prior accepted P1 #375 and P2 #385 are still based on the old lower stack and remain unchanged.
-- Next only after developer continuation: assign bounded **SYNC-P1** from the renewed P0 head. Do not resume P2-B8b1 before synchronized P1 and P2 lower-stack acceptance.
+- Renewed P0: #373 exact `b91adfc256dccc5a0179d173d3221fb7d5961c78` — Mira coordinator PASS.
+- Renewed P1: #375 exact `2d6224010eed6dd55026ee91c061447245ea4909`, base renewed P0 — **Mira coordinator PASS**.
+- P1 exact-head CI `46174558303`: checks/database SUCCESS; 265 files / 3410 tests PASS; full P1 Chromium imports all 87 current route modules with zero page/external/application-network errors.
+- P2 #385 is still on stale pre-sync P1 and remains unchanged.
+- Next only after developer continuation: assign bounded **SYNC-P2** onto renewed P1. Do not resume B8b1 before synchronized P2 is accepted.
