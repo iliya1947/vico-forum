@@ -47,3 +47,6 @@
 
 
 27. **D-27.** User Consultant в v1 хранит conversation state только в рамках текущей консультации; постоянная история и long-term personal AI memory между сессиями не реализуются. При этом conversation-state/storage boundary должна оставаться заменяемой, чтобы в будущем добавить persistence без переписывания consultant core/retrieval/navigation. Это требование расширяемости не разрешает преждевременно строить persistent-memory subsystem.
+
+
+28. **D-28.** User Consultant использует три server-selected disclosure layers: User, Moderator, Administrator. Их цель — не только UX-навигация, но и предотвращение лишнего раскрытия через AI: модель получает только knowledge/navigation context своего слоя. Layer выбирается trusted server-side логикой, не prompt/model input. Canonical authorization остаётся отдельной обязательной проверкой фактического доступа и действий. Точный mapping dynamic roles/overrides → disclosure layer определяется в technical plan без дублирования всей RBAC в Consultant.
