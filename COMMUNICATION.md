@@ -51,3 +51,15 @@
 2. `research/admin-moderation-ai-product-scope.md`.
 
 Technical planning Лёвы поставлен на паузу. Следующий этап — последовательное согласование product decisions с владельцем; после этого будет собран утверждённый embedded-AI contract и только затем возобновлён technical plan.
+
+## Embedded AI product concept
+
+Предыдущие `research/user-ai-product-scope.md` и `research/admin-moderation-ai-product-scope.md` сохраняются как ранний feature inventory, но не являются product contract.
+
+Новая целостная концепция: `research/embedded-ai-concept-v1.md`.
+
+Центр user experience — приватный Vico AI Consultant: решает проблему через форумные знания + потенциально общие знания модели, показывает forum sources, объясняет текущие темы/ответы и при отсутствии решения переводит консультацию в качественный вопрос людям. Search/similar/editor/summary — capabilities этого journey, а не независимые AI-продукты.
+
+Moderation AI — отдельный permission-scoped copilot и advisory signal layer; он не разделяет protected context с User Consultant и не получает domain-write authority.
+
+Концепция пока proposal Миры. Technical planning Лёвы остаётся PAUSED до последовательного решения владельцем продуктовых развилок.
