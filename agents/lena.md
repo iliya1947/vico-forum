@@ -93,3 +93,15 @@ PLAN §4 duplicate raw keys and full canonical projections remain actual tool AP
 Exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`. Одним коммитом исправлены подтверждённые A-SC-05–07 и найденные при сверке оставшихся стыков недостатки: оба composite include + JSON response narrowing; cookie-free server-side OAuth/MCP client; guest authorize → signed OAuth login → consent; проверка exact persisted registration перед consent/code persistence; connected DB scenarios для смены current Owner/audience, inactive AccountState при сохранённой исходной session, explicit server grant revoke; closed JSON-RPC envelope, offset-qualified measure expiry shape, одна pending confirmation в Project policy. Повторно просмотрен полный corrective diff (11 files), структурно сверены весь набор Stage A contracts, PKCE/manifest/journal, fixture wiring, production Worker и localization ACL. Структурных несоответствий в выполненной сверке нет. Не выдавать это за проверенную runtime-корректность: container не имеет checkout, Node v22.16.0 вместо требуемой версии, pnpm и PostgreSQL отсутствуют, DNS registry/GitHub не разрешается. Frozen install/typecheck/Drizzle/PG/Chromium остаются непроверенными в локальном container.
 
 По AGENTS запущен штатный run:ci на #399, [CI #46109469613](https://github.com/iliya1947/vico-forum/actions/runs/46109469613), exact PR head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`, начальное состояние queued. Acceptance job не запускать до результата CI (другие workflow records от label могут быть skipped). Никакие production actions/ACL/credentials или Stage B/6 не выполнялись. Авторская проверка исходников и выполнение применимых checks — разные доказательства; coordinator checkpoint пока не разрешён. Прямое указание владельца: «Результаты CI не для тебя». Следующий переход — handoff Мире, без чтения результатов или повторного запуска checks Леной. Мира ведёт CI/acceptance и checkpoint; Лена возвращается к реализации только по назначению на подтверждённые defects. Runtime информация не проверена.
+
+
+## Correction после coordinator HOLD
+
+Мира проверила Stage A на stable exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`: **HOLD**.
+
+Исправить единым bounded-пакетом только A-F01–A-F03 из `../stages/A/REVIEW.md`:
+1. exported OAuth provider typecheck TS2742/TS7056;
+2. детерминировать OAuth DB fixture, который сейчас ловит 429, не ослабляя production rate limit;
+3. согласовать SA07 migration-state regression test с новой 0079 migration.
+
+После исправлений выполнить source self-check и передать новый stable exact head Мире. CI и browser acceptance не запускать — их проверяет/запускает Мира по прямому решению владельца. Stage B не начинать.
