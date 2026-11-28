@@ -2,7 +2,8 @@ import {
   createForumControlOAuthProvider, forumControlOAuthSchema, validateForumControlOAuthConfig,
   type ForumControlOAuthConfig, type ForumControlOAuthInvocation,
 } from "../forum-control/oauth-provider.server";
-import { ForumControlDenied } from "../forum-control/delegation-admission.server";
+import { ForumControlDenied, requireOwnerConsentSession } from "../forum-control/delegation-admission.server";
+import { admitForumControlAccessToken, revokeForumControlGrant } from "../forum-control/delegation-store.server";
 import type { CredentialTransition } from "./credential-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
@@ -637,6 +638,16 @@ export function createHyperdriveAuthRuntime(
   }
 
   return {
+    ...(forumControlConfig ? {
+      forumControl: {
+        revokeGrant: (headers: Headers, grantId: string) => useAuth(async (auth, _database, client, lifecycle) => {
+          const current = await auth.api.getSession({ headers });
+          const actor = await requireOwnerConsentSession(client, forumControlConfig, current as AuthSession | null);
+          return lifecycle.runAdapterOperation(() =>
+            revokeForumControlGrant(client, lifecycle, forumControlConfig, actor, grantId), true);
+        }),
+      },
+    } : {}),
     security: {
       read: (headers, identity) => securityCall(() => useAuth(async (auth, database, client) => {
         const current = await verifyIdentity(auth, headers, identity);
@@ -771,6 +782,7 @@ export function createHyperdriveAuthRuntime(
       };
       const admission = { failure: undefined as { error: unknown } | undefined };
       let invocation: ForumControlOAuthInvocation | undefined;
+      let introspectionToken: string | undefined;
       if (forumControlConfig) {
         const path = new URL(request.url).pathname;
         const oauthPath = new URL(forumControlConfig.issuer).pathname + "/oauth2/";
@@ -792,6 +804,16 @@ export function createHyperdriveAuthRuntime(
               return Response.json({ error: "invalid_request" }, { status: 400, headers: { "Cache-Control": "no-store" } });
             }
           } else if (endpoint === "revoke") operation = "revoke";
+          else if (endpoint === "introspect") {
+            try {
+              const body = await request.clone().formData();
+              const tokens = body.getAll("token");
+              if (tokens.length !== 1 || typeof tokens[0] !== "string" || !tokens[0]) throw new ForumControlDenied();
+              introspectionToken = tokens[0];
+            } catch {
+              return Response.json({ error: "invalid_request" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+            }
+          }
         }
         invocation = { config: forumControlConfig, operation, mintAttempted: false };
       }
@@ -817,6 +839,19 @@ export function createHyperdriveAuthRuntime(
           } else {
             response = await auth.handler(request);
           }
+          if (invocation && introspectionToken !== undefined && response.ok) {
+            // Native introspection authenticates the confidential client and
+            // validates the opaque token. Its generic session policy alone is
+            // insufficient for Vico's one exact, live Owner delegation.
+            const claims: unknown = await response.clone().json();
+            try {
+              await lifecycle.runAdapterOperation(() =>
+                admitForumControlAccessToken(client, invocation!.config, introspectionToken!, claims));
+            } catch (error) {
+              if (!(error instanceof ForumControlDenied)) throw error;
+              response = Response.json({ active: false }, { headers: { "Cache-Control": "no-store" } });
+            }
+          }
           if (!admission.failure) return response;
           if (sessionStorageUnavailable(admission.failure.error)) {
             return new Response("Service unavailable. Please try again.", {
@@ -829,7 +864,7 @@ export function createHyperdriveAuthRuntime(
           throw admission.failure.error;
         }, false, (error) => { admission.failure ??= { error }; }, false, invocation?.operation, invocation));
       } catch (error) {
-        if (invocation && error instanceof ForumControlDenied) {
+        if (invocation && (error instanceof ForumControlDenied || (isAPIError(error) && error.body?.error === "invalid_grant"))) {
           return failedTokenResponse ?? Response.json({ error: "invalid_grant" }, { status: 400, headers: { "Cache-Control": "no-store" } });
         }
         if (error instanceof AuthLifecycleTransactionError) {

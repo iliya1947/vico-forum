@@ -1,9 +1,10 @@
 import type { Client } from "pg";
 import type { AuthLifecycleTransaction } from "../auth/lifecycle-transaction.server";
 import { isBoundOwner } from "../authorization/owner";
+import { forumControlScopes } from "./write-tool-contract";
 import {
-  ForumControlDenied, requireLiveSession, requireLockedForumControlGrant,
-  validForumControlScopes, type ForumControlBinding, type ForumControlGrant,
+  ForumControlDenied, requireLiveSession, requireLockedForumControlGrant, requireLiveForumControlGrant, requireScopedProviderClaims,
+  validForumControlScopes, type ForumControlBinding, type ForumControlGrant, type ForumControlScope,
 } from "./delegation-admission.server";
 
 type Connection = Pick<Client, "query">;
@@ -61,15 +62,9 @@ export async function admitForumControlTokenInsert(connection: Connection, lifec
   await requireLiveSession(connection, row.userId, row.sessionId, true);
   // Client/resource restrictions are checked on current persisted rows, not
   // cached configuration. This also denies missing or disabled client/link.
-  const registered = await connection.query<{ client_id: string }>(
-    'select c.client_id from oauth_client c join oauth_client_resource l on l.client_id=c.client_id ' +
-    'join oauth_resource r on r.identifier=l.resource_id where c.client_id=$1 and r.identifier=$2 ' +
-    'and c.disabled is not true and r.disabled is not true and c.require_pkce is true ' +
-    'and c.skip_consent is not true and c.redirect_uris=array[$3]::text[] for share of c,l,r',
-    [binding.clientId, binding.resource, binding.redirectUri],
-  );
-  if (registered.rows.length !== 1) throw new ForumControlDenied();
+  await requireRegisteredClientResource(connection, binding);
   if (initial) {
+
     await connection.query(
       'insert into forum_control_grant (id,user_id,session_id,client_id,issuer,resource,repository_id,scopes,created_at) ' +
       "values ($1,$2,$3,$4,$5,$6,$7,$8,timezone('UTC',clock_timestamp())) on conflict (id) do nothing",
@@ -140,4 +135,71 @@ export async function markForumControlGrantsRevoked(connection: Connection,
     "where id=any($1::text[]) and client_id=$2 and user_id=$3 and revoked_at is null",
     [[...new Set(grantIds)], binding.clientId, binding.ownerUserId],
   );
+}
+
+/** Current persisted client registration and resource association, not stale
+ * config or a caller-selected audience. Locks only when a transaction owns it. */
+export async function requireRegisteredClientResource(connection: Connection,
+  binding: ForumControlBinding & { redirectUri: string }, lock = true): Promise<void> {
+  const result = await connection.query<{ client_id: string }>(
+    'select c.client_id from oauth_client c join oauth_client_resource l on l.client_id=c.client_id ' +
+    'join oauth_resource r on r.identifier=l.resource_id where c.client_id=$1 and r.identifier=$2 ' +
+    'and c.disabled is not true and r.disabled is not true and c.require_pkce is true ' +
+    "and c.skip_consent is not true and (c.subject_type is null or c.subject_type='public') " +
+    'and c.redirect_uris=array[$3]::text[]' + (lock ? ' for share of c,l,r' : ''),
+    [binding.clientId, binding.resource, binding.redirectUri],
+  );
+  if (result.rows.length !== 1) throw new ForumControlDenied();
+}
+
+/** Complete access-token admission from the native authenticated provider
+ * response, authoritative grant row and current Vico AccountState/session. */
+export async function admitForumControlAccessToken(connection: Connection,
+  binding: ForumControlBinding & { redirectUri: string }, token: string,
+  claims: unknown, required?: ForumControlScope): Promise<ForumControlGrant> {
+  const grant = await grantForAccessToken(connection, binding, token);
+  if (!grant || !claims || typeof claims !== "object" || Array.isArray(claims)) throw new ForumControlDenied();
+  const scope = (claims as Record<string, unknown>).scope;
+  const requiredScope = required ?? (typeof scope === "string" && scope.split(" ").includes(forumControlScopes.read)
+    ? forumControlScopes.read : forumControlScopes.write);
+  requireScopedProviderClaims(claims, binding, grant, requiredScope);
+  await requireRegisteredClientResource(connection, binding, false);
+  await requireLiveForumControlGrant(connection, binding, grant, requiredScope);
+  return grant;
+}
+
+/** Native revocation can address an authorization code, a refresh family, an
+ * individual token or its refresh parent. No adapter result-page limit can
+ * leave a grant live while the native delete removes its token evidence. */
+export async function revokeForumControlProviderSelection(connection: Connection, binding: ForumControlBinding,
+  model: "oauthAccessToken" | "oauthRefreshToken",
+  where: readonly { field?: unknown; value?: unknown; operator?: unknown }[]): Promise<void> {
+  const table = model === "oauthAccessToken" ? "oauth_access_token" : "oauth_refresh_token";
+  if (where.length === 2 && where.every(selector => selector.operator === undefined || selector.operator === "eq")) {
+    const owner = where.find(selector => selector.field === "userId")?.value;
+    const client = where.find(selector => selector.field === "clientId")?.value;
+    if (owner !== binding.ownerUserId || client !== binding.clientId) throw new ForumControlDenied();
+    await connection.query(
+      "update forum_control_grant set revoked_at=timezone('UTC',clock_timestamp()) " +
+      "where client_id=$1 and user_id=$2 and revoked_at is null", [binding.clientId, binding.ownerUserId]);
+    return;
+  }
+  const selector = where.length === 1 ? where[0] : undefined;
+  if (!selector) throw new ForumControlDenied();
+  const equal = selector.operator === undefined || selector.operator === "eq";
+  if (equal && selector.field === "authorizationCodeId" && exactString(selector.value)) {
+    await markForumControlGrantsRevoked(connection, binding, [selector.value]);
+    return;
+  }
+  const column = selector.field === "id" ? "id" : selector.field === "token" ? "token"
+    : model === "oauthAccessToken" && selector.field === "refreshId" ? "refresh_id" : null;
+  if (!column) throw new ForumControlDenied();
+  const values = equal && exactString(selector.value) ? [selector.value]
+    : selector.operator === "in" && Array.isArray(selector.value) && selector.value.every(exactString) ? selector.value : null;
+  if (!values) throw new ForumControlDenied();
+  const rows = await connection.query<{ grant_id: string | null }>(
+    "select distinct authorization_code_id as grant_id from " + table +
+    " where " + column + "=any($1::text[]) and client_id=$2 and user_id=$3",
+    [values, binding.clientId, binding.ownerUserId]);
+  await markForumControlGrantsRevoked(connection, binding, rows.rows.flatMap(row => row.grant_id ? [row.grant_id] : []));
 }

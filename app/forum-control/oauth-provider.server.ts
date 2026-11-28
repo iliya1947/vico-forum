@@ -110,6 +110,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Guard that persisted code even for internal post-login continuation paths.
  * Unrelated Better Auth verification values pass through unchanged.
  */
+export function isForumControlAuthorizationCode(data: unknown): boolean {
+  if (!isRecord(data) || typeof data.value !== "string") return false;
+  try {
+    const value: unknown = JSON.parse(data.value);
+    return isRecord(value) && value.type === "authorization_code";
+  } catch { return false; }
+}
+
 export async function admitForumControlAuthorizationCode(connection: Pick<Client, "query">,
   config: ForumControlOAuthConfig, data: unknown): Promise<void> {
   if (!isRecord(data) || typeof data.value !== "string") return;

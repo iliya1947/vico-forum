@@ -1,8 +1,8 @@
 import {
-  admitForumControlAuthorizationCode, admitForumControlConsent, forumControlOAuthError,
+  admitForumControlAuthorizationCode, admitForumControlConsent, isForumControlAuthorizationCode, forumControlOAuthError,
   type ForumControlOAuthInvocation,
 } from "../forum-control/oauth-provider.server";
-import { admitForumControlTokenInsert, markForumControlGrantsRevoked } from "../forum-control/delegation-store.server";
+import { admitForumControlTokenInsert, revokeForumControlProviderSelection } from "../forum-control/delegation-store.server";
 import { ForumControlDenied } from "../forum-control/delegation-admission.server";
 import { AccountMethodConflictError, assertRemainingAccountMethod } from "./account-security-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
@@ -79,7 +79,7 @@ export function guardBetterAuthSessionWrites(
             const config = forumControl.config;
             const model = command.model;
             const tokenModel = model === "oauthAccessToken" || model === "oauthRefreshToken";
-            const verificationCreate = model === "verification" && property === "create";
+            const verificationCreate = model === "verification" && property === "create" && isForumControlAuthorizationCode(command.data);
             const consentWrite = model === "oauthConsent" && (property === "create" || property === "update");
             const tokenCreate = tokenModel && property === "create";
             const tokenRevoke = tokenModel &&
@@ -116,16 +116,8 @@ export function guardBetterAuthSessionWrites(
                     if (forumControl.operation !== "code" && forumControl.operation !== "refresh" &&
                       forumControl.operation !== "revoke") throw new ForumControlDenied();
                     if (!command.where?.length) throw new ForumControlDenied();
-                    const rows: unknown = await Reflect.apply(Reflect.get(target, "findMany"), target,
-                      [{ model, where: command.where }]);
-                    if (!Array.isArray(rows)) throw new ForumControlDenied();
-                    const grantIds: string[] = rows.flatMap((row: unknown) => {
-                      if (!row || typeof row !== "object") return [];
-                      const value = row as { authorizationCodeId?: unknown; clientId?: unknown };
-                      return value.clientId === config.clientId && typeof value.authorizationCodeId === "string"
-                        ? [value.authorizationCodeId] : [];
-                    });
-                    await markForumControlGrantsRevoked(connection, config, grantIds);
+                    if (model !== "oauthAccessToken" && model !== "oauthRefreshToken") throw new ForumControlDenied();
+                    await revokeForumControlProviderSelection(connection, config, model, command.where);
                   }
                   return await Reflect.apply(method, target, args);
                 } catch (error) {
