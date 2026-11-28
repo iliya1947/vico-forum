@@ -24,7 +24,7 @@ const expiresAt = nullable({ ...text(64), pattern: "^\\d{4}-\\d{2}-\\d{2}T" });
 const priority = { type: "integer", minimum: 1, maximum: 3 } as const;
 
 function fields<P extends Record<string, Field>>(properties: P) {
-  return object(properties, Object.keys(properties));
+  return object(properties, Object.keys(properties) as (keyof P & string)[]);
 }
 
 const topic = fields({ topicId: id });
@@ -113,6 +113,43 @@ export function inspectionToolDescriptor(operation: WriteToolName) {
       writeToolDescriptor(operation).description.split(" Call only")[0] +
       " This inspection never executes the domain write. The private transport records the inspection request.",
     inputSchema: inspect[operation],
+    outputSchema: inspectionResultSchema(operation),
     ...readToolSecurity,
+  } as const;
+}
+
+const resultUuid = { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", minLength: 36, maxLength: 36 } as const;
+const resultText = { type: "string", minLength: 1, maxLength: 10000 } as const;
+
+/** Stage C fills these preflight facts from canonical locked state, never from
+ * conversational input. No arbitrary state object or model-provided actor. */
+export function inspectedStepSchema(operation: WriteToolName) {
+  return {
+    type: "object", additionalProperties: false,
+    properties: {
+      inspectionId: resultUuid, op: { const: operation }, args: inspect[operation],
+      summary: resultText,
+      consequences: { type: "array", items: resultText, maxItems: 100 },
+      observedAt: { type: "string", format: "date-time" },
+    },
+    required: ["inspectionId", "op", "args", "summary", "consequences", "observedAt"],
+  } as const;
+}
+
+function inspectionResultSchema(operation: WriteToolName) {
+  return {
+    type: "object", additionalProperties: false,
+    properties: {
+      requestId: resultUuid, op: { const: operation },
+      status: { enum: ["read-ok", "pending", "denied", "conflict", "stale", "unavailable", "outcome-unknown"] },
+      code: { type: "string", minLength: 1, maxLength: 128 },
+      inspection: inspectedStepSchema(operation),
+    },
+    required: ["requestId", "op", "status", "code"],
+    allOf: [{
+      if: { properties: { status: { const: "read-ok" } } },
+      then: { required: ["inspection"] },
+      else: { not: { required: ["inspection"] } },
+    }],
   } as const;
 }
