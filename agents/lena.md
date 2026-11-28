@@ -135,3 +135,14 @@ Initial setup head: `5cd8b3444f6077a4ae0eb375eff16eaeeef9e13d`
 - не расширять Stage B до полного read matrix или write path;
 - после реализации выполнить author self-check и передать Мире stable exact head #402;
 - CI/acceptance не запускать и их результаты не проверять: это делает Мира.
+
+### Stage B — transport protocol / GitHub boundary
+
+Exact head #402: `94fb002e8726f842833b3965f1b2bee362fe572e` (base `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`). Три новых файла: `app/forum-control/{transport-wire.server.ts,github-transport.server.ts,github-transport.test.ts}`. Реализованы:
+- closed versioned read_admin_overview request, SHA-256 canonical digest, rejection неизвестных полей/duplicate JSON keys на всех глубинах/oversized bodies; GitHub comment только version/kind/ref/requestId;
+- raw HMAC-SHA256 verification до JSON parsing; exact private repo/owner, app, installation, bot sender+author, inbox ID/number; only issue_comment.created request ref, no receipt dispatch;
+- narrow fixed-origin GitHub REST adapter (RS256 JWT, installation token scoped Issues write + metadata read on exact repo, no redirects, bounded bodies/deadlines/search), publish/find/verify exact App comment. Null search не доказывает loss и не разрешает исполнение. Официальные GitHub REST/webhook docs и webhook payload schema сверены; actual account/App shape (включая non-null performed_via_github_app) остаётся Stage-6 verification, fail closed.
+
+Самопроверка этого блока: исходники с проверенными Git blob hashes, isolated tsc 5.8.3 Node-only и DOM libs, local Node 22.16.0 execution четырёх сценариев с теми же test bodies (import runner заменён Vitest→node:test для standalone), real WebCrypto HMAC/RSA and fake GitHub HTTP, все 4 прошли; nullable authorization test typing устранён до коммита. Полный repo typecheck/CI/acceptance не запускались; pinned repo compiler/runtime и actual Worker + PostgreSQL не подтверждены. App/**/* и app/forum-control/**/*.ts уже входят в оба composite projects; Stage A exact head unchanged. No live calls/secrets, no production ingress.
+
+Следующий единый блок: durable PostgreSQL request/receipt storage (migration/schema/snapshot/journal/manifest/ACL), grant admission from Stage A (fresh exact grant/owner/session/account/required scope at register, accepted, started, result), request UUID/digest idempotency, registered requestRef only, atomic accepted→started claim, expiry/duplicate/race, publish receipt separately and verify matching App receipt before returning projection. Use existing canonical Admin Overview reader + permission/AP-10 policy, no fake AuthSession, no direct route invocation. Wire HTTP ingress disabled by default, local built Worker and real Better Auth + PG + GitHub fixture; cover duplicate/foreign/revoked/expired ref, missing receipt, lost ACK without repeated read. Stage B only, Stage C/write/Actions reserve later; never run PR CI/checks (Mira). Finish full author source self-check before handoff.

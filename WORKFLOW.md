@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage B принятого `PLAN.md` **активирован**. Реализация идёт отдельной stacked-ступенью `#402`, ветка `feature/chatgpt-forum-control-stage-b`, base — принятый Stage A `#399` exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Initial head `#402` — пустой setup commit `5cd8b3444f6077a4ae0eb375eff16eaeeef9e13d`.
+Stage B принятого `PLAN.md` **активирован**. Реализация идёт отдельной stacked-ступенью `#402`, ветка `feature/chatgpt-forum-control-stage-b`, base — принятый Stage A `#399` exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Текущий head `#402` — `94fb002e8726f842833b3965f1b2bee362fe572e`: реализованы и локально проверены закрытый transport wire и GitHub App/webhook boundary. Durable registration/Worker/Overview/receipt ещё не подключены.
 
 ## Назначение
 
@@ -25,7 +25,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 ## Следующий переход
 
-Лена реализует только Stage B по принятому `PLAN.md` в `#402`: один реальный Admin Overview read должен пройти от tool через локальный GitHub webhook fixture и вернуться через receipt. Внешние credentials не используются; ingress остаётся выключен штатной конфигурацией. После author self-check Лена передаёт stable exact head Мире. CI/acceptance запускает и анализирует только Мира. Stage C до coordinator PASS Stage B не начинать.
+Лена продолжает Stage B в `#402` с head `94fb002e8726f842833b3965f1b2bee362fe572e`: связать готовый GitHub transport с durable PostgreSQL registration/acceptance/claim/receipt lifecycle, Worker ingress и одним canonical Admin Overview reader; провести сквозной локальный fixture и author self-check. Контекст — последний раздел `agents/lena.md`. Внешние credentials не используются; ingress остаётся выключен штатной конфигурацией. После author self-check Лена передаёт stable exact head Мире. CI/acceptance запускает и анализирует только Мира. Stage C до coordinator PASS Stage B не начинать.
 
 ## Параллельные AI product-tracks
 
