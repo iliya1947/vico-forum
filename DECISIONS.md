@@ -44,3 +44,6 @@
 
 
 26. **D-26.** User Consultant использовать могут только авторизованные пользователи, но точка входа видима гостям. Guest получает auth-gate с предложением зарегистрироваться или войти и переходом в существующий auth flow; model inference/AI quota до авторизации не выполняются. Публичные Search/navigation/forum reads остаются доступны без входа.
+
+
+27. **D-27.** User Consultant в v1 хранит conversation state только в рамках текущей консультации; постоянная история и long-term personal AI memory между сессиями не реализуются. При этом conversation-state/storage boundary должна оставаться заменяемой, чтобы в будущем добавить persistence без переписывания consultant core/retrieval/navigation. Это требование расширяемости не разрешает преждевременно строить persistent-memory subsystem.
