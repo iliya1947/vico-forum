@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage A принятого `PLAN.md`: correction A-F01–A-F03 выполнен Леной, новый exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` передан Мире. Предыдущий coordinator HOLD относится к `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`. Stage B заблокирован до нового PASS.
+Stage A принятого `PLAN.md` завершён **PASS** на stable exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Coordinator review, основной CI и Stage-A-specific OAuth Chromium acceptance завершены успешно. Stage B пока **не активирован**.
 
 ## Назначение
 
@@ -20,11 +20,11 @@ Stage A принятого `PLAN.md`: correction A-F01–A-F03 выполнен 
 2. F-01 закрыт: каждый MCP tool самостоятельно проводит запрос через собственный server/GitHub path и не зависит от другого plugin/connector.
 3. Delivery mode — stacked A → I по этапам принятого `PLAN.md`; первый implementation PR — `#399`.
 4. Account-specific Site/OAuth/write-approval behavior остаётся обязательным Stage-6 gate. Информация не проверена до разрешённой внешней проверки.
-5. Correction A-F01–A-F03 и source self-check переданы на exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` (#399). Typecheck, runtime и acceptance на новом head не подтверждены; PASS не присвоен.
+5. Stage A coordinator checkpoint: **PASS**. CI run `46148681007` — success; Forum control local OAuth Chromium acceptance run `46149123687` — success; оба на exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
 
 ## Следующий переход
 
-Мира принимает новый stable exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`, выполняет применимый CI и local OAuth Chromium acceptance, затем coordinator checkpoint по Stage A. Correction и границы source self-check — последний раздел `agents/lena.md`; предыдущие findings — `stages/A/REVIEW.md`. Лена CI/acceptance не запускала и не проверяла результаты. Stage B до PASS не начинается.
+Stage B из принятого `PLAN.md` подготовлен как следующий bounded-этап, но не активирован. По правилу последовательного перехода после завершённой подзадачи требуется следующая явная команда владельца; до неё #399 не изменять и Stage B не начинать.
 
 ## Очередь следующих подзадач
 
