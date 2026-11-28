@@ -4,14 +4,15 @@
 
 ## Активный этап
 
-Stage A принятого `PLAN.md` завершён **PASS** на stable exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Coordinator review, основной CI и Stage-A-specific OAuth Chromium acceptance завершены успешно. Stage B пока **не активирован**.
+Stage B принятого `PLAN.md` **активирован**. Реализация идёт отдельной stacked-ступенью `#402`, ветка `feature/chatgpt-forum-control-stage-b`, base — принятый Stage A `#399` exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`. Initial head `#402` — пустой setup commit `5cd8b3444f6077a4ae0eb375eff16eaeeef9e13d`.
 
 ## Назначение
 
 - Координатор — Мира.
 - Автор принятого технического плана — Лёва.
-- Исполнитель Stage A — Лена (GPT-6.2); текущая проверка — Мира.
-- Реализация — #399, ветка `feature/chatgpt-forum-control`.
+- Исполнитель Stage B — Лена (GPT-6.2); следующий checkpoint после её author self-check — Мира.
+- Stage A / финально собираемый первый PR — #399, ветка `feature/chatgpt-forum-control`.
+- Stage B implementation PR — #402, ветка `feature/chatgpt-forum-control-stage-b`, base `feature/chatgpt-forum-control`.
 - Служебный PR — #400, ветка `service/chatgpt-forum-control`.
 
 ## Состояние
@@ -24,7 +25,7 @@ Stage A принятого `PLAN.md` завершён **PASS** на stable exact
 
 ## Следующий переход
 
-Stage B из принятого `PLAN.md` подготовлен как следующий bounded-этап, но не активирован. По правилу последовательного перехода после завершённой подзадачи требуется следующая явная команда владельца; до неё #399 не изменять и Stage B не начинать.
+Лена реализует только Stage B по принятому `PLAN.md` в `#402`: один реальный Admin Overview read должен пройти от tool через локальный GitHub webhook fixture и вернуться через receipt. Внешние credentials не используются; ingress остаётся выключен штатной конфигурацией. После author self-check Лена передаёт stable exact head Мире. CI/acceptance запускает и анализирует только Мира. Stage C до coordinator PASS Stage B не начинать.
 
 ## Очередь следующих подзадач
 
