@@ -42,4 +42,4 @@
 
 Лена независимо продолжает активный ChatGPT-control Stage A в `#399`.
 
-Следующий шаг embedded-AI: сначала согласовать с владельцем концепцию `research/embedded-ai-concept-v1.md`, затем по одному закрыть оставшиеся product decisions. Только после утверждённого product contract planning-track Лёвы может быть возобновлён.
+Следующий шаг embedded-AI: базовая роль User Consultant уточнена владельцем как forum navigator/topic finder. Дальше по одному закрыть оставшиеся product decisions из `research/embedded-ai-concept-v1.md`. Только после утверждённого product contract planning-track Лёвы может быть возобновлён.
