@@ -8,6 +8,7 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  consultantFilters: "073c8f27e605467dfe490c0874f97deaede7e7850c8ccd137f8a45b5ac446520",
   consultantReadBestAnswer: "885d2068ec5ba921c8dcd70e2891ca0ef79bc6b36b95732582fb0152faa8a693",
   consultantSaveTopic: "0a0971b5d0dac9f7eea449c38329e98a38c12aa3b6f41cbde58c98a9358d3fa1",
   consultantTranslationHelp: "311849fd0fe5d63b19100e9783115ca54b6af0d2b9f5329d2423f9ad217fb92d",

@@ -51,7 +51,19 @@ export function protectFrameworkFailure(request: Request, response: Response): R
     headers: new Headers(response.headers),
   });
   protectedResponse.headers.set("Cache-Control", "private, no-store");
-  if (isConsultantPath(new URL(request.url).pathname)) protectedResponse.headers.set("Referrer-Policy", "no-referrer");
+  if (isConsultantPath(new URL(request.url).pathname)) {
+    protectedResponse.headers.set("Referrer-Policy", "no-referrer");
+    if (response.status >= 500) {
+      // Preserve the real failure status and private headers; never let a
+      // framework error document include query/context or raw exception details.
+      protectedResponse.headers.delete("Content-Length");
+      protectedResponse.headers.delete("Content-Encoding");
+      protectedResponse.headers.set("Content-Type", "application/json; charset=utf-8");
+      return new Response(request.method === "HEAD" ? null :
+        JSON.stringify({ error: response.status === 503 ? "unavailable" : "unexpected" }),
+        { status: response.status, headers: protectedResponse.headers });
+    }
+  }
   return protectedResponse;
 }
 

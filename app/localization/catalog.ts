@@ -16,6 +16,7 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    consultantFilters: message("consultantFilters", "Use Mute topic on a topic or Block user on their public profile. Your personal filters list lets you manage existing muted topics and blocked users.", "Consultant deterministic navigation instruction: consultantFilters."),
     consultantReadBestAnswer: message("consultantReadBestAnswer", "Open a discussion and look for its marked best answer or use Help & solutions to browse solved questions.", "Consultant deterministic navigation instruction: consultantReadBestAnswer."),
     consultantSaveTopic: message("consultantSaveTopic", "Open the topic and use Save topic. Saved topics are available in Bookmarks.", "Consultant deterministic navigation instruction: consultantSaveTopic."),
     consultantTranslationHelp: message("consultantTranslationHelp", "Use Help & solutions to ask about an incorrect translation, including the affected topic or message.", "Consultant deterministic navigation instruction: consultantTranslationHelp."),

@@ -4,6 +4,7 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  consultantFilters: "Воспользуйтесь отключением уведомлений в нужной теме или блокировкой в публичном профиле пользователя. В личных фильтрах можно управлять уже заглушёнными темами и заблокированными пользователями.",
   consultantReadBestAnswer: "Откройте обсуждение и найдите отмеченный лучший ответ либо просмотрите решённые вопросы в разделе «Помощь и решения».",
   consultantSaveTopic: "Откройте тему и нажмите «Сохранить тему». Сохранённые темы доступны в закладках.",
   consultantTranslationHelp: "Задайте вопрос о неправильном переводе в разделе «Помощь и решения», указав соответствующую тему или сообщение.",
@@ -2019,6 +2020,7 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  consultantFilters: "השתמשו בהשתקת נושא בדף הנושא או בחסימת משתמש בפרופיל הציבורי שלו. ברשימת המסננים האישיים ניתן לנהל נושאים מושתקים ומשתמשים חסומים.",
   consultantReadBestAnswer: "פתחו דיון וחפשו את התשובה המיטבית המסומנת, או עיינו בשאלות שנפתרו במדור עזרה ופתרונות.",
   consultantSaveTopic: "פתחו את הנושא והשתמשו בשמירת הנושא. נושאים שמורים זמינים בסימניות.",
   consultantTranslationHelp: "שאלו על תרגום שגוי במדור עזרה ופתרונות וציינו את הנושא או ההודעה הרלוונטיים.",

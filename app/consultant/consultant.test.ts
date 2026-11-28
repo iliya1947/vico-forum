@@ -75,7 +75,7 @@ function setup(options: {
   context.set(forumReaderContext, { readTopicPage, readSection, readCategory, readHomepage } as unknown as ForumReader);
   const activeRestrictions = vi.fn(async () => options.restrictions ?? []);
   context.set(userMeasureContext, { activeRestrictions } as unknown as UserMeasureCapability);
-  const assertActive = vi.fn<(id: string) => Promise<void>>(async () => {});
+  const assertActive = vi.fn<(id: string) => Promise<void>>(async () => undefined);
   const deps = createConsultantDependencies(context, assertActive, options.enabled ?? true);
   context.set(consultantDependenciesContext, deps);
   return { context, deps, locale, resolve, has, forUser, assertActive, readTopicPage, readSection, readCategory, readHomepage, activeRestrictions };
@@ -167,12 +167,13 @@ describe("Consultant U1 private request admission", () => {
     expect(JSON.stringify(result)).not.toContain("private-");
     expect(JSON.stringify(result)).not.toContain("private@example.test");
   });
-  it("keeps all errors and route aliases private, even when Router drops resource headers", () => {
+  it("keeps all errors and route aliases private, even when Router drops resource headers", async () => {
     for (const path of ["/en/consultant", "/ru/CONSULTANT/", "/he/%63onsultant.data", "/en/consultant.data/"]) {
       expect(isConsultantPath(path)).toBe(true);
       const result = protectFrameworkFailure(new Request(origin + path), new Response("failure", { status: 500 }));
       expect(result.headers.get("Cache-Control")).toBe("private, no-store");
       expect(result.headers.get("Referrer-Policy")).toBe("no-referrer");
+      expect(await result.json()).toEqual({ error: "unexpected" });
     }
     expect(isConsultantPath("/en/search")).toBe(false);
   });
@@ -224,6 +225,8 @@ describe("Consultant deterministic canonical navigation", () => {
     ["en", "Where do I watch a topic?", "/en/search"],
     ["ru", "Где посмотреть уведомления?", "/ru/notifications"],
     ["en", "How do I mute notifications?", "/en/filters"],
+    ["en", "Find a topic about passwords", "/en/search"],
+    ["ru", "Найди тему про Better Auth и Google OAuth", "/ru/search"],
     ["en", "Where is Help?", "/en/categories/help-solutions"],
     ["ru", "Куда писать, если перевод сообщения неправильный?", "/ru/categories/help-solutions"],
     ["he", "איפה הסימניות שלי?", "/he/bookmarks"],
@@ -236,6 +239,7 @@ describe("Consultant deterministic canonical navigation", () => {
     expect((await ask(env, "report message", { kind: "topic", topicId: "public-topic", postId: "public-reply" })).cards[0]?.href)
       .toBe("/en/topics/public-topic#post-public-reply");
     expect((await ask(env, "watch topic", { kind: "topic", topicId: "public-topic" })).cards[0]?.href).toBe("/en/topics/public-topic");
+    expect((await ask(env, "mute topic", { kind: "topic", topicId: "public-topic" })).cards[0]?.href).toBe("/en/topics/public-topic");
     const hidden = await ask(env, "report message", { kind: "topic", topicId: "public-topic", postId: "hidden-reply" });
     const missing = await ask(env, "report message", { kind: "topic", topicId: "public-topic", postId: "missing-reply" });
     expect(hidden).toEqual(missing);

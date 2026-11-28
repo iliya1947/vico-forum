@@ -4,6 +4,7 @@ import { authorizationForRequest, authorizationOwnerContext } from "../authoriza
 import { isBoundOwner } from "../authorization/owner";
 import { AuthorizationUnavailableError } from "../../db/authorization-service";
 import { AuthorizationNotFoundError } from "../../db/authorization-repository";
+import { AccountMissingError } from "../../db/account-state";
 import { forumReaderForRequest } from "../forum/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { localeContext } from "../localization/request-context";
@@ -25,8 +26,11 @@ export function createConsultantDependencies(context: RouterContextProvider,
         const snapshot = await authorizationForRequest(context).forUser(actor).resolve();
         return projectDisclosure(snapshot, isBoundOwner(actor, context.get(authorizationOwnerContext)));
       } catch (error) {
-        if (error instanceof AuthorizationUnavailableError || error instanceof AuthorizationNotFoundError) {
-          return projectDisclosure(null, false);
+        if (error instanceof AuthorizationUnavailableError) return projectDisclosure(null, false);
+        // A missing actor after the AccountState read is not an admitted user.
+        // Missing role/catalog invariants remain unexpected errors, not permission denials.
+        if (error instanceof AuthorizationNotFoundError && error.message === "user does not exist") {
+          throw new AccountMissingError();
         }
         throw error;
       }

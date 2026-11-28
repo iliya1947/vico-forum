@@ -21,6 +21,7 @@ function card({ feature, labelKey, instructionKey, href }: ConsultantCard): Cons
   return { feature, labelKey, instructionKey, href };
 }
 
+/** Capability candidates for local navigation only. Contextual entries still need the resource/AP-10 checks below; never send this internal table to a provider. */
 export function permittedNavigationCatalog(actor: string, disclosure: Disclosure, deps: ConsultantDependencies): readonly Entry[] {
   const locale = deps.locale();
   const routing = deps.routing();
@@ -47,7 +48,7 @@ export function permittedNavigationCatalog(actor: string, disclosure: Disclosure
   add("popular", "popularNav", "popularNav", forumPopularPath(locale), /\bpopular\b|популяр|פופולר/iu, true);
   add("unanswered", "unansweredNav", "unansweredNav", forumUnansweredPath(locale), /\bunanswered\b|без ответа|ללא תשובה/iu, true);
   add("bookmarks", "bookmarksNav", "bookmarksIntro", forumBookmarksPath(locale), /\b(bookmarks?|saved topics?|save topic)\b|заклад|сохран[а-я]* тем|סימניות|נושאים שמורים/iu);
-  add("filters", "personalFiltersNav", "personalFiltersIntro", forumFiltersPath(locale), /\b(mute|unmute|block|unblock|personal filters)\b|заглуш|отключ[а-я]* уведом|блокиров|заблок|חסימ|חסום|השתק/iu);
+  add("filters", "personalFiltersNav", "consultantFilters", forumFiltersPath(locale), /\b(mute|unmute|block|unblock|personal filters)\b|заглуш|отключ[а-я]* уведом|блокиров|заблок|חסימ|חסום|השתק/iu);
   add("language", "settingsPreferredLocale", "settingsPreferredLocaleIntro", settingsUserPath(locale), /\b(language|locale)\b|язык|локал[ьи]|שפה|שפות/iu);
   add("account", "settingsAccount", "consultantAccount", settingsAccountPath(locale), /\b(account|password|sessions?|email|security settings)\b|аккаунт|парол|сеанс|почт|חשבון|סיסמ|דוא"ל/iu);
   add("privacy", "settingsPrivacy", "consultantPrivacy", settingsPrivacyPath(locale), /\b(privacy|online visibility)\b|приватност|видимость онлайн|פרטיות/iu);
@@ -98,7 +99,11 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
     "translation-help", "select-best-answer", "save-topic", "report", "watch", "filters", "help-ask"];
   const followup = /^(?:open it|show it|открой|покажи|פתח|הצג)[.!?]?$/iu.test(question.trim());
   const continued = followup ? permitted.find(entry => entry.feature === input.continuation?.selectedFeature) : undefined;
-  const selected = continued ?? priority.map(feature => specific.find(entry => entry.feature === feature)).find(Boolean)
+  // Explicit topic discovery takes the existing Search path, not a Settings
+  // feature with the same word in its description (for example "find a topic about passwords").
+  const discovery = /\b(?:find|search(?: for)?|look for)\s+(?:a |the |existing )?(?:topics?|discussions?)\s+(?:about|on)\b|(?:найди|найти|ищу|поиск).*тем[уыа].*(?:про|об? )|(?:חפש|למצוא|מצא).*נושא.*(?:על|בנושא)/iu.test(question);
+  const selected = continued ?? (discovery ? permitted.find(entry => entry.feature === "search") : undefined)
+    ?? priority.map(feature => specific.find(entry => entry.feature === feature)).find(Boolean)
     ?? specific.at(-1) ?? matches.find(entry => entry.feature !== "search") ?? matches[0];
   const fallback = () => permitted.filter(entry => entry.feature === "search" || entry.feature === "help").map(card);
   let cards: ConsultantCard[] = selected ? [card(selected)] : fallback();
@@ -108,7 +113,8 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
     try {
       if (selected.feature === "report" && (await deps.restrictions(actor)).has("complaints.submit")) {
         cards = fallback(); kind = "fallback";
-      } else if (["report", "watch", "best-answer", "select-best-answer", "save-topic"].includes(selected.feature) &&
+      } else if ((["report", "watch", "best-answer", "select-best-answer", "save-topic"].includes(selected.feature) ||
+        selected.feature === "filters" && /\b(?:mute|unmute)\b|заглуш|השתק/iu.test(question)) &&
         (input.page.kind === "topic" || followup && input.continuation?.selectedTopicId)) {
         const page = input.page.kind === "topic" ? input.page
           : { kind: "topic" as const, topicId: input.continuation!.selectedTopicId!, postId: undefined };

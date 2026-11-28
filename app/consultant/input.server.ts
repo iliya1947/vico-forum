@@ -10,8 +10,11 @@ function record(value: unknown, allowed: readonly string[]): RecordValue {
   return value as RecordValue;
 }
 function string(value: unknown, limit: number, blank = false): string {
-  if (typeof value !== "string" || value.length > limit || (!blank && !value.trim()) ||
-      /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value)) throw new ConsultantInputError();
+  if (typeof value !== "string" || value.length > limit || (!blank && !value.trim())) throw new ConsultantInputError();
+  if (Array.from(value).some(char => {
+    const code = char.charCodeAt(0);
+    return (code < 32 && code !== 9 && code !== 10 && code !== 13) || code === 127;
+  })) throw new ConsultantInputError();
   return value;
 }
 function id(value: unknown): string {

@@ -59,7 +59,7 @@ afterAll(async () => {
 
 describe("Consultant U1 canonical AccountState admission", () => {
   it("uses the same live web account row and rejects missing/deactivated actors", async () => {
-    const admit = createHyperdriveConsultantAdmission(databaseUrl, url =>
+    const admit = createHyperdriveConsultantAdmission(target.toString(), url =>
       new Client({ connectionString: url, options: `-c search_path=${schema}` }));
     await addUser("bound-owner");
     await addUser("consultant-actor");
