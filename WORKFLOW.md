@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage A принятого `PLAN.md`: coordinator review Миры на exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb` завершён **HOLD**. Подтверждены три дефекта текущего Stage A; correction возвращён Лене. Stage B заблокирован.
+Stage A принятого `PLAN.md`: correction A-F01–A-F03 выполнен Леной, новый exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` передан Мире. Предыдущий coordinator HOLD относится к `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`. Stage B заблокирован до нового PASS.
 
 ## Назначение
 
@@ -20,11 +20,11 @@ Stage A принятого `PLAN.md`: coordinator review Миры на exact hea
 2. F-01 закрыт: каждый MCP tool самостоятельно проводит запрос через собственный server/GitHub path и не зависит от другого plugin/connector.
 3. Delivery mode — stacked A → I по этапам принятого `PLAN.md`; первый implementation PR — `#399`.
 4. Account-specific Site/OAuth/write-approval behavior остаётся обязательным Stage-6 gate. Информация не проверена до разрешённой внешней проверки.
-5. Stage A implementation и author self-check исходников переданы на exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb` (#399). Runtime evidence не подтверждено; PASS не присвоен.
+5. Correction A-F01–A-F03 и source self-check переданы на exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` (#399). Typecheck, runtime и acceptance на новом head не подтверждены; PASS не присвоен.
 
 ## Следующий переход
 
-Лена исправляет единым bounded-пакетом A-F01–A-F03 из `stages/A/REVIEW.md` и выполняет source self-check. CI/acceptance не запускает: по прямой команде владельца ими занимается Мира. После нового stable exact head Лена передаёт его Мире. Мира повторно проводит coordinator cycle, проверяет CI и запускает применимый local OAuth Chromium acceptance. Stage B до PASS не начинается.
+Мира принимает новый stable exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`, выполняет применимый CI и local OAuth Chromium acceptance, затем coordinator checkpoint по Stage A. Correction и границы source self-check — последний раздел `agents/lena.md`; предыдущие findings — `stages/A/REVIEW.md`. Лена CI/acceptance не запускала и не проверяла результаты. Stage B до PASS не начинается.
 
 ## Очередь следующих подзадач
 

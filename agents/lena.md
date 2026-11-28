@@ -105,3 +105,13 @@ Exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`. Одним коммито
 3. согласовать SA07 migration-state regression test с новой 0079 migration.
 
 После исправлений выполнить source self-check и передать новый stable exact head Мире. CI и browser acceptance не запускать — их проверяет/запускает Мира по прямому решению владельца. Stage B не начинать.
+
+## Correction A-F01–A-F03 — передача Мире
+
+Exact head #399: `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` (один commit поверх `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`, три файла).
+
+1. A-F01: `createForumControlOAuthProvider` имеет явный публичный return type `BetterAuthPlugin` из better-auth 1.7.7; pinned native factory возвращает объект, удовлетворяющий этому типу. Native factory configuration/implementation и canonical auth runtime не изменены; OAuth endpoints используются через HTTP handler.
+2. A-F02: beforeEach в `tests/database/forum-control-oauth.test.ts` очищает только schema-qualified `forum_control_oauth_test.rate_limit` между отдельными сценариями. Пять сценариев содержат соответственно 2/1/2/1/2 login calls; native 1.7.7 sign-in rule — max 3 / 10s, shared per-path bucket при отсутствии trusted IP. Внутри сценария limiter полностью действует, session/token/grant state не сбрасывается. Production rate-limit policy неизменна.
+3. A-F03: SA07 test сравнивает compiledExpectedMigration с именем последней успешно применённой fixture SQL migration (сейчас 0079), а не застывшим 0078 или самим manifest; deployedMigration по-прежнему unchecked. Manifest и journal согласованы на 0079.
+
+Source self-check: просмотрен полный correction diff, проверены точный head/base, public type boundary, все login call sites и lifecycle fixture isolation, migration comparison, отсутствие изменений auth runtime/production Worker. A-F01–A-F03 исправлены на уровне исходников; **компиляция и runtime на новом head не проверены**. CI/acceptance не запускались и их результаты не проверялись Леной. Мира принимает exact head для полного coordinator cycle. Stage B/Stage 6 не начаты.
