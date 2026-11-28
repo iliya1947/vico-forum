@@ -277,3 +277,12 @@ STOP:
 - Current synchronization adds only required browser-neutral contract/address seams and current-contract import fallout; production defaults remain native, Pages owns/releases its adapter, no duplicated product route/action layer or P2 fixture behavior was introduced.
 - Current main `99b40480cb4d777298aafb1ffae7f28cf0c6085d` differs from the accepted P0 product-code baseline only by `AGENTS.md`; this does not invalidate the P1 code checkpoint.
 - **STOP before SYNC-P2.** P2 #385 remains unchanged until a separate developer continuation.
+
+## SYNC-P2 — assignment to Lena
+
+- Accepted lower step: Draft #375 exact `2d6224010eed6dd55026ee91c061447245ea4909`.
+- Active bounded task: synchronize Draft #385 P2 onto the renewed P1 and bring P2's typed fixture/context/capability coverage up to the current production contracts now present in that lower stack.
+- Preserve completed P2 work through B8a; do not restart P2 and do not advance to B8b1 while synchronization is incomplete.
+- Done when #385 is based on renewed P1, current P2-required contexts/capabilities fail closed or are represented by typed adapters/fixtures as required by PLAN P2, prior P2 invariants remain intact, and Lena's source self-check finds no current-contract blocker.
+- Lena does not need to run CI; after self-check hand the stable exact P2 head to Mira for CI and renewed coordinator checkpoint.
+- No P3/P4/P5 work, merge or deploy.
