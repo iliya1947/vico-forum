@@ -17,3 +17,6 @@
 
 
 9. 28.11.2026 — после product-scope проработки user-AI и Admin/Moderation-AI создан единый embedded-AI planning scope; Лёва назначен на отдельный technical plan в `stages/embedded-ai/PLAN.md` параллельно текущей реализации ChatGPT-control.
+
+
+10. 28.11.2026 — Stage A #399 завершён coordinator PASS на exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`: correction A-F01–A-F03 подтверждён, основной CI `46148681007` — success, Stage-A-specific OAuth Chromium acceptance `46149123687` — success. Stage B не активирован.
