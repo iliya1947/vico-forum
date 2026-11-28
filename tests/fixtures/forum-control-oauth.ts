@@ -1,13 +1,13 @@
 import type { AuthRuntime } from "../../app/auth/request-context";
 import type { ForumControlOAuthConfig } from "../../app/forum-control/oauth-provider.server";
 import { forumControlScopes } from "../../app/forum-control/write-tool-contract";
-import { createLocalForumControlMcpFixture } from "./forum-control-mcp";
+import { createLocalForumControlMcpFixture, type ConnectedOverview } from "./forum-control-mcp";
 
 /** Local test composition only. Client credentials never enter the tool
  * schema or model payload. Introspection is an in-process call to the actual
  * configured auth runtime; no user-selected URL and no outbound fetch. */
 export function createOAuthForumControlMcpFixture(config: ForumControlOAuthConfig,
-  runtime: AuthRuntime, clientSecret: string) {
+  runtime: AuthRuntime, clientSecret: string, connected?: ConnectedOverview) {
   const endpoint = new URL(config.resource);
   const issuer = new URL(config.issuer);
   if (![endpoint, issuer, new URL(config.redirectUri)].every(url =>
@@ -38,7 +38,7 @@ export function createOAuthForumControlMcpFixture(config: ForumControlOAuthConfi
         (Array.isArray(claims.aud) && claims.aud.length === 1 && claims.aud[0] === config.resource))) return null;
     const scopes = new Set(claims.scope.split(" "));
     return new Set(Object.values(forumControlScopes).filter(scope => scopes.has(scope)));
-  });
+  }, connected);
   return async (request: Request): Promise<Response> => {
     if (request.url === metadataPath.href && request.method === "GET") {
       return Response.json({ resource: config.resource, authorization_servers: [config.issuer],
