@@ -94,6 +94,7 @@ export const runtimeCapabilityContracts = Object.freeze({
       oauth_refresh_token: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
       oauth_consent: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
       forum_control_grant: Object.freeze(["INSERT", "SELECT", "UPDATE"]),
+      forum_control_request: Object.freeze(["DELETE", "INSERT", "SELECT", "UPDATE"]),
     }),
   }),
 });

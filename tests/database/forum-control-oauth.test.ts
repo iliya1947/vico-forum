@@ -6,6 +6,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime } from "../../app/auth/auth.server";
 import type { ForumControlOAuthConfig } from "../../app/forum-control/oauth-provider.server";
 import { forumControlScopes } from "../../app/forum-control/write-tool-contract";
+import { admitForumControlAccessToken } from "../../app/forum-control/delegation-store.server";
+import { PostgresOverviewRequests } from "../../app/forum-control/request-store.server";
+import type { OverviewTransportRequest } from "../../app/forum-control/transport-wire.server";
 import { createOAuthForumControlMcpFixture } from "../fixtures/forum-control-oauth";
 import { installRegistrationPolicyFixture } from "./registration-policy-fixture";
 import { installAuthLifecycleFixture } from "./verified-credential-fixture";
@@ -45,7 +48,9 @@ beforeAll(async () => {
   }
   await installRegistrationPolicyFixture(db);
   await installAuthLifecycleFixture(db);
-  await db.query((await readFile("drizzle/0079_forum_control_oauth.sql", "utf8")).replaceAll('"public".', '"' + schema + '".'));
+  for (const path of ["0079_forum_control_oauth", "0080_forum_control_request"]) {
+    await db.query((await readFile("drizzle/" + path + ".sql", "utf8")).replaceAll('"public".', '"' + schema + '".'));
+  }
   const passwordHash = await hashPassword(password);
   for (const userId of [config.ownerUserId, "fixture-nonowner"]) {
     await db.query('insert into "user"(id,name,email,email_verified,created_at,updated_at) values($1,$1,$2,true,now(),now())',
@@ -281,5 +286,80 @@ describe("real local Vico OAuth and MCP lifecycle", () => {
     expect(await json(await introspect(tokens.access_token))).toEqual({ active: false });
     expect((await call(tokens.access_token, "read_admin_overview")).status).toBe(401);
     expect((await refresh(tokens.refresh_token)).status).toBeGreaterThanOrEqual(400);
+  });
+
+  it("persists one admitted request and one claim; only a matching published receipt releases its unexpired result", async () => {
+    const tokens = await exchange(await login(), [forumControlScopes.read]);
+    const grant = await admitForumControlAccessToken(db, config, tokens.access_token,
+      await json(await introspect(tokens.access_token)), forumControlScopes.read);
+    const store = new PostgresOverviewRequests(db, config);
+    const request: OverviewTransportRequest = { version: 1, tool: "read_admin_overview", requestId: crypto.randomUUID(), arguments: {} };
+    const row = await store.register(request, grant);
+    const repeated = await store.register(request, grant);
+    expect(repeated.requestRef).toBe(row.requestRef);
+    expect(repeated.expiresAt).toEqual(row.expiresAt);
+    expect(repeated.receiptRef).toBe(row.receiptRef);
+    expect(await store.claim(row.id)).toBeNull();
+    const delivery = { deliveryId: crypto.randomUUID(), commentId: "42",
+      envelope: { version: 1 as const, kind: "request" as const, requestId: row.id, ref: row.requestRef } };
+    expect(await store.accept({ ...delivery, envelope: { ...delivery.envelope, ref: crypto.randomUUID() } })).toBeNull();
+    expect((await store.accept(delivery))?.acceptedAt).toBeInstanceOf(Date);
+    // Separate request connections exercise the actual database locks.
+    const competing = connection();
+    await competing.connect();
+    try {
+      const otherStore = new PostgresOverviewRequests(competing, config);
+      const claims = await Promise.all([store.claim(row.id), otherStore.claim(row.id)]);
+      expect(claims.filter(Boolean)).toHaveLength(1);
+    } finally { await competing.end(); }
+    let reads = 0;
+    const receipt = await store.completeOverview(row.id, async actor => {
+      expect(actor.id).toBe(grant.id);
+      reads++;
+      return { status: "read-ok", result: { localMarker: "protected" } };
+    });
+    expect(receipt?.outcome).toBe("read-ok");
+    expect(await store.completeOverview(row.id, async () => { throw new Error("Must not repeat reader"); })).toBeNull();
+    expect(await store.claim(row.id)).toBeNull();
+    expect(await store.accept(delivery)).not.toBeNull();
+    expect(reads).toBe(1);
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toBeNull();
+    expect(await store.recordReceiptPublication(row.id, grant, crypto.randomUUID(), "43")).toBeNull();
+    expect((await store.recordReceiptPublication(row.id, grant, row.receiptRef, "43"))?.receiptCommentId).toBe("43");
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toEqual({
+      status: "read-ok", result: { localMarker: "protected" },
+    });
+    await db.query("update forum_control_request set expires_at=clock_timestamp()-interval '1 second' where id=$1", [row.id]);
+    expect(await store.readPublished(row.id, grant, row.receiptRef, "43")).toBeNull();
+    expect((await store.inspect(row.id, grant))?.expired).toBe(true);
+    expect((await db.query("select result from forum_control_request where id=$1", [row.id])).rows[0]?.result).toBeNull();
+    expect((await store.register(request, grant)).requestRef).toBe(row.requestRef);
+    expect(await store.accept(delivery)).toBeNull();
+  });
+
+  it("denies a foreign or revoked grant before acceptance, execution or result delivery", async () => {
+    const cookie = await login();
+    const tokens = await exchange(cookie, scopes);
+    const grant = await admitForumControlAccessToken(db, config, tokens.access_token,
+      await json(await introspect(tokens.access_token)), forumControlScopes.read);
+    const otherTokens = await exchange(cookie, [forumControlScopes.read]);
+    const otherGrant = await admitForumControlAccessToken(db, config, otherTokens.access_token,
+      await json(await introspect(otherTokens.access_token)), forumControlScopes.read);
+    const store = new PostgresOverviewRequests(db, config);
+    const request: OverviewTransportRequest = { version: 1, tool: "read_admin_overview", requestId: crypto.randomUUID(), arguments: {} };
+    const row = await store.register(request, grant);
+    expect(await store.inspect(row.id, otherGrant)).toBeNull();
+    await expect(store.register(request, otherGrant)).rejects.toThrow();
+    const delivery = { deliveryId: crypto.randomUUID(), commentId: "44",
+      envelope: { version: 1 as const, kind: "request" as const, requestId: row.id, ref: row.requestRef } };
+    expect((await store.accept(delivery))?.acceptedAt).toBeInstanceOf(Date);
+    const capability = runtime.forumControl;
+    if (!capability) throw new Error("Missing local grant capability");
+    expect(await capability.revokeGrant(new Headers({ Cookie: cookie }), grant.id)).toBe(true);
+    await expect(store.accept(delivery)).rejects.toThrow();
+    await expect(store.claim(row.id)).rejects.toThrow();
+    await expect(store.inspect(row.id, grant)).rejects.toThrow();
+    expect((await db.query("select started_at,result from forum_control_request where id=$1", [row.id])).rows[0])
+      .toEqual({ started_at: null, result: null });
   });
 });

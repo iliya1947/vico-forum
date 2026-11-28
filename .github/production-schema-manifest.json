@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0079_forum_control_oauth",
+  "targetMigration": "0080_forum_control_request",
   "tables": {
     "account": {
       "columns": [
@@ -3846,6 +3846,145 @@
           "columns": [
             {
               "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "forum_control_request": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "request_ref",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "receipt_ref",
+          "type": "uuid",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "grant_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "owner_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "session_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "digest",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "request_comment_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "receipt_comment_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "outcome",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "result",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_control_request_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "forum_control_request_receipt_ref_unique",
+          "columns": [
+            "receipt_ref"
+          ]
+        },
+        {
+          "name": "forum_control_request_request_ref_unique",
+          "columns": [
+            "request_ref"
+          ]
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_control_request_expires_at_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "expires_at",
               "order": "asc",
               "nulls": "last"
             }
