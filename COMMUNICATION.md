@@ -75,3 +75,8 @@ Moderation AI — отдельный permission-scoped copilot и advisory signa
 ## Решение владельца — Consultant access
 
 User Consultant доступен только authenticated users. Public Search/navigation остаются гостям без AI Consultant. Решение записано как D-26.
+
+
+## Уточнение владельца — guest visibility Consultant
+
+D-26 уточнён: Consultant не скрывается от гостей. Guest видит точку входа и auth-заглушку «зарегистрируйтесь или войдите, чтобы использовать консультанта» с переходом в существующий auth flow; сам AI/inference доступен только после авторизации.
