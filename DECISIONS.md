@@ -53,3 +53,6 @@
 
 
 29. **D-29.** Disclosure layers User → Moderator → Administrator наследуются снизу вверх: Moderator включает User context, Administrator включает User + Moderator context. Наследование определяет только допустимый knowledge/navigation context Consultant и не заменяет canonical authorization конкретных страниц/действий.
+
+
+30. **D-30.** Основная точка входа User Consultant — постоянная плавающая кнопка «Консультант» внизу справа, открывающая popup/side panel поверх текущей страницы. Контекстные входы открывают того же Consultant с переданным page/action context. Для гостя launcher остаётся видимым, но открывает auth-gate.
