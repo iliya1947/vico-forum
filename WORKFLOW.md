@@ -42,4 +42,4 @@
 
 Лена независимо продолжает активный ChatGPT-control Stage A в `#399`.
 
-Следующий шаг embedded-AI: Мира по одному согласует с владельцем продуктовые решения user-AI и Admin/Moderation-AI; только после закрытия всех существенных развилок planning-track Лёвы может быть возобновлён.
+Следующий шаг embedded-AI: сначала согласовать с владельцем концепцию `research/embedded-ai-concept-v1.md`, затем по одному закрыть оставшиеся product decisions. Только после утверждённого product contract planning-track Лёвы может быть возобновлён.
