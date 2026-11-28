@@ -821,36 +821,35 @@ export function createHyperdriveAuthRuntime(
       try {
         return protectGuestResponse(await useAuth(async (auth, _database, client, lifecycle) => {
           let response: Response;
-          if (invocation && invocation.operation !== "other") {
+          const oauthInvocation = invocation;
+          if (oauthInvocation && (oauthInvocation.operation !== "other" || introspectionToken !== undefined)) {
             // Native token rotation, replay invalidation, grant insertion
             // and revoke share one transaction and account lock. Never let
             // a library-generated token response escape before COMMIT.
             await auth.$context;
             response = await lifecycle.runAdapterOperation(async () => {
               await client.query('select id from "user" where id=$1 for no key update',
-                [invocation.config.ownerUserId]);
-              const result = await auth.handler(request);
-              if (!result.ok && invocation.mintAttempted) {
+                [oauthInvocation.config.ownerUserId]);
+              let result = await auth.handler(request);
+              if (!result.ok && oauthInvocation.mintAttempted) {
                 failedTokenResponse = result;
                 throw new ForumControlDenied();
+              }
+              if (introspectionToken !== undefined && result.ok) {
+                const claims: unknown = await result.clone().json();
+                try {
+                  // Read the native claims and the current grant under the
+                  // same account lock used by issuance and revocation.
+                  await admitForumControlAccessToken(client, oauthInvocation.config, introspectionToken, claims);
+                } catch (error) {
+                  if (!(error instanceof ForumControlDenied)) throw error;
+                  result = Response.json({ active: false }, { headers: { "Cache-Control": "no-store" } });
+                }
               }
               return result;
             }, true);
           } else {
             response = await auth.handler(request);
-          }
-          if (invocation && introspectionToken !== undefined && response.ok) {
-            // Native introspection authenticates the confidential client and
-            // validates the opaque token. Its generic session policy alone is
-            // insufficient for Vico's one exact, live Owner delegation.
-            const claims: unknown = await response.clone().json();
-            try {
-              await lifecycle.runAdapterOperation(() =>
-                admitForumControlAccessToken(client, invocation!.config, introspectionToken!, claims));
-            } catch (error) {
-              if (!(error instanceof ForumControlDenied)) throw error;
-              response = Response.json({ active: false }, { headers: { "Cache-Control": "no-store" } });
-            }
           }
           if (!admission.failure) return response;
           if (sessionStorageUnavailable(admission.failure.error)) {

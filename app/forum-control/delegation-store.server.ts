@@ -64,7 +64,6 @@ export async function admitForumControlTokenInsert(connection: Connection, lifec
   // cached configuration. This also denies missing or disabled client/link.
   await requireRegisteredClientResource(connection, binding);
   if (initial) {
-
     await connection.query(
       'insert into forum_control_grant (id,user_id,session_id,client_id,issuer,resource,repository_id,scopes,created_at) ' +
       "values ($1,$2,$3,$4,$5,$6,$7,$8,timezone('UTC',clock_timestamp())) on conflict (id) do nothing",
@@ -175,7 +174,16 @@ export async function revokeForumControlProviderSelection(connection: Connection
   model: "oauthAccessToken" | "oauthRefreshToken",
   where: readonly { field?: unknown; value?: unknown; operator?: unknown }[]): Promise<void> {
   const table = model === "oauthAccessToken" ? "oauth_access_token" : "oauth_refresh_token";
-  if (where.length === 2 && where.every(selector => selector.operator === undefined || selector.operator === "eq")) {
+  const equalSelectors = where.every(selector => selector.operator === undefined || selector.operator === "eq");
+  // Native refresh-token revoke uses a CAS on id + revoked IS NULL.
+  const casId = model === "oauthRefreshToken" && where.length === 2 && equalSelectors &&
+    where.some(selector => selector.field === "revoked" && selector.value === null)
+    ? where.find(selector => selector.field === "id") : undefined;
+  if (casId && exactString(casId.value)) {
+    await revokeForumControlProviderSelection(connection, binding, model, [casId]);
+    return;
+  }
+  if (where.length === 2 && equalSelectors) {
     const owner = where.find(selector => selector.field === "userId")?.value;
     const client = where.find(selector => selector.field === "clientId")?.value;
     if (owner !== binding.ownerUserId || client !== binding.clientId) throw new ForumControlDenied();
