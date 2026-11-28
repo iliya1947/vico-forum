@@ -85,3 +85,8 @@ D-26 уточнён: Consultant не скрывается от гостей. Gue
 ## Решение владельца — память Consultant
 
 D-27: память только внутри текущей консультации. Persisted history/long-term memory в v1 нет, но state/storage boundary должна быть заменяемой, чтобы такую функцию можно было добавить позже без существенной переделки consultant core.
+
+
+## Решение владельца — disclosure layers Consultant
+
+D-28: User / Moderator / Administrator — это не только уровни подсказок, а disclosure boundaries. Consultant не должен получать контекст более высокого уровня и поэтому не может «сболтнуть» его пользователю. Фактическая authorization по-прежнему остаётся в canonical server-side boundary.
