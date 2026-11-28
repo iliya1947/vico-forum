@@ -8,6 +8,10 @@ import subprocess
 from urllib.parse import urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--url', default='http://127.0.0.1:4187')
@@ -123,7 +127,7 @@ try:
         manager, author = [browser.new_context(viewport={'width': 1280, 'height': 900}) for _ in range(2)]
         for c, name in [(manager, 'Manager'), (author, 'Author')]:
             c.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
-            response = c.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={'name': name, 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
+            response = signup_verified_session(sql, c.request, base, headers={'Origin': base}, data={'name': name, 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
             assert response.status == 200, response.text()[:150]
             accounts.append(response.json()['user']['id'])
         actor, owner = accounts
@@ -290,7 +294,7 @@ try:
         revoke_context = browser.new_context(viewport={'width':1280,'height':900})
         for context, name in [(any_context,'AnyOnly'),(revoke_context,'OwnRevoked')]:
             context.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
-            response = context.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':name,'email':prefix+name+'@test.invalid','password':prefix+'-local-only'})
+            response = signup_verified_session(sql, context.request, base,headers={'Origin':base},data={'name':name,'email':prefix+name+'@test.invalid','password':prefix+'-local-only'})
             assert response.status == 200
             accounts.append(response.json()['user']['id'])
         any_actor, revoke_actor = accounts[-2:]

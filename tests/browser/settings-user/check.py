@@ -8,6 +8,10 @@ import subprocess
 from urllib.parse import quote, urlencode, urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4189")
@@ -59,7 +63,7 @@ def actor(browser, name):
     context = browser.new_context(viewport={"width": 1280, "height": 900})
     context.route("**/*", lambda route: route.continue_() if route.request.url.startswith(base + "/")
                   else (external.append(route.request.url), route.abort())[-1])
-    signup = context.request.post(base + "/api/auth/sign-up/email",
+    signup = signup_verified_session(sql, context.request, base,
         headers={"Origin": base}, data={"name": "SET03 " + name,
         "email": prefix + "-" + name + "@test.invalid", "password": "synthetic-browser-password-123456"})
     assert signup.status == 200, (name, signup.status, signup.text()[:250])

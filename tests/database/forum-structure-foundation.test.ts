@@ -45,8 +45,9 @@ beforeAll(async () => {
     await client.query(`drop schema if exists ${name} cascade; create schema ${name}`);
   }
   files = (await readdir("drizzle")).filter(n => /^\d{4}_.+\.sql$/.test(n)).sort();
-  expect(files.at(-1)).toBe("0072_forum_structure_foundation.sql");
-  await apply(schema, files.slice(0, -1));
+  const foundation = files.indexOf("0072_forum_structure_foundation.sql");
+  expect(foundation).toBeGreaterThan(0);
+  await apply(schema, files.slice(0, foundation));
   await client.query(`insert into forum_categories(id,name,created_at) values
     ('f1-cat-z','Earlier','2020-01-01'),('f1-cat-b','Tie B','2020-02-01'),('f1-cat-a','Tie A','2020-02-01');
     insert into forum_sections(id,category_id,name,created_at) values
@@ -66,7 +67,7 @@ beforeAll(async () => {
       values ('f1-body','f1-post','f1-author','Unchanged body','en')`);
   await client.query("commit");
   before = await snapshot();
-  await apply(schema, files.slice(-1));
+  await apply(schema, files.slice(foundation));
   await apply(cleanSchema, files);
   await client.query('set search_path="' + schema + '"');
 }, 30_000);

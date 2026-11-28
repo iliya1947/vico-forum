@@ -55,12 +55,28 @@ async function pattern(id: string, actor: string | null, count = 2,
     "'auth','sign-in','denied',401,'2026-11-10T17:59:00Z','2026-11-10T18:01:00Z',$5)",
     [id,at,actor ? "authenticated" : "anonymous",actor,count,networkIp]);
 }
+async function readTableContracts() {
+  return (await client.query<{name:string;acl:string|null}>(
+    "select c.relname as name,c.relacl::text as acl from pg_class c "+
+    "join pg_namespace n on n.oid=c.relnamespace "+
+    "where n.nspname=$1 and c.relkind in ('r','p') order by c.relname",[schema],
+  )).rows;
+}
+let historyMigrationRelations: {
+  before: Awaited<ReturnType<typeof readTableContracts>>;
+  after: Awaited<ReturnType<typeof readTableContracts>>;
+} | undefined;
 beforeAll(async () => {
   await client.connect();
   await client.query("drop schema if exists "+schema+" cascade; create schema "+schema);
   for (const file of (await readdir("drizzle")).filter(x => /^\d{4}_.+\.sql$/.test(x)).sort()) {
+    // Verify the historical index-only migration at its actual boundary,
+    // not by freezing the total table count after unrelated future migrations.
+    const before = file === "0064_sa03_profile_history_indexes.sql"
+      ? await readTableContracts() : undefined;
     await client.query((await readFile("drizzle/"+file,"utf8"))
       .replaceAll('"public".','"'+schema+'".'));
+    if (before) historyMigrationRelations = {before,after:await readTableContracts()};
   }
 });
 beforeEach(async () => {
@@ -216,10 +232,8 @@ describe("SA03 exact-target Owner History, authoritative sources only", () => {
       [schema,expected],
     )).rows.map(x=>x.indexname);
     expect(indexes.sort()).toEqual([...expected].sort());
-    const tables=(await client.query<{n:string}>(
-      "select count(*)::int n from information_schema.tables "+
-      "where table_schema=$1 and table_type='BASE TABLE'",[schema])).rows[0]?.n;
-    expect(tables).toBe(75);
+    expect(historyMigrationRelations).toBeDefined();
+    expect(historyMigrationRelations?.after).toEqual(historyMigrationRelations?.before);
     await client.query("set enable_seqscan=off");
     try {
       const cases = [

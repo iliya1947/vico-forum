@@ -8,6 +8,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -16,6 +17,10 @@ from urllib.parse import quote, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import expect, sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--url", default="http://127.0.0.1:4205")
@@ -34,6 +39,7 @@ prefix = "k5-r2-" + uuid4().hex
 records = []
 page_errors = []
 external = []
+editor_readiness = []
 
 
 def sql(query, params=None):
@@ -83,6 +89,55 @@ def record(name, **details):
     print("SA04_K5_CONNECTED " + json.dumps(row, ensure_ascii=False), flush=True)
 
 
+# The SSR form can be present before useEditorAttachments finishes its
+# client-side initialization. Wait for the actual opaque operation capability.
+EDITOR_OPERATION_UUID = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+
+
+def editor_operation_snapshot(form):
+    try:
+        return form.evaluate("""form => ({
+            operation_count: form.querySelectorAll('input[name="editorOperationId"]').length,
+            operation_lengths: Array.from(
+                form.querySelectorAll('input[name="editorOperationId"]'),
+                input => input.value.length
+            ),
+            operation_uuid: Array.from(
+                form.querySelectorAll('input[name="editorOperationId"]'),
+                input => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(input.value)
+            ),
+            upload_disabled: Array.from(
+                form.querySelectorAll('input[type="file"]'),
+                input => input.disabled
+            )
+        })""")
+    except Exception:
+        return None
+
+
+def ready_editor_operation(form, case):
+    operation = form.locator('input[name="editorOperationId"]')
+    evidence = {"case": case, "before": editor_operation_snapshot(form)}
+    started = time.monotonic()
+    try:
+        expect(operation).to_have_value(EDITOR_OPERATION_UUID, timeout=25000)
+        value = operation.input_value(timeout=1000)
+        assert EDITOR_OPERATION_UUID.fullmatch(value)
+        evidence["outcome"] = "ready"
+        return value
+    except Exception as error:
+        evidence["outcome"] = "failed"
+        evidence["error_type"] = type(error).__name__
+        raise AssertionError("K5 editor operation not ready: " + case) from None
+    finally:
+        evidence["elapsed_ms"] = round((time.monotonic() - started) * 1000)
+        evidence["after"] = editor_operation_snapshot(form)
+        editor_readiness.append(evidence)
+        print("SA04_K5_EDITOR_READINESS " + json.dumps(evidence), flush=True)
+
+
 def external_guard(ctx):
     def route_guard(route):
         if route.request.url.startswith(base + "/"):
@@ -99,8 +154,7 @@ def account(browser, label, ip):
         extra_http_headers={"cf-connecting-ip": ip},
     )
     external_guard(ctx)
-    result = ctx.request.post(
-        base + "/api/auth/sign-up/email",
+    result = signup_verified_session(sql, ctx.request, base,
         headers={"Origin": base},
         data={
             "name": "K5 synthetic " + label,
@@ -389,7 +443,7 @@ try:
         resume = active.locator("button.forum-composer-resume")
         if resume.count() and resume.is_visible():
             resume.click()
-        operation = form.locator('input[name="editorOperationId"]').input_value()
+        operation = ready_editor_operation(form, "initial-upload")
         assert len(operation) == 36
         payload = b"K5 built Worker Better Auth local R2 browser attachment"
         uploader = form.locator('input[type="file"]')
@@ -506,7 +560,7 @@ try:
             inactive_form.get_by_role("button", name="Advanced", exact=True).click()
         editor = inactive_form.locator("textarea#reply-body")
         editor.fill("K5 kept text after account deactivation")
-        inactive_operation = inactive_form.locator('input[name="editorOperationId"]').input_value()
+        inactive_operation = ready_editor_operation(inactive_form, "pre-deactivation")
         deactivate(inactive_id)
         before_inactive = stats(inactive_id)
         with inactive.expect_response(
@@ -1120,7 +1174,7 @@ try:
 
         retry_form, retry_editor = mounted_reply(retry_page)
         retry_editor.fill("K5 mounted text survives missing upload acknowledgement")
-        retry_operation = retry_form.locator('input[name="editorOperationId"]').input_value()
+        retry_operation = ready_editor_operation(retry_form, "mounted-retry")
         retry_bytes = b"K5 genuine selected File retained through ambiguous ACK"
         routed = []
         def dropped_browser_ack(route):
@@ -1182,7 +1236,7 @@ try:
         # and there is no per-file DELETE (server pool is intentionally intact).
         remove_form, remove_editor = mounted_reply(remove_page)
         remove_editor.fill("K5 Remove must not erase active Markdown source")
-        remove_operation = remove_form.locator('input[name="editorOperationId"]').input_value()
+        remove_operation = ready_editor_operation(remove_form, "mounted-remove")
         remove_uploads = []
         remove_deletes = []
         def observe_remove_request(request):
@@ -1233,7 +1287,7 @@ try:
         # DELETE retires the old temporary generation through the real Worker.
         cancel_form, cancel_editor = mounted_reply(cancel_page)
         cancel_editor.fill("K5 Cancel resets only this mounted editor")
-        cancel_operation = cancel_form.locator('input[name="editorOperationId"]').input_value()
+        cancel_operation = ready_editor_operation(cancel_form, "mounted-cancel")
         cancel_uploads = []
         cancel_page.on("request", lambda request: cancel_uploads.append(
             request.headers.get("x-vico-attachment-id")
@@ -1289,7 +1343,7 @@ try:
         # attachment. First fail only the transport, keeping the File in memory.
         denied_form, denied_editor = mounted_reply(denied_page)
         denied_editor.fill("K5 inactive Retry keeps entered text and selected File")
-        denied_operation = denied_form.locator('input[name="editorOperationId"]').input_value()
+        denied_operation = ready_editor_operation(denied_form, "mounted-denied")
         denied_bytes = b"K5 user File is retained across local error and 401"
         captured_denied = []
         def initial_network_failure(route):
@@ -1359,11 +1413,13 @@ try:
         "sha": os.getenv("IMPLEMENTATION_SHA"), "cases": records,
         "external": external, "page_errors": page_errors,
         "binding": "local-only Miniflare R2 ATTACHMENT_R2",
+        "editor_readiness": editor_readiness,
     }, indent=2), encoding="utf8")
     print("SA04_K5_CONNECTED_PASS " + str(len(records)), flush=True)
 except Exception as error:
     (args.output / "failure.json").write_text(json.dumps({
         "sha": os.getenv("IMPLEMENTATION_SHA"), "cases": records,
         "error": repr(error), "external": external, "page_errors": page_errors,
+        "editor_readiness": editor_readiness,
     }, indent=2), encoding="utf8")
     raise

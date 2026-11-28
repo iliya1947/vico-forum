@@ -1,6 +1,7 @@
+import type { CredentialTransition } from "./credential-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx } from "better-auth/api";
+import { APIError, createAuthMiddleware, getAuthoritativeSessionFromCtx, getSessionFromCtx, isAPIError } from "better-auth/api";
 import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { Client } from "pg";
@@ -11,13 +12,19 @@ import {
   AccountSecurityError,
   AuthSessionUnavailableError,
   type AccountSecurityIdentity,
-  type AccountSecuritySession,
+  type AccountSecuritySession, type AccountSecuritySnapshot,
   type AuthRuntime,
   type AuthSession,
 } from "./request-context";
-import { createRegistrationAdmission } from "./registration-admission";
+import { createRegistrationAdmission, readRegistrationFlags } from "./registration-admission";
 import { safeDeviceLabel } from "./session-label";
 import { guardBetterAuthSessionWrites, InactiveSessionWriteError } from "./session-write-guard";
+import { AuthLifecycleTransaction, AuthLifecycleTransactionError } from "./lifecycle-transaction.server";
+import { authLifecyclePlugin, type AuthLifecycleDependencies } from "./lifecycle-plugin.server";
+import { SignupVerificationEvidence } from "./signup-verification-evidence.server";
+import { registrationChallengeConfig } from "./registration-challenge.server";
+import type { RegistrationChallengeAdmission } from "./registration-challenge-admission.server";
+import { isGuestEmailVerificationRequest } from "./session-context";
 import {
   account,
   betterAuthUserAdditionalFields,
@@ -28,13 +35,14 @@ import {
 } from "../../db/schema";
 import { bestEffortDiscardClient, createWebClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { isPostgresAvailabilityFailure } from "../localization/persistent-registry";
-import { AccountStateUnavailableError, readAccountState } from "../../db/account-state";
+import { AccountStateUnavailableError, AccountStateUnexpectedError, readAccountState } from "../../db/account-state";
 
 export interface BetterAuthEnvironment {
   readonly BETTER_AUTH_SECRET: string;
   readonly BETTER_AUTH_URL: string;
   readonly GOOGLE_CLIENT_ID: string;
   readonly GOOGLE_CLIENT_SECRET: string;
+  readonly AUTH_REGISTRATION_CHALLENGE_MODE?: string;
 }
 
 export const betterAuthSchema = { user, session, account, verification, rateLimit };
@@ -47,7 +55,8 @@ export interface AuthCreationObserver {
 }
 export const betterAuthEmailPasswordOptions = {
   enabled: true,
-  requireEmailVerification: false,
+  requireEmailVerification: true,
+  autoSignIn: false,
   minPasswordLength: 8,
   maxPasswordLength: 128,
 } as const;
@@ -83,8 +92,11 @@ export function createBetterAuthRequestHooks(
       let current: Awaited<ReturnType<typeof getAuthoritativeSessionFromCtx>> = null;
       // Pathless server-only methods are keyed by operationId in Better Auth's
       // common direct-API dispatcher (e.g. setPassword), not a routed URL.
-      const protectedActorOperation = (ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path))
-        || (ctx as typeof ctx & { operationId?: string }).operationId === "setPassword";
+      if ((ctx as typeof ctx & { operationId?: string }).operationId === "setPassword") {
+        throw new APIError("UNAUTHORIZED", { message: "Password creation requires confirmation" },
+          { "Cache-Control": "private, no-store" });
+      }
+      const protectedActorOperation = ctx.path !== undefined && actorProtectedAuthPaths.has(ctx.path);
       if (protectedActorOperation && ctx.headers
         && !(preRoutingSessionLookup && ctx.path === "/get-session")) {
         // Also runs for auth.api.* calls; direct endpoint dispatch shares this
@@ -153,21 +165,30 @@ export const betterAuthIpAddressOptions = {
 };
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
+type CanonicalBetterAuthOptions = Omit<BetterAuthOptions, "plugins"> & {
+  plugins: [ReturnType<typeof authLifecyclePlugin>];
+};
+
 export function betterAuthOptions(
-  database: NodePgDatabase, env: BetterAuthEnvironment,
+  database: NodePgDatabase & { $client: Client }, env: BetterAuthEnvironment,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
-): BetterAuthOptions {
+  lifecycle = new AuthLifecycleTransaction(database.$client),
+  dependencies?: AuthLifecycleDependencies,
+): CanonicalBetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
   const ownSignOutTokens = new Set<string>();
+  const signupEvidence = new SignupVerificationEvidence();
+  const registrationAdmission = createRegistrationAdmission(database);
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
+    verification: { storeIdentifier: { default: "plain", overrides: { "reset-password:": "hashed" } } },
     database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
       schema: betterAuthSchema,
-    }), onActorStateError, token => ownSignOutTokens.delete(token)),
+    }), onActorStateError, token => ownSignOutTokens.delete(token), lifecycle),
     // This gate belongs to the canonical Better Auth configuration, not to
     // optional SA-02 observers or only the HTTP request handler.
     databaseHooks: {
@@ -184,9 +205,52 @@ export function betterAuthOptions(
         }
       } } },
     },
-    user: { additionalFields: betterAuthUserAdditionalFields, validateUserInfo: createRegistrationAdmission(database) },
+    user: {
+      additionalFields: betterAuthUserAdditionalFields,
+      validateUserInfo: async (data, context) => {
+        try {
+          // The policy reader is raw Drizzle work, not a native adapter call.
+          // Track it in the same transaction owner so a native synthetic
+          // duplicate acknowledgement cannot swallow a failed SQL read and
+          // cause COMMIT to be attempted against a still-blocked connection.
+          let result = await lifecycle.runAdapterOperation(async () => registrationAdmission(data, context));
+          if (!result && data.source.action === "create-user") {
+            const registration = (context.context as unknown as { vicoRegistrationAdmission: RegistrationChallengeAdmission }).vicoRegistrationAdmission;
+            result = await registration.admit(data.source.method === "email-password" ? "email" : "google", data.user.email ?? "");
+          }
+          signupEvidence.noteAdmission(result);
+          return result;
+        } catch (error) {
+          signupEvidence.noteAdmissionFailure(error);
+          throw error;
+        }
+      },
+    },
     account: { accountLinking: { disableImplicitLinking: true } },
     emailAndPassword: betterAuthEmailPasswordOptions,
+    emailVerification: {
+      sendOnSignUp: true,
+      sendOnSignIn: false,
+      autoSignInAfterVerification: false,
+      // Native calls this only after linkAccount, inside its signup transaction.
+      // Record actual creation; the outer endpoint sends only after COMMIT.
+      sendVerificationEmail: async ({ user }) => { signupEvidence.noteCreated(user); },
+    },
+    // The native logger can print raw addresses and adapter errors. Keep
+    // structured Vico attempt/fact reporting instead of auth payload logs.
+    logger: { disabled: true },
+    // Better Call 1.4.0 logs unhandled non-APIError exceptions independently
+    // of Better Auth's logger. Its onError catch converts a thrown APIError
+    // to a response. Preserve existing API errors; never log raw SQL/params.
+    onAPIError: { onError: error => {
+      if (!isAPIError(error)) throw new APIError("INTERNAL_SERVER_ERROR", { message: "Authentication failed" });
+    } },
+    plugins: [authLifecyclePlugin(database.$client, lifecycle, env.BETTER_AUTH_SECRET,
+      signupEvidence, error => error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error),
+      () => lifecycle.runAdapterOperation(async () => (await readRegistrationFlags(database)).emailRegistrationEnabled),
+      { ...dependencies, registrationChallenge: dependencies?.registrationChallenge ?? registrationChallengeConfig(env.AUTH_REGISTRATION_CHALLENGE_MODE),
+        googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
+      onActorStateError)],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
@@ -201,7 +265,7 @@ export function betterAuthOptions(
 }
 
 export function createAuth(
-  database: NodePgDatabase,
+  database: NodePgDatabase & { $client: Client },
   env: BetterAuthEnvironment,
   onDatabaseError?: (error: unknown) => void,
   onAdmissionError?: (error: unknown) => void,
@@ -211,14 +275,57 @@ export function createAuth(
   onCreatedProof?: AuthCreationEvidence,
   onActorStateError?: (error: unknown) => void,
   preRoutingSessionLookup = false,
+  lifecycle = new AuthLifecycleTransaction(database.$client,
+    count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
+  dependencies?: AuthLifecycleDependencies,
 ) {
-  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup);
+  const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
+    ...dependencies,
+    ...(onCreatedFact ? {
+      observeAccount: transition => {
+        const actorUserId = transition.userId;
+        const at = new Date();
+        if (transition.kind === "unlink") {
+          onCreatedFact.capture({ kind: "auth.methodUnlinked", userId: actorUserId, actorUserId,
+            accountId: transition.accountId, method: "google" }, at);
+        } else {
+          onCreatedFact.capture({ kind: "auth.emailChanged", userId: actorUserId, actorUserId,
+            operationId: transition.generation }, at);
+          for (const sessionId of transition.revokedSessionIds) onCreatedFact.capture({
+            kind: "auth.sessionDeleted", userId: actorUserId, actorUserId, sessionId, reason: "email-change",
+          }, at);
+        }
+      },
+      observeVerified: (fact: Extract<AuthTransitionFact, {kind:"auth.emailVerified"}>, at: Date) => onCreatedFact.capture(fact, at),
+      observeCredential: (transition: CredentialTransition) => {
+        const { userId, accountId, generation, purpose, revokedSessionIds } = transition;
+        const occurredAt = new Date();
+        const actorUserId = purpose === "password-create" ? userId : null;
+        if (purpose === "password-create") {
+          onCreatedFact.capture({ kind: "auth.methodLinked", userId, accountId,
+            method: "password", linkContext: "password-create", actorUserId }, occurredAt);
+        } else {
+          onCreatedFact.capture({ kind: "auth.passwordChanged", userId, accountId,
+            operationId: generation, context: "reset", actorUserId }, occurredAt);
+        }
+        for (const sessionId of revokedSessionIds) {
+          onCreatedFact.capture({ kind: "auth.sessionDeleted", userId, sessionId,
+            reason: purpose, actorUserId }, occurredAt);
+        }
+      },
+    } : {}),
+  });
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
     const createdUsers = new Set<string>();
-    function emit(fact: AuthTransitionFact): void {
-      try { onCreatedFact?.capture(fact, new Date()); onCreatedProof?.noteHook(fact); }
+    function observe(effect: () => void): void {
+      try {
+        lifecycle.stageEvidence(effect);
+      } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+    }
+    function emit(fact: AuthTransitionFact, occurredAt = new Date()): void {
+      try { onCreatedFact?.capture(fact, occurredAt); onCreatedProof?.noteHook(fact); }
       catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
     }
     function trustedActor(userId: string): string | null {
@@ -231,8 +338,11 @@ export function createAuth(
       ...options.databaseHooks,
       user: { create: { after: async created => {
         if (typeof created.id !== "string") return;
-        createdUsers.add(created.id);
-        emit({ kind: "account.created", userId: created.id });
+        const userId = created.id, occurredAt = new Date();
+        observe(() => {
+          createdUsers.add(userId);
+          emit({ kind: "account.created", userId }, occurredAt);
+        });
       } } },
       account: {
         create: { after: async created => {
@@ -241,12 +351,13 @@ export function createAuth(
             : created.providerId === "google" ? "google" : null;
           if (!method || typeof userId !== "string" || typeof accountId !== "string") return;
           const actor = trustedActor(userId);
-          emit({
+          const occurredAt = new Date();
+          observe(() => emit({
             kind: "auth.methodLinked", userId, accountId, method,
             linkContext: createdUsers.has(userId) ? "registration"
               : actor && method === "google" ? "explicit-link" : "unknown",
             actorUserId: actor,
-          });
+          }, occurredAt));
         } },
         update: { after: async (updated, context) => {
           // Better Auth 1.7.7 /change-password uses updateAccount(account.id),
@@ -262,20 +373,24 @@ export function createAuth(
           const userId = updated.userId;
           const actorId = context.context.session?.user?.id;
           if (actorId !== userId) return;
-          emit({
+          const fact: AuthTransitionFact = {
             kind: "auth.passwordChanged", userId, accountId: updated.id,
-            operationId: crypto.randomUUID(), actorUserId: userId,
-          });
+            operationId: crypto.randomUUID(), context: "change", actorUserId: userId,
+          };
+          const occurredAt = new Date();
+          observe(() => emit(fact, occurredAt));
         } },
       },
       session: {
         ...options.databaseHooks?.session,
         create: { ...options.databaseHooks?.session?.create, after: async created => {
           if (typeof created.id !== "string" || typeof created.userId !== "string") return;
-          emit({
+          const fact: AuthTransitionFact = {
             kind: "auth.sessionCreated", userId: created.userId, sessionId: created.id,
             actorUserId: trustedActor(created.userId),
-          });
+          };
+          const occurredAt = new Date();
+          observe(() => emit(fact, occurredAt));
         } },
         delete: { after: async (deleted, context) => {
           try { onDeleted?.noteAfter(deleted, context); }
@@ -283,27 +398,6 @@ export function createAuth(
         } },
       },
     };
-  }
-  if (onDeleted || onCreatedProof) {
-    const factory = options.database as ReturnType<typeof drizzleAdapter>;
-    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
-      get(adapter, property, receiver) {
-        const value = Reflect.get(adapter, property, receiver);
-        if (typeof value !== "function" || (
-          property !== "delete" && property !== "deleteMany" && property !== "create")) {
-          return value;
-        }
-        return async (...args: unknown[]) => {
-          // Observe only successful native adapter results; leave all mutations untouched.
-          const result = await Reflect.apply(value, adapter, args);
-          try {
-            if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
-            else onDeleted?.noteAdapterDelete(property, args[0], result);
-          } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
-          return result;
-        };
-      },
-    });
   }
   if ((onAdmissionError || onAdmissionDenied) && options.user?.validateUserInfo) {
     const validateUserInfo = options.user.validateUserInfo;
@@ -313,7 +407,7 @@ export function createAuth(
         try {
           const result = await validateUserInfo(data, ctx);
           if (result && typeof result === "object" && "error" in result &&
-              typeof result.error === "string") {
+              typeof result.error === "string" && !result.error.startsWith("vico_registration_challenge_")) {
             try { onAdmissionDenied?.(); }
             catch { /* Telemetry must never alter registration admission. */ }
           }
@@ -327,18 +421,41 @@ export function createAuth(
       },
     };
   }
-  if (onDatabaseError) {
+  // Preserve the same observation/error boundary in Better Auth's transaction
+  // callback adapter as in ordinary direct calls. Do not bypass AccountState.
+  if (onDeleted || onCreatedProof || onDatabaseError) {
     const factory = options.database as ReturnType<typeof drizzleAdapter>;
-    options.database = (authOptions: BetterAuthOptions) => new Proxy(factory(authOptions), {
-      get(adapter, property, receiver) {
-        const value = Reflect.get(adapter, property, receiver);
-        if (typeof value !== "function") return value;
-        return async (...args: unknown[]) => {
-          try { return await Reflect.apply(value, adapter, args); }
-          catch (error) { onDatabaseError(error); throw error; }
-        };
-      },
-    });
+    options.database = (authOptions: BetterAuthOptions) => {
+      type Adapter = ReturnType<typeof factory>;
+      const wrap = (adapter: Adapter): Adapter => new Proxy(adapter, {
+        get(target, property, receiver) {
+          const value = Reflect.get(target, property, receiver);
+          if (typeof value !== "function") return value;
+          if (property === "transaction") {
+            return async <T>(fn: (trx: Adapter) => Promise<T>): Promise<T> => {
+              try {
+                return await Reflect.apply(value, target, [
+                  (trx: Adapter) => fn(wrap(trx)),
+                ]);
+              } catch (error) { onDatabaseError?.(error); throw error; }
+            };
+          }
+          return async (...args: unknown[]) => {
+            let result: unknown;
+            try { result = await Reflect.apply(value, target, args); }
+            catch (error) { onDatabaseError?.(error); throw error; }
+            try {
+              if (property === "create") onCreatedProof?.noteAdapterCreate(args[0], result);
+              if (property === "delete" || property === "deleteMany") {
+                onDeleted?.noteAdapterDelete(property, args[0], result);
+              }
+            } catch { try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ } }
+            return result;
+          };
+        },
+      });
+      return wrap(factory(authOptions));
+    };
   }
   return betterAuth(options);
 }
@@ -362,6 +479,10 @@ function betterAuthErrorCode(error: unknown): string | null {
 
 function translateSecurityError(error: unknown): never {
   if (error instanceof AccountSecurityError) throw error;
+  if (error instanceof AuthLifecycleTransactionError) {
+    if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
+    throw new AccountStateUnexpectedError({ cause: error });
+  }
   if (sessionStorageUnavailable(error)) throw new AccountSecurityError("unavailable");
   switch (betterAuthErrorCode(error)) {
     case "SESSION_NOT_FRESH": throw new AccountSecurityError("not-fresh");
@@ -422,6 +543,7 @@ export function createHyperdriveAuthRuntime(
   createClient: (connectionString: string) => Client = createWebClient,
   onAdmissionDenied?: () => void,
   onCreatedFact?: AuthCreationObserver,
+  dependencies?: AuthLifecycleDependencies,
 ): AuthRuntime {
   async function useAuth<T>(
     operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client) => Promise<T>,
@@ -430,6 +552,9 @@ export function createHyperdriveAuthRuntime(
     preRoutingSessionLookup = false,
   ): Promise<T> {
     const client = createClient(connectionString);
+    const lifecycle = new AuthLifecycleTransaction(client, count => {
+      try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ }
+    });
     let databaseError: unknown;
     let actorStateError: unknown;
     let deletions: SessionDeletionEvidence | undefined;
@@ -442,11 +567,11 @@ export function createHyperdriveAuthRuntime(
           (fact, occurredAt) => onCreatedFact.capture(fact, occurredAt),
           userId => { try { return onCreatedFact.trustedActorFor(userId) === userId ? userId : null; }
             catch { return null; } },
-          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } }, lifecycle);
         deletions = new SessionDeletionEvidence(database,
           (fact, occurredAt) => { try { onCreatedFact.capture(fact, occurredAt); }
             catch { try { onCreatedFact.recordGap?.(1); } catch { /* best effort */ } } },
-          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
+          count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } }, lifecycle);
         // Same exact native driver proof for successful inserts and deletions.
         observeAuthNativeMutations(client, creations, deletions,
           count => { try { onCreatedFact.recordGap?.(count); } catch { /* best effort */ } });
@@ -454,7 +579,10 @@ export function createHyperdriveAuthRuntime(
       const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
         onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
-        (error) => { actorStateError ??= error; }, preRoutingSessionLookup), database, client);
+        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle, dependencies), database, client);
+      // Discard a library-generated success/redirect/cookie on unconfirmed
+      // transaction control, even when Better Auth handled the original error.
+      if (lifecycle.controlFailure) throw lifecycle.controlFailure;
       // The HTTP adapter may convert a thrown hook error to a generic response.
       // Restore the classified A2 error before responding to this request.
       if (actorStateError) throw actorStateError;
@@ -462,12 +590,20 @@ export function createHyperdriveAuthRuntime(
     } catch (error) {
       // Better Auth 1.7.7 replaces session-query failures with a cause-less APIError.
       // Retain the adapter failure for classification; never infer availability from HTTP 500.
-      throw actorStateError ?? databaseError ?? error;
+      throw lifecycle.controlFailure ?? actorStateError ?? databaseError ?? error;
     } finally {
-      try { await creations?.flush(); }
-      catch { /* Creation proof must never change an auth outcome. */ }
-      try { await deletions?.flush(); }
-      catch { /* Proof/telemetry must never change an auth outcome. */ }
+      // Never query a connection whose transaction status is unknown.
+      // The owner has already discarded its unconfirmed evidence.
+      if (lifecycle.connectionUsable) {
+        try { await creations?.flush(); }
+        catch { /* Creation proof must never change an auth outcome. */ }
+        try { await deletions?.flush(); }
+        catch { /* Proof/telemetry must never change an auth outcome. */ }
+      } else if (creations || deletions) {
+        // Earlier committed operations in this same call might still have
+        // unflushed receipts. Do not silently claim complete recording.
+        try { onCreatedFact?.recordGap?.(1); } catch { /* best effort */ }
+      }
       bestEffortDiscardClient(client);
     }
   }
@@ -489,7 +625,7 @@ export function createHyperdriveAuthRuntime(
 
   return {
     security: {
-      read: (headers, identity) => securityCall(() => useAuth(async (auth, database) => {
+      read: (headers, identity) => securityCall(() => useAuth(async (auth, database, client) => {
         const current = await verifyIdentity(auth, headers, identity);
         const accounts = await auth.api.listUserAccounts({ headers });
         const hasPassword = await hasCredentialPassword(database, current.user.id);
@@ -512,7 +648,18 @@ export function createHyperdriveAuthRuntime(
           if (betterAuthErrorCode(error) !== "SESSION_NOT_FRESH") throw error;
           sessionAccess = "not-fresh";
         }
-        return { linkedMethods, hasPassword, sessionAccess, sessions };
+        const pending = await client.query<{ phase: string; expires_at: Date }>(`
+          select value::jsonb->>'phase' phase, expires_at at time zone 'UTC' expires_at
+          from verification where id='vico-auth-lifecycle:v1:email-change:' ||
+            encode(sha256(convert_to($1,'UTF8')),'hex') and identifier=id
+            and expires_at > timezone('UTC',clock_timestamp())
+        `, [current.user.id]);
+        const change = pending.rows[0];
+        const pendingEmailChange: AccountSecuritySnapshot["pendingEmailChange"] = change && (change.phase === "old-address" || change.phase === "new-address")
+          ? { phase: change.phase, expiresAt: change.expires_at.toISOString() } : null;
+        return { linkedMethods, hasPassword, sessionAccess, sessions, email: current.user.email,
+          emailVerified: current.user.emailVerified, googleAccountId: accounts.find(link => link.providerId === "google")?.id,
+          pendingEmailChange };
       }, true)),
       changePassword: (headers, identity, currentPassword, newPassword) =>
         securityCall(() => useAuth(async (auth, database) => {
@@ -592,6 +739,9 @@ export function createHyperdriveAuthRuntime(
         if (error instanceof InactiveSessionWriteError) {
           return { session: null, headers: new Headers() };
         }
+        if (error instanceof AuthLifecycleTransactionError && !sessionStorageUnavailable(error)) {
+          throw new AccountStateUnexpectedError({ cause: error });
+        }
         if (error instanceof AccountStateUnavailableError || sessionStorageUnavailable(error)) {
           throw new AuthSessionUnavailableError({ cause: error });
         }
@@ -599,9 +749,16 @@ export function createHyperdriveAuthRuntime(
       }
     },
     handle: async (request) => {
+      const protectGuestResponse = (response: Response): Response => {
+        if (!isGuestEmailVerificationRequest(request)) return response;
+        const headers = new Headers(response.headers);
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Referrer-Policy", "no-referrer");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+      };
       const admission = { failure: undefined as { error: unknown } | undefined };
       try {
-        return await useAuth(async (auth) => {
+        return protectGuestResponse(await useAuth(async (auth) => {
           const response = await auth.handler(request);
           if (!admission.failure) return response;
           if (sessionStorageUnavailable(admission.failure.error)) {
@@ -613,13 +770,22 @@ export function createHyperdriveAuthRuntime(
           // Missing policy singleton, unexpected schema/configuration and programming errors
           // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
           throw admission.failure.error;
-        }, false, (error) => { admission.failure ??= { error }; });
+        }, false, (error) => { admission.failure ??= { error }; }));
       } catch (error) {
-        if (error instanceof AccountStateUnavailableError) {
-          return new Response("Service unavailable. Please try again.", {
+        if (error instanceof AuthLifecycleTransactionError) {
+          if (!sessionStorageUnavailable(error)) throw new AccountStateUnexpectedError({ cause: error });
+          return protectGuestResponse(new Response(error.code === "commit-uncertain"
+            ? "Authentication outcome could not be confirmed."
+            : "Service unavailable. Please try again.", {
             status: 503,
             headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
-          });
+          }));
+        }
+        if (error instanceof AccountStateUnavailableError) {
+          return protectGuestResponse(new Response("Service unavailable. Please try again.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
+          }));
         }
         throw error;
       }

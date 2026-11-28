@@ -12,6 +12,10 @@ from urllib.parse import quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4223")
@@ -139,7 +143,7 @@ try:
             return ctx
 
         owner_ctx, subject_ctx = session(), session()
-        signup = owner_ctx.request.post(base + "/api/auth/sign-up/email", headers={"Origin": base},
+        signup = signup_verified_session(sql, owner_ctx.request, base, headers={"Origin": base},
             data={"name": "M2 Bound Owner", "email": prefix + "-owner@test.invalid",
                   "password": "m2-local-fixture-password-123456789"})
         assert signup.status == 200, (signup.status, signup.text()[:250])
@@ -149,7 +153,7 @@ try:
         assert sql('update "session" set user_id=$1 where user_id=$2 returning id',
                    [owner_id, original_owner]), "Real Better Auth session needed for bound Owner"
 
-        signup = subject_ctx.request.post(base + "/api/auth/sign-up/email", headers={"Origin": base},
+        signup = signup_verified_session(sql, subject_ctx.request, base, headers={"Origin": base},
             data={"name": "M2 Participant", "email": prefix + "-subject@test.invalid",
                   "password": "m2-local-fixture-password-123456789"})
         assert signup.status == 200, (signup.status, signup.text()[:250])

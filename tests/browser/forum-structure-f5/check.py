@@ -11,6 +11,10 @@ from pathlib import Path
 from urllib.parse import quote, urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 arg=argparse.ArgumentParser()
 arg.add_argument("--url",required=True)
@@ -124,7 +128,7 @@ try:
             return c
         def account(label):
             c=context()
-            r=c.request.post(base+"/api/auth/sign-up/email",headers={"Origin":base},
+            r=signup_verified_session(sql, c.request, base,headers={"Origin":base},
                 data={"name":prefix+"-"+label,"email":prefix+"-"+label+"@test.invalid",
                       "password":"F5-synthetic-password-123456"})
             assert r.status==200,r.text()[:350]

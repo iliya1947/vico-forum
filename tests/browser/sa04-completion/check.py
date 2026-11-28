@@ -8,6 +8,10 @@ from urllib.request import Request,urlopen
 from urllib.error import HTTPError
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--url',default='http://127.0.0.1:4225')
@@ -108,7 +112,7 @@ try:
    ctx=browser.new_context(viewport={'width':1280,'height':900},extra_http_headers={'cf-connecting-ip':ip})
    ctx.route('**/*',lambda r:r.continue_() if any(r.request.url.startswith(h+'/') for h in [base,generation]) else (external.append(r.request.url),r.abort())[-1])
    password='sa04-s-fixture-password-123456'
-   response=ctx.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':prefix+'-'+label,'email':prefix+'-'+label+'@test.invalid','password':password})
+   response=signup_verified_session(sql, ctx.request, base,headers={'Origin':base},data={'name':prefix+'-'+label,'email':prefix+'-'+label+'@test.invalid','password':password})
    assert response.status==200,(response.status,response.text())
    return ctx,response.json()['user']['id']
   owner_ctx,issued_owner=account('owner');member_ctx,member=account('locale');privacy_ctx,subject=account('privacy');r_ctx,r_actor=account('generation')

@@ -23,17 +23,25 @@ pass, включая первоначальную presentation форумных 
 permissions и data-integrity дефекты текущего scope исправляются сейчас.
 Это не отменяет обязательную финальную real-runtime acceptance перед публичным запуском.
 
-## Email/password registration MVP (owner decision 2026-10-10)
+## Email/password registration and authentication lifecycle (MVP contract updated)
 
 Use existing Better Auth user/account/session identity and password hashing. Alongside Google OAuth,
 offer localized sign-in and registration with a trimmed, nonblank display name of at most 100
 characters, email and 8–128-character password; enforce registration-name validation at the
 Better Auth server boundary, not just in the browser.
-Verification emails and password recovery are intentionally deferred; the interface must disclose
-that neither is available yet. Redirect after success only to a safe locale-scoped forum path,
-preserving query parameters and message fragments (`#post-*`); never place passwords in URLs. Header links and Page fixtures are a minimal usable version, not a polished
-final account-management UI. GitHub Pages fixtures never use real credentials or demonstrate a live
-database/OAuth flow; production acceptance stays a separate authorized stage.
+The original 2026-10-10 MVP deferral of verification and recovery is superseded.
+Email/password signup now presents mandatory verification and no automatic session;
+offer localized resend, forgot/reset and explicit sign-in. Own Account & security
+includes email/status, email change, password creation/change, explicit Google
+link/unlink and own sessions. Show safe pending, failure/rate-limited and success
+states; opening a mail link is not automatic confirmation or reset. Preserve safe
+locale-local return destinations: ordinary sign-in supports permitted query/message
+fragments, while mail links use the stricter validated path-only return contract.
+Never place passwords in URLs or retain mail proofs in the address bar after capture.
+The repository/local-CI authentication lifecycle and security gate are complete,
+not proof of final owner visual acceptance. GitHub Pages fixtures never use real
+credentials or demonstrate live database/OAuth/mail flows; actual external providers,
+anti-bot integration and production/deployed acceptance stay in authorized Stage 6.
 
 ## GitHub Pages visual progress preview
 
@@ -668,9 +676,10 @@ Shared-shell hardening is isolated in PR #167 for owner review:
   layouts remain unchanged;
 - the next narrow-mobile review places the account/notification row on one compact line directly
   below the brand, moves search below that row, and keeps the centered discovery pills below search;
-- guest auth copy is shortened to `Sign in`, with a neighboring `Sign up` entry point for the
-  approved future registration system; until that system exists, `Sign up` follows the shared
-  localized `Under development` behavior rather than pretending registration is implemented.
+- guest auth copy is shortened to `Sign in`, with a neighboring `Sign up` entry point.
+  The original placeholder has been superseded by implemented email/password registration
+  with mandatory verification and the existing Google registration path; do not route
+  these implemented functions to `Under development`.
 
 Remaining work:
 

@@ -241,12 +241,13 @@ describe("SET-05 localized Settings presentation and existing Google linking", (
     page.unmount();router.dispose();
   });
 
-  it("does not show password controls on Google-only, and does not offer duplicate Google linking", async () => {
+  it("offers Google-only password creation by email without duplicate Google linking", async () => {
     const { page, router } = showAccount("en", { linkedMethods: ["google"], hasPassword: false });
     await screen.findByText("Google");
-    expect(page.container.querySelector(".settings-account-form")).toBeNull();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Send a recovery link" })).toBeEnabled());
+    expect(page.container.querySelector(".settings-account-form")).toHaveAttribute("method", "post");
+    expect(page.container.querySelector('input[type="password"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Connect Google" })).not.toBeInTheDocument();
-    expect(screen.getByText(/no password credential/i)).toBeVisible();
     page.unmount();router.dispose();
   });
 

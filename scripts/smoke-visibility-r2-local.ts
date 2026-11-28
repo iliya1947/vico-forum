@@ -4,6 +4,7 @@
  * No production bucket, remote binding, mocked Worker routes, or browser.
  */
 import assert from "node:assert/strict";
+import { signupConnectedVerifiedSession } from "../tests/database/verified-credential-fixture";
 import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -89,11 +90,13 @@ async function deniedComplaintEvidence(response: Response, attachment: Attachmen
     "no private R2 bytes in Complaint denial");
 }
 async function signup(label: string): Promise<Actor> {
-  const response = await http("/api/auth/sign-up/email", {
+  const response = await signupConnectedVerifiedSession(client,
+    async req => http(new URL(req.url).pathname, {method:req.method,headers:req.headers,body:await req.text()}),
+    new Request(base+"/api/auth/sign-up/email", {
     method: "POST", headers: { Origin: base, "Content-Type": "application/json" },
     body: JSON.stringify({ name: "B8-B2 " + label, email: label + "-" + randomUUID() + "@b8.invalid",
       password: "B8-B2-test-" + randomBytes(12).toString("hex") }),
-  });
+  }));
   assert.equal(response.status, 200, label + " Better Auth signup");
   const cookie = response.headers.getSetCookie().find(x => x.includes("session_token"))?.split(";")[0];
   assert.ok(cookie, label + " live Better Auth session token");
@@ -163,9 +166,9 @@ async function acceptedVisibility(topicId: string, moderator: Actor,
 
 async function main() {
   await client.connect();
-  const [author, moderator, ordinary] = await Promise.all([
-    signup("author"), signup("moderator"), signup("ordinary"),
-  ]);
+  const author = await signup("author");
+  const moderator = await signup("moderator");
+  const ordinary = await signup("ordinary");
   for (const actor of [author, moderator, ordinary]) {
     await client.query("insert into authz_user_roles(user_id,role_id) " +
       "values ($1,$2) on conflict do nothing",

@@ -65,17 +65,19 @@ function actions() {
 }
 
 describe("credential registration and sign-in", () => {
-  it("registers name/email/password and returns to the intended forum topic", async () => {
+  it("registers name/email/password and shows a neutral pending state without navigating", async () => {
     const a = actions();
     show("sign-up", a.emailActions, a.googleActions);
     const user = userEvent.setup();
     await user.type(screen.getByRole("textbox", { name: "Display name" }), "  Alice  ");
     await user.type(screen.getByRole("textbox", { name: "Email" }), "alice@example.org");
     await user.type(screen.getByLabelText("Password"), "correct horse");
-    expect(screen.getByText("Email verification and password recovery are not available yet.")).toBeInTheDocument();
+    expect(screen.getByText("Confirm your email before signing in.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create account" }));
-    await waitFor(() => expect(a.emailActions.signUpWithEmail).toHaveBeenCalledWith("Alice", "alice@example.org", "correct horse"));
-    expect(await screen.findByText("Returned to the topic")).toBeInTheDocument();
+    await waitFor(() => expect(a.emailActions.signUpWithEmail).toHaveBeenCalledWith("Alice", "alice@example.org", "correct horse", "/en/topics/welcome"));
+    expect(await screen.findByRole("heading", { name: "Check your email" })).toBeInTheDocument();
+    expect(screen.queryByText("Returned to the topic")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
   });
 
   it("signs in using email, retaining a Google alternative and sign-up navigation", async () => {
@@ -106,16 +108,12 @@ describe("credential registration and sign-in", () => {
     expect(screen.getByTestId("return-fragment")).toHaveTextContent("#post-post-42");
   });
 
-  it.each(["sign-in", "sign-up"] as const)(
+  it.each(["sign-in"] as const)(
     "refreshes the shared header user after successful %s",
     async (mode) => {
       let serverUser: { id: string; name: string } | null = null;
       const a = actions();
       a.emailActions.signInWithEmail = vi.fn(async () => {
-        serverUser = { id: "alice", name: "Alice" };
-        return true;
-      });
-      a.emailActions.signUpWithEmail = vi.fn(async () => {
         serverUser = { id: "alice", name: "Alice" };
         return true;
       });
@@ -140,12 +138,9 @@ describe("credential registration and sign-in", () => {
       }], { initialEntries: [`/en/${mode}`] });
       render(<I18nextProvider i18n={runtime()}><RouterProvider router={router} /></I18nextProvider>);
       const user = userEvent.setup();
-      if (mode === "sign-up") {
-        await user.type(await screen.findByRole("textbox", { name: "Display name" }), "Alice");
-      }
       await user.type(await screen.findByRole("textbox", { name: "Email" }), "alice@example.org");
       await user.type(screen.getByLabelText("Password"), "correct horse");
-      await user.click(screen.getByRole("button", { name: mode === "sign-up" ? "Create account" : "Sign in with email" }));
+      await user.click(screen.getByRole("button", { name: "Sign in with email" }));
       expect(await screen.findByText("Signed in as Alice")).toBeInTheDocument();
       expect(screen.queryByText("Still guest")).not.toBeInTheDocument();
     },

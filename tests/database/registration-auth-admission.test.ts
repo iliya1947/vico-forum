@@ -5,6 +5,7 @@ import { Client } from "pg";
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from "vitest";
 import { betterAuthOptions } from "../../app/auth/auth.server";
 import { createRegistrationAdmission } from "../../app/auth/registration-admission";
+import { markVerifiedCredentialFixture } from "./verified-credential-fixture";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl || !["127.0.0.1", "localhost"].includes(new URL(databaseUrl).hostname)
@@ -75,7 +76,7 @@ beforeAll(async () => {
   google.validateAuthorizationCode = async () => ({ accessToken: "unused-local-token" });
 });
 beforeEach(async () => {
-  await client.query('truncate "user", account, session, verification, rate_limit cascade');
+  await client.query('truncate "user", account, session, verification, rate_limit, auth_lifecycle_budget cascade');
   await flags(true, true);
 });
 afterAll(async () => {
@@ -115,6 +116,7 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
     const email = "existing-email@example.test";
     const google = "existing-google@example.test";
     expect((await emailSignUp(email)).status).toBe(200);
+    await markVerifiedCredentialFixture(client,email);
     const first = await googleSignIn(google);
     expect(first.status).toBe(200);
     await flags(false, false);
@@ -130,8 +132,12 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
     const email = "existing-to-link@example.test";
     const signUp = await emailSignUp(email);
     expect(signUp.status).toBe(200);
-    const current = await signUp.json() as { user: { id: string } };
-    const cookie = signUp.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
+    expect(await signUp.json()).toEqual({status:true,token:null});
+    await markVerifiedCredentialFixture(client,email);
+    const login = await emailSignIn(email);
+    expect(login.status).toBe(200);
+    const current = await login.json() as {user:{id:string}};
+    const cookie = login.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
     await flags(false, false);
     googleEmail = email;
     const linked = await request("link-social", {
@@ -217,9 +223,11 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
     const email = "verified-local-google@example.test";
     const signup = await emailSignUp(email);
     expect(signup.status).toBe(200);
-    const { user: { id: userId } } = await signup.json() as { user: { id: string } };
-    const cookie = signup.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
-    await client.query('update "user" set email_verified=true where id=$1', [userId]);
+    expect(await signup.json()).toEqual({status:true,token:null});
+    const userId = await markVerifiedCredentialFixture(client,email);
+    const login = await emailSignIn(email);
+    expect(login.status).toBe(200);
+    const cookie = login.headers.getSetCookie().find(value => value.includes("session_token="))!.split(";", 1)[0];
     const beforeSessions = (await client.query<{ count: number }>(
       'select count(*)::int as count from "session" where user_id=$1', [userId])).rows[0].count;
 
@@ -249,6 +257,7 @@ describe("SET-02 Better Auth 1.7.7 new-account admission", () => {
   it("fails closed if the authoritative policy row is absent, but preserves returning sign-in", async () => {
     const email = "existing-with-policy-failure@example.test";
     expect((await emailSignUp(email)).status).toBe(200);
+    await markVerifiedCredentialFixture(client,email);
     await client.query("delete from forum_registration_settings where id=1");
     try {
       const result = await emailSignUp("missing-policy-new@example.test");

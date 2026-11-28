@@ -295,6 +295,10 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
       pending = isolated(writer.client).setTopicBookmark({
         actorId, topicId: target.id, bookmarked: true,
       });
+      // Observe the expected rejection before releasing the database lock.
+      // Keep asserting the original promise; the early handler prevents a
+      // transient unhandled rejection while COMMIT's acknowledgement arrives.
+      void pending.catch(() => undefined);
       await expectPgBlocked(writer.pid, deactivator.pid);
       await deactivator.client.query("commit");
       transactionOpen = false;
@@ -429,6 +433,8 @@ describe("Bookmarks B6: acquired PostgreSQL locks, lifecycle and rollback", () =
           write = isolated(add.client).setTopicBookmark({
             actorId: viewer, topicId: target.id, bookmarked: true,
           });
+          // As above, the blocked writer may reject before COMMIT returns.
+          void write.catch(() => undefined);
           await expectPgBlocked(add.pid, hide.pid);
           await hide.client.query("commit");
           hideTransaction = false;

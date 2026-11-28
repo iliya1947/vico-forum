@@ -12,6 +12,10 @@ from urllib.parse import urlencode, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4189")
@@ -149,10 +153,7 @@ def create_actor(browser, label, signup=True):
     fields = {"email": prefix + "-" + user + "@test.invalid", "password": password}
     if signup:
         fields["name"] = "SET06 " + user
-    response = ctx.request.post(
-        base + ("/api/auth/sign-up/email" if signup else "/api/auth/sign-in/email"),
-        headers={"Origin": base}, data=fields,
-    )
+    response = (signup_verified_session(sql, ctx.request, base, headers={"Origin": base}, data=fields,) if signup else ctx.request.post(base + "/api/auth/sign-in/email", headers={"Origin": base}, data=fields,))
     assert response.status == 200, (label, response.status, response.text()[:220])
     page = ctx.new_page()
     page.set_default_timeout(20000)

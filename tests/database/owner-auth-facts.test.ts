@@ -5,6 +5,10 @@ import {
   PostgresAuthFactWriter, AuthFactCommitUncertainError, type AuthTransitionFact,
 } from "../../db/owner-auth-facts";
 import { PostgresOwnerSystemHistory } from "../../db/owner-system-history";
+import { PostgresOwnerSa02History, ownerHistoryFilterOptions } from "../../db/owner-sa02-history";
+import { PostgresOwnerUserHistory } from "../../db/owner-user-history";
+import { OperationalFactBuffer, type OwnerOperationalFact } from "../../app/observability/operational-facts";
+import { PostgresOwnerOperationalFactSink } from "../../db/owner-operational-facts";
 
 const url = process.env.DATABASE_URL!;
 if (!url || !["127.0.0.1", "localhost"].includes(new URL(url).hostname)
@@ -200,5 +204,42 @@ describe("SA02 PostgreSQL17 native append-only auth fact writer", () => {
     expect(commits).toBe(1);
     expect((await rows()).filter(row=>row.entity_id==="ambiguity-1")).toHaveLength(1);
     expect((await writer.append(fact)).inserted).toBe(false);
+  });
+
+  it("projects one committed guest verification fact and a distinct mail observation with original IDs", async () => {
+    const target = "verification-target";
+    const verification: AuthTransitionFact = {kind:"auth.emailVerified",userId:target,operationId,actorUserId:null};
+    const saved = await writer.append(verification);
+    expect((await writer.append(verification)).id).toBe(saved.id);
+    await expect(writer.append({...verification,actorUserId:"unrelated-session"} as unknown as AuthTransitionFact)).rejects.toThrow();
+    const sink = new PostgresOwnerOperationalFactSink(pool);
+    const buffered:OwnerOperationalFact[]=[];
+    const buffer = new OperationalFactBuffer({append:async fact=>{buffered.push(fact);await sink.append(fact);}});
+    buffer.captureAuthMail(operationId,"2026-11-25T00:00:00.123000Z",{
+      mailPurpose:"email-verification",mailTransport:"fake",mailOutcome:"accepted",
+    });
+    await buffer.flush();
+    expect(buffered).toHaveLength(1);
+    await sink.append(buffered[0]);
+    await expect(sink.append({...buffered[0],values:{...buffered[0].values,mailOutcome:"raw secret"}})).rejects.toThrow();
+    await expect(sink.append({...buffered[0],values:{...buffered[0].values,email:"raw-secret@example.test"}})).rejects.toThrow();
+    const timeline = new PostgresOwnerSa02History(pool);
+    for (const monitorKey of ["accounts.users","security.auth","integrations.authentication"] as const) {
+      const page=await timeline.readTimeline({monitorKey,origin:"auth-event",kind:"auth.emailVerified"});
+      expect(page.entries.map(e=>e.id)).toEqual([saved.id]);
+      expect(page.entries[0].values).toMatchObject({actorUserId:null,targetUserId:target,entityType:"user",entityId:target});
+    }
+    const person=await new PostgresOwnerUserHistory(pool).readHistory(target);
+    expect(person.entries.filter(e=>e.id===saved.id)).toHaveLength(1);
+    expect(person.entries.some(e=>e.kind==="integration.authMailOutcome")).toBe(false);
+    const global=await timeline.readTimeline({origin:"operational-event",kind:"integration.authMailOutcome"});
+    const adjacent=await timeline.readTimeline({monitorKey:"integrations.authentication",origin:"operational-event",kind:"integration.authMailOutcome"});
+    expect(global.entries).toHaveLength(1);
+    expect(adjacent.entries).toEqual(global.entries);
+    expect(global.entries[0]).toMatchObject({quality:"best-effort",values:{
+      operationId,mailPurpose:"email-verification",mailTransport:"fake",mailOutcome:"accepted",
+    }});
+    expect(ownerHistoryFilterOptions({monitorKey:"security.auth"}).flatMap(x=>x.kinds)).not.toContain("integration.authMailOutcome");
+    expect(JSON.stringify([person,global])).not.toContain("raw-secret");
   });
 });

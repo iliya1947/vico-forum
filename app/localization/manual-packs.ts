@@ -1,3 +1,4 @@
+import { authMailManualPacks } from "./auth-mail-manual";
 import type { UiKey } from "./catalog";
 import { reviewedCommonFingerprints } from "./manual-fingerprints";
 import { hebrewCommonValues, russianCommonValues } from "./manual-values";
@@ -22,6 +23,6 @@ function reviewedCommonPack(values: CommonValues): TranslationPack {
 }
 
 export const manualTranslationPacks: Readonly<Record<string, TranslationPack>> = {
-  ru: reviewedCommonPack(russianCommonValues),
-  he: reviewedCommonPack(hebrewCommonValues),
+  ru: { ...reviewedCommonPack(russianCommonValues), ...authMailManualPacks.ru },
+  he: { ...reviewedCommonPack(hebrewCommonValues), ...authMailManualPacks.he },
 };

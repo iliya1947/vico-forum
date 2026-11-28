@@ -8,6 +8,10 @@ import subprocess
 from urllib.parse import quote, urlencode, urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4188")
@@ -81,8 +85,7 @@ def new_actor(browser, suffix):
     context.route("**/*", lambda route: route.continue_()
                   if route.request.url.startswith(base + "/")
                   else (external.append(route.request.url), route.abort())[-1])
-    response = context.request.post(
-        base + "/api/auth/sign-up/email", headers={"Origin": base},
+    response = signup_verified_session(sql, context.request, base, headers={"Origin": base},
         data={"name": "AP10 " + suffix + " עברית " + "A" * 55,
               "email": prefix + "-" + suffix + "@test.invalid",
               "password": "local-only-" + uuid4().hex},
@@ -765,7 +768,7 @@ try:
         nonowner_ctx, nonowner_page, nonowner_id = new_actor(browser, "nonowner-manager")
         sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",
             [nonowner_id])
-        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "elevated-rank-zero-target")
+        low_target_ctx, low_target_page, low_target_id = new_actor(browser, "rank-zero-target")
         document(owner_page, "/en/admin/authorization")
         expect(owner_page.locator(".admin-owner-authority-note")).to_contain_text(
             "Owner authority grants all current permissions")

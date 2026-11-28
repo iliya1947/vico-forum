@@ -5,6 +5,10 @@ from uuid import uuid4
 from urllib.parse import urlparse,quote
 from contextlib import contextmanager
 from playwright.sync_api import sync_playwright,expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 p=argparse.ArgumentParser();p.add_argument('--url',default='http://127.0.0.1:4238');p.add_argument('--output',type=Path,required=True);a=p.parse_args();base=a.url.rstrip('/');repo=Path(__file__).resolve().parents[3]
 assert os.environ.get('CI')=='true' and urlparse(base).hostname in ('localhost','127.0.0.1')
 db=urlparse(os.environ['DATABASE_URL']);assert db.hostname in ('localhost','127.0.0.1') and db.path=='/vico_sa08_browser_test'
@@ -58,7 +62,7 @@ try:
    ctx.route('**/*',lambda route:route.continue_() if route.request.url.startswith(base+'/') else (external.append(route.request.url),route.abort())[-1]);return ctx
   def account(label):
    ctx=context();email=prefix+'-'+label+'@test.invalid';password='SA08-fixture-password-123456'
-   r=ctx.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':label,'email':email,'password':password});assert r.status==200
+   r=signup_verified_session(sql, ctx.request, base,headers={'Origin':base},data={'name':label,'email':email,'password':password});assert r.status==200
    return ctx,r.json()['user']['id'],email,password
   oc,issued,email,password=account('owner');ac,admin,_,_=account('admin');mc,member,_,_=account('member');guest=context()
   sql('insert into "user"(id,name,email) values($1,$1,$2)',[owner,prefix+'-bound@test.invalid'])

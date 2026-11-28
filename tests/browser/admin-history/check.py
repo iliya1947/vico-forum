@@ -8,6 +8,10 @@ import subprocess
 from urllib.parse import urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--url', default='http://127.0.0.1:4187')
@@ -104,7 +108,7 @@ try:
         page.on('pageerror', lambda e: errors.append(str(e)))
         document(page, '/en/admin/history', 401)
         for c, name in [(manager, 'Owner'), (reader, 'Reader'), (nonowner, 'Nonowner')]:
-            r = c.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={'name': name + ' עברית', 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
+            r = signup_verified_session(sql, c.request, base, headers={'Origin': base}, data={'name': name + ' עברית', 'email': prefix + name + '@test.invalid', 'password': prefix + '-local-only'})
             assert r.status == 200, r.status
             accounts.append(r.json()['user']['id'])
         signed_up_actor, target, nonowner_id = accounts

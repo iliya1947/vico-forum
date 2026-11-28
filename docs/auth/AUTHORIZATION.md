@@ -481,20 +481,45 @@ client authorization token.
 
 ### Local email and Google linking
 
-Email/password registration does not require email verification. A matching unverified
-local email is therefore insufficient evidence for implicit Google linking. Keep Better Auth's
-local-email verification gate and same-email/provider-verification checks enabled.
-An existing local user signs in with the password first, then explicitly connects Google
-from the own profile through Better Auth `linkSocial`. A guest or a different local identity
-cannot claim that account merely by supplying its email. External Google acceptance remains Stage 6.
+Email/password registration requires email verification before credential sign-in.
+Signup and verification do not automatically create a session; sign-in is explicit.
+Even a matching verified email is not authority for implicit Google linking.
+Better Auth implicit linking is disabled and provider/email verification checks remain.
+An existing local user signs in with an available method, then explicitly connects Google
+from own Account & security through Better Auth `linkSocial`. A guest or a different local
+identity cannot claim an account merely by supplying its email. External Google acceptance
+remains Stage 6.
 
-Link initiation sends the displayed profile ID in `x-vico-link-user` as an expectation,
+Link initiation sends the displayed own user ID in `x-vico-link-user` as an expectation,
 not authority. The `/link-social` before-hook resolves the authoritative session and rejects
 a missing/mismatched expectation with `409` before creating OAuth state or linking an account;
 guests remain `401`. The endpoint reuses that checked request-local session, and the existing
 signed OAuth state retains its target across the provider round trip. A conflict shows the
 existing auth failure feedback; the client never retries with a different account automatically.
 Provider/email verification and origin checks remain mandatory.
+
+### Own authentication lifecycle and authorization isolation
+
+Guest verification/recovery proofs are bound to the immutable subject, current email,
+purpose, generation and expiry. Own password-create/email-change proofs additionally
+bind the initiating session; own sensitive operations enforce current fresh identity.
+Canonical HTTP and direct server handlers share lifecycle admission and transactional
+state checks, including existing AccountState protection. Token consumption, relevant
+credential/email mutation, proof invalidation and required session revocation commit
+together; mail follows issuance commit. Reset revokes all target sessions; own password
+creation and final email change preserve the initiating session and revoke other own
+sessions. Existing-password change retains its SET-05 other-session policy.
+Explicit unlink cannot remove the last usable sign-in method. A guest reset does not
+switch another ambient account or create an automatic session.
+
+Email change and method changes preserve the same Better Auth `user.id`, role,
+permissions and exact Owner binding. No new RBAC, automatic linking, reactivation,
+Owner transfer, foreign credential/provider mutation or administrative recovery
+authority is introduced. Independent fresh-create registration flags remain in force;
+native HTTP limits and shared lifecycle budgets apply, with a provider-neutral
+registration challenge boundary for new accounts. Detailed user-facing and mail
+contract: [SETTINGS.md](../SETTINGS.md). Repository/local-CI acceptance does not
+establish live provider or deployed security acceptance.
 
 ### Session and stale editor failures
 

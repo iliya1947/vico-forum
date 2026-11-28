@@ -5,6 +5,7 @@ on:
     types:
       - labeled
     paths:
+      - "tests/database/auth-whole-lifecycle.test.ts"
       - "tests/browser/sa04-completion/**"
       - ".github/workflows/ap10-browser.yml"
       - "tests/browser/user-measures/**"

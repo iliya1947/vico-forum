@@ -5,6 +5,10 @@ from contextlib import contextmanager
 from urllib.parse import urlparse,quote,urlencode
 from uuid import uuid4
 from playwright.sync_api import expect,sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 p=argparse.ArgumentParser();p.add_argument('--url',default='http://127.0.0.1:4236');p.add_argument('--output',type=Path,required=True);a=p.parse_args();base=a.url.rstrip('/');db=os.environ.get('DATABASE_URL','')
 assert os.environ.get('CI')=='true' and urlparse(base).hostname in ('localhost','127.0.0.1')
 assert urlparse(db).hostname in ('localhost','127.0.0.1') and urlparse(db).path=='/vico_sa06_browser_test'
@@ -46,7 +50,7 @@ try:
    ctx=browser.new_context(viewport={'width':1280,'height':900},service_workers='block',extra_http_headers={'cf-connecting-ip':'192.0.2.'+str(100+len(contexts))});contexts.append(ctx)
    ctx.route('**/*',lambda route:route.continue_() if route.request.url.startswith(base+'/') else (external.append(route.request.url),route.abort())[-1]);return ctx
   def account(label):
-   ctx=context();email=prefix+'-'+label+'@test.invalid';password='SA06-fixture-password-123456';r=ctx.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':prefix+'-'+label,'email':email,'password':password});assert r.status==200,(r.status,r.text()[:180]);return ctx,r.json()['user']['id'],email,password
+   ctx=context();email=prefix+'-'+label+'@test.invalid';password='SA06-fixture-password-123456';r=signup_verified_session(sql, ctx.request, base,headers={'Origin':base},data={'name':prefix+'-'+label,'email':email,'password':password});assert r.status==200,(r.status,r.text()[:180]);return ctx,r.json()['user']['id'],email,password
   oc,issued,owner_email,password=account('owner');mc,member,_,_=account('member');ac,admin,_,_=account('admin');guest=context()
   sql('insert into "user"(id,name,email) values($1,$1,$2) on conflict(id) do nothing',[owner,prefix+'-bound@test.invalid']);assert sql('update "session" set user_id=$1 where user_id=$2 returning id',[owner,issued]);sql("insert into authz_user_roles(user_id,role_id) values($1,'builtin-admin')",[admin])
   fixture=rpc({'operation':'seed','prefix':prefix,'owner':owner,'member':member,'admin':admin});page=new_page(oc)

@@ -50,7 +50,7 @@ export interface OwnerHistoryOptions {
 }
 const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   ...NATIVE_ORIGIN_MONITORS,
-  "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget","background.attachments","files.assets","files.operations"],
+  "operational-event":["background.translation","integrations.translation","localization.ui","localization.content","localization.budget","background.attachments","files.assets","files.operations","integrations.authentication"],
   "system-event": [...SYSTEM_MONITORS,"data.compatibility","integrations.database"],
   "auth-event": ["accounts.users","accounts.methods","accounts.sessions","security.auth","integrations.authentication"],
   "account-event": ["accounts.users"],
@@ -61,7 +61,7 @@ const ORIGIN_SCOPES: Record<OwnerHistoryOrigin,readonly string[]> = {
   "attempt-state": ["security.auth","security.access","integrations.authentication"],
 };
 const KINDS_BY_ORIGIN: Record<OwnerHistoryOrigin,readonly string[]> = {
-  "operational-event":[...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall"],
+  "operational-event":[...TASK_TRANSITION_KINDS,...FILE_TRANSITION_KINDS,"task.reconciliationPass","integration.translationCall","integration.authMailOutcome"],
   "system-event":["system.dependencyUnavailable","system.requestFailed"],
   "auth-event":Object.keys(SA02_FACT_MONITORS),
   "account-event":["account.deactivated"],
@@ -90,7 +90,7 @@ function compatibleOrigin(origin:OwnerHistoryOrigin,scope:Scope):boolean {
 /** Source-kind/monitor compatibility comes from the existing closed native actions. */
 function compatibleKind(origin:OwnerHistoryOrigin,kind:string,scope:Scope):boolean {
   let allowed:readonly string[]=ORIGIN_SCOPES[origin];
-  if(origin==="operational-event")allowed=kind==="file.cleanupPass"?["background.attachments","files.operations"]:kind.startsWith("file.")?["files.assets","files.operations"]:kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation","integrations.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
+  if(origin==="operational-event")allowed=kind==="integration.authMailOutcome"?["integrations.authentication"]:kind==="file.cleanupPass"?["background.attachments","files.operations"]:kind.startsWith("file.")?["files.assets","files.operations"]:kind==="integration.translationCall"?["background.translation","integrations.translation"]:kind==="task.reconciliationPass"?["background.translation","integrations.translation"]:kind==="task.allowanceAdmitted"||kind==="task.allowanceDeferred"?["background.translation","localization.ui","localization.content","localization.budget"]:["background.translation","localization.ui","localization.content"];
   if(origin==="auth-event")allowed=[...(SA02_FACT_MONITORS[kind as keyof typeof SA02_FACT_MONITORS]??[]),"integrations.authentication"];
   if(origin==="operational-event"&&(TASK_TRANSITION_KINDS as readonly string[]).includes(kind))allowed=[...allowed,"integrations.translation"];
   if(origin==="system-event")allowed=kind==="system.requestFailed"?["system.requests"]:["system.dependencies","data.compatibility","integrations.database"];
@@ -285,6 +285,9 @@ const LEGACY_SOURCE_SQL = [
   " when 'account.created' then ARRAY['accounts.users','integrations.authentication']::text[]",
   " when 'auth.methodLinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
   " when 'auth.passwordChanged' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.emailChanged' then ARRAY['accounts.users','security.auth','integrations.authentication']::text[]",
+  " when 'auth.methodUnlinked' then ARRAY['accounts.methods','security.auth','integrations.authentication']::text[]",
+  " when 'auth.emailVerified' then ARRAY['accounts.users','security.auth','integrations.authentication']::text[]",
   " when 'auth.sessionCreated' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
   " when 'auth.sessionDeleted' then ARRAY['accounts.sessions','security.auth','integrations.authentication']::text[]",
   " else ARRAY[]::text[] end,",
@@ -294,7 +297,7 @@ const LEGACY_SOURCE_SQL = [
   " 'entityType',e.entity_type,'entityId',e.entity_id)",
   " from owner_events e where e.source='auth' and e.kind in",
   " ('account.created','auth.methodLinked','auth.passwordChanged',",
-  " 'auth.sessionCreated','auth.sessionDeleted')",
+  " 'auth.sessionCreated','auth.sessionDeleted','auth.emailVerified','auth.emailChanged','auth.methodUnlinked')",
   "union all",
   ACCOUNT_HISTORY_SELECT_SQL,
   "union all",
@@ -330,7 +333,7 @@ const LEGACY_SOURCE_SQL = [
   " from forum_attachment_security_events f",
   "union all",
   "select 'attempt-pattern'::text,p.id::text,p.admitted_at,p.admitted_at,",
-  " case when p.surface='auth' and p.operation='registration-admission'",
+  " case when p.surface='auth' and p.operation in ('registration-admission','registration-challenge')",
   " then ARRAY['security.auth','accounts.registration','integrations.authentication']::text[]",
   " when p.surface='auth' then ARRAY['security.auth','integrations.authentication']::text[]",
   " else ARRAY['security.access']::text[] end,",
@@ -382,6 +385,10 @@ const LEGACY_SOURCE_SQL = [
   "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['background.attachments','files.operations']::text[],",
   "e.kind,e.source,'best-effort'::text,e.payload||jsonb_build_object('runId',e.entity_id)",
   "from owner_events e where e.source='operation' and e.monitor_key='background.attachments' and e.kind='file.cleanupPass'",
+  "union all",
+  "select 'operational-event'::text,e.id::text,e.occurred_at,e.recorded_at,ARRAY['integrations.authentication']::text[],",
+  "e.kind,e.source,'best-effort'::text,jsonb_build_object('operationId',e.entity_id,'mailPurpose',case when e.payload->>'mailPurpose' in ('email-verification','password-reset','password-create','email-change-confirmation','email-change-verification') then e.payload->>'mailPurpose' end,'mailTransport',case when e.payload->>'mailTransport' in ('none','unknown','fake','resend','brevo') then e.payload->>'mailTransport' end,'mailOutcome',case when e.payload->>'mailOutcome' in ('accepted','rejected','unavailable','uncertain','disabled') then e.payload->>'mailOutcome' end)",
+  "from owner_events e where e.source='operation' and e.monitor_key='integrations.authentication' and e.kind='integration.authMailOutcome'",
 ].join("\n");
 
 function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area:null,monitor:null},
@@ -391,7 +398,7 @@ function timelineSql(filterOrigin:OwnerHistoryOrigin|null=null,scope:Scope={area
     (filterKind===null||(KINDS_BY_ORIGIN[origin as OwnerHistoryOrigin].includes(filterKind)&&
       compatibleKind(origin as OwnerHistoryOrigin,filterKind,scope))));
   const predicates = "($1::text is null or $1=any(scopes)) and ($2::text is null or exists(select 1 from unnest(scopes) m where m like ($2||'.%'))) and ($3::timestamptz is null or (at,origin,source_id)<($3::timestamptz,$4::text,$5::text)) and ($7::text is null or kind=$7::text) and ($8::timestamptz is null or at>=$8::timestamptz) and ($9::timestamptz is null or at<$9::timestamptz)";
-  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state","operational-event","operational-event","operational-event","operational-event"];
+  const legacyOrigins:OwnerHistoryOrigin[]=["system-event","auth-event","account-event","system-observation","admin-history","attachment-evidence","attempt-pattern","attempt-state","operational-event","operational-event","operational-event","operational-event","operational-event"];
   const legacy=LEGACY_SOURCE_SQL.split("\nunion all\n").flatMap((sql,index)=>{
     if(!allowedOrigins.includes(legacyOrigins[index]))return [];
     // Preserve direct equality prefixes for scoped chronological indexes.

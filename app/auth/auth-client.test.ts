@@ -1,10 +1,11 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const sdk = vi.hoisted(() => ({ linkSocial: vi.fn(), signUp: { email: vi.fn() }, signIn: { social: vi.fn(), email: vi.fn() } }));
 vi.mock("better-auth/react", () => ({ createAuthClient: () => sdk }));
 import { linkGoogleAccount, emailAuthClientActions, authClientActions } from "./auth-client";
 
 beforeEach(() => vi.clearAllMocks());
+afterEach(() => vi.unstubAllGlobals());
 
 it("sends the visible profile identity on the same request that starts linking", async () => {
   sdk.linkSocial.mockResolvedValueOnce({ error: null });
@@ -20,13 +21,26 @@ it("reports identity conflict as failure without retrying under a different iden
   expect(sdk.linkSocial).toHaveBeenCalledTimes(1);
 });
 
-it("maps only the exact Better Auth email registration policy rejection to a closed result", async () => {
-  sdk.signUp.email.mockResolvedValueOnce({ data: null, error: { code: "vico_email_registration_closed" } });
-  expect(await emailAuthClientActions.signUpWithEmail("Member", "member@example.test", "password123")).toBe("closed");
-  sdk.signUp.email.mockResolvedValueOnce({ data: null, error: { code: "OTHER_PROVIDER_ERROR" } });
-  expect(await emailAuthClientActions.signUpWithEmail("Member", "member@example.test", "password123")).toBe(false);
-  sdk.signUp.email.mockResolvedValueOnce({ data: { user: { id: "member" } }, error: null });
-  expect(await emailAuthClientActions.signUpWithEmail("Member", "member@example.test", "password123")).toBe(true);
+it("accepts only neutral signup acknowledgement and maps safe failures", async () => {
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce(Response.json({ code: "vico_email_registration_closed" }, { status: 403 }))
+    .mockResolvedValueOnce(Response.json({ code: "OTHER_PROVIDER_ERROR" }, { status: 400 }))
+    .mockResolvedValueOnce(Response.json({ status: true, token: null }))
+    .mockResolvedValueOnce(Response.json({ user: { id: "member" } }))
+    .mockResolvedValueOnce(new Response(null, { status: 429 }));
+  vi.stubGlobal("fetch", fetcher);
+  const sign = () => emailAuthClientActions.signUpWithEmail("Member", "member@example.test", "password123", "/en");
+  expect(await sign()).toBe("closed");
+  expect(await sign()).toBe(false);
+  expect(await sign()).toBe(true);
+  expect(await sign()).toBe(false);
+  expect(await sign()).toBe("rate-limited");
+  expect(sdk.signUp.email).not.toHaveBeenCalled();
+  expect(fetcher).toHaveBeenCalledTimes(5);
+  expect(fetcher.mock.calls[0][0]).toBe("/api/auth/sign-up/email");
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
+    name: "Member", email: "member@example.test", password: "password123", callbackURL: "/en",
+  });
 });
 
 it("passes the bounded locale credential error destination to native Better Auth OAuth", async () => {

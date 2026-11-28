@@ -7,6 +7,10 @@ from uuid import uuid4
 from pathlib import Path
 from urllib.parse import urlparse,quote,urlencode
 from playwright.sync_api import sync_playwright,expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 p=argparse.ArgumentParser();p.add_argument('--url',default='http://127.0.0.1:4238');p.add_argument('--mode',choices=['missing','wrong'],required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();base=a.url.rstrip('/');repo=Path(__file__).resolve().parents[3]
 assert os.environ.get('CI')=='true' and urlparse(base).hostname in ('localhost','127.0.0.1')
 db=urlparse(os.environ['DATABASE_URL']);assert db.hostname in ('localhost','127.0.0.1') and db.path=='/vico_sa08_browser_test'
@@ -44,7 +48,7 @@ try:
   # M1: canonical profile is public + independently authorized Admin sections;
   # missing/wrong Owner binding must omit private Owner sections, not the page.
   owner='sa08-synthetic-owner';target_ctx=browser.new_context();target_email='SA08_PRIVATE_PROFILE_'+uuid4().hex+'@test.invalid'
-  created=target_ctx.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':'SA08 binding target','email':target_email,'password':'SA08-fixture-password-123456'});assert created.status==200
+  created=signup_verified_session(sql, target_ctx.request, base,headers={'Origin':base},data={'name':'SA08 binding target','email':target_email,'password':'SA08-fixture-password-123456'});assert created.status==200
   target=created.json()['user']['id'];profile='/en/users/'+quote(target,safe='');action=profile+'/owner/deactivate'
   viewers=[(ctx,403,True)]
   for label,admin in [('admin',True),('member',False)]:

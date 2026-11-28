@@ -2,6 +2,7 @@ import { inArray } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { session } from "../../db/schema";
 import { MAX_AUTH_FACTS_PER_REQUEST, type AuthTransitionFact } from "../../db/owner-auth-facts";
+import type { AuthLifecycleTransaction } from "./lifecycle-transaction.server";
 
 type SessionRow = { id: string; userId: string; token: string; expiresAt: Date };
 type Reason = Extract<AuthTransitionFact, {kind: "auth.sessionDeleted"}>["reason"];
@@ -45,7 +46,13 @@ export class SessionDeletionEvidence {
     private readonly database: NodePgDatabase,
     private readonly emit: (fact: AuthTransitionFact, occurredAt: Date) => void,
     private readonly missed: (count: number) => void,
+    private readonly lifecycle?: AuthLifecycleTransaction,
   ) {}
+
+  private retain(effect: () => void): void {
+    if (this.lifecycle) this.lifecycle.stageEvidence(effect);
+    else effect();
+  }
 
   noteAdapterDelete(method: "delete" | "deleteMany", arg: unknown, result: unknown): void {
     const operation = arg as AdapterDelete | null;
@@ -57,17 +64,20 @@ export class SessionDeletionEvidence {
       if (count) this.missed(count);
       return;
     }
-    const previous = this.bulkReceipts.get(userId);
-    if (previous) {
-      // Distinct bulk executions have no row-to-receipt correlation:
-      // never manufacture timestamps or individually attributed successes.
-      previous.ambiguous = true;
-      previous.count = Math.min(Number.MAX_SAFE_INTEGER, previous.count + count);
-    } else if (this.bulkReceipts.size < MAX_BULK_IDENTITIES) {
-      this.bulkReceipts.set(userId, { count, occurredAt: new Date(), ambiguous: false });
-    } else if (count) {
-      this.missed(count);
-    }
+    const occurredAt = new Date();
+    this.retain(() => {
+      const previous = this.bulkReceipts.get(userId);
+      if (previous) {
+        // Distinct bulk executions have no row-to-receipt correlation:
+        // never manufacture timestamps or individually attributed successes.
+        previous.ambiguous = true;
+        previous.count = Math.min(Number.MAX_SAFE_INTEGER, previous.count + count);
+      } else if (this.bulkReceipts.size < MAX_BULK_IDENTITIES) {
+        this.bulkReceipts.set(userId, { count, occurredAt, ambiguous: false });
+      } else if (count) {
+        this.missed(count);
+      }
+    });
   }
 
   /** Native affected rowCount from the canonical session-token DELETE. */
@@ -83,10 +93,13 @@ export class SessionDeletionEvidence {
     const count = countOf(rawCount);
     if (count === 1) {
       const token = parameters[0];
-      if (this.singleReceipts.has(token)) return;
-      if (this.singleReceipts.size < MAX_AUTH_FACTS_PER_REQUEST)
-        this.singleReceipts.set(token, new Date());
-      else this.untrackedSingleReceipts++;
+      const occurredAt = new Date();
+      this.retain(() => {
+        if (this.singleReceipts.has(token)) return;
+        if (this.singleReceipts.size < MAX_AUTH_FACTS_PER_REQUEST)
+          this.singleReceipts.set(token, occurredAt);
+        else this.untrackedSingleReceipts++;
+      });
     } else if (count === null || count > 1) {
       this.missed(1);
     }
@@ -118,20 +131,24 @@ export class SessionDeletionEvidence {
         // Expired-session cleanup is not a user-initiated revocation.
         return;
     }
-    if (reason === "revoke-all") {
-      const seen = this.observedBulk.get(row.userId);
-      if (seen === undefined && this.observedBulk.size >= MAX_BULK_IDENTITIES) {
-        this.missed(1);
+    // Keep only the bounded in-memory proof fields needed by the existing collector.
+    const candidate: Candidate = { id: row.id, userId: row.userId, token: row.token,
+      expiresAt: row.expiresAt, reason, actorUserId };
+    this.retain(() => {
+      if (candidate.reason === "revoke-all") {
+        const seen = this.observedBulk.get(candidate.userId);
+        if (seen === undefined && this.observedBulk.size >= MAX_BULK_IDENTITIES) {
+          this.missed(1);
+          return;
+        }
+        this.observedBulk.set(candidate.userId, Math.min(Number.MAX_SAFE_INTEGER, (seen ?? 0) + 1));
+      }
+      if (this.candidates.length >= MAX_AUTH_FACTS_PER_REQUEST) {
+        if (candidate.reason !== "revoke-all") this.untrackedSingleHooks++;
         return;
       }
-      this.observedBulk.set(row.userId, Math.min(Number.MAX_SAFE_INTEGER, (seen ?? 0) + 1));
-    }
-    if (this.candidates.length >= MAX_AUTH_FACTS_PER_REQUEST) {
-      if (reason !== "revoke-all") this.untrackedSingleHooks++;
-      return;
-    }
-    this.candidates.push({ id: row.id, userId: row.userId, token: row.token,
-      expiresAt: row.expiresAt, reason, actorUserId });
+      this.candidates.push(candidate);
+    });
   }
 
   /** Postcondition reads and emission are chunked; no unbounded IN or queue. */
