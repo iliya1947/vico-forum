@@ -55,3 +55,12 @@
 ## User AI consistency checkpoint
 
 28.11.2026: после исправления смешения задач User AI проверен как отдельный product scope. Действующий источник — `research/user-ai-product-concept.md`; старые feature/mixed концепции superseded. Admin/Moderation AI не проверялся и остаётся отдельной следующей product-задачей. Future common technical planning остаётся PAUSED до принятия Admin/Moderation product contract.
+
+
+## Реестр трёх задач AI-блока
+
+1. ChatGPT-control — отдельная текущая задача #399/#400.
+2. User AI — отдельная задача; действующая концепция: `research/user-ai-product-concept.md`.
+3. Admin/Moderation AI — отдельная задача; самостоятельная product-проработка ещё не принята.
+
+По прямой команде владельца дальнейшая работа по User AI и Admin/Moderation AI остановлена до нового указания. Сейчас Мира проверяет завершённый Леной Stage A #399.
