@@ -14,3 +14,6 @@
 
 
 8. 28.11.2026 — владелец назначил #400 общим служебным PR pre-release AI-блока; после ChatGPT-control здесь последовательно будут проработаны два следующих AI-направления: пользовательский AI и AI для администрирования/модерации.
+
+
+9. 28.11.2026 — после product-scope проработки user-AI и Admin/Moderation-AI создан единый embedded-AI planning scope; Лёва назначен на отдельный technical plan в `stages/embedded-ai/PLAN.md` параллельно текущей реализации ChatGPT-control.
