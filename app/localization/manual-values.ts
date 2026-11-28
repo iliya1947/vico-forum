@@ -4,6 +4,9 @@ import type { ProviderTranslationValue } from "./translation-validation";
 type CommonTranslationValues = Readonly<Record<UiKey<"common">, ProviderTranslationValue>>;
 
 export const russianCommonValues = {
+  consultantReadBestAnswer: "Откройте обсуждение и найдите отмеченный лучший ответ либо просмотрите решённые вопросы в разделе «Помощь и решения».",
+  consultantSaveTopic: "Откройте тему и нажмите «Сохранить тему». Сохранённые темы доступны в закладках.",
+  consultantTranslationHelp: "Задайте вопрос о неправильном переводе в разделе «Помощь и решения», указав соответствующую тему или сообщение.",
   consultantSections: "Просмотрите разделы форума и выберите подходящую категорию или раздел.",
   consultantPlacement: "Выберите подходящий раздел или «Помощь и решения». Воспользуйтесь формой новой темы, если она доступна.",
   consultantTags: "Просмотрите теги технологий, чтобы найти связанные обсуждения.",
@@ -2016,6 +2019,9 @@ export const russianCommonValues = {
 } as const satisfies CommonTranslationValues;
 
 export const hebrewCommonValues = {
+  consultantReadBestAnswer: "פתחו דיון וחפשו את התשובה המיטבית המסומנת, או עיינו בשאלות שנפתרו במדור עזרה ופתרונות.",
+  consultantSaveTopic: "פתחו את הנושא והשתמשו בשמירת הנושא. נושאים שמורים זמינים בסימניות.",
+  consultantTranslationHelp: "שאלו על תרגום שגוי במדור עזרה ופתרונות וציינו את הנושא או ההודעה הרלוונטיים.",
   consultantSections: "עיינו במדורי הפורום ובחרו קטגוריה או מדור מתאימים.",
   consultantPlacement: "בחרו מדור מתאים או עזרה ופתרונות. השתמשו בטופס נושא חדש אם הוא זמין.",
   consultantTags: "עיינו בתגיות הטכנולוגיה כדי למצוא דיונים קשורים.",

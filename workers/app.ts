@@ -84,6 +84,7 @@ import { ownerAccountLifecycleContext, ownerProfileContext } from "../app/profil
 import { createHyperdriveOwnerProfile } from "../db/hyperdrive-owner-profile";
 import { createHyperdriveOwnerAccountLifecycle } from "../db/hyperdrive-owner-account-lifecycle";
 import { consultantDependenciesContext, createConsultantDependencies } from "../app/consultant/dependencies.server";
+import { createHyperdriveConsultantAdmission } from "../db/hyperdrive-consultant-admission";
 import { isConsultantPath, isOwnerAccountLifecyclePath, isOwnerMonitoringPath, isPrivateForumReadPath, protectFrameworkFailure } from "./private-failure-response";
 
 const requestHandler = createRequestHandler(
@@ -190,7 +191,12 @@ async function applicationFetch(request: Request, env: Env, executionContext: Ex
     };
     context.set(ownerIntegrationsMonitoringContext,createHyperdriveOwnerIntegrations(webConnectionString,ownerUserId,()=>ownerMonitoring.readSystem(),integrationRuntimeFacts,requiredLocalization.current));
     context.set(ownerOverviewMonitoringContext,createHyperdriveOwnerOverview(webConnectionString,localizationConnectionString,ownerUserId,import.meta.env.MODE,integrationRuntimeFacts,requiredLocalization.current));
-    context.set(consultantDependenciesContext, createConsultantDependencies(context));
+    // This switch controls only the local, provider-free navigation endpoint.
+    // Unknown values fail closed. No external binding or allowance is enabled.
+    const consultantSetting = (env as Env & { VICO_CONSULTANT_ENABLED?: string }).VICO_CONSULTANT_ENABLED;
+    context.set(consultantDependenciesContext, createConsultantDependencies(context,
+      createHyperdriveConsultantAdmission(webConnectionString),
+      consultantSetting === undefined || consultantSetting === "true"));
     const response = await requestHandler(request, context);
     const finalResponse = protectFrameworkFailure(request, response);
     // Record actual 5xx response outcomes only; never request URLs, bodies or credentials.

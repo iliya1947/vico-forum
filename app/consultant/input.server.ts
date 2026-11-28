@@ -1,4 +1,4 @@
-import { CONSULTANT_MAX_BODY_BYTES, CONSULTANT_MAX_QUESTION_LENGTH, type ConsultantPage, type ConsultantRequest } from "./contract";
+import { CONSULTANT_MAX_BODY_BYTES, CONSULTANT_MAX_QUESTION_LENGTH, isConsultantFeature, type ConsultantPage, type ConsultantRequest } from "./contract";
 
 export class ConsultantInputError extends Error {
   constructor(readonly status: 400 | 413 | 415 = 400) { super("Invalid consultant request"); }
@@ -15,8 +15,9 @@ function string(value: unknown, limit: number, blank = false): string {
   return value;
 }
 function id(value: unknown): string {
-  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(value)) throw new ConsultantInputError();
-  return value;
+  const parsed = string(value, 200);
+  if (parsed.trim() !== parsed || parsed === "." || parsed === ".." || /[\r\n\t]/u.test(parsed)) throw new ConsultantInputError();
+  return parsed;
 }
 function randomId(value: unknown): string {
   if (typeof value !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) throw new ConsultantInputError();
@@ -37,11 +38,10 @@ function page(value: unknown): ConsultantPage {
       const p = record(value, ["kind", "destination", "sectionId", "tagIds"]);
       if (p.destination !== "help" && p.destination !== "section") throw new ConsultantInputError();
       if (p.destination === "help" && p.sectionId !== undefined) throw new ConsultantInputError();
-      const sectionId = p.destination === "section" ? id(p.sectionId) : undefined;
       if (p.tagIds !== undefined && (!Array.isArray(p.tagIds) || p.tagIds.length > 8)) throw new ConsultantInputError();
-      const tagIds = Array.isArray(p.tagIds) ? p.tagIds.map(id) : undefined;
-      return { kind, destination: p.destination, ...(sectionId === undefined ? {} : { sectionId }),
-        ...(tagIds === undefined ? {} : { tagIds }) };
+      const tags = Array.isArray(p.tagIds) ? { tagIds: p.tagIds.map(id) } : {};
+      return p.destination === "section" ? { kind, destination: "section", sectionId: id(p.sectionId), ...tags }
+        : { kind, destination: "help", ...tags };
     }
     default: throw new ConsultantInputError();
   }
@@ -49,12 +49,13 @@ function page(value: unknown): ConsultantPage {
 export function parseConsultantRequest(value: unknown): ConsultantRequest {
   const input = record(value, ["consultationId", "turnId", "question", "page", "continuation"]);
   const c = input.continuation === undefined ? undefined : record(input.continuation, ["selectedFeature", "selectedTopicId"]);
+  if (c?.selectedFeature !== undefined && !isConsultantFeature(c.selectedFeature)) throw new ConsultantInputError();
   return {
     consultationId: randomId(input.consultationId), turnId: randomId(input.turnId),
     question: string(input.question, CONSULTANT_MAX_QUESTION_LENGTH).trim(),
     page: page(input.page),
     ...(c === undefined ? {} : { continuation: {
-      ...(c.selectedFeature === undefined ? {} : { selectedFeature: id(c.selectedFeature) }),
+      ...(c.selectedFeature === undefined ? {} : { selectedFeature: c.selectedFeature }),
       ...(c.selectedTopicId === undefined ? {} : { selectedTopicId: id(c.selectedTopicId) }),
     } }),
   };

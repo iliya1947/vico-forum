@@ -8,6 +8,9 @@ import type { UiKey } from "./catalog";
  * translation stale until that translation is reviewed again.
  */
 export const reviewedCommonFingerprints = {
+  consultantReadBestAnswer: "885d2068ec5ba921c8dcd70e2891ca0ef79bc6b36b95732582fb0152faa8a693",
+  consultantSaveTopic: "0a0971b5d0dac9f7eea449c38329e98a38c12aa3b6f41cbde58c98a9358d3fa1",
+  consultantTranslationHelp: "311849fd0fe5d63b19100e9783115ca54b6af0d2b9f5329d2423f9ad217fb92d",
   consultantSections: "8da68d9e2c2ef4187dccd7fa9464cbd8bf462871e6a18f13d4b1d4e04c68111b",
   consultantPlacement: "6842a07ec42f32da306a58572050b4e86c0b610e33077122aab76339009ce669",
   consultantTags: "8ac22af213a0eac9c989a3a43595f610743f690f94d4ab8a71304b3f4d4b5b49",

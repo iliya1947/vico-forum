@@ -8,7 +8,7 @@ import type { PermissionKey } from "../authorization/catalog";
 import type { UiKey } from "../localization/catalog";
 import { admitsLayer, type Disclosure, type DisclosureLayer } from "./disclosure.server";
 import type { ConsultantDependencies } from "./dependencies.server";
-import { CONSULTANT_CATALOG_VERSION, type ConsultantCard, type ConsultantRequest, type ConsultantResult } from "./contract";
+import { CONSULTANT_CATALOG_VERSION, type ConsultantCard, type ConsultantFeature, type ConsultantRequest, type ConsultantResult } from "./contract";
 
 type Key = UiKey<"common">;
 interface Entry extends ConsultantCard {
@@ -21,7 +21,7 @@ function card({ feature, labelKey, instructionKey, href }: ConsultantCard): Cons
   return { feature, labelKey, instructionKey, href };
 }
 
-export async function navigateConsultant(input: ConsultantRequest, actor: string, disclosure: Disclosure, deps: ConsultantDependencies): Promise<ConsultantResult> {
+export function permittedNavigationCatalog(actor: string, disclosure: Disclosure, deps: ConsultantDependencies): readonly Entry[] {
   const locale = deps.locale();
   const routing = deps.routing();
   const has = (key: PermissionKey) => disclosure.permissions.has(key);
@@ -34,7 +34,7 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
     canReviewAppeals: has("forum.complaint.appeal.review"),
   });
   const entries: Entry[] = [];
-  const add = (feature: string, labelKey: Key, instructionKey: Key, href: string,
+  const add = (feature: ConsultantFeature, labelKey: Key, instructionKey: Key, href: string,
     match: RegExp, isPublic = false, allowed = true, layer: DisclosureLayer = "User") => {
     entries.push({ feature, labelKey, instructionKey, href, match, public: isPublic, allowed, layer });
   };
@@ -56,8 +56,13 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
   add("unread", "unreadNav", "unreadExistingHeading", forumUnreadPath(locale), /\bunread\b|непрочитан|לא נקרא/iu);
   add("settings", "adminSettings", "settingsIntro", settingsPath(locale), /\bsettings\b|настройк|הגדרות/iu);
   add("watch", "topicWatch", "consultantWatch", search, /\b(watch|unwatch|subscribe|follow topic)\b|подпис|следить за тем|מעקב|לעקוב/iu);
-  add("report", "complaintReportPost", "consultantReport", search, /\b(report(?:ing)?|complain)\b|жалоб|пожаловаться|доложить|דיווח|לדווח|תלונ/iu, false, has("forum.complaint.create"));
-  add("best-answer", "bestAnswer", "consultantBestAnswer", help, /\bbest answer\b|лучш[а-я]* ответ|лучший ответ|תשובה מיטבית|התשובה הטובה/iu);
+  add("report", "complaintReportPost", "consultantReport", search, /\b(report(?:ing)?|complain|complaint)\b|жалоб|пожаловаться|доложить|דיווח|לדווח|תלונ/iu, false, has("forum.complaint.create"));
+  add("best-answer", "bestAnswer", "consultantReadBestAnswer", help, /\bbest answer\b|лучш[а-я]* ответ|תשובה מיטבית|התשובה הטובה/iu, true);
+  add("select-best-answer", "selectBestAnswer", "consultantBestAnswer", help, /\b(select|mark|choose|set)\b.*\bbest answer\b|(?:выбрать|назначить|отметить).*лучш[а-я]* ответ|(?:לבחור|לסמן).*תשובה מיטבית/iu, false,
+    has("forum.solution.manageAny") || has("forum.solution.manageOwn"));
+  add("save-topic", "topicBookmarkAdd", "consultantSaveTopic", search, /\b(save|bookmark)\s+(?:this |a |the )?topic\b|сохранить (?:эту )?тем[уы]|לשמור (?:את )?הנושא/iu);
+  add("translation-help", "helpSolutionsHeading", "consultantTranslationHelp", help, /\b(?:wrong|incorrect|bad)\s+translation\b|translation.*(?:wrong|incorrect)|перевод.*(?:неправиль|ошиб|неверн)|(?:неправиль|неверн).*перевод|תרגום.*(?:שגוי|לא נכון)/iu, true);
+  add("help-ask", "helpSolutionsAskHeading", "consultantPlacement", help, /\b(?:ask|post)\b.*\b(?:help|question)\b|куда.*задать.*вопрос|задать вопрос|(?:לשאול|לפרסם).*שאלה/iu, false, has("forum.topic.create"));
   add("hidden-content", "adminHiddenQueueTitle", "consultantOpenPage", routing.admin.forum(locale) + "/content", /\b(hidden content|hide posts?|restore posts?)\b|скрыт[а-я]* контент|скрытые сообщ|תוכן מוסתר/iu, false, has("forum.content.visibility.manage"), "Moderator");
   add("signals", "attentionModeSignals", "consultantOpenPage", attentionEntryPath(locale, "signals", "mixed"), /\b(signals?|moderation queue)\b|сигнал|очередь модерац|אותות/iu, false, attention.signals.length > 0, "Moderator");
   add("complaint-review", "complaintQueueHeading", "consultantOpenPage", attentionEntryPath(locale, "complaints", "group1"), /\b(complaint queue|review complaints)\b|очередь жалоб|рассмотр[а-я]* жалоб|תור תלונות/iu, false, has("forum.complaint.review"), "Moderator");
@@ -74,40 +79,50 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
   add("forum-roles", "settingsForumRoles", "consultantOpenPage", settingsForumPath(locale), /\b(forum & roles|registration settings)\b|настройк[а-я]* регистрац|הגדרות הרשמה/iu, false, disclosure.exactOwner && has("access.authorization.manage"), "Administrator");
   add("super-admin", "superAdminTitle", "consultantOpenPage", routing.superAdmin.overview(locale), /\b(super[- ]admin|owner panel)\b|супер.?админ|סופר.?אדמין/iu, false, disclosure.exactOwner, "Administrator");
 
-  const permitted = entries.filter(entry => entry.allowed && admitsLayer(disclosure, entry.layer) && (disclosure.complete || entry.public));
+  return entries.filter(entry => entry.allowed && admitsLayer(disclosure, entry.layer) && (disclosure.complete || entry.public));
+}
+
+export async function navigateConsultant(input: ConsultantRequest, actor: string, disclosure: Disclosure, deps: ConsultantDependencies): Promise<ConsultantResult> {
+  const locale = deps.locale();
+  const has = (key: PermissionKey) => disclosure.permissions.has(key);
+  const permitted = permittedNavigationCatalog(actor, disclosure, deps);
+  const help = forumCategoryPath(locale, HELP_SOLUTIONS_CATEGORY_ID);
   // Only permitted entries participate in intent selection. Unknown or denied intent is indistinguishable from an ordinary miss.
   const question = input.question.normalize("NFKC").toLowerCase();
   const matches = permitted.filter(entry => entry.match.test(question));
   // Prefer specific routes over generic Search/Settings/Help. Never add denied entries to the response.
   const specific = matches.filter(entry => !["search", "help", "sections", "settings"].includes(entry.feature));
-  const selected = specific.at(-1) ?? matches[0];
+  const selected = specific.at(-1) ?? matches.find(entry => entry.feature !== "search") ?? matches[0];
   const fallback = () => permitted.filter(entry => entry.feature === "search" || entry.feature === "help").map(card);
   let cards: ConsultantCard[] = selected ? [card(selected)] : fallback();
-  let kind: ConsultantResult["kind"] = selected ? "navigation" : "fallback";
+  let kind: ConsultantResult["kind"] = selected && disclosure.complete ? "navigation" : "fallback";
 
   if (selected && disclosure.complete) {
     try {
       if (selected.feature === "report" && (await deps.restrictions(actor)).has("complaints.submit")) {
         cards = fallback(); kind = "fallback";
-      } else if (["report", "watch", "best-answer"].includes(selected.feature) && input.page.kind === "topic") {
+      } else if (["report", "watch", "best-answer", "select-best-answer", "save-topic"].includes(selected.feature) && input.page.kind === "topic") {
         const page = input.page;
         const topic = await deps.reader().readTopicPage(page.topicId);
         const visible = topic?.posts.filter(post => post.kind !== "hidden");
         const post = page.postId ? visible?.find(item => item.id === page.postId) : undefined;
         const validTarget = topic && (!page.postId || post);
         if (!validTarget) { cards = fallback(); kind = "fallback"; }
-        else if (selected.feature === "best-answer" &&
-          !(has("forum.solution.manageAny") || (has("forum.solution.manageOwn") && topic.authorId === actor))) {
+        else if (selected.feature === "select-best-answer" &&
+          (!(has("forum.solution.manageAny") || (has("forum.solution.manageOwn") && topic.authorId === actor))
+            || !!topic.duplicateOf || !topic.posts.slice(1).some(item => item.kind !== "hidden" && item.id !== topic.bestAnswerPostId))) {
           cards = fallback(); kind = "fallback";
         } else {
           cards = [{ ...card(selected), href: forumTopicPath(locale, topic.id) +
             (post && selected.feature === "report" ? "#post-" + encodeURIComponent(post.id) : ""),
             ...(selected.feature === "report" && !post ? { labelKey: "complaintReportTitle" as const } : {}) }];
         }
-      } else if (selected.feature === "sections") {
+      } else if (selected.feature === "sections" || selected.feature === "help-ask") {
         const p = input.page;
         const sectionId = p.kind === "section" || p.kind === "editor" && p.destination === "section" ? p.sectionId : undefined;
-        if (sectionId && sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
+        const canCreate = has("forum.topic.create") && !(await deps.restrictions(actor)).has("topics.create");
+        if (selected.feature === "help-ask" && !canCreate) { cards = fallback(); kind = "fallback"; }
+        else if (sectionId && sectionId !== HELP_SOLUTIONS_SERVICE_SECTION_ID) {
           const section = await deps.reader().readSection(sectionId);
           if (section) cards = [{ ...card(selected), href: forumSectionPath(locale, section.id) }];
         } else if (p.kind === "category" && p.categoryId !== HELP_SOLUTIONS_CATEGORY_ID) {
@@ -116,8 +131,8 @@ export async function navigateConsultant(input: ConsultantRequest, actor: string
         } else if (p.kind === "editor" && p.destination === "help" || p.kind === "category" && p.categoryId === HELP_SOLUTIONS_CATEGORY_ID) {
           cards = [{ feature: "help", labelKey: "helpSolutionsHeading", instructionKey: "helpSolutionsIntro", href: help }];
         }
-        if (has("forum.topic.create") && !(await deps.restrictions(actor)).has("topics.create")) {
-          cards[0] = { ...cards[0], instructionKey: "consultantPlacement" };
+        if (canCreate && kind === "navigation") {
+          cards = cards.map(item => ({ ...item, instructionKey: "consultantPlacement" }));
         }
       } else if (selected.feature === "search" && input.page.kind === "search" && input.page.term.trim()) {
         // Do not echo submitted questions or context strings into URLs; native Search remains explicit.

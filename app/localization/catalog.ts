@@ -16,6 +16,9 @@ export interface UiMessageDescriptor {
 
 export const canonicalEnglishCatalog = {
   common: {
+    consultantReadBestAnswer: message("consultantReadBestAnswer", "Open a discussion and look for its marked best answer or use Help & solutions to browse solved questions.", "Consultant deterministic navigation instruction: consultantReadBestAnswer."),
+    consultantSaveTopic: message("consultantSaveTopic", "Open the topic and use Save topic. Saved topics are available in Bookmarks.", "Consultant deterministic navigation instruction: consultantSaveTopic."),
+    consultantTranslationHelp: message("consultantTranslationHelp", "Use Help & solutions to ask about an incorrect translation, including the affected topic or message.", "Consultant deterministic navigation instruction: consultantTranslationHelp."),
     consultantSections: message("consultantSections", "Browse the forum sections and choose a relevant category or section.", "Consultant deterministic navigation instruction: consultantSections."),
     consultantPlacement: message("consultantPlacement", "Choose the relevant section or Help & solutions. Use its new-topic form if available.", "Consultant deterministic navigation instruction: consultantPlacement."),
     consultantTags: message("consultantTags", "Browse technology tags to find related discussions.", "Consultant deterministic navigation instruction: consultantTags."),

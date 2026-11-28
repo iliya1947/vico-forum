@@ -51,6 +51,7 @@ export function protectFrameworkFailure(request: Request, response: Response): R
     headers: new Headers(response.headers),
   });
   protectedResponse.headers.set("Cache-Control", "private, no-store");
+  if (isConsultantPath(new URL(request.url).pathname)) protectedResponse.headers.set("Referrer-Policy", "no-referrer");
   return protectedResponse;
 }
 

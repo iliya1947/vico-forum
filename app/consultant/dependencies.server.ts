@@ -11,8 +11,10 @@ import { administrativeRoutingForRequest } from "../administrative-routing/reque
 import { projectDisclosure } from "./disclosure.server";
 
 /** Only request-local canonical dependencies; no model, network provider or write capability. */
-export function createConsultantDependencies(context: RouterContextProvider) {
+export function createConsultantDependencies(context: RouterContextProvider,
+  assertActive: (actorId: string) => Promise<void>, enabled: boolean) {
   return {
+    enabled, assertActive,
     session: () => authSessionForRequest(context),
     locale: () => context.get(localeContext).translationLocale,
     routing: () => administrativeRoutingForRequest(context),
