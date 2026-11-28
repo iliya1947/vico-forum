@@ -257,3 +257,12 @@ STOP:
 - Independent old-P0→new-P0 comparison shows the P0 runtime/preview implementation unchanged by the synchronization; relevant delta is current-main baseline/CI integration rather than a new P0 product layer.
 - The earlier `app/settings/shell.test.tsx` failure on prior exact `95f43d5d...` is superseded by this green exact-head run and was not a P0 code change.
 - **STOP before SYNC-P1.** P1/P2 remain unchanged until a separate developer continuation authorizes the next bounded synchronization step.
+
+## SYNC-P1 — assignment to Lena
+
+- Renewed P0 is accepted: Draft #373 exact `b91adfc256dccc5a0179d173d3221fb7d5961c78`.
+- Current main `99b40480cb4d777298aafb1ffae7f28cf0c6085d` differs from the accepted P0 code baseline only by `AGENTS.md`; no additional P0 code sync is required.
+- Active bounded task: synchronize Draft #375 P1 onto the renewed P0 branch/head, preserving the accepted P1 result and bringing its generic route/runtime coverage onto the current product code carried by P0.
+- Do not restart or redesign P1. Resolve only synchronization/current-contract fallout required to restore the existing P1 gate.
+- After author self-check, hand the stable exact P1 head to Mira. Mira owns CI and renewed coordinator checkpoint.
+- Do not modify P2 or resume B8b1 before renewed P1 PASS.
