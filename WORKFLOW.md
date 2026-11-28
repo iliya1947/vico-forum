@@ -38,8 +38,8 @@
 
 ## Параллельный planning-track — embedded AI
 
-Лена продолжает активный ChatGPT-control Stage A в `#399`.
+**PAUSED.** Product scope двух embedded-AI направлений ещё не утверждён владельцем. До последовательного согласования product decisions технический plan Лёвы не продолжается.
 
-Параллельно Лёва готовит **только технический план** двух встроенных AI-направлений по `stages/embedded-ai/SCOPE.md`. Результат — `stages/embedded-ai/PLAN.md`. Этот planning-track не изменяет текущий `PLAN.md`, `#399` или implementation stack A → I.
+Лена независимо продолжает активный ChatGPT-control Stage A в `#399`.
 
-После завершения Лёва передаёт embedded-AI plan Мире на проверку. Реализация embedded AI до отдельного решения владельца и принятия плана не начинается.
+Следующий шаг embedded-AI: Мира по одному согласует с владельцем продуктовые решения user-AI и Admin/Moderation-AI; только после закрытия всех существенных развилок planning-track Лёвы может быть возобновлён.
