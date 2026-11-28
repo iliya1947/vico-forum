@@ -2,6 +2,16 @@
 
 # Embedded AI — planning scope
 
+## Product-boundary prerequisite
+
+Этот файл относится только к будущему **общему technical planning**. Он не объединяет product scope двух направлений.
+
+До возобновления technical planning должны отдельно существовать и быть приняты:
+1. User AI product concept/scope.
+2. Admin/Moderation AI product concept/scope.
+
+Общий foundation допустим только после этого.
+
 Дата: 28.11.2026.
 
 ## Источники product scope
