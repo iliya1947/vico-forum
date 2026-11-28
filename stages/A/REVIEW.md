@@ -2,9 +2,9 @@
 
 # Stage A — coordinator review Миры
 
-Статус: **HOLD**  
+Статус: **PASS**  
 Проверенный implementation PR: **#399**  
-Stable exact head: `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`  
+Stable exact head: `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`  
 Base `main`: `c49897181388b4a78f8e8248dc6508551df576c4`
 
 ## Проверенный scope
@@ -73,3 +73,19 @@ CI run `46109469613`, database job `140869542161`: три сценария `test
 3. Новый stable exact head передан Мире.
 4. Мира заново запускает/проверяет применимый CI и затем `run:acceptance` для local OAuth Chromium.
 5. Stage B остаётся заблокирован до coordinator PASS.
+
+
+## Повторный coordinator cycle — PASS
+
+Проверенный exact head: `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
+
+Correction A-F01–A-F03 проверен по diff и runtime evidence:
+
+1. A-F01 закрыт: основной CI run `46148681007` — `Typecheck` success.
+2. A-F02 закрыт: тот же CI — `Test clean PostgreSQL 17 migrations and constraints` success; OAuth DB lifecycle tests больше не падают на 429.
+3. A-F03 закрыт: PostgreSQL migration/tests и migration metadata/schema parity прошли.
+4. Основной CI run `46148681007` полностью завершён `success`: lint, typecheck, tests, build, UI preview build, migration metadata, Drizzle parity, PostgreSQL 17, production schema manifest parity, runtime privilege probes и Worker smoke.
+5. Stage-A-specific browser acceptance run `46149123687`, job `local_oauth_browser` — `success` на том же exact head. Прошёл built Worker + PostgreSQL 17 + Chromium OAuth/MCP fixture.
+6. Production activation, внешние credentials и Stage 6 не выполнялись.
+
+Итог: **Stage A PASS**. Stage B может быть активирован только следующим явным переходом процесса; этот review сам Stage B не запускает.
