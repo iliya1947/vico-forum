@@ -115,3 +115,23 @@ Exact head #399: `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` (один commit п�
 3. A-F03: SA07 test сравнивает compiledExpectedMigration с именем последней успешно применённой fixture SQL migration (сейчас 0079), а не застывшим 0078 или самим manifest; deployedMigration по-прежнему unchecked. Manifest и journal согласованы на 0079.
 
 Source self-check: просмотрен полный correction diff, проверены точный head/base, public type boundary, все login call sites и lifecycle fixture isolation, migration comparison, отсутствие изменений auth runtime/production Worker. A-F01–A-F03 исправлены на уровне исходников; **компиляция и runtime на новом head не проверены**. CI/acceptance не запускались и их результаты не проверялись Леной. Мира принимает exact head для полного coordinator cycle. Stage B/Stage 6 не начаты.
+
+
+## Активное назначение — Stage B
+
+Implementation PR: **#402**  
+Branch: `feature/chatgpt-forum-control-stage-b`  
+Base: `feature/chatgpt-forum-control` at accepted Stage A head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`  
+Initial setup head: `5cd8b3444f6077a4ae0eb375eff16eaeeef9e13d`
+
+Требуемый результат Stage B по принятому `PLAN.md`:
+- один реальный Admin Overview проходит от tool через локальный GitHub webhook fixture и обратно через receipt;
+- внешние credentials отсутствуют;
+- ingress выключен штатной конфигурацией.
+
+Границы:
+- не реализовывать Stage C+;
+- не выполнять production/Stage 6 activation;
+- не расширять Stage B до полного read matrix или write path;
+- после реализации выполнить author self-check и передать Мире stable exact head #402;
+- CI/acceptance не запускать и их результаты не проверять: это делает Мира.
