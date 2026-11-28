@@ -2275,7 +2275,7 @@ export const oauthClient = pgTable("oauth_client", {
   jwksUri: text("jwks_uri"),
   grantTypes: text("grant_types").array(),
   responseTypes: text("response_types").array(),
-  requirePKCE: boolean("require_p_k_c_e"),
+  requirePKCE: boolean("require_pkce"),
   dpopBoundAccessTokens: boolean("dpop_bound_access_tokens").default(false),
   referenceId: text("reference_id"),
   metadata: jsonb("metadata"),

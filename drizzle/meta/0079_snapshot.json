@@ -9989,8 +9989,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "require_p_k_c_e": {
-          "name": "require_p_k_c_e",
+        "require_pkce": {
+          "name": "require_pkce",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false

@@ -31,7 +31,7 @@ CREATE TABLE "oauth_client" (
 	"jwks_uri" text,
 	"grant_types" text[],
 	"response_types" text[],
-	"require_p_k_c_e" boolean,
+	"require_pkce" boolean,
 	"dpop_bound_access_tokens" boolean DEFAULT false,
 	"reference_id" text,
 	"metadata" jsonb,
