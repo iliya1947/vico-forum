@@ -1,4 +1,5 @@
 import { oauthProvider } from "@better-auth/oauth-provider";
+import type { BetterAuthPlugin } from "better-auth";
 import { APIError } from "better-auth/api";
 import type { Client } from "pg";
 import type { AuthLifecycleTransaction } from "../auth/lifecycle-transaction.server";
@@ -62,8 +63,10 @@ export function validateForumControlOAuthConfig(config: ForumControlOAuthConfig,
   }
 }
 
+// OAuth endpoints are dispatched through the native HTTP handler; the public
+// plugin interface avoids exporting the enormous inferred endpoint/Zod type.
 export function createForumControlOAuthProvider(connection: Pick<Client, "query">,
-  lifecycle: AuthLifecycleTransaction, config: ForumControlOAuthConfig) {
+  lifecycle: AuthLifecycleTransaction, config: ForumControlOAuthConfig): BetterAuthPlugin {
   const scopes = [forumControlScopes.read, forumControlScopes.write, "offline_access"];
   return oauthProvider({
     scopes,

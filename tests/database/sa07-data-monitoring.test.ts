@@ -23,9 +23,15 @@ const history=new PostgresOwnerSa02History(pool),forum=new DrizzleForumRepositor
 type Snapshot=Awaited<ReturnType<typeof reader.readCurrent>>;
 const monitor=(s:Snapshot,key:DataMonitorKey)=>s.monitors.find(m=>m.key===key)!;
 const check=(s:Snapshot,key:DataMonitorKey,id:string,source='web-database')=>monitor(s,key).checks.find(c=>c.id===id&&c.source===source)!;
+let latestFixtureMigration: string;
 beforeAll(async()=>{
   await c.connect();await c.query('drop schema if exists '+schema+' cascade;create schema '+schema);
-  for(const name of(await readdir('drizzle')).filter(n=>/^\d{4}_.+\.sql$/.test(n)).sort())await c.query((await readFile('drizzle/'+name,'utf8')).replaceAll('"public".','"'+schema+'".'));
+  const migrations=(await readdir('drizzle')).filter(n=>/^\d{4}_.+\.sql$/.test(n)).sort();
+  if(!migrations.length)throw Error('No fixture migrations');
+  for(const name of migrations){
+    await c.query((await readFile('drizzle/'+name,'utf8')).replaceAll('"public".','"'+schema+'".'));
+    latestFixtureMigration=name.slice(0,-4);
+  }
   await local.connect();
 });
 beforeEach(async()=>{
@@ -39,7 +45,7 @@ async function topic(){
     initialPost:{id:post,topicId:id,authorId:member,bodyRevision:{id:revision,sourceLocale:'en',originalContent:'A native Data body'}}});return {id,post,revision};
 }
 it('reads every named full source and actual compatibility subset with distinct connection clocks, without migration-ledger claims',async()=>{
-  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe('0078_auth_registration_challenge_observation');expect(s.deployedMigration).toBe('unchecked');
+  const s=await reader.readCurrent();expect(s.compiledExpectedMigration).toBe(latestFixtureMigration);expect(s.deployedMigration).toBe('unchecked');
   for(const m of s.monitors){expect(m.recording).toBe('available');expect(m.checks.every(c=>c.status==='measured'||c.status==='compatible')).toBe(true);expect(m.coverageFrom).not.toBeNull();}
   for(const [group,tables]of Object.entries(DATA_COUNT_GROUPS)){
     const actual=check(s,'data.application','counts.'+group);expect(Object.keys(actual.values)).toEqual([...tables]);

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import { symmetricEncrypt, hashPassword } from "better-auth/crypto";
 import { Client } from "pg";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createHyperdriveAuthRuntime } from "../../app/auth/auth.server";
 import type { ForumControlOAuthConfig } from "../../app/forum-control/oauth-provider.server";
 import { forumControlScopes } from "../../app/forum-control/write-tool-contract";
@@ -62,6 +62,13 @@ beforeAll(async () => {
     [crypto.randomUUID(), config.resource, scopes]);
   await db.query("insert into oauth_client_resource(id,client_id,resource_id) values($1,$2,$3)",
     [crypto.randomUUID(), config.clientId, config.resource]);
+});
+
+// Each scenario starts with its own disposable rate-limit state. The real
+// native limiter remains active throughout the entire scenario; no production
+// configuration or session/token/grant state is changed.
+beforeEach(async () => {
+  await db.query("truncate " + schema + ".rate_limit");
 });
 
 afterAll(async () => {
