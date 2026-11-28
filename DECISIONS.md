@@ -8,7 +8,7 @@
 4. **D-04.** Управление идёт из обычного ChatGPT через приватный GitHub; Worker и Actions используются без дублирования backend-логики.
 5. **D-05.** Существующие identity, permissions, canonical domain commands и History остаются authoritative; прямой SQL и параллельная административная реализация не допускаются.
 6. **D-06.** Реальная внешняя активация и production secrets остаются Stage 6 и требуют отдельного разрешения владельца.
-7. **D-07.** Встроенные пользовательские AI-функции не входят в эту задачу.
+7. **D-07.** Встроенные пользовательские AI-функции не входят в implementation scope текущего ChatGPT-control `#399`; они ведутся как отдельная последующая подзадача в общем служебном PR `#400` по D-23.
 8. **D-08.** V1 охватывает полный административно полезный read contour и только существующие canonical write operations; отсутствующие domain capabilities не добавляются ради ChatGPT-канала.
 9. **D-09.** Любая mutation выполняется только после conversational cycle: ChatGPT проверяет и объясняет конкретное действие → Owner отдельно подтверждает → только затем допускается dispatch. High-impact операции отличаются глубиной объяснения и server-side preconditions, а не наличием отдельного UI-confirmation.
 10. **D-10.** High-impact scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
