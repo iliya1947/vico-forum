@@ -20,3 +20,6 @@
 
 
 10. 28.11.2026 — Stage A #399 завершён coordinator PASS на exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`: correction A-F01–A-F03 подтверждён, основной CI `46148681007` — success, Stage-A-specific OAuth Chromium acceptance `46149123687` — success. Stage B не активирован.
+
+
+11. 28.11.2026 — после PASS Stage A активирован Stage B. Создан stacked draft implementation PR `#402` от принятого head Stage A; Лена назначена реализатором. Stage C остаётся заблокирован до coordinator PASS Stage B.
