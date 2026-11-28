@@ -90,3 +90,8 @@ D-27: память только внутри текущей консультац
 ## Решение владельца — disclosure layers Consultant
 
 D-28: User / Moderator / Administrator — это не только уровни подсказок, а disclosure boundaries. Consultant не должен получать контекст более высокого уровня и поэтому не может «сболтнуть» его пользователю. Фактическая authorization по-прежнему остаётся в canonical server-side boundary.
+
+
+## Решение владельца — наследование Consultant layers
+
+D-29: User → Moderator → Administrator. Каждый верхний disclosure layer включает допустимый context нижних слоёв; authorization фактических routes/actions остаётся отдельной.
