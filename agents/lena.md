@@ -1,0 +1,171 @@
+Этот файл хранит персональную рабочую память Лены по данной задаче.
+
+# Лена
+
+По прямому решению владельца Лена (GPT-6.2) заменяет Лиру как основной исполнитель этой задачи.
+
+Активная задача — **Stage A** принятого `PLAN.md`: приватное подключение и модель инструментов.
+
+Границы активного назначения:
+1. Работать в существующем `#399` как первой ступени stacked A → I.
+2. Реализовать только Stage A и его acceptance/result boundary; не начинать Stage B.
+3. Исходить из принятого `PLAN.md`, `TASK.md`, D-01–D-22 и product contract.
+4. После author self-check и применимых локальных checks передать stable exact head Мире на coordinator checkpoint.
+5. Production/Site live activation, реальные secrets и Stage-6 проверки не выполнять.
+
+
+Критерий готовности Stage A:
+1. Реализован только результат Stage A из принятого `PLAN.md`: схемы tools, привязка к живой Better Auth session exact Owner, scoped token/revoke и локальный MCP fixture с отдельными tools/Project instructions.
+2. Внешняя production/Site активация не выполняется; Stage-6 account-specific проверки остаются за пределами этапа.
+3. Не добавлены Stage B transport/read vertical и последующие возможности.
+4. Выполнены author self-check и все применимые локальные проверки для изменённого scope.
+5. Stable exact head `#399` передан Мире для coordinator checkpoint с кратким статусом и результатами проверок.
+
+## Текущая техническая проработка Stage A
+
+Implementation #399: продолжается реализация Stage A, head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`.
+
+Проверено по исходникам Better Auth, tag [v1.7.7](https://github.com/better-auth/better-auth/tree/v1.7.7/packages/oauth-provider): отдельный пакет `@better-auth/oauth-provider@1.7.7` совместим по заявленному version baseline. Schema содержит OAuth client/resource/client-resource/consent/access/refresh/assertion entities; access и refresh сохраняют userId, sessionId, resources и scopes. `disableJwtPlugin` позволяет opaque access tokens с resource audience, introspection возвращает iss/aud/client_id/sub/sid/scope/exp. Native authorization-code exchange проверяет наличие и expiry сессии. Однако native refresh path в `token.ts` передаёт сохранённый sessionId в createUserTokens без самостоятельного обязательного live-session/AccountState/Owner gate; native opaque introspection в `introspect.ts` проверяет session только если sid присутствует; FK sessionId имеет ON DELETE SET NULL. Поэтому штатную выдачу/refresh/introspection нельзя считать достаточной Vico admission: обязательны exact Owner, active AccountState, существующая исходная sessionId, текущий grant/client/resource/scopes, deny missing sid. Это требования принятого плана, не новая архитектура. Реализацию guard следует выбрать после чтения текущего adapter/lifecycle кода и проверки всех issuance paths; не добавлять собственный OAuth protocol.
+
+В среде ChatGPT container отсутствует checkout, pnpm; Node v22.16.0 вместо 24.21.0, git ls-remote не разрешает github.com (DNS). GitHub connector работает. Локальная установка зависимостей, генерация миграций и runtime acceptance пока не подтверждены; не выдавать статическое чтение за выполненные checks. Stage-6 live setup запрещён.
+
+### Реализация: write-tool contract
+
+В #399 добавлены `app/forum-control/write-tool-contract.ts` и `write-tool-contract.test.ts`: 43 отдельных write-tool descriptors, OAuth write scope, строгий вход taskId/targetIndex/stepIndex, проверка UUID и safe integer, закрытый базовый результат с обязательной квитанцией при committed. Имена и базовый envelope определены исполнителем в пределах PLAN.md. Код не регистрирует и не исполняет команды. Проверены exact head, наличие обоих файлов, уникальность имён, охват семейств плана на уровне descriptors. Runtime tests не запускались; полный Stage A self-check не завершён. Остаются read/preflight/status schemas, расширение output projections по PLAN, локальный MCP fixture и Project policy, реальный OAuth Provider/DB integration и revoke, применимые локальные checks. Следующий шаг — продолжить реализацию контрактов и fixture; Stage B не начинать. Мире пока не передавать.
+
+### Реализация: read inputs и локальный MCP fixture
+
+Exact head `3495628509566fd1a025789b837619a8e9e3bf62`: 51 read-tool input schemas, отдельные prepare_task/request status/task status schemas, проверка замкнутости аргументов и фиксированной структуры ссылок на inspection. Выбраны имена, границы строк/страниц и синтетический набор fixture в рамках текущей реализации; итоговые domain filter/DTO contracts и inspection schemas ещё нужно сверить с native boundaries. Добавлен test-only loopback HTTP MCP fixture (protocol 2025-11-25) с отдельными read_admin_overview, pin_topic, create_custom_role, deactivate_account; read возвращает явно синтетические counts, write возвращает unavailable и не создаёт эффектов. Fixture принимает внешний callback admission, **не является доказательством OAuth**. Production Worker/transport не подключены. Добавлены Project instructions и тесты запрета чужого scope/поля, fixture включён в typecheck. Проверены наличие файлов и exact head, runtime tests/typecheck не запускались. Следующий шаг — реальная Better Auth OAuth Provider/DB integration, grant/revoke и authoritative admission; завершить недостающие inspection и output contracts, привязать fixture к реальному локальному OAuth, самопроверка до передачи Мире. Stage B не начинать.
+
+### Реализация: server-side delegation admission
+
+Exact head `e490b74c54fe4f6aa3552500ea83d82ead972193`: `app/forum-control/delegation-admission.server.ts` и focused tests. Реализованы проверка exact Owner и живой DB session при consent, проверка authenticated opaque introspection claims (active/issuer/client/audience/sub/sid/expiry/scopes), соответствие отдельной серверной grant записи и повторная проверка AccountState/session. Auth transaction variant проверяет владение transaction connection, блокирует account/session в установленном порядке и требует повторного locked grant read. Provider/DB persistence пока **не подключены**: тип grant и lock callback ещё не имеют реализованного storage; эта часть не является работающим OAuth flow/revoke. Tests не запускались. Следующее обязательное изменение — pinned provider dependency/schema/migration, persisted grant binding и интеграция issuance/refresh/revoke/introspection с этими guards. Затем привязать fixture и закончить contract outputs/preflight. Ни Stage B, ни production не начинались.
+
+### Реализация: pinned OAuth dependency и migration foundation
+
+Exact head `b65df27a0cf26269405d5eccbfe4c86608666035`: добавлен `@better-auth/oauth-provider@1.7.7` в package/lock, семь таблиц штатного provider по upstream tag v1.7.7 и отдельная `forum_control_grant` с user/session/client/issuer/resource/repository/scopes/revokedAt. Forward migration `0079_forum_control_oauth`, journal и snapshot созданы из одного описания полей; существующие 0078 tables в новом snapshot побайтно эквивалентны по JSON, prevId соответствует, SQL содержит все имена новых таблиц/индексов/FK/unique constraints, длины идентификаторов <=63. Dependency lock подготовлен вручную с peer versions текущего lock и опубликованным integrity из https://github.com/extend-hq/jevbox/blob/main/pnpm-lock.yaml; прямой registry недоступен в среде, поэтому frozen install и integrity verification ещё не выполнены. Drizzle CLI не запускался; snapshot составлен программно, не выдан за результат CLI. Не выполнены local schema/ACL/manifest parity checks и актуализация применимых local contracts. Production ACL не трогать. Provider в auth.server ещё не зарегистрирован; persistent grant read/lock/revoke/issuance не реализованы. Следующий шаг: реализовать эти операции и подключить provider к существующему auth lifecycle, затем локальный OAuth fixture/контракты и проверки. Stage B не начинать.
+
+### Реализация: native provider integration, grant storage, revoke
+
+Exact head `8ab132830a1b0b23f4092051adba97d1843f3d93`. Добавлены `delegation-store.server.ts`, `oauth-provider.server.ts`; canonical `auth.server.ts`, `session-write-guard.ts`, `request-context.ts` расширены опциональной server-only конфигурацией. Production `workers/app.ts` идентичен main; не передаёт конфигурацию, никаких real secrets/external activation. Provider использует authorization_code/refresh, opaque access 300 s, hash storage, закрытую регистрацию, S256, точный client/resource/redirect. Consent reference = исходный session.id, grant id = provider authorizationCodeId, сохранённый при refresh. Native code/consent/token insertion проходят live owner/session guards; refresh не создаёт отсутствующую делегацию. Token/refresh/revoke/introspection используют существующий transaction owner и account lock, revoke сохраняет tombstone, native code replay/family invalidation закрывают соответствующие grants, refresh CAS revoke учитывается. Native introspection дополняется authoritative grant/session/AccountState admission. Добавлена optional server-only capability Owner revokeGrant, без web endpoint. Проверены наличие файлов exact head, соответствие native selector forms и неизменность production Worker. Это implementation, **не** доказанный end-to-end OAuth flow. Typecheck, frozen install, DB migration и runtime acceptance не выполнялись. Следующий шаг: локальная OAuth fixture с ephemeral confidential client и настоящим Better Auth authorization/consent/PKCE exchange/refresh/revoke, подключение MCP scope admission, database regression и stage-specific local ACL/manifest; завершить inspection/output contracts, авторская самопроверка. Stage B не начинать. Мире пока не передавать.
+
+### Реализация: локальный OAuth/MCP integration fixture
+
+Exact head `58a20420d229dec021cdb69964903e7b67356679`: `tests/fixtures/forum-control-oauth.ts` связывает loopback MCP с native authenticated introspection через canonical AuthRuntime, защищённый metadata endpoint и Bearer challenge; scopes извлекаются только из admitted native claims. `tests/database/forum-control-oauth.test.ts` поднимает disposable local *_test schema с реальными forward migrations, ephemeral encrypted confidential client secret, native credential login/consent/PKCE, scope-specific tools, refresh/revoke и удаление исходной сессии; нет внешних вызовов. Добавлены typecheck include paths. Сценарии написаны, **не запускались**; не считать OAuth flow доказанным. Остаются inspection/output contracts, проверка fixture и native auth compatibility, local schema/ACL/manifest parity и author self-check. Production/Site live activation, Stage B не начинались.
+
+### Реализация: отдельные inspection/prepare/status contracts
+
+Exact head `aab222a82c03e2fddabe3bc2dabb09c35e78c663`: 54 read input schemas, 43 write schemas, 43 matching inspect schemas, 3 prepare/status descriptors. Inspection inputs используют native permission/restriction/complaint catalogs, typed args, nullable fields и checks условных Help/appeal аргументов. Исправлено неподдерживаемое обещание clear best answer; mark solved означает только canonical markTopicSolved. Добавлены closed inspection/task results и общий read envelope с обязательной индивидуальной закрытой projection schema при регистрации. Фактические canonical DTOs, domain filters/preconditions/versions и persisted task preparation остаются Stage C/E по PLAN; Stage A не экспонирует неподключённые production tools. Проверены exact head, наличие файлов, равенство наборов write/inspection. Typecheck/runtime tests не запускались. **Следующий шаг: author self-check всего Stage A exact head против PLAN, native OAuth provider 1.7.7, lifecycle, DB schema/migration, local ACL/manifest и fixture; исправить подтверждённые дефекты до checkpoint.** Stage B не начинать; Мире пока не передавать.
+
+### Author self-check — findings, not a PASS
+
+Проверяемый implementation head: `aab222a82c03e2fddabe3bc2dabb09c35e78c663`, 26 changed files. Актуальный `AGENTS.md` из main прочитан полностью; сверены diff auth/lifecycle, native OAuth 1.7.7 authorize/consent/token/revoke/introspection, Stage A границы PLAN, schema/migration, fixture и tool contract. Подтверждены текущие блокеры без запуска тестов:
+
+1. A-SC-01: `db/schema.ts` и `0079_forum_control_oauth.sql` объявляют `oauth_client.require_p_k_c_e`, а `delegation-store.server.ts` (requireRegisteredClientResource) и seed в `tests/database/forum-control-oauth.test.ts` используют `require_pkce`. PostgreSQL отклонит SQL с неизвестной колонкой. Нужен единый идентификатор во всех четырёх представлениях (TS/SQL/snapshot/runtime и fixture).
+2. A-SC-02: `.github/production-schema-manifest.json` остаётся на 0078, нет новых 8 таблиц; `verify-production-schema-manifest.mjs` требует newest journal tag и полное catalog parity. Это локальная проверка, а не применение production ACL. Синхронизировать manifest с миграцией и проверить точные catalog definitions; production grants не применять.
+3. A-SC-03: `tests/database/migrations.test.ts` ожидает 79 миграций при journal с 80. Проверить также прочие применимые local ACL/manifest/migration contracts, включая раздельные web/localization permissions, до CI.
+4. A-SC-04 (незакрытое доказательство): локальная OAuth fixture пока состоит из in-process HTTP Request/Response с synthetic tools. Нет connected Chromium входа/consent по требованию PLAN §8. Добавить локальную воспроизводимую проверку без account-specific Site activation; не объявлять это Stage 6.
+
+Проверка runtime остаётся незавершённой: container node v22.16.0, tsc доступен, pnpm/PG/checkout отсутствуют, DNS registry/GitHub недоступен. Frozen install, build/typecheck, реальный PG catalog, OAuth flow и local browser не подтверждены. CI не запускался. Не передавать Мире и не начинать Stage B. Следующий bounded шаг — согласованный corrective пакет подтверждённых дефектов с дополнительной проверкой native consent/revoke semantics и локального connected fixture. Не объявлять весь author self-check завершённым до выполнения обязательного scope.
+
+### Corrective package A-SC-01–03
+
+Implementation #399 exact head `d446333fe94dda8fcdb2eab6ade0ecfd17f06337`. Исправлены A-SC-01 (единая физическая колонка `require_pkce` в schema/SQL/snapshot/manifest, соответствующая ранее написанным store/fixture), A-SC-02 (manifest target 0079 и 8 новых таблиц; default hashes взяты из прежних PostgreSQL-verified defaults того же типа и выражения), A-SC-03 (80 миграций). Добавлены repository runtime capability contracts для OAuth storage и local positive/negative probes, включая row locks, запрет доступа localization и удаления delegation tombstones; unused assertion storage не доступно web. UPDATE регистрации нужен для FOR SHARE. Никаких production ACL/grants не применено.
+
+Повторная структурная сверка exact head: 6 представлений PKCE согласованы, прежние manifest/snapshot tables неизменны, journal length=80/target tag совпадает, новые manifest columns/types/nullability и имена constraints/indexes согласованы со snapshot и SQL, localization contract неизменен. Ошибок в этой статической сверке нет. Реальная PostgreSQL catalog parity, ACL probes, Drizzle generation, frozen install и runtime tests **не выполнены**, поэтому A-SC-01–03 исправлены на уровне исходников, а не runtime PASS. A-SC-04 остаётся: локальный connected Chromium OAuth login/consent и MCP acceptance. Следующий шаг — закончить fixture/проверку canonical OAuth lifecycle и author self-check; затем только применимые checks. Stage B и Stage 6 не начинать; Мире не передавать.
+
+### A-SC-04: connected local OAuth fixture implementation
+
+Exact head `ef1c508cf34edc5106c7f0748f419bc61e04ff96`: добавлены `tests/browser/forum-control/{config.ts,worker-entry.ts,seed.ts,check.py}` и `.github/workflows/forum-control-browser.yml`. Используется отдельный CI-only built Worker entrypoint с реальным canonical AuthRuntime, disposable PostgreSQL 17 schema, ephemeral confidential client, HTML login/consent fixture и native authorize/token/introspection/revoke endpoints. Chromium проходит login и consent; затем HTTP MCP scopes, refresh/revoke, sign-out и replacement session. Workflow запускается штатным run:acceptance на exact PR head, отключает observability локального fixture, очищает временную конфигурацию, не публикует token-bearing traces. Проверены наличие файлов, disposable DB guard, migration seed, typecheck include, exact-head checkout и неизменность production Worker. Это подготовленная проверка, не доказательство прохождения: браузер, CI и database tests не запускались. A-SC-04 в части runtime evidence открыт. Следующий шаг — завершить source-level author self-check всего Stage A, в частности native provider/adapter/fixture, после исправлений выполнить применимые checks. Stage B и Stage 6 не начинать; Мире пока не передавать.
+
+### Author self-check: corrective follow-up on connected fixture
+
+Exact head `ef1c508cf34edc5106c7f0748f419bc61e04ff96`, 35 changed files. Перепроверены canonical auth integration, session-write guard и transaction owner, native provider 1.7.7 token/consent/introspection/logout/CSRF paths, новые browser files, scope/tool contracts и тестовые сценарии. A-SC-01–03 source corrections сохранены; A-SC-04 fixture написан, но runtime evidence ещё отсутствует. Обнаружены текущие defects/gaps:
+
+- A-SC-05: `tests/browser/forum-control/config.ts` импортируется `seed.ts` и `worker-entry.ts`, но отсутствует в обоих composite TypeScript includes. Добавить общий config.ts в tsconfig.node/cloudflare. Проверить также типы JSON результатов в node-only DB test: locked undici-types 6.21.0 declares json(): Promise<unknown>; текущий fixture разыменовывает result/sid без narrowing. Не считать compilation выполненной.
+- A-SC-06: `check.py` выполняет token/refresh/revoke и MCP через `ctx.request` браузерного Owner context. Playwright APIRequestContext этого вида разделяет cookie jar с браузером (https://playwright.dev/python/docs/api/class-apirequestcontext); native BA v1.7.7 applies originCheckMiddleware to POSTs with cookies, including missing-origin rejection. Следовательно сценарий не воспроизводит server-only client и может отклоняться на CSRF до OAuth. Отделить APIRequestContext без cookies для token/refresh/revoke/MCP; не отключать Origin/CSRF guard. Login/consent/sign-out остаются browser-session paths.
+- A-SC-07: fixture covers foreign Owner consent, revoke and deleted source session, pure claim tests cover replaced Owner binding, but no connected active-account denial and current-owner switch across actual issued tokens. PLAN §2 requires both. Добавить DB integration scenarios с действующим исходным sessionId, изменённым AccountState/current binding, проверить introspection, refresh и zero permitted MCP result. Не менять production policy ради тестов. Strengthen negative consent test so unexpected direct authorization code cannot pass (currently only conditional consent redirect check).
+
+PLAN §4 duplicate raw keys and full canonical projections remain actual tool API/reader boundaries of B/C; current synthetic fixture does not execute domain commands. Не расширять scope A произвольной реализацией будущего transport. Runtime/full typecheck, DB/Chromium and frozen install remain unverified; CI not launched. Следующий bounded corrective step: A-SC-05–07 одним пакетом, затем применимые проверки по stable exact head, без premature checkpoint. Stage B/6 untouched.
+
+### Сводный corrective package после source-level self-check
+
+Exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`. Одним коммитом исправлены подтверждённые A-SC-05–07 и найденные при сверке оставшихся стыков недостатки: оба composite include + JSON response narrowing; cookie-free server-side OAuth/MCP client; guest authorize → signed OAuth login → consent; проверка exact persisted registration перед consent/code persistence; connected DB scenarios для смены current Owner/audience, inactive AccountState при сохранённой исходной session, explicit server grant revoke; closed JSON-RPC envelope, offset-qualified measure expiry shape, одна pending confirmation в Project policy. Повторно просмотрен полный corrective diff (11 files), структурно сверены весь набор Stage A contracts, PKCE/manifest/journal, fixture wiring, production Worker и localization ACL. Структурных несоответствий в выполненной сверке нет. Не выдавать это за проверенную runtime-корректность: container не имеет checkout, Node v22.16.0 вместо требуемой версии, pnpm и PostgreSQL отсутствуют, DNS registry/GitHub не разрешается. Frozen install/typecheck/Drizzle/PG/Chromium остаются непроверенными в локальном container.
+
+По AGENTS запущен штатный run:ci на #399, [CI #46109469613](https://github.com/iliya1947/vico-forum/actions/runs/46109469613), exact PR head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`, начальное состояние queued. Acceptance job не запускать до результата CI (другие workflow records от label могут быть skipped). Никакие production actions/ACL/credentials или Stage B/6 не выполнялись. Авторская проверка исходников и выполнение применимых checks — разные доказательства; coordinator checkpoint пока не разрешён. Прямое указание владельца: «Результаты CI не для тебя». Следующий переход — handoff Мире, без чтения результатов или повторного запуска checks Леной. Мира ведёт CI/acceptance и checkpoint; Лена возвращается к реализации только по назначению на подтверждённые defects. Runtime информация не проверена.
+
+
+## Correction после coordinator HOLD
+
+Мира проверила Stage A на stable exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`: **HOLD**.
+
+Исправить единым bounded-пакетом только A-F01–A-F03 из `../stages/A/REVIEW.md`:
+1. exported OAuth provider typecheck TS2742/TS7056;
+2. детерминировать OAuth DB fixture, который сейчас ловит 429, не ослабляя production rate limit;
+3. согласовать SA07 migration-state regression test с новой 0079 migration.
+
+После исправлений выполнить source self-check и передать новый stable exact head Мире. CI и browser acceptance не запускать — их проверяет/запускает Мира по прямому решению владельца. Stage B не начинать.
+
+## Correction A-F01–A-F03 — передача Мире
+
+Exact head #399: `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd` (один commit поверх `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`, три файла).
+
+1. A-F01: `createForumControlOAuthProvider` имеет явный публичный return type `BetterAuthPlugin` из better-auth 1.7.7; pinned native factory возвращает объект, удовлетворяющий этому типу. Native factory configuration/implementation и canonical auth runtime не изменены; OAuth endpoints используются через HTTP handler.
+2. A-F02: beforeEach в `tests/database/forum-control-oauth.test.ts` очищает только schema-qualified `forum_control_oauth_test.rate_limit` между отдельными сценариями. Пять сценариев содержат соответственно 2/1/2/1/2 login calls; native 1.7.7 sign-in rule — max 3 / 10s, shared per-path bucket при отсутствии trusted IP. Внутри сценария limiter полностью действует, session/token/grant state не сбрасывается. Production rate-limit policy неизменна.
+3. A-F03: SA07 test сравнивает compiledExpectedMigration с именем последней успешно применённой fixture SQL migration (сейчас 0079), а не застывшим 0078 или самим manifest; deployedMigration по-прежнему unchecked. Manifest и journal согласованы на 0079.
+
+Source self-check: просмотрен полный correction diff, проверены точный head/base, public type boundary, все login call sites и lifecycle fixture isolation, migration comparison, отсутствие изменений auth runtime/production Worker. A-F01–A-F03 исправлены на уровне исходников; **компиляция и runtime на новом head не проверены**. CI/acceptance не запускались и их результаты не проверялись Леной. Мира принимает exact head для полного coordinator cycle. Stage B/Stage 6 не начаты.
+
+
+## Активное назначение — Stage B
+
+Implementation PR: **#402**  
+Branch: `feature/chatgpt-forum-control-stage-b`  
+Base: `feature/chatgpt-forum-control` at accepted Stage A head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`  
+Initial setup head: `5cd8b3444f6077a4ae0eb375eff16eaeeef9e13d`
+
+Требуемый результат Stage B по принятому `PLAN.md`:
+- один реальный Admin Overview проходит от tool через локальный GitHub webhook fixture и обратно через receipt;
+- внешние credentials отсутствуют;
+- ingress выключен штатной конфигурацией.
+
+Границы:
+- не реализовывать Stage C+;
+- не выполнять production/Stage 6 activation;
+- не расширять Stage B до полного read matrix или write path;
+- после реализации выполнить author self-check и передать Мире stable exact head #402;
+- CI/acceptance не запускать и их результаты не проверять: это делает Мира.
+
+### Stage B — transport protocol / GitHub boundary
+
+Exact head #402: `94fb002e8726f842833b3965f1b2bee362fe572e` (base `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`). Три новых файла: `app/forum-control/{transport-wire.server.ts,github-transport.server.ts,github-transport.test.ts}`. Реализованы:
+- closed versioned read_admin_overview request, SHA-256 canonical digest, rejection неизвестных полей/duplicate JSON keys на всех глубинах/oversized bodies; GitHub comment только version/kind/ref/requestId;
+- raw HMAC-SHA256 verification до JSON parsing; exact private repo/owner, app, installation, bot sender+author, inbox ID/number; only issue_comment.created request ref, no receipt dispatch;
+- narrow fixed-origin GitHub REST adapter (RS256 JWT, installation token scoped Issues write + metadata read on exact repo, no redirects, bounded bodies/deadlines/search), publish/find/verify exact App comment. Null search не доказывает loss и не разрешает исполнение. Официальные GitHub REST/webhook docs и webhook payload schema сверены; actual account/App shape (включая non-null performed_via_github_app) остаётся Stage-6 verification, fail closed.
+
+Самопроверка этого блока: исходники с проверенными Git blob hashes, isolated tsc 5.8.3 Node-only и DOM libs, local Node 22.16.0 execution четырёх сценариев с теми же test bodies (import runner заменён Vitest→node:test для standalone), real WebCrypto HMAC/RSA and fake GitHub HTTP, все 4 прошли; nullable authorization test typing устранён до коммита. Полный repo typecheck/CI/acceptance не запускались; pinned repo compiler/runtime и actual Worker + PostgreSQL не подтверждены. App/**/* и app/forum-control/**/*.ts уже входят в оба composite projects; Stage A exact head unchanged. No live calls/secrets, no production ingress.
+
+### Stage B — implementation handoff
+
+Exact head #402: `617c16ab0249d5f69c73795871363be084cc49fc` (26 changed files vs accepted A `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`). Реализация текущего Stage B:
+- `0080_forum_control_request`: durable UUID/digest/refs/grant/owner/session, bounded retention, accepted → started → finished, receipt publication outside DB transaction; duplicate claim is impossible through the registered path, started not reset, lost ACK not converted to a repeat read. Row locks follow existing account/session/grant order. Rechecked registration on each admission. Both uniqueness constraints have matching nullsNotDistinct=false metadata; old snapshot/manifest tables and journal entries unchanged. Web role gets only request table CRUD; localization none. No production grants applied.
+- Shared `requireAdminActorAccess` and `readAdminOverview`: existing web loader and integration use same native permission/AP-10 boundaries, counts and recent History readers. Closed minimal counts/5-event summary with observedAt/coverage/source; no raw History context/fingerprint. Fresh projection admission and bearer/grant checks before release.
+- `overview-ingress.server.ts`: fixed /api/forum-control/request, /status, /webhook; verified signed request ref only after persisted registration, durable accepted before 202, single claim, receipt verify against exact App API. Receipt publication CAS stabilizes concurrent publishers; deleted comment 404 can be recovered by matching ref, never re-executes read. Status has distinct transport state and canonical read receipt schema; status cannot dispatch. Default workers/app.ts has no ingress injection and returns 404, no new production env/secrets. Local built Worker fixture explicitly injects only loopback adapter.
+- Extended native OAuth DB tests for repeated UUID/expiry, concurrent claim, wrong refs/grants, revocation, publication CAS and protected result admission. Local Chromium fixture now exposes actual Overview + request status; disposable Python GitHub API on 127.0.0.1:4243 stores only four-field envelopes, sends real signed HTTP webhook to built Worker, simulates lost initial POST ACK and redelivery. Private seeded marker must appear in canonical History projection and not in GitHub. Existing synthetic write tools remain fixture-only/no effects for Stage A regression; no actual write path, Stage C+ or external activation.
+
+Author source-level self-check: checked full Stage B changed source paths and their canonical dependencies, storage/receipt concurrency and expiry paths, schema/snapshot/journal/manifest consistency, ACL and composite project coverage, closed protocol/descriptor alignment, default ingress off, local fixture HTTP/secret boundaries and rate-limit scenarios against pinned Better Auth 1.7.7 (introspection 100/60s; sign-in max 3/10s; new DB scenarios each one login and isolated native limiter). Corrections before handoff: unique constraint metadata, receipt publication CAS/deleted comment recovery, closed canonical request-status schema. Programmatic exact-head structural checks all true. **Full pinned compilation, lint, PostgreSQL catalog/runtime and built Worker/Chromium acceptance on this head are unverified.** Local container lacks repo checkout/dependencies/pnpm/PG and uses Node 22.16.0 / TS 5.8.3 instead of pinned versions; earlier isolated transport checks are evidence only for their earlier head. Do not claim runtime PASS. Mira runs applicable CI/acceptance and checkpoint; Lena did not run or inspect PR checks. No production/live resources, Stage C/6 untouched.
+
+
+## Correction после coordinator HOLD Stage B
+
+Мира проверила #402 exact head `617c16ab0249d5f69c73795871363be084cc49fc`: **HOLD**.
+
+Исправить только B-F01 из `../stages/B/REVIEW.md`:
+- Stage B добавил migration `0080_forum_control_request`, поэтому clean PG17 run применяет 81 migration;
+- `tests/database/migrations.test.ts:84` всё ещё жёстко ожидает 80.
+
+Не расширять scope и не менять transport/domain behavior. После correction выполнить source self-check и передать новый stable exact head Мире. CI/acceptance не запускать. Stage C не начинать.
+
+### B-F01 — correction передан Мире
+
+Exact head #402 `9cca32e66474434abb690482598db4cd44bb3b06`, один изменённый файл относительно 617c16a: `tests/database/migrations.test.ts`. Вместо константы 80 проверяется количество фактических numbered SQL files (независимо от ledger), после повторного migrate. Сверены 81 SQL-файл, 81 journal entry, точное соответствие тегов и manifest target 0080. Проверены связанные migration contracts и SA07 на старые count expectations; новых зависимых несоответствий в проверенном объёме нет. Implementation transport/domain не изменён. CI/acceptance не запускались; runtime нового head не проверен. Мира принимает correction.

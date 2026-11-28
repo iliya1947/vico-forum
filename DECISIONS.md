@@ -1,0 +1,65 @@
+Этот файл хранит действующие решения по задаче.
+
+# Решения
+
+1. **D-01.** `#399` назначается implementation PR этой задачи и предназначен для последующего merge в `main` после предусмотренных проверок.
+2. **D-02.** `#400` назначается служебным PR Миры для этой задачи и в `main` не merge.
+3. **D-03.** Дополнительные эксплуатационные расходы должны оставаться $0; обычная эксплуатация не использует Work/Codex allowance.
+4. **D-04.** Управление идёт из обычного ChatGPT через приватный GitHub; Worker и Actions используются без дублирования backend-логики.
+5. **D-05.** Существующие identity, permissions, canonical domain commands и History остаются authoritative; прямой SQL и параллельная административная реализация не допускаются.
+6. **D-06.** Реальная внешняя активация и production secrets остаются Stage 6 и требуют отдельного разрешения владельца.
+7. **D-07.** Встроенные пользовательские AI-функции не входят в implementation scope текущего ChatGPT-control `#399`; они ведутся как отдельная последующая подзадача в общем служебном PR `#400` по D-23.
+8. **D-08.** V1 охватывает полный административно полезный read contour и только существующие canonical write operations; отсутствующие domain capabilities не добавляются ради ChatGPT-канала.
+9. **D-09.** Любая mutation выполняется только после conversational cycle: ChatGPT проверяет и объясняет конкретное действие → Owner отдельно подтверждает → только затем допускается dispatch. High-impact операции отличаются глубиной объяснения и server-side preconditions, а не наличием отдельного UI-confirmation.
+10. **D-10.** High-impact scope включает Hide/Restore public content, создание category/section, reparent section, authorization writes, administrative measures/appeal review, account deactivation, registration policy, immutable/terminal Complaints decisions/notes/appeals, global Complaint priorities и terminal Help/duplicate appeal outcomes.
+11. **D-11.** Forum/user-generated content и plain transport/GitHub content являются untrusted data и не могут сами создавать mutation intent, выбирать actor/command/permission или подтверждать действие; mutation требует аутентифицированной command boundary.
+12. **D-12.** Mutations требуют replay protection; stale/conflict и outcome-unknown никогда не вызывают автоматический повтор, а result обязан отражать фактический domain outcome.
+
+13. **D-13.** Обычная эксплуатация идёт из отдельного ChatGPT Project в обычном текстовом разговоре; отдельная форма, plugin UI, browser extension или переход в веб-панель на каждую команду не входят в UX v1.
+14. **D-14.** Любой write проходит единый conversational policy: ChatGPT объясняет конкретное действие и существенные последствия → Owner отдельно подтверждает → только затем выполняется dispatch. Project instructions задают этот UX; отдельный cryptographic/UI confirmation layer продуктом не требуется.
+15. **D-15.** GitHub/Worker transport должен быть невидимой эксплуатационной инфраструктурой; одноразовый Stage-6 setup допустим, ручное участие в GitHub при каждой команде — нет.
+
+16. **D-16.** Массовая цель не требует отдельной bulk capability: после одного подтверждения конкретного фиксированного набора Мира может последовательно выполнить существующую canonical единичную операцию для каждого target. Набор нельзя расширять после подтверждения; итог сообщает результат по каждому target.
+
+17. **D-17.** Единицей подтверждения является пользовательская задача, а не количество внутренних canonical mutations. Одно подтверждённое действие может быть технически разложено на несколько canonical операций без дополнительных подтверждений, если не меняются его смысл, состав и существенные последствия.
+
+18. **D-18.** Подтверждение относится к конкретному последнему объяснённому действию в текущем разговорном контексте. Межчатового confirmation state нет; сообщение в другом чате само по себе не подтверждает прежнюю pending-задачу.
+
+19. **D-19.** V1 работает только по запросу владельца из ChatGPT Project. Фоновый мониторинг не входит в v1, но технический план не должен без необходимости делать canonical read/analysis path непереиспользуемым для будущего scheduler/event trigger.
+
+20. **D-20.** Для обычной составной задачи действует stop-on-first-failure без автоматического отката уже committed шагов. Для массовой задачи сбой одного независимого target не останавливает остальные; итог сообщается per-target. Если отдельный target сам составной, внутри него действует stop-on-first-failure.
+
+21. **D-21.** Реализация v1 поставляется stacked-цепочкой A → I по принятому `PLAN.md`: `#399` — первый и финально собираемый implementation PR; каждый следующий bounded stage строится поверх предыдущего и допускается только после coordinator checkpoint Миры. Промежуточные stages в `main` не merge.
+
+22. **D-22.** По прямому решению владельца Лена (GPT-6.2) заменяет Лиру как основной implementation-agent этой задачи. Начиная со Stage A, реализация передаётся Лене; Лира не назначается без нового явного решения владельца.
+
+
+23. **D-23.** По прямому решению владельца служебный PR #400 становится общим рабочим каналом всего pre-release AI-блока: текущий ChatGPT-control плюс две последующие отдельные подзадачи — встроенный AI для пользователей и AI для администрирования/модерации. Эти подзадачи не расширяют implementation PR #399; каждая получает собственный scope/plan внутри #400 перед реализацией.
+
+
+24. **D-24.** User AI и Admin/Moderation AI ведутся как отдельные product/technical-задачи внутри `#400`; прежний общий embedded-AI planning отменён и не используется как объединённый план. Задачу №2 координирует Business-Мира; отдельный полный technical plan готовит Лёва в `stages/user-ai/PLAN.md` по принятому `research/user-ai-product-concept.md`; после принятия плана и выбора delivery mode реализацию выполняет Ада. Задача №2 не изменяет root `PLAN.md`, `#399/#402` или workflow задачи №1.
+
+25. **D-25.** По прямому решению владельца User Consultant в embedded-AI предназначен прежде всего для навигации и ориентации внутри Vico Forum: понять, где и что находится, найти правильную существующую тему/решение, выбрать подходящий раздел/Help surface и подсказать canonical forum action. Универсальная техническая консультация и general-purpose AI answers не являются основной ролью v1.
+
+
+26. **D-26.** User Consultant использовать могут только авторизованные пользователи, но точка входа видима гостям. Guest получает auth-gate с предложением зарегистрироваться или войти и переходом в существующий auth flow; model inference/AI quota до авторизации не выполняются. Публичные Search/navigation/forum reads остаются доступны без входа.
+
+
+27. **D-27.** User Consultant в v1 хранит conversation state только в рамках текущей консультации; постоянная история и long-term personal AI memory между сессиями не реализуются. При этом conversation-state/storage boundary должна оставаться заменяемой, чтобы в будущем добавить persistence без переписывания consultant core/retrieval/navigation. Это требование расширяемости не разрешает преждевременно строить persistent-memory subsystem.
+
+
+28. **D-28.** User Consultant использует три server-selected disclosure layers: User, Moderator, Administrator. Их цель — не только UX-навигация, но и предотвращение лишнего раскрытия через AI: модель получает только knowledge/navigation context своего слоя. Layer выбирается trusted server-side логикой, не prompt/model input. Canonical authorization остаётся отдельной обязательной проверкой фактического доступа и действий. Точный mapping dynamic roles/overrides → disclosure layer определяется в technical plan без дублирования всей RBAC в Consultant.
+
+
+29. **D-29.** Disclosure layers User → Moderator → Administrator наследуются снизу вверх: Moderator включает User context, Administrator включает User + Moderator context. Наследование определяет только допустимый knowledge/navigation context Consultant и не заменяет canonical authorization конкретных страниц/действий.
+
+
+30. **D-30.** Основная точка входа User Consultant — постоянная плавающая кнопка «Консультант» внизу справа, открывающая popup/side panel поверх текущей страницы. Контекстные входы открывают того же Consultant с переданным page/action context. Для гостя launcher остаётся видимым, но открывает auth-gate.
+
+
+31. **D-31.** При topic discovery User Consultant показывает до трёх наиболее релевантных тем с краткой причиной соответствия; явно лучшее совпадение может быть выделено. При отсутствии хорошего совпадения Consultant сообщает об этом и направляет пользователя к правильному месту создания новой темы. Обычный Search остаётся поверхностью для более широкой выдачи.
+
+
+32. **D-32.** Topic summary не является отдельной обязательной v1-фичей. Consultant с разрешённым контекстом текущей темы должен уметь естественно кратко объяснить или суммировать её по обычному запросу. Отдельный summary UX/кнопка/хранилище в v1 не требуются; позже такой UX должен добавляться поверх существующего Consultant/context path без существенной переделки.
+
+33. **D-33.** Технический план User AI / Vico Consultant принят Business-Мирой на service head `684de7856db99123088e0edcd55a3327ecd92356`. Выбран stacked delivery U1 → U6: первый и финально собираемый implementation PR — `#403`; каждый следующий bounded stage строится поверх принятого head предыдущего. Реализатор — Ада; CI/checks и coordinator checkpoints выполняет Business-Мира. External provider/production/Stage 6 остаются выключены до отдельного разрешения владельца.
