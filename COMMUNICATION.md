@@ -110,3 +110,14 @@ D-31: Consultant показывает до 3 релевантных тем, пр
 ## Решение владельца — topic summary
 
 D-32: отдельной summary-фичи в v1 нет. Consultant должен уметь естественно кратко пересказать текущую тему по обычному запросу, если уже имеет разрешённый context. Специальный summary UX можно добавить позже без переделки core.
+
+
+## Коррекция scope — User AI и Admin/Moderation AI раздельно
+
+Мира обнаружила и исправила смешение двух отдельных задач из #300.
+
+1. Текущая концепция User AI: `research/user-ai-product-concept.md`.
+2. Старый `research/embedded-ai-concept-v1.md` помечен superseded.
+3. `research/admin-moderation-ai-product-scope.md` остаётся отдельным ранним proposal и не является продолжением текущего User AI subtask.
+4. Вопрос Moderator Copilot исключён из списка User AI decisions.
+5. Общая техническая инфраструктура может обсуждаться позже только после независимого product-scope обеих задач.
