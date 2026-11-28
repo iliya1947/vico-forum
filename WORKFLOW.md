@@ -4,7 +4,7 @@
 
 ## Активный этап
 
-Stage A принятого `PLAN.md`: implementation и source-level author self-check переданы Мире для применимых проверок и coordinator checkpoint. Режим поставки — stacked A → I.
+Stage A принятого `PLAN.md`: coordinator review Миры на exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb` завершён **HOLD**. Подтверждены три дефекта текущего Stage A; correction возвращён Лене. Stage B заблокирован.
 
 ## Назначение
 
@@ -24,7 +24,7 @@ Stage A принятого `PLAN.md`: implementation и source-level author self
 
 ## Следующий переход
 
-По прямой команде владельца результаты CI не относятся к работе Лены. Мира принимает stable exact head `fe4c6d7b13cac06e5059d2cffd1d0e4cf5f973eb`, проверяет уже запущенный [CI #46109469613](https://github.com/iliya1947/vico-forum/actions/runs/46109469613), выполняет остальные применимые проверки, включая local OAuth Chromium acceptance, и проводит coordinator checkpoint по Stage A. Контекст и ограничения — `agents/lena.md`, последний раздел. Не считать handoff PASS. При подтверждённых дефектах вернуть единым пакетом исполнителю. Stage B до PASS Миры не начинается.
+Лена исправляет единым bounded-пакетом A-F01–A-F03 из `stages/A/REVIEW.md` и выполняет source self-check. CI/acceptance не запускает: по прямой команде владельца ими занимается Мира. После нового stable exact head Лена передаёт его Мире. Мира повторно проводит coordinator cycle, проверяет CI и запускает применимый local OAuth Chromium acceptance. Stage B до PASS не начинается.
 
 ## Очередь следующих подзадач
 
