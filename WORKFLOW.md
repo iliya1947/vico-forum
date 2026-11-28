@@ -247,3 +247,13 @@ STOP:
 - Lena completed the assigned follow-up and source self-check, new exact `b91adfc256dccc5a0179d173d3221fb7d5961c78` against `c49897181388b4a78f8e8248dc6508551df576c4`. See current status at top.
 - Direct owner instruction: Lena does not run or wait for CI. **Next: Mira** performs the applicable checks and renewed P0 coordinator checkpoint on this exact head. If accepted and the baseline remains suitable, assign SYNC-P1 with all current main routes, then SYNC-P2 with current contracts including the new authentication lifecycle. Do not resume B8b1 on stale upper steps.
 - Lena STOP; no P1/P2 modifications, main merge or Pages publication.
+
+## SYNC-P0 renewed coordinator checkpoint — PASS
+
+- Renewed coordinator review completed on Draft #373 exact `b91adfc256dccc5a0179d173d3221fb7d5961c78`, based on current main `c49897181388b4a78f8e8248dc6508551df576c4`.
+- **Result: PASS.** P0 remains the accepted lower stack step.
+- Exact-head CI `46144819604`: `checks` SUCCESS and `database` SUCCESS; 261 test files / 3371 tests PASS; lint/typecheck, P0 Vite build, P0 Chromium, production build, preview build, migration/schema checks and Worker/database checks pass.
+- Chromium P0 proof remains intact: real topic route mounted, clientAction→server action, fetcher/resource handlers, attachment presentation/download, Pages navigation/history, foreign Origin rejection, zero external/resource network leakage and no page errors.
+- Independent old-P0→new-P0 comparison shows the P0 runtime/preview implementation unchanged by the synchronization; relevant delta is current-main baseline/CI integration rather than a new P0 product layer.
+- The earlier `app/settings/shell.test.tsx` failure on prior exact `95f43d5d...` is superseded by this green exact-head run and was not a P0 code change.
+- **STOP before SYNC-P1.** P1/P2 remain unchanged until a separate developer continuation authorizes the next bounded synchronization step.
