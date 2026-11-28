@@ -62,6 +62,11 @@ beforeAll(async () => {
     (id,kind,topic_id,post_id,post_revision_id,affected_author_id)
     values ('g-target','post','g-topic','g-source-post','g-source-revision','g-topic-author')`);
   await client.query("insert into forum_complaint_cases(id,target_id) values('g-case','g-target')");
+  // The recipient must be an actual Case participant to open protected
+  // Decision/Appeal results. Inbox receipt alone does not grant Case access.
+  await client.query(`insert into forum_complaints
+    (id,case_id,target_id,reporter_user_id,reason)
+    values ('g-report','g-case','g-target',$1,'spam')`, [recipient]);
   await client.query(`insert into forum_complaint_decisions(id,case_id,outcome,reviewer_user_id,reasoning)
     values('g-decision','g-case','confirmed','g-reviewer','System decision')`);
   await client.query(`insert into forum_complaint_appeals
@@ -143,6 +148,75 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     }
   });
 
+  it("masks hidden post and topic in mixed/legacy readers without dropping notices or altering state", async () => {
+    const before = await forum.readNotifications(recipient, 0);
+    const legacyBefore = await forum.readReplyNotifications(recipient);
+    const counts = [await forum.countUnreadNotifications(recipient), await forum.countUnreadReplyNotifications(recipient)];
+    const suppressionBefore = (await client.query<{ n: number }>(
+      "select count(*)::int n from forum_post_notification_suppressions"
+    )).rows[0]!.n;
+    const snapshot = (rows: typeof before.items) => rows.map(n => ({
+      id: n.id, kind: n.kind, createdAt: n.createdAt, readAt: n.readAt,
+    }));
+    try {
+      await client.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-reply-active'");
+      const partial = await forum.readNotifications(recipient, 0);
+      const legacyPartial = await forum.readReplyNotifications(recipient);
+      expect(partial.items.find(n => n.id === "g-n4")).toMatchObject({
+        unavailable: true, actorName: null, topicId: null, topicTitle: null, postId: null,
+      });
+      expect(legacyPartial.find(n => n.id === "g-n4")).toMatchObject({
+        unavailable: true, actorName: null, topicId: null, topicTitle: null, postId: null,
+      });
+      expect(partial.items.find(n => n.id === "g-n2")?.topicTitle).toBe("Retained notification topic");
+      expect(JSON.stringify(partial.items.find(n => n.id === "g-n4"))).not.toContain("Active reply");
+
+      await client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      const hidden = await forum.readNotifications(recipient, 0);
+      const hiddenLegacy = await forum.readReplyNotifications(recipient);
+      expect(hidden.total).toBe(before.total);
+      expect(hidden.hasMore).toBe(before.hasMore);
+      expect(snapshot(hidden.items)).toEqual(snapshot(before.items));
+      expect(hiddenLegacy.map(n => n.id)).toEqual(legacyBefore.map(n => n.id));
+      expect(hiddenLegacy.map(n => [n.id, n.createdAt, n.readAt]))
+        .toEqual(legacyBefore.map(n => [n.id, n.createdAt, n.readAt]));
+      for (const n of hidden.items.filter(n => n.kind === "reply" || n.kind === "mention")) {
+        expect(n).toMatchObject({
+          unavailable: true, actorName: null, topicId: null, topicTitle: null, postId: null,
+        });
+        expect(n).not.toHaveProperty("actorIdentityKind");
+      }
+      for (const n of hiddenLegacy) {
+        expect(n).toMatchObject({
+          unavailable: true, actorName: null, topicId: null, topicTitle: null, postId: null,
+        });
+        expect(n).not.toHaveProperty("actorIdentityKind");
+      }
+      for (const kind of ["complaint-decision", "complaint-appeal-result"]) {
+        expect(hidden.items.find(n => n.kind === kind))
+          .toEqual(before.items.find(n => n.kind === kind));
+      }
+      const serialized = JSON.stringify([...hidden.items, ...hiddenLegacy]);
+      for (const secret of ["Retained notification topic", "Active reply", "Active mention",
+        "g-post-reply-active", "g-post-mention-active", "SECRET_RETAINED_REPLY_NAME",
+        "SECRET_RETAINED_MENTION_NAME"]) expect(serialized).not.toContain(secret);
+      expect([await forum.countUnreadNotifications(recipient),
+        await forum.countUnreadReplyNotifications(recipient)]).toEqual(counts);
+      expect((await client.query<{ n: number }>(
+        "select count(*)::int n from forum_post_notification_suppressions"
+      )).rows[0]!.n).toBe(suppressionBefore);
+    } finally {
+      await client.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      await client.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-reply-active'");
+    }
+    const restored = await forum.readNotifications(recipient, 0);
+    const legacyRestored = await forum.readReplyNotifications(recipient);
+    expect(restored).toEqual(before);
+    expect(legacyRestored).toEqual(legacyBefore);
+    expect([await forum.countUnreadNotifications(recipient),
+      await forum.countUnreadReplyNotifications(recipient)]).toEqual(counts);
+  });
+
   it("preserves recipient-owned mark-read behavior for an inactive reply actor", async () => {
     await expect(forum.markNotificationRead("g-topic-author", "g-n1")).rejects.toThrow();
     expect(await forum.markNotificationRead(recipient, "g-n1")).toEqual({
@@ -159,4 +233,95 @@ describe("SA04-G notification actor identity in native PostgreSQL", () => {
     expect(await forum.countUnreadNotifications(recipient)).toBe(3);
     expect(await forum.countUnreadReplyNotifications(recipient)).toBe(2);
   });
+  it("marks hidden notices read with neutral targets and retains read_at, counts and Restore access", async () => {
+    const beforeTotal = (await forum.readNotifications(recipient, 0)).total;
+    const beforeNotices = (await client.query<{ id: string }>(
+      "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
+    )).rows.map(row => row.id);
+    const suppressionBefore = (await client.query<{ recipient_user_id: string; post_id: string }>(
+      "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
+    )).rows;
+    const beforeUnread = await forum.countUnreadNotifications(recipient);
+    const beforeLegacyUnread = await forum.countUnreadReplyNotifications(recipient);
+    const readAt = async (id: string) => (await client.query<{ read_at: Date | null }>(
+      "select read_at from forum_reply_notifications where id=$1", [id],
+    )).rows[0]!.read_at;
+    let changed = 0;
+    let legacyChanged = 0;
+    let caseChanged = 0;
+    const markedAt = new Map<string, Date | null>();
+    try {
+      // Post Hide alone is sufficient to mask the legacy notification target.
+      await client.query("update forum_posts set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-mention-active'");
+      expect(await readAt("g-n2")).toBeNull();
+      await expect(forum.markNotificationRead("g-topic-author", "g-n2")).rejects.toThrow();
+      expect(await readAt("g-n2")).toBeNull();
+      expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
+      markedAt.set("g-n2", await readAt("g-n2"));
+      expect(markedAt.get("g-n2")).not.toBeNull();
+      changed++;
+      expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({ kind: "unavailable" });
+      expect(await readAt("g-n2")).toEqual(markedAt.get("g-n2"));
+
+      // Topic Hide masks every ordinary destination, but not a protected Case result.
+      await client.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
+        .toEqual({ unavailable: true });
+      markedAt.set("g-n4", await readAt("g-n4"));
+      expect(markedAt.get("g-n4")).not.toBeNull();
+      legacyChanged++;
+      expect(await forum.markReplyNotificationRead(recipient, "g-n4"))
+        .toEqual({ unavailable: true });
+      expect(await readAt("g-n4")).toEqual(markedAt.get("g-n4"));
+
+      expect(await forum.markNotificationRead(recipient, "g-n5"))
+        .toEqual({ kind: "complaint-decision", caseId: "g-case" });
+      caseChanged++;
+      const caseReadAt = await readAt("g-n5");
+      expect(caseReadAt).not.toBeNull();
+      expect(await forum.markNotificationRead(recipient, "g-n5"))
+        .toEqual({ kind: "complaint-decision", caseId: "g-case" });
+      expect(await readAt("g-n5")).toEqual(caseReadAt);
+
+      expect(await forum.countUnreadNotifications(recipient))
+        .toBe(beforeUnread - changed - legacyChanged - caseChanged);
+      expect(await forum.countUnreadReplyNotifications(recipient))
+        .toBe(beforeLegacyUnread - changed - legacyChanged);
+      const currentInbox = await forum.readNotifications(recipient, 0);
+      const currentLegacy = await forum.readReplyNotifications(recipient);
+      expect(currentInbox.total).toBe(beforeTotal);
+      expect(currentInbox.items.map(n => n.id).sort()).toEqual(beforeNotices);
+      const orderedUnreadFirst = (items: { readAt: Date | null }[]) => {
+        const firstRead = items.findIndex(n => n.readAt !== null);
+        return firstRead < 0 || items.slice(firstRead).every(n => n.readAt !== null);
+      };
+      expect(orderedUnreadFirst(currentInbox.items)).toBe(true);
+      expect(orderedUnreadFirst(currentLegacy)).toBe(true);
+      expect(currentInbox.items.filter(n => n.kind === "reply" || n.kind === "mention")
+        .every(n => n.unavailable === true)).toBe(true);
+      expect((await client.query<{ id: string }>(
+        "select id from forum_reply_notifications where recipient_user_id=$1 order by id", [recipient],
+      )).rows.map(row => row.id)).toEqual(beforeNotices);
+      expect((await client.query(
+        "select recipient_user_id,post_id from forum_post_notification_suppressions order by recipient_user_id,post_id",
+      )).rows).toEqual(suppressionBefore);
+    } finally {
+      await client.query("update forum_topics set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-topic'");
+      await client.query("update forum_posts set is_hidden=false,visibility_version=visibility_version+1,visibility_changed_at=clock_timestamp() where id='g-post-mention-active'");
+    }
+    expect(await forum.markNotificationRead(recipient, "g-n2")).toEqual({
+      kind: "mention", topicId: "g-topic", postId: "g-post-mention-active",
+    });
+    expect(await forum.markReplyNotificationRead(recipient, "g-n4")).toEqual({
+      topicId: "g-topic", postId: "g-post-reply-active",
+    });
+    expect(await readAt("g-n2")).toEqual(markedAt.get("g-n2"));
+    expect(await readAt("g-n4")).toEqual(markedAt.get("g-n4"));
+    expect((await forum.readNotifications(recipient, 0)).total).toBe(beforeTotal);
+    expect(await forum.countUnreadNotifications(recipient))
+      .toBe(beforeUnread - changed - legacyChanged - caseChanged);
+    expect(await forum.countUnreadReplyNotifications(recipient))
+      .toBe(beforeLegacyUnread - changed - legacyChanged);
+  });
+
 });

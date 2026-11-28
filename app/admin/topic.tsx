@@ -1,3 +1,4 @@
+import { browserAddress } from "../browser-address";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,7 @@ interface AdminTopicViewProps {
   postPresentations: readonly ContentTranslationPresentation[];
   canManagePin: boolean;
   canManageClosure?: boolean;
+  canMoveTopic?: boolean;
   canManageAnySolution: boolean;
   canManageHelpDuplicate: boolean;
   canCorrectAnySourceLocale: boolean;
@@ -33,7 +35,7 @@ interface AdminTopicViewProps {
 
 export function AdminTopicView({
   locale, access, topic, titlePresentation, postPresentations,
-  canManagePin, canManageClosure = false, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale,
+  canManagePin, canManageClosure = false, canMoveTopic = false, canManageAnySolution, canManageHelpDuplicate, canCorrectAnySourceLocale,
   canReadPostHistory = false, actorId,
   canModerateHelpSolution, pendingDuplicateAppeal,
 }: AdminTopicViewProps) {
@@ -72,19 +74,41 @@ export function AdminTopicView({
       <p><Link to={publicTopic}>{t("topicLabel")}</Link></p>
       <TopicQuickActions
         locale={locale} inline topic={topic} canManagePin={canManagePin}
-        canManageClosure={canManageClosure} actorId={actorId}
+        canManageClosure={canManageClosure} canMoveTopic={canMoveTopic} actorId={actorId}
         canManageAnySolution={canManageAnySolution} canManageHelpDuplicate={canManageHelpDuplicate}
         canCorrectAnySourceLocale={canCorrectAnySourceLocale} canModerateHelpSolution={canModerateHelpSolution}
         pendingDuplicateAppeal={pendingDuplicateAppeal}
-        postCandidates={topic.posts.slice(1).map((post) => ({ id: post.id, number: numbers.get(post.id)! }))}
+        postCandidates={topic.posts.slice(1).filter((post) => post.kind !== "hidden")
+          .map((post) => ({ id: post.id, number: numbers.get(post.id)! }))}
       />
       <h3>{t("postsColumn")}</h3>
       {!ordered.length ? <p>{t("postsEmpty")}</p> :
         <ol className="post-list topic-message-list">
           {ordered.map((post) => {
-            const presentation = byId.get(post.id)!;
             const postAnchor = `post-${post.id}`;
             const number = numbers.get(post.id)!;
+            if (post.kind === "hidden") return <li key={post.id} id={postAnchor}
+              className={["forum-post", "topic-message", "moderation-hidden-post",
+                post.id === original?.id ? "original-question" : "",
+                post.id === topic.bestAnswerPostId ? "best-answer" : "",
+              ].filter(Boolean).join(" ")} data-moderation-hidden-post>
+              <header className="topic-message-author">
+                {post.id === original?.id ? <strong className="original-question-label">{t("originalQuestion")}</strong> : null}
+                {post.id === topic.bestAnswerPostId ? <strong className="best-answer-label">{t("bestAnswer")}</strong> : null}
+                <a className="topic-message-anchor" href={browserAddress().href(`${publicTopic}#post-${encodeURIComponent(post.id)}`)}>
+                  {t("postNumber", { number })}
+                </a>
+                <time dateTime={post.createdAt}>{timestamp(post.createdAt)}</time>
+              </header>
+              <div className="forum-post-content topic-message-filtered" role="note">
+                <p>{t("moderationHiddenPostNotice")}</p>
+                {post.parentPostId && numbers.has(post.parentPostId) ? <a
+                  className="topic-message-parent-link" href={`#post-${encodeURIComponent(post.parentPostId)}`}>
+                  {t("replyToMessageNumberCompact", { number: numbers.get(post.parentPostId)! })}
+                </a> : null}
+              </div>
+            </li>;
+            const presentation = byId.get(post.id)!;
             return <li key={post.id} id={postAnchor} className={[
               "forum-post", "topic-message",
               post.id === original?.id ? "original-question" : "",
@@ -100,7 +124,7 @@ export function AdminTopicView({
                   ? <strong className="solution-moderation-badge is-needs-review">{t("helpSolutionNeedsReview")}</strong> : null}
                 {post.solutionModerationStatus === "outdated"
                   ? <strong className="solution-moderation-badge is-outdated">{t("helpSolutionOutdated")}</strong> : null}
-                <a className="topic-message-anchor" href={`${publicTopic}#post-${encodeURIComponent(post.id)}`}>
+                <a className="topic-message-anchor" href={browserAddress().href(`${publicTopic}#post-${encodeURIComponent(post.id)}`)}>
                   {t("postNumber", { number })}
                 </a>
                 <time dateTime={post.createdAt}>{timestamp(post.createdAt)}</time>

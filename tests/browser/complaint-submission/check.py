@@ -9,6 +9,10 @@ from urllib.parse import urlencode, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--url', default='http://127.0.0.1:4184')
@@ -59,7 +63,7 @@ try:
         page.on('pageerror', lambda error: errors.append(str(error)))
         assert submit(context, prefix, {}).status == 401
         # Real email session; all credentials belong solely to this disposable fixture.
-        signup = context.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={
+        signup = signup_verified_session(sql, context.request, base, headers={'Origin': base}, data={
             'name': 'Complaint browser tester', 'email': prefix + '@test.invalid',
             'password': 'local-only-' + uuid4().hex,
         })
@@ -90,7 +94,7 @@ finally{await c.end();}"""
         # Separate real reporter keeps Unicode checks independent of the quota fixture.
         unicode_context = browser.new_context()
         unicode_context.route('**/*', lambda route: route.continue_() if route.request.url.startswith(base + '/') else (external.append(route.request.url), route.abort())[-1])
-        signup = unicode_context.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={
+        signup = signup_verified_session(sql, unicode_context.request, base, headers={'Origin': base}, data={
             'name': 'Unicode reporter', 'email': prefix + '-unicode@test.invalid',
             'password': 'local-only-' + uuid4().hex,
         })

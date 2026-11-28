@@ -4,6 +4,7 @@
  * No production credentials, external OAuth, remote bucket, or browser required.
  */
 import assert from "node:assert/strict";
+import { signupConnectedVerifiedSession } from "../tests/database/verified-credential-fixture";
 import {spawn} from "node:child_process";
 import {randomBytes,randomUUID} from "node:crypto";
 import {rm,writeFile} from "node:fs/promises";
@@ -12,6 +13,8 @@ import {resolve} from "node:path";
 import {drizzle} from "drizzle-orm/node-postgres";
 import {Client} from "pg";
 import {DrizzleForumRepository} from "../db/forum-repository";
+import {verifyModerationVisibilityCacheTransport} from "./smoke-visibility-cache-transport";
+import {verifyModerationProtectedDomainTransport} from "./smoke-visibility-protected-transport";
 
 const connectionString=process.env.DATABASE_URL;
 const base="http://127.0.0.1:4181";
@@ -21,7 +24,7 @@ if(!["127.0.0.1","localhost"].includes(dbUrl.hostname)||!dbUrl.pathname.endsWith
   throw new Error("Only loopback *_test PostgreSQL is allowed");
 // Existing CI PostgreSQL service is disposable; the built Worker already uses its public schema.
 const client=new Client({connectionString});
-const vars=resolve(".dev.vars");
+const vars=resolve("build/server/.dev.vars");
 const previewLog=resolve(".vico-p7-preview.log");
 let worker:ReturnType<typeof spawn>|undefined;
 let ownedVars=false;
@@ -44,11 +47,13 @@ async function form(path:string,cookie:string,fields:Record<string,string>){
   },body:new URLSearchParams(fields)},cookie);
 }
 async function signUp(role:string){
-  const response=await http("/api/auth/sign-up/email",{
+  const response = await signupConnectedVerifiedSession(client,
+    async req => http(new URL(req.url).pathname, {method:req.method,headers:req.headers,body:await req.text()}),
+    new Request(base+"/api/auth/sign-up/email", {
     method:"POST",headers:{Origin:base,"Content-Type":"application/json"},
     body:JSON.stringify({name:"Smoke "+role,email:role+"-"+randomUUID()+"@p7.invalid",
       password:"Test-Only-"+randomBytes(12).toString("hex")})
-  });
+  }));
   assert.ok(response.status>=200&&response.status<300,"Signup HTTP failed for "+role+": "+response.status);
   const sessionCookie=response.headers.getSetCookie()
     .find(value=>value.includes("session_token"))?.split(";")[0];
@@ -82,7 +87,7 @@ async function ready(){
 }
 async function run(){
   await setupDatabase();
-  // Cloudflare Vite preview consumes local, ignored .dev.vars; never print secrets.
+  // Vite preview reads local variables beside the generated Worker config.
   await writeFile(vars,[
     "BETTER_AUTH_SECRET="+randomBytes(32).toString("hex"),
     "BETTER_AUTH_URL="+base,
@@ -98,22 +103,27 @@ async function run(){
   closeSync(fd);
   await ready();
 
-  const [author,reporter,reviewer]=await Promise.all([
-    signUp("author"),signUp("reporter"),signUp("reviewer")
-  ]);
+  // Fixture preparation owns shared disposable budget rows; do not overlap it.
+  const author=await signUp("author");
+  const reporter=await signUp("reporter");
+  const reviewer=await signUp("reviewer");
   for(const user of [author,reporter,reviewer])
     await client.query("insert into authz_user_roles(user_id,role_id) values ($1,'builtin-user') on conflict do nothing",[user.id]);
   await client.query("update authz_user_roles set role_id='builtin-moderator' where user_id=$1",[reviewer.id]);
   await client.query("insert into authz_user_permission_overrides(user_id,permission_key,effect) "+
     "values ($1,'forum.complaint.appeal.review','deny')",[reviewer.id]);
 
+  // Unique content sentinels let the built Worker smoke catch cross-request
+  // public source leaks, including SSR meta, .data and serialized errors.
+  const titleSource="B8-VISIBLE-HIDDEN-TITLE-"+randomUUID();
+  const currentPostSource="B8-VISIBLE-HIDDEN-BODY-"+randomUUID();
   const categoryId=randomUUID(),sectionId=randomUUID();
   const topicId=randomUUID(),postId=randomUUID(),revisionId=randomUUID(),titleId=randomUUID();
   const forum=new DrizzleForumRepository(drizzle(client),{cooldownMs:0,now:()=>new Date()});
   await forum.createCategory({id:categoryId,name:"P7 local Worker smoke"});
   await forum.createSection({id:sectionId,categoryId,name:"P7 local Worker smoke"});
   await forum.createTopicWithInitialPost({id:topicId,sectionId,authorId:author.id,
-    titleRevision:{id:titleId,originalContent:"P7 Worker title",sourceLocale:"en"},
+    titleRevision:{id:titleId,originalContent:titleSource,sourceLocale:"en"},
     initialPost:{id:postId,topicId,authorId:author.id,bodyRevision:{
       id:revisionId,originalContent:"P7 immutable report text",sourceLocale:"en"
     }}});
@@ -126,8 +136,9 @@ async function run(){
     "values ($1,$2,now())",[postId,attachmentId]);
 
   const casePost="/en/topics/"+topicId+"/complaints";
+  const complaintOperationId=randomUUID();
   let response=await form(casePost,reporter.cookie,{
-    kind:"post",postId,revisionId,reason:"spam",operationId:randomUUID()
+    kind:"post",postId,revisionId,reason:"spam",operationId:complaintOperationId
   });
   expectStatus(response,200,casePost);expectPrivate(response,casePost);
   const report=(await client.query<{id:string;version:number}>(
@@ -145,13 +156,13 @@ async function run(){
   expectPrivate(response,review);
   response=await http(review,{},reporter.cookie);expectStatus(response,403,review);
   await forum.editPublishedPost({topicId,postId,actorId:author.id,
-    expectedRevisionId:revisionId,body:"P7 Worker current edited text",draftId:randomUUID(),
+    expectedRevisionId:revisionId,body:currentPostSource,draftId:randomUUID(),
     attachmentIds:[],retainedAttachmentIds:[]});
   const context="/en/attention/complaints/"+caseId+"/context/"+postId;
   response=await http(context,{},reviewer.cookie);expectStatus(response,200,context);
   expectPrivate(response,context);
   const current=await response.json() as {source:{originalContent:string;sourceLocale:string;direction:string}};
-  assert.equal(current.source.originalContent,"P7 Worker current edited text");
+  assert.equal(current.source.originalContent,currentPostSource);
   assert.equal(current.source.sourceLocale,"und");
   assert.equal(current.source.direction,"auto");
   const protectedAsset="/en/attention/complaints/"+caseId+"/evidence/"+attachmentId;
@@ -222,6 +233,20 @@ async function run(){
   assert.ok([302,303].includes(response.status),"Inbox open must redirect to participant result");
   assert.equal(response.headers.get("Location"),
     "/en/complaints/"+caseId+"/result#appeal-"+appeal[0]!.id);
+  // B7-only cache transport probe reuses this disposable Worker/PG17 and
+  // live Better Auth moderator; it does not expand the Complaint smoke matrix.
+  await verifyModerationVisibilityCacheTransport({
+    client, http, submit: form, topicId, postId, titleRevisionId: titleId, attachmentId,
+    moderator: reviewer, ordinary: reporter,
+    titleSource,currentPostSource,
+  });
+  // B8-B3 uses the same resolved protected Case, but starts only after the
+  // accepted B8-B1 probe to avoid changing its original version-0 fixture.
+  await verifyModerationProtectedDomainTransport({
+    client,http,submit:form,topicId,postId,titleRevisionId:titleId,
+    caseId,appealId:appeal[0]!.id,complaintOperationId,
+    reviewer,reporter,author,currentPostSource,titleSource,
+  });
   console.log("P7 local Worker/session/authorization/PostgreSQL HTTP smoke: PASS");
 }
 try{

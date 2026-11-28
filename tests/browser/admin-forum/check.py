@@ -8,6 +8,10 @@ import subprocess
 from urllib.parse import urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--url', default='http://127.0.0.1:4187')
@@ -50,11 +54,11 @@ category_path = '/admin/forum/categories/' + quote(category, safe='')
 section_path = '/admin/forum/sections/' + quote(section, safe='')
 role = prefix + '-role'
 try:
-    sql('insert into forum_categories(id,name) values($1,$2)', [category, 'Long category עברית ' + 'א' * 150])
-    sql('insert into forum_sections(id,category_id,name) values($1,$2,$3)', [section, category, 'Long section עברית ' + 'א' * 150])
+    sql('insert into forum_categories(id,name,sort_position) values($1,$2,(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))', [category, 'Long category עברית ' + 'א' * 150])
+    sql('insert into forum_sections(id,category_id,name,sort_position) values($1,$2,$3,(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))', [section, category, 'Long section עברית ' + 'א' * 150])
     for n in range(60):
-        sql('insert into forum_categories(id,name) values($1,$2)', [prefix + '-c-' + str(n).zfill(3), 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
-        sql('insert into forum_sections(id,category_id,name) values($1,$2,$3)', [prefix + '-s-' + str(n).zfill(3), category, 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
+        sql('insert into forum_categories(id,name,sort_position) values($1,$2,(select coalesce(max(sort_position)+1,0) from forum_categories where id <> $$help-solutions$$))', [prefix + '-c-' + str(n).zfill(3), 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
+        sql('insert into forum_sections(id,category_id,name,sort_position) values($1,$2,$3,(select coalesce(max(sort_position)+1,0) from forum_sections where category_id=$2))', [prefix + '-s-' + str(n).zfill(3), category, 'Literal %_\\ 😀' if n == 59 else 'Fixture ' + str(n)])
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path=os.environ.get('CHROMIUM', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'])
         context = browser.new_context(viewport={'width':1280,'height':900})
@@ -63,7 +67,7 @@ try:
         page.on('pageerror', lambda e: errors.append(str(e)))
         for path in paths:
             document(page,path,401)
-        response = context.request.post(base + '/api/auth/sign-up/email', headers={'Origin':base}, data={'name':'AP06 Synthetic Reviewer','email':prefix+'@test.invalid','password':'AP06-local-only-'+uuid4().hex})
+        response = signup_verified_session(sql, context.request, base, headers={'Origin':base}, data={'name':'AP06 Synthetic Reviewer','email':prefix+'@test.invalid','password':'AP06-local-only-'+uuid4().hex})
         assert response.status == 200, response.text()
         actor = response.json()['user']['id'];accounts.append(actor)
         sql('insert into authz_roles(id,slug,display_name,is_system) values($1,$1,$2,false)',[role,'Ordinary custom label'])

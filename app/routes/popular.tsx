@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { useLoaderData, type RouterContextProvider } from "react-router";
+import { data, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 
 import { forumReaderForRequest } from "../forum/request-context";
 import { ForumRouteError } from "../forum/ui";
@@ -8,6 +8,13 @@ import { PopularView } from "../forum/views";
 
 export function meta() {
   return [{ title: "Popular · Vico Forum" }];
+}
+
+/** Hide/Restore changes this public listing immediately, including error results. */
+export function headers({ parentHeaders }: HeadersArgs): Headers {
+  const result = new Headers(parentHeaders);
+  result.set("Cache-Control", "no-store");
+  return result;
 }
 
 export const loader = forumReadLoader(async function loader({ params, context }: {
@@ -28,14 +35,14 @@ export const loader = forumReadLoader(async function loader({ params, context }:
     activityCount,
   }));
 
-  return {
+  return data({
     locale: params.locale ?? "en",
     periods: {
       "24h": present(popular["24h"]),
       "7d": present(popular["7d"]),
       "30d": present(popular["30d"]),
     },
-  };
+  }, { headers: { "Cache-Control": "no-store" } });
 });
 
 export default function PopularRoute() {

@@ -81,7 +81,7 @@ describe("PostgreSQL 17 locale migrations", () => {
     const applied = await client.query<{ count: string }>(
       'select count(*)::text as count from drizzle."__drizzle_migrations"',
     );
-    expect(applied.rows[0]?.count).toBe("71");
+    expect(applied.rows[0]?.count).toBe("79");
     // The AP-08 manifest hashes are computed from PostgreSQL 17 catalog expressions,
     // rather than assumed from SQL formatting or hand-entered normalized forms.
     const definitions = await client.query<{ key: string; definition: string }>(`
@@ -92,7 +92,7 @@ describe("PostgreSQL 17 locale migrations", () => {
       join pg_catalog.pg_namespace n on n.oid = rel.relnamespace
       where n.nspname = 'public'
         and constraint_row.conname in ('authz_permissions_catalog_check',
-          'admin_history_action_target_check', 'forum_topics_closure_version_check')
+          'admin_history_action_target_check', 'forum_topics_closure_version_check', 'owner_attempt_patterns_kind_check')
       union all
       select 'default:forum_topics.closure_version',
         pg_catalog.pg_get_expr(d.adbin, d.adrelid, false)
@@ -113,16 +113,64 @@ describe("PostgreSQL 17 locale migrations", () => {
     const checkHash = (table: string, name: string) =>
       manifest.tables[table]?.checks.find(row => row.name === name)?.definitionSha256;
     const versionHash = manifest.tables.forum_topics.columns.find(row => row.name === "closure_version")?.defaultSha256;
-    expect(definitions.rows).toHaveLength(4);
+    expect(definitions.rows).toHaveLength(5);
     expect(Object.fromEntries(definitions.rows.map(row =>
       [row.key, createHash("sha256").update(row.definition).digest("hex")]
     ))).toEqual({
       "check:forum_topics.forum_topics_closure_version_check": checkHash("forum_topics", "forum_topics_closure_version_check"),
       "check:authz_permissions.authz_permissions_catalog_check": checkHash("authz_permissions", "authz_permissions_catalog_check"),
       "check:admin_history.admin_history_action_target_check": checkHash("admin_history", "admin_history_action_target_check"),
+      "check:owner_attempt_patterns.owner_attempt_patterns_kind_check": checkHash("owner_attempt_patterns", "owner_attempt_patterns_kind_check"),
       "default:forum_topics.closure_version": versionHash,
     });
 
+  });
+
+  it("B1 verifies actual PG17 visibility CHECK and partial index predicate hashes", async () => {
+    const { createHash } = await import("node:crypto");
+    const { readFile } = await import("node:fs/promises");
+    const source = JSON.parse(await readFile(".github/production-schema-manifest.json", "utf8")) as {
+      tables: Record<string, {
+        checks: Array<{name:string;definitionSha256:string}>;
+        indexes: Array<{name:string;predicateSha256?:string|null}>;
+      }>;
+    };
+    const actual = await client.query<{key:string;definition:string}>(`
+      select 'check:' || rel.relname || '.' || con.conname key,
+        pg_catalog.pg_get_expr(con.conbin, con.conrelid, false) definition
+        from pg_catalog.pg_constraint con
+        join pg_catalog.pg_class rel on rel.oid=con.conrelid
+        join pg_catalog.pg_namespace ns on ns.oid=rel.relnamespace
+        where ns.nspname='public' and con.conname = any($1::text[])
+      union all
+      select 'index-predicate:' || rel.relname || '.' || idx.relname key,
+        pg_catalog.pg_get_expr(i.indpred, i.indrelid, false) definition
+        from pg_catalog.pg_index i
+        join pg_catalog.pg_class rel on rel.oid=i.indrelid
+        join pg_catalog.pg_class idx on idx.oid=i.indexrelid
+        join pg_catalog.pg_namespace ns on ns.oid=rel.relnamespace
+        where ns.nspname='public' and idx.relname = any($2::text[])
+    `, [
+      ["forum_topics_visibility_state_check", "forum_posts_visibility_state_check",
+        "admin_history_visibility_reason_check"],
+      ["forum_topics_hidden_queue_idx", "forum_posts_hidden_queue_idx"],
+    ]);
+    const expected = Object.fromEntries([
+      ...["forum_topics","forum_posts","admin_history"].map(table => [
+        "check:" + table + "." +
+          (table==="admin_history" ? "admin_history_visibility_reason_check" : table+"_visibility_state_check"),
+        source.tables[table].checks.find(c => c.name ===
+          (table==="admin_history" ? "admin_history_visibility_reason_check" : table+"_visibility_state_check"))?.definitionSha256,
+      ]),
+      ...["forum_topics","forum_posts"].map(table => [
+        "index-predicate:" + table + "." + table+"_hidden_queue_idx",
+        source.tables[table].indexes.find(i => i.name === table+"_hidden_queue_idx")?.predicateSha256,
+      ]),
+    ]);
+    expect(actual.rows).toHaveLength(5);
+    expect(Object.fromEntries(actual.rows.map(row =>
+      [row.key, createHash("sha256").update(row.definition).digest("hex")]
+    ))).toEqual(expected);
   });
 
   it("SA-02 hourly attempt tables retain source identity and separate per-epoch quota", async () => {

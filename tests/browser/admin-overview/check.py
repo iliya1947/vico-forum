@@ -9,6 +9,10 @@ from urllib.parse import urlparse
 from uuid import uuid4
 
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--url', default='http://127.0.0.1:4182')
@@ -64,7 +68,7 @@ try:
         document(page, '/en/admin', 401)
         record('guest-denied', status=401)
         # Real Better Auth handler and native DB, with disposable account/password only.
-        response = context.request.post(base + '/api/auth/sign-up/email', headers={'Origin': base}, data={
+        response = signup_verified_session(sql, context.request, base, headers={'Origin': base}, data={
             'name': 'AP02 test reviewer עברית ' + 'Long name ' * 5,
             'email': role + '@test.invalid', 'password': 'AP02-local-test-only-' + uuid4().hex,
         })

@@ -110,7 +110,7 @@ export async function loader(args: LocaleBoundaryArgs) {
   if (session) {
     try {
       const resolver = authorizationForRequest(args.context).forUser(session.user.id);
-      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, close, sourceAny, historyRead, adminHistoryRead, adminUsersRead, blockManage, complaintReview, complaintPriorityManage,complaintAppealReview] = await Promise.all([
+      const [authorizationManage, helpModeration, duplicateManage, needsDetailsManage, attachmentSecurityRead, pin, close, visibilityManage, structureManage, topicMove, sourceAny, historyRead, adminHistoryRead, adminUsersRead, blockManage, complaintReview, complaintPriorityManage,complaintAppealReview] = await Promise.all([
         resolver.has("access.authorization.manage"),
         resolver.has("forum.solution.manageAny"),
         resolver.has("forum.helpDuplicate.manage"),
@@ -118,6 +118,9 @@ export async function loader(args: LocaleBoundaryArgs) {
         resolver.has("forum.attachmentSecurity.read"),
         resolver.has("forum.topic.pin"),
         resolver.has("forum.topic.close"),
+        resolver.has("forum.content.visibility.manage"),
+        resolver.has("forum.structure.manage"),
+        resolver.has("forum.topic.move"),
         resolver.has("forum.sourceLocale.correctAny"),
         resolver.has("forum.post.history.read"),
         resolver.has("admin.history.read"),
@@ -134,6 +137,9 @@ export async function loader(args: LocaleBoundaryArgs) {
         ...(duplicateManage ? ["forum.helpDuplicate.manage" as const] : []),
         ...(pin ? ["forum.topic.pin" as const] : []),
         ...(close ? ["forum.topic.close" as const] : []),
+        ...(visibilityManage ? ["forum.content.visibility.manage" as const] : []),
+        ...(structureManage ? ["forum.structure.manage" as const] : []),
+        ...(topicMove ? ["forum.topic.move" as const] : []),
         ...(sourceAny ? ["forum.sourceLocale.correctAny" as const] : []),
         ...(historyRead ? ["forum.post.history.read" as const] : []),
         ...(adminHistoryRead ? ["admin.history.read" as const] : []),

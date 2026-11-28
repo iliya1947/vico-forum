@@ -89,6 +89,9 @@ Permission key означает существующую capability прилож
 - `forum.post.history.read`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
+- `forum.structure.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -146,6 +149,47 @@ confirmed-duplicate reply restriction and never changes solved/best-answer.
 The authoritative transaction, no-op/History and preserved receipt replay
 are specified in `../ADMIN_PANEL.md`.
 
+`forum.content.visibility.manage` разрешает обратимое Hide/Restore опубликованной
+темы или сообщения и отдельно защищённое чтение очереди скрытого контента,
+точечной инспекции и допущенных скрытых вложений. Операции выполняются
+только при authenticated active actor, свежем effective permission, применимой
+AP-10 `admin.forum` admission, принадлежности target, текущих
+revision/visibility-version CAS и обязательной причине реального перехода.
+Начальные grants — built-in moderator/admin, **не** user; role grants и
+personal overrides остаются динамическими. Само permission не предоставляет
+произвольное редактирование скрытого текста, общий Admin/History reader
+или независимые Complaint/Appeal/Help management capabilities.
+Просмотр прежнего текста скрытых post revisions требует дополнительно
+`forum.post.history.read`, а ordinary Admin topic page остаётся
+публично-безопасной проекцией с обезличенными заглушками.
+Подробный контракт — в [ADMIN_PANEL.md](../ADMIN_PANEL.md).
+
+`forum.structure.manage` разрешает создание/переименование обычных
+категорий и разделов, изменение их sibling-порядка и перенос обычного
+раздела между обычными категориями. `forum.topic.move` отдельно разрешает
+перенос существующей обычной темы между обычными разделами. Эти
+capabilities не заменяют друг друга, не предоставляют автору темы
+неявного Move и не разрешают изменение зарезервированных Help
+category/service section или преобразование ordinary ↔ Help.
+Ни одно из них не даёт права на произвольное редактирование/удаление
+содержимого, просмотр прежних ревизий, приватную History или
+hidden-source чтение.
+
+Оба ключа независимо допускают ordinary Admin Forum admission, но
+каждый writer повторно требует точное effective permission, активный
+аккаунт, same-origin и применимые ограничения AP-10 `admin.forum`.
+Для переноса **скрытой** ordinary-темы требуются одновременно
+`forum.topic.move` и `forum.content.visibility.manage`, включая
+защищённое чтение контекста и серверную транзакцию. Move-only actor
+работает только с видимыми ordinary-темами; generic Admin/History,
+`forum.structure.manage` и авторство не раскрывают скрытую тему.
+При недоступном hidden target его приватный контекст нейтрален.
+Категории/разделы используют общую структуру с version-CAS,
+а темы — дополнительно исходный section ID и отдельный
+location-version CAS. Изменяемые grants/overrides и catalog-wide
+effective Owner projection действуют как для остальных permissions.
+Постоянный UI/History и error contract — в [ADMIN_PANEL.md](../ADMIN_PANEL.md).
+
 Complaint permissions protect the server-only domain capabilities documented in
 [`COMPLAINTS.md`](../moderation/COMPLAINTS.md). `forum.complaint.create` permits
 authenticated Complaint submission. `forum.complaint.review` independently permits
@@ -197,6 +241,8 @@ retain their own permissions and do not follow from complaint review.
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -220,6 +266,9 @@ retain their own permissions and do not follow from complaint review.
 - `forum.reply.create`;
 - `forum.topic.pin`;
 - `forum.topic.close`;
+- `forum.content.visibility.manage`;
+- `forum.structure.manage`;
+- `forum.topic.move`;
 - `forum.solution.manageOwn`;
 - `forum.solution.manageAny`;
 - `forum.helpSignal.create`;
@@ -238,7 +287,7 @@ retain their own permissions and do not follow from complaint review.
 В текущем выпуске все role/grant/assignment/override writes выполняет только
 exact server-bound Owner. Для каждого запроса сервер повторно проверяет fresh effective
 permission и Owner policy внутри serialized transaction; obsolete manager-count/last-manager
-veto остаётся удалённым. Начальные grants роли `admin` не меняются.
+veto остаётся удалённым. Начальные grants `admin` включают также `forum.structure.manage` и `forum.topic.move` по миграции `0072`; конкретные effective permissions по-прежнему определяются текущими role grants и per-user overrides.
 
 `admin.history.read` independently admits ordinary admin History and Overview recent actions.
 AP-03 initially grants it only to built-in admin; custom roles, moderator grants and personal
@@ -432,20 +481,45 @@ client authorization token.
 
 ### Local email and Google linking
 
-Email/password registration does not require email verification. A matching unverified
-local email is therefore insufficient evidence for implicit Google linking. Keep Better Auth's
-local-email verification gate and same-email/provider-verification checks enabled.
-An existing local user signs in with the password first, then explicitly connects Google
-from the own profile through Better Auth `linkSocial`. A guest or a different local identity
-cannot claim that account merely by supplying its email. External Google acceptance remains Stage 6.
+Email/password registration requires email verification before credential sign-in.
+Signup and verification do not automatically create a session; sign-in is explicit.
+Even a matching verified email is not authority for implicit Google linking.
+Better Auth implicit linking is disabled and provider/email verification checks remain.
+An existing local user signs in with an available method, then explicitly connects Google
+from own Account & security through Better Auth `linkSocial`. A guest or a different local
+identity cannot claim an account merely by supplying its email. External Google acceptance
+remains Stage 6.
 
-Link initiation sends the displayed profile ID in `x-vico-link-user` as an expectation,
+Link initiation sends the displayed own user ID in `x-vico-link-user` as an expectation,
 not authority. The `/link-social` before-hook resolves the authoritative session and rejects
 a missing/mismatched expectation with `409` before creating OAuth state or linking an account;
 guests remain `401`. The endpoint reuses that checked request-local session, and the existing
 signed OAuth state retains its target across the provider round trip. A conflict shows the
 existing auth failure feedback; the client never retries with a different account automatically.
 Provider/email verification and origin checks remain mandatory.
+
+### Own authentication lifecycle and authorization isolation
+
+Guest verification/recovery proofs are bound to the immutable subject, current email,
+purpose, generation and expiry. Own password-create/email-change proofs additionally
+bind the initiating session; own sensitive operations enforce current fresh identity.
+Canonical HTTP and direct server handlers share lifecycle admission and transactional
+state checks, including existing AccountState protection. Token consumption, relevant
+credential/email mutation, proof invalidation and required session revocation commit
+together; mail follows issuance commit. Reset revokes all target sessions; own password
+creation and final email change preserve the initiating session and revoke other own
+sessions. Existing-password change retains its SET-05 other-session policy.
+Explicit unlink cannot remove the last usable sign-in method. A guest reset does not
+switch another ambient account or create an automatic session.
+
+Email change and method changes preserve the same Better Auth `user.id`, role,
+permissions and exact Owner binding. No new RBAC, automatic linking, reactivation,
+Owner transfer, foreign credential/provider mutation or administrative recovery
+authority is introduced. Independent fresh-create registration flags remain in force;
+native HTTP limits and shared lifecycle budgets apply, with a provider-neutral
+registration challenge boundary for new accounts. Detailed user-facing and mail
+contract: [SETTINGS.md](../SETTINGS.md). Repository/local-CI acceptance does not
+establish live provider or deployed security acceptance.
 
 ### Session and stale editor failures
 

@@ -96,4 +96,26 @@ describe("SA04-H native PostgreSQL post revision author lifecycle", () => {
     expect(physical.rows.map(row => row.original_content)).toEqual(after.map(row => row.originalContent));
     expect(physical.rows.map(row => row.author_id)).toEqual(after.map(row => row.authorId));
   });
+  it("denies legacy post-location and all history revisions through hidden post/topic and preserves history on Restore", async () => {
+    const original = await forum.readPostHistory("h-post", "h-topic");
+    expect(original).toHaveLength(3);
+    expect(await forum.readPostLocation("h-post")).toMatchObject({ topicId: "h-topic" });
+    try {
+      await client.query("update forum_posts set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
+      expect(await forum.readPostLocation("h-post")).toBeUndefined();
+      expect(await forum.readPostHistory("h-post", "h-topic")).toEqual([]);
+
+      await client.query("update forum_posts set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
+      await client.query("update forum_topics set is_hidden=true, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-topic'");
+      expect(await forum.readPostLocation("h-post")).toBeUndefined();
+      expect(await forum.readPostHistory("h-post", "h-topic")).toEqual([]);
+    } finally {
+      await client.query("update forum_topics set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-topic'");
+      await client.query("update forum_posts set is_hidden=false, visibility_version=visibility_version+1, visibility_changed_at=clock_timestamp() where id='h-post'");
+    }
+    const restored = await forum.readPostHistory("h-post", "h-topic");
+    expect(restored.map(row => row.id)).toEqual(original.map(row => row.id));
+    expect(restored.map(row => row.originalContent)).toEqual(original.map(row => row.originalContent));
+    expect(await forum.readPostLocation("h-post")).toMatchObject({ topicId: "h-topic" });
+  });
 });

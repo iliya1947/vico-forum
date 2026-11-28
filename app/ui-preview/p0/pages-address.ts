@@ -49,8 +49,17 @@ export function createPagesAddressCodec(pageUrl: URL, identityInfo: PagesBootstr
     if (url.origin !== base.origin || url.pathname !== base.pathname) {
       throw new Error("Preview bootstrap outside hosted Pages base");
     }
+    // Native same-document anchors can append a real fragment to a valid
+    // Pages URL. Treat it as the virtual fragment; href() canonicalizes it
+    // back inside the path field without changing actor/scenario.
+    const applyFragment = (path: string) => {
+      if (!url.hash) return path;
+      const target = new URL(path, "https://preview-virtual.invalid");
+      target.hash = url.hash;
+      return virtualPath(target.pathname + target.search + target.hash);
+    };
     const fields = url.searchParams;
-    if (fields.size === 0) return defaultPath;
+    if (fields.size === 0) return applyFragment(defaultPath);
     if (fields.get("embed") !== "1" || fields.get("actor") !== actor
       || fields.get("scenario") !== scenario || !fields.has("path")) {
       throw new Error("Invalid preview bootstrap identity or fields");
@@ -60,8 +69,7 @@ export function createPagesAddressCodec(pageUrl: URL, identityInfo: PagesBootstr
         throw new Error("Invalid preview bootstrap fields");
       }
     }
-    if (url.hash) throw new Error("Preview fragment must live inside the virtual path");
-    return virtualPath(fields.get("path")!);
+    return applyFragment(virtualPath(fields.get("path")!));
   }
 
   return { base: base.pathname, actor, scenario, href, fromUrl };

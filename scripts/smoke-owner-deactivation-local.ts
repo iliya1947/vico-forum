@@ -15,7 +15,7 @@ const database = new URL(connectionString);
 if (!["127.0.0.1", "localhost"].includes(database.hostname) || !database.pathname.endsWith("_test")) {
   throw new Error("Only loopback *_test PostgreSQL is allowed");
 }
-const base = "http://127.0.0.1:4183", vars = resolve(".dev.vars"), log = resolve(".vico-sa05-2-preview.log");
+const base = "http://127.0.0.1:4183", vars = resolve("build/server/.dev.vars"), log = resolve(".vico-sa05-2-preview.log");
 const client = new Client({ connectionString });
 let child: ReturnType<typeof spawn> | undefined, ownsVars = false, ownsLog = false;
 async function http(path: string, method = "GET") {

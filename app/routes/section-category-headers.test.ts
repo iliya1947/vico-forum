@@ -28,11 +28,11 @@ describe.each([
     }
   });
 
-  it("preserves normal public GET caching and gives thrown errors precedence", () => {
+  it("requires no-store for public GETs and gives thrown errors precedence", () => {
     const publicGet = headers(args({
       parent: { "Cache-Control": "public, max-age=30", "Vary": "Accept-Language" },
     }));
-    expect(publicGet.get("Cache-Control")).toBe("public, max-age=30");
+    expect(publicGet.get("Cache-Control")).toBe("no-store");
     expect(publicGet.get("Vary")).toBe("Accept-Language");
     expect(headers(args({ error: { "Cache-Control": "private, no-store" },
       loader: { "Cache-Control": "public, max-age=30" } })).get("Cache-Control"))

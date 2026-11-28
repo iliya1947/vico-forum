@@ -42,6 +42,10 @@ export interface AccountSecuritySession {
 }
 
 export interface AccountSecuritySnapshot {
+  readonly email?: string;
+  readonly emailVerified?: boolean;
+  readonly googleAccountId?: string;
+  readonly pendingEmailChange?: { phase: "old-address" | "new-address"; expiresAt: string } | null;
   readonly linkedMethods: readonly ("password" | "google")[];
   readonly hasPassword: boolean;
   readonly sessionAccess: "ready" | "not-fresh";

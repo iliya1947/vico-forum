@@ -25,6 +25,25 @@ export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;
 export const HELP_DUPLICATE_APPEAL_EXPLANATION_MAX_LENGTH = 1000;
 export const HELP_SIGNAL_EXPLANATION_MAX_LENGTH = 1000;
 
+type VisibilityCommandInput = {
+  topicId: string; actorId: string; hidden: boolean;
+  expectedVisibilityVersion: number; expectedRevisionId: string; reason: string;
+};
+function validateVisibilityCommand(input: VisibilityCommandInput & { postId?: string }): string {
+  validateEntity(input.topicId, input.actorId);
+  if ("postId" in input) requireText(input.postId ?? "", "post id");
+  requireText(input.expectedRevisionId, "expected revision id");
+  if (typeof input.hidden !== "boolean"
+    || !Number.isInteger(input.expectedVisibilityVersion)
+    || input.expectedVisibilityVersion < 0 || input.expectedVisibilityVersion > 2_147_483_647)
+    throw new InvalidForumContentError("invalid visibility state/version");
+  if (typeof input.reason !== "string" || input.reason.includes("\0")
+    || Array.from(input.reason).length > 2000)
+    throw new InvalidForumContentError("invalid visibility reason");
+  // An exact-state no-op may omit a reason; state changes must provide one.
+  return input.reason.trim();
+}
+
 export class ForumService {
   constructor(private readonly repository: DrizzleForumRepository) {}
 
@@ -291,6 +310,13 @@ export class ForumService {
   readTopicPinState(topicId: string) {
     requireText(topicId, "topic id");
     return this.repository.readTopicPinState(topicId);
+  }
+
+  setTopicVisibility(input: VisibilityCommandInput) {
+    return this.repository.setTopicVisibility({ ...input, reason: validateVisibilityCommand(input) });
+  }
+  setPostVisibility(input: VisibilityCommandInput & { postId: string }) {
+    return this.repository.setPostVisibility({ ...input, reason: validateVisibilityCommand(input) });
   }
 
   setTopicClosed(input: {

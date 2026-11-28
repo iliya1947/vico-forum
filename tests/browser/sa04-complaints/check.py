@@ -12,6 +12,10 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 from uuid import uuid4
 from playwright.sync_api import sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--url", default="http://127.0.0.1:4224")
@@ -197,7 +201,7 @@ try:
                 else (external.append(r.request.url),r.abort())[-1])
             return ctx
         def signup(ctx,label):
-            response=ctx.request.post(base+"/api/auth/sign-up/email",headers={"Origin":base},data={
+            response=signup_verified_session(sql, ctx.request, base,headers={"Origin":base},data={
                 "name":"SA04 N "+label,"email":prefix+"-"+label+"@test.invalid",
                 "password":"n3-local-test-password-123456789"})
             assert response.status==200,(label,response.status,response.text()[:200])

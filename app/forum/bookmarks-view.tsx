@@ -8,15 +8,17 @@ import { Breadcrumbs, EmptyState, ForumShell } from "./ui";
 /** Tab-local presentation history, never a bookmark authorization or cursor authority. */
 const BOOKMARKS_ACTOR_TAB_KEY = "vico:bookmarks:actor";
 
-export interface BookmarkItemPresentation {
-  id: string;
-  title: string;
-  authorName: string;
-  authorIdentityKind?: "deleted";
-  category: { name: string };
-  section: { name: string } | null;
-  savedAt: string;
-}
+export type BookmarkItemPresentation = { id: string; savedAt: string } & (
+  | { unavailable: true }
+  | {
+    unavailable?: false;
+    title: string;
+    authorName: string;
+    authorIdentityKind?: "deleted";
+    category: { name: string };
+    section: { name: string } | null;
+  }
+);
 export interface BookmarkListNext {
   beforeSavedAt: string;
   beforeTopicId: string;
@@ -60,14 +62,21 @@ function BookmarkListRow({ item, actorId, locale, formatDate }: {
   };
 
   return <li className="bookmarks-list-row" aria-busy={pending || refreshing}>
-    <Link className="bookmarks-topic-link" to={forumTopicPath(locale, item.id)}>
-      <strong dir="auto">{item.title}</strong>
-      <span className="bookmarks-topic-metadata">
-        <span>{t("startedBy", { author: item.authorIdentityKind === "deleted" ? t("deletedUser") : item.authorName })}</span>
-        <span><bdi dir="auto">{item.category.name}</bdi>{item.section && <> · <bdi dir="auto">{item.section.name}</bdi></>}</span>
+    {item.unavailable ? (
+      <div className="bookmarks-topic-unavailable">
+        <strong>{t("bookmarksUnavailableTopic")}</strong>
         <time dateTime={item.savedAt}>{t("bookmarksSavedAt", { date: formatDate.format(new Date(item.savedAt)) })}</time>
-      </span>
-    </Link>
+      </div>
+    ) : (
+      <Link className="bookmarks-topic-link" to={forumTopicPath(locale, item.id)}>
+        <strong dir="auto">{item.title}</strong>
+        <span className="bookmarks-topic-metadata">
+          <span>{t("startedBy", { author: item.authorIdentityKind === "deleted" ? t("deletedUser") : item.authorName })}</span>
+          <span><bdi dir="auto">{item.category.name}</bdi>{item.section && <> · <bdi dir="auto">{item.section.name}</bdi></>}</span>
+          <time dateTime={item.savedAt}>{t("bookmarksSavedAt", { date: formatDate.format(new Date(item.savedAt)) })}</time>
+        </span>
+      </Link>
+    )}
     <div className="bookmarks-row-actions">
       <fetcher.Form method="post" action={forumTopicPath(locale, item.id)}
         onSubmit={event => {

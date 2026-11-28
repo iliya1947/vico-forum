@@ -220,7 +220,8 @@ describe("SET04-LEV-01 Admin admission and Settings entry projection", () => {
     });
     expect(snapshot.authUser?.canViewAdminPanel).toBe(true);
     expect(snapshot.authUser?.adminEntryDestinations).toContain("overview");
-    if (permission === "forum.topic.close") {
+    if (permission === "forum.topic.close" || permission === "forum.content.visibility.manage" ||
+        permission === "forum.structure.manage" || permission === "forum.topic.move") {
       expect(snapshot.authUser?.adminEntryDestinations).toEqual(["overview", "forum"]);
     }
     expect(has).toHaveBeenCalledWith(permission);

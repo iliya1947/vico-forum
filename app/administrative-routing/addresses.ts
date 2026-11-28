@@ -21,6 +21,8 @@ export interface AdminAddressFamily {
   category(locale: string, id: string): string;
   section(locale: string, id: string): string;
   topic(locale: string, id: string): string;
+  topicMove(locale:string,id:string):string;
+  destinations(locale:string):string;
   users(locale: string): string;
   user(locale: string, id: string): string;
   measures(locale: string): string;
@@ -70,6 +72,8 @@ export function createAdministrativeRouting(
     category: (locale, id) => `${adminBase(locale)}/forum/categories/${encoded(id)}`,
     section: (locale, id) => `${adminBase(locale)}/forum/sections/${encoded(id)}`,
     topic: (locale, id) => `${adminBase(locale)}/forum/topics/${encoded(id)}`,
+    topicMove: (locale,id) => `${adminBase(locale)}/forum/topics/${encoded(id)}/move`,
+    destinations: locale => `${adminBase(locale)}/forum/destinations`,
     users: locale => `${adminBase(locale)}/users`,
     user: (locale, id) => `${adminBase(locale)}/users/${encoded(id)}`,
     measures: locale => `${adminBase(locale)}/measures`,

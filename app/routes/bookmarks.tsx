@@ -57,13 +57,15 @@ export async function loader({ params, context, url }: {
     return {
       locale: params.locale ?? "en",
       actorId: session.user.id,
-      items: page.items.map(item => ({
-        id: item.id, title: item.title,
-        authorName: item.authorIdentityKind === "deleted" ? DELETED_USER_NAME : item.authorName,
-        ...(item.authorIdentityKind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
-        category: item.category, section: item.section,
-        savedAt: new Date(item.savedAt).toISOString(),
-      })),
+      items: page.items.map(item => item.unavailable
+        ? { id: item.id, savedAt: new Date(item.savedAt).toISOString(), unavailable: true as const }
+        : {
+          id: item.id, title: item.title,
+          authorName: item.authorIdentityKind === "deleted" ? DELETED_USER_NAME : item.authorName,
+          ...(item.authorIdentityKind === "deleted" ? { authorIdentityKind: "deleted" as const } : {}),
+          category: item.category, section: item.section,
+          savedAt: new Date(item.savedAt).toISOString(),
+        }),
       next: page.next === null ? null
         : { beforeSavedAt: new Date(page.next.savedAt).toISOString(), beforeTopicId: page.next.topicId },
     };

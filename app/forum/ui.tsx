@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { takeCredentialProof } from "../auth/credential-recovery-client";
 import { Link, isRouteErrorResponse, useLocation, useNavigate, useParams, useRouteError } from "react-router";
 import { useTranslation } from "react-i18next";
 import { forumAttentionPath, forumBookmarksPath, forumFiltersPath, forumIndexPath, forumNotificationsPath, forumPopularPath, forumSearchPath, forumTagsPath, forumUnansweredPath, forumUnreadPath, underDevelopmentPath } from "./paths";
@@ -6,7 +7,7 @@ import { AuthControls, useHeaderAuthUser } from "../auth/auth-controls";
 import { useAdministratorPreferences, selectAttentionEntry } from "../settings/administrator-preferences";
 import { useThemePreference } from "../theme-preference";
 import { useLocaleNavigation } from "../localization/locale-navigation";
-import { credentialLocaleSearch } from "../auth/credential-path";
+import { credentialLocaleSearch, safeForumReturnPath } from "../auth/credential-path";
 import vicoForumLogoLight from "../assets/vico-forum-logo-light.webp";
 import vicoForumLogoDark from "../assets/vico-forum-logo-dark.webp";
 
@@ -62,7 +63,8 @@ export function LanguageSwitcher({ locale }: { locale: string }) {
     segments[1] = targetLocale;
     const credentialPage = segments[2] === "sign-in" || segments[2] === "sign-up";
     const search = credentialPage ? credentialLocaleSearch(locale, targetLocale, location.search) : location.search;
-    navigate(`${segments.join("/")}${search}${location.hash}`);
+    navigate(credentialPage ? `${segments.join("/")}${search}`
+      : safeForumReturnPath(targetLocale, segments.join("/"), search, location.hash));
   };
 
   const compactCode = (current?.tag ?? locale).split("-")[0].toUpperCase();
@@ -379,13 +381,19 @@ export function EmptyState({ children }: { children: ReactNode }) {
   return <p className="empty-state">{children}</p>;
 }
 
-export function ForumRouteError() {
+export function ForumRouteError({ recoveryAction }: { recoveryAction?: ReactNode } = {}) {
   const error = useRouteError();
   const { t } = useTranslation("common");
   const params = useParams();
   const location = useLocation();
   const status = isRouteErrorResponse(error) ? error.status : 500;
   const locale = params.locale ?? location.pathname.split("/").filter(Boolean)[0] ?? "en";
+  useEffect(() => {
+    // An error landing cannot authorize this proof. Discard it rather than
+    // preserving it through sign-in or a retry in another session.
+    takeCredentialProof("email-change");
+    takeCredentialProof();
+  }, [location.hash]);
 
   const copy = status === 401
     ? { heading: t("routeUnauthenticatedHeading"), body: t("routeUnauthenticatedBody") }
@@ -405,9 +413,9 @@ export function ForumRouteError() {
           <p className="eyebrow">{t("systemStateEyebrow")}</p>
           <h1>{copy.heading}</h1>
           <p>{copy.body}</p>
-          <Link className="system-state-action" to={forumIndexPath(locale)}>
+          {recoveryAction ?? <Link className="system-state-action" to={forumIndexPath(locale)}>
             {t("routeBackToForum")}
-          </Link>
+          </Link>}
         </div>
       </section>
     </ForumShell>

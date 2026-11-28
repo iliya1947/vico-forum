@@ -13,7 +13,7 @@ test("Complaints smoke preserves a pre-existing config on EEXIST and early failu
   const db=new URL(url);
   assert.ok(["127.0.0.1","localhost"].includes(db.hostname)&&db.pathname.endsWith("_test"),
     "Ownership probe requires loopback *_test PostgreSQL");
-  const vars=resolve(".dev.vars"),marker="P7_PREEXISTING_CONFIG_MARKER\n";
+  const vars=resolve("build/server/.dev.vars"),marker="P7_PREEXISTING_CONFIG_MARKER\n";
   let created=false;
   try{
     await writeFile(vars,marker,{flag:"wx",mode:0o600});

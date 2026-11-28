@@ -1,3 +1,4 @@
+import { markVerifiedCredentialFixture } from "./verified-credential-fixture";
 import {readFile,readdir} from "node:fs/promises";
 import {Client,Pool} from "pg";
 import {drizzle} from "drizzle-orm/node-postgres";
@@ -10,7 +11,7 @@ import {PostgresOwnerStorageObservations} from "../../db/owner-storage-observati
 import {PostgresOwnerOperationalFactSink} from "../../db/owner-operational-facts";
 import {PostgresAuthFactWriter,type AuthTransitionFact} from "../../db/owner-auth-facts";
 import {DrizzleTranslationTaskStore} from "../../db/translation-task-store";
-import {OperationalProviderCalls} from "../../app/observability/operational-facts";
+import {OperationalFactBuffer,OperationalProviderCalls} from "../../app/observability/operational-facts";
 import {observeRequiredLocalizationRead,googleParametersPresent,type IntegrationRuntimeFacts} from "../../app/observability/integration-runtime";
 import {loadPersistentRegistry} from "../../app/localization/persistent-registry";
 import {createHyperdriveRegistryLoader} from "../../db/hyperdrive-registry";
@@ -41,6 +42,21 @@ it('uses the existing System reader exactly once, preserves its original sample 
   const scoped=await history.readTimeline({monitorKey:'integrations.database'}),native=await history.readTimeline({monitorKey:'system.dependencies'}),all=await history.readTimeline();
   expect(scoped.entries.some(e=>e.id===original)).toBe(true);expect(native.entries.some(e=>e.id===original)).toBe(true);expect(all.entries.filter(e=>e.id===original)).toHaveLength(1);
 });
+it("retains distinct observed authentication mail outcomes by closed purpose", async () => {
+  const buffer = new OperationalFactBuffer(new PostgresOwnerOperationalFactSink(pool));
+  for (const mailPurpose of ["email-verification", "password-reset", "password-create"] as const) {
+    buffer.captureAuthMail(crypto.randomUUID(), "2026-11-25T00:00:00.123000Z", {
+      mailPurpose, mailTransport: "fake", mailOutcome: mailPurpose === "password-create" ? "uncertain" : "accepted",
+    });
+  }
+  await buffer.flush();
+  const current = (await reader().readCurrent()).authentication;
+  expect(current.verificationMail?.values).toMatchObject({ mailPurpose: "email-verification", mailOutcome: "accepted" });
+  expect(current.passwordResetMail?.values).toMatchObject({ mailPurpose: "password-reset", mailOutcome: "accepted" });
+  expect(current.passwordCreateMail?.values).toMatchObject({ mailPurpose: "password-create", mailOutcome: "uncertain" });
+  const scoped = await history.readTimeline({ monitorKey: "integrations.authentication", kind: "integration.authMailOutcome" });
+  expect(scoped.entries.map(entry => entry.values.mailPurpose).sort()).toEqual(["email-verification", "password-create", "password-reset"]);
+});
 it('does not use web success as localization health or invoke the required loader again',async()=>{
   const load=vi.fn(createHyperdriveRegistryLoader('postgresql://postgres:postgres@127.0.0.1:9/vico_integration_test',undefined,()=>undefined)),observed=observeRequiredLocalizationRead(load);
   await observed.load();expect(load).toHaveBeenCalledOnce();const s=await new PostgresOwnerIntegrationMonitoring(pool,()=>system.readSystem(),runtime,observed.current).readCurrent();
@@ -56,7 +72,10 @@ it('keeps real password session creation generic for a dual-method account and p
   const env={BETTER_AUTH_SECRET:'SA07_I_PRIVATE_SECRET_0123456789abcdef0123456789abcdef',BETTER_AUTH_URL:'http://localhost:3000',GOOGLE_CLIENT_ID:'SA07_I_PRIVATE_GOOGLE_ID',GOOGLE_CLIENT_SECRET:'SA07_I_PRIVATE_GOOGLE_SECRET'};
   const captured:Array<{fact:AuthTransitionFact;at:Date}>=[],capture=(fact:AuthTransitionFact,at=new Date())=>{captured.push({fact,at});},writer=new PostgresAuthFactWriter(pool);
   const auth=createAuth(db,env,undefined,undefined,undefined,{capture,trustedActorFor:()=>null}),email='dual-'+crypto.randomUUID()+'@test.invalid',password='Native-password-only-12345';
-  const signed=await auth.api.signUpEmail({body:{name:'Dual method',email,password}});const member=signed.user.id;
+  const signed=await auth.api.signUpEmail({body:{name:'Dual method',email,password}});
+  expect(signed).toEqual({status:true,token:null});
+  const member=await markVerifiedCredentialFixture(c,email);
+  expect((await auth.api.signInEmail({body:{email,password}})).user.id).toBe(member);
   async function flush(){for(const {fact,at}of captured.splice(0))await writer.append(fact,at);}
   await flush();const googleId=crypto.randomUUID();
   await db.insert(account).values({id:googleId,userId:member,accountId:'SA07_I_PRIVATE_EXTERNAL_ACCOUNT',providerId:'google'});

@@ -29,6 +29,7 @@ import {
   contentPostBodyTranslationTasks,
   forumPostRevisions,
   forumPosts,
+  forumTopics,
   translationTaskGenerationHeads,
   translationTasks,
 } from "./schema";
@@ -140,13 +141,35 @@ export class DrizzleContentPostBodyPlanningStore implements ContentPostBodyPlann
           .for("update")
           .limit(1);
 
+        // Resolve immutable post→topic membership without a row lock. Lock the
+        // parent topic before the post, after the existing head/task locks.
+        const [identity] = await transaction
+          .select({ topicId: forumPosts.topicId })
+          .from(forumPosts)
+          .where(eq(forumPosts.id, specification.sourceIdentity.postId))
+          .limit(1);
+        if (!identity) throw new ContentPostBodyPlanningNoWorkRollback("revision-changed");
+        const [topic] = await transaction
+          .select({ id: forumTopics.id, isHidden: forumTopics.isHidden })
+          .from(forumTopics)
+          .where(eq(forumTopics.id, identity.topicId))
+          .for("no key update");
+        if (!topic || topic.isHidden) {
+          throw new ContentPostBodyPlanningNoWorkRollback("revision-changed");
+        }
         const [post] = await transaction
-          .select({ currentRevisionId: forumPosts.currentRevisionId })
+          .select({
+            topicId: forumPosts.topicId,
+            currentRevisionId: forumPosts.currentRevisionId,
+            isHidden: forumPosts.isHidden,
+          })
           .from(forumPosts)
           .where(eq(forumPosts.id, specification.sourceIdentity.postId))
           .for("update");
         if (
           !post
+          || post.topicId !== topic.id
+          || post.isHidden
           || post.currentRevisionId !== expectedRevision.revisionId
         ) {
           throw new ContentPostBodyPlanningNoWorkRollback("revision-changed");

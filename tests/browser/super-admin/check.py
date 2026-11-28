@@ -15,6 +15,10 @@ from urllib.parse import quote, urlparse
 from uuid import uuid4
 
 from playwright.sync_api import expect, sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4195")
@@ -160,7 +164,7 @@ def account(browser, name, ip):
         service_workers="block",
     )
     guarded(ctx)
-    response = ctx.request.post(base + "/api/auth/sign-up/email",
+    response = signup_verified_session(sql, ctx.request, base,
         headers={"Origin": base}, data={
             "name": "SA01 " + name, "email": prefix + "-" + name + "@test.invalid",
             "password": "synthetic-browser-password-123456",

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RouterContextProvider } from "react-router";
 import { forumReaderContext } from "./request-context";
 import { authSessionContext } from "../auth/request-context";
@@ -14,7 +14,7 @@ import { loader as unanswered } from "../routes/unanswered";
 import { loader as tags } from "../routes/tags";
 import { loader as tag } from "../routes/tag";
 import { loader as search } from "../routes/search";
-import { loader as edit, ErrorBoundary } from "../routes/post-edit";
+import { loader as edit, ErrorBoundary, headers as editHeaders } from "../routes/post-edit";
 import { ForumRouteError } from "./ui";
 
 const routes = { home, category, section, topic, popular, unanswered, tags, tag, search, edit };
@@ -55,5 +55,43 @@ describe("primary forum read failures", () => {
     context.set(authorizationContext, { forUser: () => ({ has: async () => { throw new AuthorizationUnavailableError(); } }) } as never);
     await expect(edit({ context, params: { postId: "post" } })).rejects.toMatchObject({ status: 503 });
     expect(ErrorBoundary).toBe(ForumRouteError);
+  });
+  it("makes hidden and missing legacy edit links identical private 404s before authorization", async () => {
+    for (const id of ["hidden-post", "post-in-hidden-topic", "absent-post"]) {
+      const context = new RouterContextProvider();
+      const readPostLocation = vi.fn(async () => undefined);
+      const has = vi.fn(async () => true);
+      context.set(authSessionContext, { user: { id: "owner" } } as never);
+      context.set(forumReaderContext, { readPostLocation } as never);
+      context.set(authorizationContext, { forUser: () => ({ has }) } as never);
+      const result = await edit({ context, params: { locale: "en", postId: id } }).catch(error => error);
+      expect(result).toBeInstanceOf(Response);
+      expect((result as Response).status).toBe(404);
+      expect(await (result as Response).text()).toBe("Not Found");
+      expect((result as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect((result as Response).headers.get("Location")).toBeNull();
+      expect(readPostLocation).toHaveBeenCalledWith(id);
+      expect(has).not.toHaveBeenCalled();
+    }
+    const routeHeaders = editHeaders({
+      parentHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+      loaderHeaders: new Headers(),
+      actionHeaders: new Headers(),
+      errorHeaders: new Headers({ "Cache-Control": "public, max-age=3600" }),
+    });
+    expect(routeHeaders.get("Cache-Control")).toBe("private, no-store");
+  });
+
+  it("keeps the visible legacy own-edit redirect private and scoped to the post", async () => {
+    const context = new RouterContextProvider();
+    const has = vi.fn(async () => true);
+    context.set(authSessionContext, { user: { id: "owner" } } as never);
+    context.set(forumReaderContext, { readPostLocation: async () => ({ topicId: "visible-topic", authorId: "owner" }) } as never);
+    context.set(authorizationContext, { forUser: () => ({ has }) } as never);
+    const response = await edit({ context, params: { locale: "en", postId: "visible-post" } });
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("/en/topics/visible-topic?editPost=visible-post#post-visible-post");
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(has).toHaveBeenCalledWith("forum.post.editOwn");
   });
 });

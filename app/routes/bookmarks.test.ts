@@ -64,6 +64,24 @@ describe("private Bookmarks list loader and cursor", () => {
     expect(JSON.stringify(result)).not.toContain("retained-private-name");
   });
 
+  it("serializes retained hidden bookmarks without title, author, location or source link", async () => {
+    const { context } = setup();
+    context.set(forumReaderContext, {
+      readTopicBookmarks: async () => ({
+        items: [{ id: "hidden-topic", savedAt: new Date("2026-11-18T09:10:11.123Z"),
+          unavailable: true as const }],
+        next: null,
+      }),
+    } as never);
+    const result = await load(context);
+    expect(result).toEqual({
+      locale: "ru", actorId: "viewer-a",
+      items: [{ id: "hidden-topic", savedAt: "2026-11-18T09:10:11.123Z", unavailable: true }],
+      next: null,
+    });
+    expect(JSON.stringify(result)).not.toMatch(/title|author|category|section|revision|href/iu);
+  });
+
   it("passes bounded canonical millisecond cursor, without lookup of anchor authority", async () => {
     const { context, readTopicBookmarks } = setup();
     const result = await load(context,

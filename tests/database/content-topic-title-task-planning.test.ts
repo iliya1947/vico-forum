@@ -69,6 +69,8 @@ beforeAll(async () => {
       .replaceAll('"public".', `"${schemaName}".`);
     await client.query(sql);
   }
+  // This focused historical schema fixture predates the visibility migration.
+  await client.query("alter table forum_topics add column is_hidden boolean not null default false");
 });
 
 beforeEach(async () => {
@@ -678,6 +680,49 @@ describe("content topic-title durable planning", () => {
     });
   });
 });
+
+
+describe("visibility-gated topic-title planning", () => {
+  async function counts() {
+    const result = await client.query(`
+      select
+        (select count(*)::int from translation_task_generation_heads) as heads,
+        (select count(*)::int from translation_tasks) as tasks,
+        (select count(*)::int from content_translation_request_budget_counters) as budget
+    `);
+    return result.rows[0] as { heads: number; tasks: number; budget: number };
+  }
+
+  it("rejects new and repeated title planning during Hide without budget/task writes; Restore admits", async () => {
+    const enqueuer = new FakeTranslationTaskEnqueuer();
+    const planner = createPlanner(client, enqueuer);
+    await client.query("update forum_topics set is_hidden=true where id='topic-a'");
+    const initial = await counts();
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+    expect(await counts()).toEqual(initial);
+    expect(enqueuer.messages).toHaveLength(0);
+
+    await client.query("update forum_topics set is_hidden=false where id='topic-a'");
+    const accepted = await planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a");
+    expect(accepted).toMatchObject({ kind: "queued", taskCreated: true });
+    const planned = await counts();
+    expect(planned).toEqual({ heads: 1, tasks: 1, budget: 2 });
+    expect(enqueuer.messages).toHaveLength(1);
+
+    await client.query("update forum_topics set is_hidden=true where id='topic-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "original", reason: "revision-not-current" });
+    expect(await counts()).toEqual(planned);
+    expect(enqueuer.messages).toHaveLength(1);
+
+    await client.query("update forum_topics set is_hidden=false where id='topic-a'");
+    await expect(planner.planAndDispatch(requestRevision(), "he", budgetAdmission(), "author-a"))
+      .resolves.toMatchObject({ kind: "queued", taskCreated: false });
+    expect(enqueuer.messages).toHaveLength(2);
+  });
+});
+
 
 function createPlanner(
   connection: Client,

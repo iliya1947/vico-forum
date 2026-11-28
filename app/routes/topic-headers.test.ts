@@ -32,15 +32,15 @@ describe("canonical topic final HTTP header policy", () => {
     expect(result.get("Set-Cookie")).toBe("language=en; Path=/");
   });
 
-  it("keeps privacy on thrown action errors but does not turn normal public GETs private", () => {
+  it("keeps privacy on thrown action errors and disables public GET caching", () => {
     const denied = headers(args({ error: { "Cache-Control": "private, no-store" } }));
     expect(denied.get("Cache-Control")).toBe("private, no-store");
     const publicGet = headers(args({
       parent: { "Cache-Control": "public, max-age=300", "Vary": "Accept-Language" },
     }));
-    expect(publicGet.get("Cache-Control")).toBe("public, max-age=300");
+    expect(publicGet.get("Cache-Control")).toBe("no-store");
     expect(publicGet.get("Vary")).toBe("Accept-Language");
-    expect(headers(args()).has("Cache-Control")).toBe(false);
+    expect(headers(args()).get("Cache-Control")).toBe("no-store");
   });
 
   it("preserves loader-specified policies and prioritizes error over action/loader", () => {

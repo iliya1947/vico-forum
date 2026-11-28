@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-Последнее обновление: 2026-11-19
+Последнее обновление: 2026-11-27
 
 ## Назначение
 
@@ -29,6 +29,8 @@ Merge в `main` сам по себе не означает production rollout.
 Vico Forum находится в pre-release разработке.
 
 - Stage 0–5 завершены в repository/local-CI path.
+- Управление обычной структурой форума и перенос тем (Task 6) реализованы и merged в `main` в repository/local-CI; production rollout не выполнялся.
+- Authentication lifecycle AUTH-01–AUTH-07 реализован и принят в repository/local-CI; внешняя активация остаётся Stage 6.
 - Текущий standalone product priority по `ROADMAP.md` — UI/UX product pass.
 - Ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Super-admin включает AccountState enforcement, exact-Owner деактивацию аккаунта, все 12 измеряемых Monitoring-областей, общий source-aware History/Event log и финальный Overview; Infrastructure остаётся Stage-6 placeholder. Complaints ведутся отдельно.
 - Stage 6 external integration поставлен владельцем на паузу и не продолжается без отдельного указания.
@@ -45,7 +47,7 @@ Vico Forum находится в pre-release разработке.
 - PostgreSQL 17 + Drizzle ORM `0.45.2`;
 - Better Auth `1.7.7` + PostgreSQL Drizzle adapter;
 - generic `/:locale/*`, runtime `LocaleRegistry`, BCP-47, LTR/RTL и request-scoped i18next;
-- repository migration history: `0000`–`0070` (Watch `0068_topic_watch`; Bookmarks `0069_topic_bookmarks`; personal Mute/Block `0070_personal_filters`);
+- repository migration history: `0000`–`0078` (Watch `0068_topic_watch`; Bookmarks `0069_topic_bookmarks`; personal Mute/Block `0070_personal_filters`; moderation visibility `0071_moderation_visibility_foundation`; forum structure `0072_forum_structure_foundation`; authentication lifecycle `0073`–`0078`: uniqueness, lifecycle budgets и auth observations);
 - externally accepted migration evidence: `0000`–`0020`.
 
 ## Реализованный продукт
@@ -56,7 +58,7 @@ Vico Forum находится в pre-release разработке.
 
 - публичное чтение `категория → раздел → тема → сообщения`;
 - Better Auth session boundary и `/api/auth/*`;
-- Google OAuth и email/password authentication foundation;
+- Google OAuth и email/password authentication lifecycle с обязательным подтверждением email при регистрации;
 - authenticated создание тем и ответов;
 - safe Markdown rendering;
 - transactional anti-spam cooldown;
@@ -72,7 +74,61 @@ Vico Forum находится в pre-release разработке.
 - public profiles, profile navigation и online presence foundation;
 - `/:locale/attention` как отдельный permission-scoped Signals / Complaints / Security workspace.
 
-Email verification, transactional email sender и password recovery намеренно отложены.
+- обратимое Hide/Restore опубликованных тем и сообщений с отдельным `forum.content.visibility.manage`, server-side CAS и причинами, приватной очередью и инспекцией, публичной нейтральной проекцией скрытого содержимого и сохранением существующего связанного состояния;
+- создание/переименование/порядок обычных категорий и разделов, перенос разделов и ordinary topic Move с двумя независимыми правами, CAS версии структуры/местоположения, сохранением постоянных ID и связанных состояний, исходной Admin/Owner History.
+
+### Authentication lifecycle
+
+В repository/local-CI реализованы и приняты обязательное подтверждение email без
+автоматической сессии, повторная отправка подтверждения, восстановление/сброс пароля,
+own Account & security (email/status, двухфазная смена email, создание/смена пароля,
+explicit Google link/unlink, own sessions), единая auth-mail граница с Resend/Brevo
+адаптерами и локальным transport, дополнительные DB-backed lifecycle budgets и
+provider-neutral registration challenge foundation. Identity, AccountState и
+application authorization сохраняют существующие границы. Whole-lifecycle acceptance
+и pre-Stage-6 security gate завершены на принятой реализации в PostgreSQL 17,
+built Worker/Better Auth и Chromium. Это не deployed acceptance. Контракты —
+в `PROJECT.md`, `docs/SETTINGS.md` и `docs/auth/AUTHORIZATION.md`.
+
+### Moderation visibility
+
+Модерация видимости тем и сообщений реализована в `main` в repository/local-CI
+после миграции `0071_moderation_visibility_foundation`. Публичные readers,
+поиск, ссылки на вложения и переводы не раскрывают скрытые источники:
+скрытая тема недоступна через нейтральный 404; скрытое сообщение
+отображается обезличенной заглушкой со стабильной хронологией.
+Отдельные защищённые очередь/инспекция и Hide/Restore используют
+актуальные серверные права, AP-10 admission, CAS, bounded reason и
+атомарную административную History. Собственные и независимые
+Complaint/Appeal/Help lifecycle-действия сохраняют свои полномочия.
+
+На финальном exact head проведены CI с PostgreSQL 17 и Worker/Better Auth
+smoke, подключённые Chromium и локальный R2 acceptance; это не
+deployed/production acceptance и не свидетельство применения
+`0071` во внешней БД. Постоянные контракты —
+в `PROJECT.md`, `docs/auth/AUTHORIZATION.md` и `docs/ADMIN_PANEL.md`.
+
+### Forum structure and topic Move
+
+В `main` реализовано управление обычными категориями и разделами
+(create/rename/reorder/reparent) и перенос существующих ordinary-тем
+между ordinary-разделами, включая разные категории. Новая миграция
+`0072_forum_structure_foundation` добавила порядок контейнеров,
+глобальную версию структуры и версию местоположения темы.
+`forum.structure.manage` первоначально предоставлено built-in admin,
+а `forum.topic.move` — built-in moderator/admin. Для hidden ordinary topic
+Move дополнительно требует `forum.content.visibility.manage`.
+Reserved Help identities не преобразуются. Перенос сохраняет
+ID/URL, опубликованные данные и связанные пользовательские состояния.
+
+Есть Admin-формы, общий topic Move control, защищённые
+destination/context readers и исходные восемь видов structural History
+в Admin/Owner представлении. Локально подтверждены PostgreSQL 17,
+Worker/Better Auth и Chromium acceptance на проверенном коде.
+External применение `0072`, production Worker/Owner binding и
+deployed acceptance не подтверждены. Постоянный контракт —
+в `PROJECT.md`, `docs/ADMIN_PANEL.md` и
+`docs/auth/AUTHORIZATION.md`.
 
 ### Editor 2.0
 
@@ -123,10 +179,10 @@ browser-wide тему, сохранение своего `user.locale` и сущ
 `/:locale/settings/administrator` с доступом при текущих Admin/Attention
 permissions, локальными per-account/device предпочтениями переходов,
 плотности и раскрытия второстепенных технических данных — без нового DB/RBAC.
-SET-05 добавил защищённый `/:locale/settings/account` для authenticated пользователей:
-сведения о связанных методах входа, смену существующего credential-пароля через
-штатный Better Auth с общим лимитом попыток и управление собственными сессиями
-без передачи session tokens клиенту. SET-05 не добавил schema/migration/RBAC.
+Защищённый `/:locale/settings/account` сохраняет SET-05 операции смены существующего
+пароля и управления собственными сессиями; authentication lifecycle дополняет его
+email/status, сменой email, созданием пароля для Google-only аккаунта и явным
+Google link/unlink. Session tokens и credential secrets не передаются клиенту в DTO.
 SET-06 добавил защищённый `/:locale/settings/privacy` для authenticated
 пользователей: сохраняемый в PostgreSQL account-wide переключатель
 «Show me online» (при отсутствии настройки — ON), серверное исключение
@@ -262,6 +318,7 @@ External topology является mutable state и должна перепро�
 
 - production Worker rollout с web-runtime binding/acceptance;
 - real Google OAuth configuration и interactive smoke;
+- активация и acceptance реальной auth-mail отправки (Resend/Brevo, credentials, sender/domain/DNS), выбор и acceptance реального anti-bot provider при его подключении, deployed authentication lifecycle и внешние rate-limit/anti-abuse настройки;
 - установка точного server-only `VICO_OWNER_USER_ID` для внутреннего Better Auth аккаунта разработчика после Google sign-in и external acceptance реализованной Owner authority;
 - translation Queue/provider/background runtime;
 - authoritative production translation allowance/anti-abuse configuration;
@@ -275,13 +332,14 @@ External topology является mutable state и должна перепро�
 - В `main` ordinary Admin Panel AP-01–AP-11, owner/authorization redesign Stage 1–2, Settings SET-01–SET-06 и Super-admin SA-01–SA-08 реализованы в repository/local-CI. Все 12 измеряемых Super-admin Monitoring-областей доставлены; Infrastructure остаётся честным Stage-6 placeholder. Реальные Google/Owner binding, production runtime и external integrations не подтверждены.
 - Super-admin не добавляет reactivation, physical delete/retention-end action, forced foreign-session termination, foreign credential/provider mutation, второго Owner или recovery/transfer model.
 - Complaints integration/closeout покрыт repository/local-CI проверками; external/deployed acceptance Complaints не выполнялась.
-- Email verification/password recovery остаются отложенными.
+- Authentication lifecycle принят в repository/local-CI; реальные auth-mail providers, anti-bot integration и deployed lifecycle acceptance ещё не выполнены.
 - Editor drafts/autosave остаются отложенными.
 - Stage 6 external integration остаётся paused.
 
 ## Ближайший маршрут
 
-1. Довести отдельный UI/UX product pass до финальной real-runtime acceptance; repository/local-CI завершение Super-admin не заменяет эту визуальную/продуктовую приёмку.
-2. Сохранить реализованные Settings и Super-admin boundaries без расширения production authority; реальную Google OAuth / exact Owner binding acceptance оставить Stage 6.
-3. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`: pending migrations/runtime grants, Hyperdrive, Google/Owner binding, Queue/providers, preview isolation, deployed smoke и backup/restore.
-4. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.
+1. После документационного closeout authentication lifecycle согласовать следующий product priority с владельцем.
+2. Довести отдельный UI/UX product pass до финальной real-runtime acceptance; repository/local-CI завершение Super-admin не заменяет эту визуальную/продуктовую приёмку.
+3. Сохранить реализованные Settings и Super-admin boundaries без расширения production authority; реальную Google OAuth / exact Owner binding acceptance оставить Stage 6.
+4. Возобновлять Stage 6 external integration только по отдельному указанию владельца и по `docs/database/*`: pending migrations/runtime grants, Hyperdrive, Google/Owner binding, auth-mail и anti-bot external acceptance, Queue/providers, preview isolation, deployed smoke и backup/restore.
+5. После завершения pre-release product и external gates перейти к финальному общепроектному refinement и Stage 7 production release по `ROADMAP.md`.

@@ -5,6 +5,7 @@ on:
     types:
       - labeled
     paths:
+      - "tests/database/auth-whole-lifecycle.test.ts"
       - ".github/workflows/topic-watch-browser.yml"
       - "tests/browser/topic-watch/**"
       - "app/forum/**"

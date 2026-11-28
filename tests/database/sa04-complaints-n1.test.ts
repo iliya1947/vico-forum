@@ -270,6 +270,9 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
       try {
         if (order === "complaint-first") {
           reported = repo(complaintClient).submit(actor, command);
+          // Observe rejection while the competing transaction finishes. The
+          // original promise is asserted below after the lock-order checks.
+          void reported.catch(() => {});
           await barrier.observed; // Content lock already held by real Complaint submit.
           correcting = correct();
           await waitForBlock(localePid, reportPid);
@@ -277,6 +280,9 @@ describe("SA04-N1 native Complaint submit actor admission and content dependenci
           correcting = correct();
           await barrier.observed; // Corrector holds original revision content lock.
           reported = repo(complaintClient).submit(actor, command);
+          // Observe rejection while the competing transaction finishes. The
+          // original promise is asserted below after the lock-order checks.
+          void reported.catch(() => {});
           await waitForBlock(reportPid, localePid);
         }
         barrier.resume();

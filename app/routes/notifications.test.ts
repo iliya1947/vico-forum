@@ -134,6 +134,43 @@ describe("notifications route", () => {
     expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1",0);
   });
 
+  it("serializes unavailable reply/mention without hidden source metadata or actor", async () => {
+    const value = context();
+    const secret = "HIDDEN_NOTIFICATION_SENTINEL";
+    const readNotifications = vi.fn(async () => ({
+      page: 0, total: 2, hasMore: false, items: [{
+        id: "hidden-reply", kind: "reply" as const, unavailable: true as const,
+        actorName: secret, actorIdentityKind: "deleted" as const,
+        topicId: "hidden-topic", topicTitle: secret, postId: "hidden-post",
+        caseId: secret, appealId: secret, createdAt: new Date("2026-11-01T10:00:00.000Z"), readAt: null,
+      }, {
+        id: "hidden-mention", kind: "mention" as const, unavailable: true as const,
+        actorName: secret, topicId: "hidden-topic", topicTitle: secret, postId: "hidden-post",
+        createdAt: new Date("2026-11-01T11:00:00.000Z"),
+        readAt: new Date("2026-11-02T12:00:00.000Z"),
+      }],
+    }));
+    value.set(forumReaderContext, { readNotifications } as never);
+    const result = await loader({ params: { locale: "ru" }, context: value });
+    expect(result).toEqual({
+      locale: "ru", page: 0, total: 2, hasMore: false,
+      notifications: [{
+        id: "hidden-reply", kind: "reply", unavailable: true,
+        actorName: null, topicId: null, topicTitle: null, postId: null,
+        caseId: null, appealId: null,
+        createdAt: "2026-11-01T10:00:00.000Z", readAt: null,
+      }, {
+        id: "hidden-mention", kind: "mention", unavailable: true,
+        actorName: null, topicId: null, topicTitle: null, postId: null,
+        createdAt: "2026-11-01T11:00:00.000Z", readAt: "2026-11-02T12:00:00.000Z",
+      }],
+    });
+    expect(JSON.stringify(result)).not.toContain(secret);
+    expect(JSON.stringify(result)).not.toContain("hidden-topic");
+    expect(JSON.stringify(result)).not.toContain("hidden-post");
+    expect(readNotifications).toHaveBeenCalledExactlyOnceWith("user-1", 0);
+  });
+
   it("rejects duplicate, unknown, oversized and invalid notification POST before mutation",async()=>{
     const contextValue=context();
     const markNotificationRead=vi.fn();
@@ -258,6 +295,27 @@ describe("notifications route", () => {
     await expect(action({
       request: openRequest(), params: { locale: "en" }, context: value,
     })).rejects.toBe(bug);
+  });
+
+  it("opens a hidden reply/mention through a neutral inbox redirect after marking read", async () => {
+    for (const locale of ["en", "ru", "he"]) {
+      const value = context();
+      const markNotificationRead = vi.fn(async () => ({ kind: "unavailable" as const }));
+      value.set(forumWriterContext, { markNotificationRead } as never);
+      const response = await action({
+        request: openRequest({ notificationId: "hidden-reply" }),
+        params: { locale }, context: value,
+      });
+      expect(response).toBeInstanceOf(Response);
+      expect((response as Response).status).toBe(302);
+      expect((response as Response).headers.get("Location")).toBe(`/${locale}/notifications`);
+      expect((response as Response).headers.get("Cache-Control")).toBe("private, no-store");
+      expect(JSON.stringify([...((response as Response).headers.entries())]))
+        .not.toMatch(/hidden-topic|hidden-post|secret-title/iu);
+      expect(markNotificationRead).toHaveBeenCalledExactlyOnceWith({
+        userId: "user-1", notificationId: "hidden-reply",
+      });
+    }
   });
 
   it("marks the selected notification read and redirects to its reply", async () => {

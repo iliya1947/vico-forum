@@ -6,7 +6,7 @@ import { createMemoryRouter, data, RouterProvider, useLoaderData } from "react-r
 import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
-import { BookmarksView } from "./bookmarks-view";
+import { BookmarksView, type BookmarkItemPresentation } from "./bookmarks-view";
 
 afterEach(() => { cleanup(); window.sessionStorage.clear(); vi.restoreAllMocks(); });
 
@@ -29,7 +29,7 @@ const items = [{
 
 function setup(action: ({ request }: { request: Request }) => Promise<unknown>,
   initialPath = "/en/bookmarks", next: { beforeSavedAt: string; beforeTopicId: string } | null = null,
-  authenticated = true, snapshot: () => typeof items = () => items) {
+  authenticated = true, snapshot: () => BookmarkItemPresentation[] = () => items) {
   Object.defineProperty(window, "matchMedia", { configurable: true, value: vi.fn(() => ({
     matches: false, addEventListener() {}, removeEventListener() {},
   })) });
@@ -64,6 +64,35 @@ describe("private Bookmarks presentation", () => {
     expect(screen.getByRole("link", { name: "Older bookmarks" }).getAttribute("href"))
       .toContain("beforeTopicId=topic-0");
     expect(screen.getByRole("link", { name: "Bookmarks" })).toHaveAttribute("href", "/en/bookmarks");
+  });
+
+  it("shows an unavailable retained bookmark without a topic link and still offers safe undo", async () => {
+    const unavailable: BookmarkItemPresentation[] = [{
+      id: "topic-1", savedAt: "2026-11-18T09:10:11.123Z", unavailable: true,
+    }];
+    let current = unavailable;
+    const requests: Record<string, FormDataEntryValue>[] = [];
+    const action = vi.fn(async ({ request }: { request: Request }) => {
+      requests.push(Object.fromEntries((await request.formData()).entries()));
+      current = [];
+      return { operation: "topicBookmark", ok: true, topicId: "topic-1",
+        actorId: "actor-a", bookmarked: false };
+    });
+    const { container } = setup(action, "/en/bookmarks", null, true, () => current);
+    expect(await screen.findByText("Topic unavailable")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /literal title/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /topic unavailable/i })).not.toBeInTheDocument();
+    expect(container.querySelector(".bookmarks-topic-unavailable time"))
+      .toHaveAttribute("datetime", "2026-11-18T09:10:11.123Z");
+    expect(container.innerHTML).not.toContain("RETAINED_PRIVATE_NAME");
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove bookmark" }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(requests[0]).toEqual({
+      intent: "setTopicBookmark", editorActorId: "actor-a", bookmarked: "false",
+    });
+    await waitFor(() => expect(screen.queryByText("Topic unavailable")).not.toBeInTheDocument());
+    expect(screen.getByText("You have not saved any topics yet.")).toBeInTheDocument();
   });
 
   it("keeps the row on an unconfirmed failure and does not retry the write on refresh", async () => {

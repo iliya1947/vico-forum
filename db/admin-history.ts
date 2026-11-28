@@ -16,6 +16,18 @@ export type HelpSignalHistoryEffect =
   | { action: "help.needsDetailsChanged"; context: { before: false; after: true } }
   | { action: "help.solutionModerationChanged"; context: { postId: string; before: string | null; after: string } }
   | { action: "help.duplicateConfirmed"; context: { relationshipId: string; originalTopicId: string } };
+export interface VisibilityHistoryContext {
+  topicId: string; before: boolean; after: boolean;
+  previousVersion: number; version: number; observedRevisionId: string;
+}
+export type VisibilityHistoryChange =
+  | (TopicTarget & { action: "topic.hidden" | "topic.restored"; reason: string; context: VisibilityHistoryContext })
+  | { targetType: "post"; targetId: string; targetLabel: string; reason: string;
+      action: "post.hidden" | "post.restored"; context: VisibilityHistoryContext & { postId: string } };
+/** Visibility event labels use neutral target identity, never hidden title/body. */
+export function visibilityHistoryLabel(kind: "topic" | "post", id: string): string {
+  return historyLabel(kind + ":" + id);
+}
 export type ForumHistoryChange =
   | (TopicTarget & { action: "help.signalReviewed"; context: { signalId: string; kind: string; resolution: "accepted" | "rejected" | "superseded"; effect?: HelpSignalHistoryEffect } })
   | (TopicTarget & { action: "topic.pinned" | "topic.unpinned" | "topic.solved"; context: { before: boolean; after: boolean } })
@@ -50,7 +62,34 @@ export type RegistrationSettingsHistoryChange = {
     after: { googleRegistrationEnabled: boolean; emailRegistrationEnabled: boolean; version: number };
   };
 };
-export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | UserMeasureHistoryChange | RegistrationSettingsHistoryChange;
+/** Bigint positions and versions cross JSON/History boundaries as canonical decimal strings. */
+export interface StructureHistoryVersion { previousVersion: string; version: string }
+export interface CategoryHistoryState { name: string; sortPosition: string }
+export interface SectionHistoryState extends CategoryHistoryState { categoryId: string }
+export interface TopicLocationHistoryState {
+  categoryId: string; categoryName: string; sectionId: string; sectionName: string;
+}
+type CategoryTarget = { targetType: "category"; targetId: string; targetLabel: string };
+type SectionTarget = { targetType: "section"; targetId: string; targetLabel: string };
+/** Foundation only. Domain commands append these in their own transactions in later stages.
+ * Names/labels are bounded by the producer; topic moves never contain topic source or authors. */
+export type StructureHistoryChange =
+  | (CategoryTarget & { action: "category.created"; context: StructureHistoryVersion & { before: null; after: CategoryHistoryState } })
+  | (CategoryTarget & { action: "category.renamed"; context: StructureHistoryVersion & { before: CategoryHistoryState; after: CategoryHistoryState } })
+  | (CategoryTarget & { action: "category.reordered"; context: StructureHistoryVersion & {
+      before: CategoryHistoryState; after: CategoryHistoryState; neighborId: string;
+      neighborBeforePosition: string; neighborAfterPosition: string;
+    } })
+  | (SectionTarget & { action: "section.created"; context: StructureHistoryVersion & { before: null; after: SectionHistoryState } })
+  | (SectionTarget & { action: "section.renamed" | "section.moved"; context: StructureHistoryVersion & { before: SectionHistoryState; after: SectionHistoryState } })
+  | (SectionTarget & { action: "section.reordered"; context: StructureHistoryVersion & {
+      before: SectionHistoryState; after: SectionHistoryState; neighborId: string;
+      neighborBeforePosition: string; neighborAfterPosition: string;
+    } })
+  | ({ targetType: "topic"; targetId: string; targetLabel: string } & {
+      action: "topic.moved"; context: StructureHistoryVersion & { before: TopicLocationHistoryState; after: TopicLocationHistoryState };
+    });
+export type AdminHistoryChange = AuthorizationHistoryChange | ForumHistoryChange | VisibilityHistoryChange | UserMeasureHistoryChange | RegistrationSettingsHistoryChange | StructureHistoryChange;
 // Database-scoped transaction advisory lock shared by the actual pg/Drizzle producers.
 export const ADMIN_HISTORY_ORDER_LOCK_SQL = "select pg_advisory_xact_lock(1447641935, 1)";
 export interface AdminHistoryEvent {
@@ -98,13 +137,28 @@ export async function appendRegistrationSettingsHistory(
   if (result.rowCount !== 1) throw new Error("History actor no longer exists");
 }
 
+/** Structural commands append last in the same transaction; never reads topic source. */
+export async function appendStructureHistory(
+  client: Pick<PoolClient, "query">, actorId: string, change: StructureHistoryChange,
+): Promise<void> {
+  const label = change.action === "topic.moved"
+    ? visibilityHistoryLabel("topic", change.targetId) : historyLabel(change.targetLabel);
+  await client.query(ADMIN_HISTORY_ORDER_LOCK_SQL);
+  const result = await client.query(`insert into admin_history
+    (id,actor_id,actor_label,action,target_type,target_id,target_label,context)
+    select $1,u.id,left(u.name,200),$3,$4,$5,$6,$7::jsonb from "user" u where u.id=$2`,
+    [crypto.randomUUID(), actorId, change.action, change.targetType, change.targetId,
+      label, JSON.stringify(change.context)]);
+  if (result.rowCount !== 1) throw new Error("History actor no longer exists");
+}
+
 export class PostgresAdminHistoryReader implements AdminHistoryReader {
   constructor(private readonly database: Pick<Pool, "query">) {}
   async read(cursor?: HistoryCursor, limit = 25): Promise<AdminHistoryPage> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new Error("Invalid history page size");
     const result = await this.database.query<{
       position: string; id: string; occurred_at: Date; actor_id: string; actor_label: string;
-      action: AdminHistoryChange["action"]; target_type: "role" | "user" | "topic" | "post" | "user-measure" | "forum-settings"; target_id: string; target_label: string;
+      action: AdminHistoryChange["action"]; target_type: AdminHistoryChange["targetType"]; target_id: string; target_label: string;
       context: AdminHistoryChange["context"]; reason: string | null;
     }>(`select position, id, occurred_at, actor_id, actor_label, action, target_type, target_id, target_label, context, reason
       from admin_history where ($1::bigint is null or position < $1::bigint)

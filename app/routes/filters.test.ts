@@ -51,6 +51,26 @@ describe("private Mute/Block keyset list route", () => {
     expect(h.get("Set-Cookie")).toBe("theme=dark; Path=/");
   });
 
+  it("keeps hidden own Mute as a source-free unavailable row while preserving keyset", async () => {
+    const env = setup();
+    env.context.set(forumReaderContext, {
+      readMutedTopics: async () => ({
+        items: [{ id: "hidden-t", mutedAt: new Date("2026-11-17T08:09:10.111Z"),
+          unavailable: true as const }],
+        next: { createdAt: new Date("2026-11-16T07:08:09.123Z"), targetId: "older-t" },
+      }),
+    } as never);
+    const result = await load(env.context);
+    expect(result.data).toEqual({
+      locale: "ru", actorId: "viewer-a", tab: "topics",
+      items: [{ kind: "topic", id: "hidden-t", unavailable: true,
+        createdAt: "2026-11-17T08:09:10.111Z" }],
+      next: { beforeCreatedAt: "2026-11-16T07:08:09.123Z", beforeTargetId: "older-t" },
+    });
+    expect(JSON.stringify(result.data)).not.toMatch(/title|author|category|section|revision|href/iu);
+    expect(result.init?.headers).toMatchObject({ "Cache-Control": "private, no-store" });
+  });
+
   it("isolates the blocked users tab, parses its canonical cursor and strips transport metadata", async () => {
     const env = setup();
     const result = await load(env.context,

@@ -8,6 +8,10 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url",default="http://127.0.0.1:4213")
@@ -114,7 +118,7 @@ try:
                       else (external.append(r.request.url),r.abort())[-1])
             return ctx
         owner_ctx,guest_ctx,member_ctx=isolated(),isolated(),isolated()
-        signup=owner_ctx.request.post(base+"/api/auth/sign-up/email",headers={"Origin":base},
+        signup=signup_verified_session(sql, owner_ctx.request, base,headers={"Origin":base},
             data={"name":"L3 Owner","email":prefix+"-owner@test.invalid",
                   "password":"l3-local-only-browser-password-123456"})
         assert signup.status==200,(signup.status,signup.text()[:250])
@@ -126,7 +130,7 @@ try:
         target_id="l3-target-"+uuid4().hex
         sql('insert into "user"(id,name,email) values($1,$2,$3)',
             [target_id,"L3 Target",prefix+"-target@test.invalid"])
-        other=member_ctx.request.post(base+"/api/auth/sign-up/email",headers={"Origin":base},
+        other=signup_verified_session(sql, member_ctx.request, base,headers={"Origin":base},
             data={"name":"L3 Nonowner","email":prefix+"-nonowner@test.invalid",
                   "password":"l3-local-only-browser-password-123456"})
         assert other.status==200

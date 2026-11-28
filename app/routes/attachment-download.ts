@@ -8,6 +8,7 @@ import {
 } from "../forum/attachment-request-context";
 import { ForumAttachmentDraftConflictError, InvalidForumAttachmentError, ForumAttachmentStorageUnavailableError } from "../../db/forum-attachment-errors";
 import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
+import type { ForumAttachmentMetadata } from "../../db/forum-attachments";
 
 function failure(status: number): Response {
   return new Response(null, {
@@ -57,6 +58,13 @@ export async function loader({ request, params, context }: {
     throw error;
   }
   if (!attachment) return failure(404);
+  return deliverAttachment(context,attachment,view);
+}
+
+/** Shared download/inline/text policy for the public and independently authorized private path. */
+export async function deliverAttachment(
+  context: RouterContextProvider, attachment: ForumAttachmentMetadata, view: string | null,
+): Promise<Response> {
   try {
     const bucket = attachmentBucketForRequest(context);
     const object = await bucket.get(attachment.objectKey, {

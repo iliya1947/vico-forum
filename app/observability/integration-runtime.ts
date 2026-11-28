@@ -23,7 +23,19 @@ export function observeRequiredLocalizationRead(loader:()=>Promise<LoadedLocaleR
 export function googleParametersPresent(environment:{GOOGLE_CLIENT_ID?:unknown;GOOGLE_CLIENT_SECRET?:unknown}):boolean{
   return [environment.GOOGLE_CLIENT_ID,environment.GOOGLE_CLIENT_SECRET].every(value=>typeof value==='string'&&value.trim().length>0);
 }
+/** Presence only: never return key, sender, raw mode or validate provider health. */
+export function mailConfigurationPresence(environment: {
+  AUTH_MAIL_MODE?: unknown; AUTH_MAIL_PROVIDER?: unknown; AUTH_MAIL_FROM_ADDRESS?: unknown;
+  AUTH_MAIL_RESEND_KEY?: unknown; AUTH_MAIL_BREVO_KEY?: unknown;
+}): {mailModeRequested:"disabled"|"fake"|"provider"|"invalid";mailProviderParametersPresent:boolean} {
+  const mode=environment.AUTH_MAIL_MODE??"disabled";
+  const provider=environment.AUTH_MAIL_PROVIDER;
+  const key=provider==="resend"?environment.AUTH_MAIL_RESEND_KEY:provider==="brevo"?environment.AUTH_MAIL_BREVO_KEY:undefined;
+  return {mailModeRequested:mode==="disabled"||mode==="fake"||mode==="provider"?mode:"invalid",
+    mailProviderParametersPresent: [environment.AUTH_MAIL_FROM_ADDRESS,key].every(value=>typeof value==="string"&&value.trim().length>0)};
+}
 export interface IntegrationRuntimeFacts {
+  mailConfiguration?: ReturnType<typeof mailConfigurationPresence>;
   webBindingPresent:boolean;localizationBindingPresent:boolean;googleParametersPresent:boolean;bucketBound:boolean;
   generationEnabled:boolean;generationAdmissionWired:boolean;providerWired:boolean;enqueuerWired:boolean;consumerWired:boolean;
 }

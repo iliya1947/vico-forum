@@ -10,6 +10,10 @@ from urllib.parse import quote,urlencode,urlparse
 from urllib.request import Request,urlopen
 from uuid import uuid4
 from playwright.sync_api import expect,sync_playwright
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session
 
 parser=argparse.ArgumentParser();parser.add_argument('--url',default='http://127.0.0.1:4235');parser.add_argument('--output',type=Path,required=True)
 a=parser.parse_args();base=a.url.rstrip('/');db=os.environ.get('DATABASE_URL','')
@@ -90,7 +94,7 @@ try:
    ctx=browser.new_context(viewport={'width':1280,'height':900},service_workers='block',extra_http_headers={'cf-connecting-ip':'192.0.2.'+str(100+len(contexts))});contexts.append(ctx)
    ctx.route('**/*',lambda r:r.continue_() if r.request.url.startswith(base+'/') else (external.append(r.request.url),r.abort())[-1])
    email=prefix+'-'+label+'@test.invalid';password='SA05-local-fixture-password-123456'
-   response=ctx.request.post(base+'/api/auth/sign-up/email',headers={'Origin':base},data={'name':prefix+'-PRIVATE-'+label,'email':email,'password':password});assert response.status==200,(label,response.status,response.text()[:180])
+   response=signup_verified_session(sql, ctx.request, base,headers={'Origin':base},data={'name':prefix+'-PRIVATE-'+label,'email':email,'password':password});assert response.status==200,(label,response.status,response.text()[:180])
    return ctx,response.json()['user']['id'],email,password
   oc,issued,owner_email,owner_password=account('owner');tc,target,target_email,target_password=account('target')
   other_ctx,other,other_email,other_password=account('other');admin_ctx,admin,_,_=account('admin');fc,fault,_,_=account('fault');dc,delayed,_,_=account('delayed');switch_ctx,switch_user,_,_=account('switch')

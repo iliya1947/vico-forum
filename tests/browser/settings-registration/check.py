@@ -11,6 +11,10 @@ import subprocess
 from urllib.parse import urlencode, urlparse
 from uuid import uuid4
 from playwright.sync_api import sync_playwright, expect
+import sys
+from pathlib import Path as FixturePath
+sys.path.insert(0, str(FixturePath(__file__).resolve().parents[1]))
+from verified_fixture import signup_verified_session, mark_verified_fixture
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--url", default="http://127.0.0.1:4189")
@@ -117,7 +121,7 @@ try:
             return ctx
 
         owner_ctx = isolated()
-        owner_response = owner_ctx.request.post(base + "/api/auth/sign-up/email",
+        owner_response = signup_verified_session(sql, owner_ctx.request, base,
             headers={"Origin": base}, data={
                 "name": "Synthetic Owner", "email": prefix + "-owner@test.invalid",
                 "password": "synthetic-browser-password-123456",
@@ -140,17 +144,32 @@ try:
             availability(guest, True, True)
         record("migration-0060-defaults-and-public-locale-signup")
 
-        # Full browser form + real Better Auth creates a real member and session.
+        # Real browser signup creates a pending member without a session.
+        # Verification-specific acceptance exercises the terminal proof separately.
         get(member, "/en/sign-up")
         member_email = prefix + "-member@test.invalid"
         member.get_by_role("textbox", name="Display name").fill("Integration member")
         member.get_by_role("textbox", name="Email").fill(member_email)
         member.get_by_label("Password").fill("synthetic-browser-password-123456")
         member.get_by_role("button", name="Create account").click()
-        expect(member.locator(".auth-user")).to_have_count(1)
-        member_rows = sql('select id from "user" where email=$1', [member_email])
-        assert len(member_rows) == 1, "browser signup did not create a Better Auth user"
+        expect(member.get_by_role("heading", name="Check your email")).to_be_visible()
+        expect(member.locator(".auth-user")).to_have_count(0)
+        member_rows = sql('select id,email_verified from "user" where email=$1', [member_email])
+        assert len(member_rows) == 1 and not member_rows[0]["email_verified"]
         member_id = member_rows[0]["id"]
+        assert not sql('select id from "session" where user_id=$1', [member_id])
+        assert not any("session_token" in cookie["name"] for cookie in member_ctx.cookies())
+        denied = member_ctx.request.post(base + "/api/auth/sign-in/email", headers={"Origin": base},
+            data={"email": member_email, "password": "synthetic-browser-password-123456"})
+        assert denied.status == 403
+        assert not sql('select id from "session" where user_id=$1', [member_id])
+        record("browser-email-signup-pending-no-session")
+        assert mark_verified_fixture(sql, base, member_email) == member_id
+        member.get_by_role("link", name="Continue to sign in").click()
+        member.get_by_role("textbox", name="Email").fill(member_email)
+        member.get_by_label("Password").fill("synthetic-browser-password-123456")
+        member.get_by_role("button", name="Sign in with email").click()
+        expect(member.locator(".auth-user")).to_have_count(1)
         assert sql('select id from "session" where user_id=$1', [member_id])
         record("browser-email-signup-user-and-session-created")
 

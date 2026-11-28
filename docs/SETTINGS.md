@@ -21,7 +21,7 @@ owner visual acceptance and Stage 6 external integration are not claimed.
 | Forum & roles | `/:locale/settings/forum` | **SET-02 implemented**; exact authenticated server-bound Owner only; existing authorization management plus independent new-registration flags |
 | Administrator preferences | `/:locale/settings/administrator` | **SET-04 implemented**; authenticated actor with current Admin or Attention access; account/device-local workspace presentation preferences |
 | User preferences | `/:locale/settings/user` | **SET-03 implemented**; authenticated users manage browser theme, own preferred locale and existing device-local Editor/code preferences |
-| Account & security | `/:locale/settings/account` | **SET-05 implemented**; authenticated own linked-method, credential-password and session controls through existing Better Auth |
+| Account & security | `/:locale/settings/account` | **SET-05 + authentication lifecycle implemented**; authenticated own email/status, email change, password creation/change, explicit Google link/unlink and own-session controls through Better Auth |
 | Privacy | `/:locale/settings/privacy` | **SET-06 implemented**; authenticated own account-wide public online-visibility toggle, persisted in PostgreSQL, default ON |
 
 `/:locale/settings` is a protected authenticated navigation entry, **not** a sixth
@@ -100,9 +100,11 @@ Intentional closure returns the safe method-specific
 `vico_email_registration_closed` or `vico_google_registration_closed` denial.
 A closed registration method does **not** disable sign-in for an existing
 email/password or Google user, or explicit Google linking by an already
-authenticated user. Better Auth account linking remains explicit-only:
-unverified same-email local accounts are not linked implicitly, and the
-authenticated `link-social` request checks the current server session and
+authenticated user, nor existing-account verification or recovery. Email/password
+registration requires email verification before credential sign-in; signup creates
+no session and verification requires a separate sign-in. Better Auth account linking
+remains explicit-only regardless of email verification: matching email never grants
+implicit linking. The authenticated `link-social` request checks the current server session and
 `x-vico-link-user` stale-identity expectation. Existing provider/email
 verification and Origin checks remain in place.
 
@@ -231,18 +233,35 @@ It does not change existing Admin/Attention admission or domain operations.
 Repository/local-CI acceptance covers actual built Worker/Better Auth/isolated
 PostgreSQL 17/Chromium; it is not deployed or production acceptance.
 
-## Account & security (SET-05)
+## Authentication lifecycle and Account & security (SET-05)
 
 `/:locale/settings/account` is an independently guarded **authenticated**
 personal Settings route. It uses the existing `SettingsShell` and the request-local
 `AuthRuntime` backed by Better Auth **1.7.7** and the existing PostgreSQL
-user/account/session tables; no new authentication provider, schema, migration,
-permission or Admin History writer was introduced. Non-authenticated loaders
-and actions fail privately; no Owner/Admin permission is needed.
+user/account/session tables. Authentication lifecycle extends the existing verification
+store, adds account uniqueness and lifecycle-budget/observation migrations
+`0073`–`0078`, and reuses existing Owner Monitoring/History boundaries.
+No separate identity store, new authentication provider or application RBAC is introduced.
+Non-authenticated own-account loaders and actions fail privately; no Owner/Admin
+permission is needed.
+
+**Registration and guest recovery.** Email/password signup requires verification before
+sign-in and does not create a session. Confirmation is explicit POST, followed by separate sign-in;
+resend and forgot-password acknowledge eligible and ineligible recipients neutrally.
+Recovery is limited to an active, verified account with a usable credential password.
+The reset link is bound to the current subject/email/purpose/generation and expiry;
+a new issuance replaces the preceding proof. Explicit successful reset atomically
+changes the password, consumes the proof, invalidates conflicting proofs and revokes all target
+sessions. It never signs the guest in or switches another ambient account.
+The localized forgot/reset/verification pages use safe locale-local return paths
+and private/no-store, no-referrer responses. Reset and own credential proof fragments
+are captured in memory and removed from the URL; replacement links can be reopened
+in the same document. No terminal mutation occurs merely by opening a mail link.
 
 **Linked methods and credentials.** The loader reads the current user's linked
 Better Auth accounts and projects only safe method labels (password and Google),
-plus whether a real credential password exists. OAuth access/refresh/ID tokens,
+plus whether a real credential password exists, current own email/verification status
+and bounded pending email-change phase/expiry. OAuth access/refresh/ID tokens,
 password hashes, provider-private payloads and session bearer tokens are never
 included in the public or private page DTO. The existing authenticated
 `GoogleAccountLink` control is reused here with its explicit current-user
@@ -253,7 +272,7 @@ explicit linking for an already authenticated account.
 Password change is offered **only** when an existing credential account has a
 stored password. It requires the current password and independently rechecks
 the current Better Auth session and submitted stale-user/session expectations.
-It cannot create a password for a Google-only account. Password change uses the
+It is distinct from password creation for a Google-only account. Password change uses the
 existing Better Auth HTTP handler at canonical `/api/auth/change-password`, not a
 direct `auth.api.changePassword` call that skips HTTP admission. Thus Settings
 and direct canonical requests share Better Auth's existing **database-backed,
@@ -263,6 +282,40 @@ sanitized `Retry-After` and `X-Retry-After` through the Settings action and
 document headers, with localized feedback. Rejected attempts do not change
 the password. The call passes `revokeOtherSessions: false`; password change
 does not implicitly sign out other sessions.
+
+**Own password creation.** An active verified Google-only account with a fresh
+own session may request a proof sent to its current email and explicitly create
+a password. The server binds the proof to the initiating subject/session, checks
+the current identity and credential state under the account lock, and creates
+only the missing usable password method. Successful creation retains the Google
+method and initiating session, revokes other own sessions, invalidates conflicting
+proofs and revalidates the mounted account page. Anonymous reset cannot create
+a password for Google-only accounts.
+
+**Email change and Google unlink.** A fresh own session and verified current email
+are required to start email change. First confirm the old address, then verify the
+new address; the old login email remains current until the final atomic change.
+The final proof must match the initiating session, current identity and phase;
+the new address must be available. Success updates the email and verification
+status, invalidates conflicting proofs, preserves the initiating session and
+revokes other own sessions. Google provider identity and user.id do not change.
+Explicit Google unlink uses a fresh own session, the current linked method and
+an account-lock-protected check that at least one usable method remains.
+Unlink does not itself force logout. Existing-account verification and recovery
+are not new-account registration.
+
+**Mail and abuse boundaries.** One server-only mail boundary builds validated
+same-origin localized links and safe templates. Guest mail uses the validated action
+locale; own password-create and email-change mail uses saved account locale with
+active-registry fallback, separately from the validated link locale/return path.
+Issuance commits before mail transport invocation; accepted transport does not
+prove inbox delivery. Resend/Brevo adapters are implemented with injected local/test
+transport; real external sends remain fenced off pending Stage 6. Native Better
+Auth HTTP limits are retained and supplemented by PostgreSQL-backed lifecycle budgets
+shared by canonical HTTP and direct server calls; explicit retry is rate-limited,
+not automatic. A provider-neutral fresh-registration challenge boundary supports
+disabled and required modes; required without a usable verifier fails closed.
+No real anti-bot provider is selected or activated.
 
 **Own sessions.** The loader lists active sessions of the authenticated user,
 with session ID, creation/expiry timestamps, a plain-text device/user-agent
@@ -295,9 +348,9 @@ failures use `private, no-store`; password/session secrets are not reflected
 in responses, URLs or browser controls. Existing Better Auth
 cookie/session handling and independent sign-out behavior are preserved.
 
-Account & security does **not** implement password reset/recovery,
-Google-only set-password, email change, provider unlink, account deletion,
-two-factor authentication/passkeys or production credential configuration.
+Account & security does **not** implement account deletion, account reactivation,
+two-factor authentication/passkeys, foreign credential/provider administration or
+production credential configuration. Recovery is not Owner recovery/transfer.
 
 ## Privacy: public online visibility (SET-06)
 
@@ -389,4 +442,8 @@ implementation/review/correction/check snapshots are retained in
 [PROJECT_HISTORY_20.md](PROJECT_HISTORY/PROJECT_HISTORY_20.md) and
 [PROJECT_HISTORY_21.md](PROJECT_HISTORY/PROJECT_HISTORY_21.md) and
 [PROJECT_HISTORY_22.md](PROJECT_HISTORY/PROJECT_HISTORY_22.md), not in
-`PROJECT_STATE.md`.
+`PROJECT_STATE.md`. Authentication lifecycle AUTH-01–AUTH-07 likewise completed
+repository/local-CI whole-lifecycle and pre-Stage-6 technical acceptance; see
+[PROJECT_HISTORY_35.md](PROJECT_HISTORY/PROJECT_HISTORY_35.md).
+Real mail delivery, provider credentials/DNS, real Google OAuth, concrete anti-bot
+integration and deployed acceptance remain Stage 6.

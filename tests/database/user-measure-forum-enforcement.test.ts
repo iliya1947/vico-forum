@@ -823,7 +823,7 @@ describe("AP-10 admin.complaints effective access and reviewer transactions", ()
 
 describe("AP-10 admin.forum permission projection and authoritative moderation", () => {
   const rawPermissions = [
-    "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny",
+    "forum.topic.pin", "forum.topic.close", "forum.content.visibility.manage", "forum.structure.manage", "forum.topic.move", "forum.solution.manageAny",
     "forum.helpNeedsDetails.manage", "forum.helpDuplicate.manage",
     "forum.sourceLocale.correctAny", "forum.post.history.read",
     "forum.solution.manageOwn", "forum.sourceLocale.correctOwn", "forum.reply.create",
@@ -846,19 +846,20 @@ describe("AP-10 admin.forum permission projection and authoritative moderation",
     () => new Pool({ connectionString: databaseUrl, options: "-c search_path=" + schema, max: 1 }),
   );
 
-  it("filters all seven private/read/admin action permissions, not own or participation; raw hierarchy stays intact", async () => {
+  it("filters all ten private/read/admin action permissions, not own or participation; raw hierarchy stays intact", async () => {
     const before = wrapped().forUser("target");
     expect(await before.has("forum.post.history.read")).toBe(true);
+    expect(await before.has("forum.content.visibility.manage")).toBe(true);
     await createMeasure("admin.forum");
     const resolver = wrapped().forUser("target");
-    for (const key of rawPermissions.slice(0, 7)) {
+    for (const key of rawPermissions.slice(0, 10)) {
       expect(await resolver.has(key)).toBe(false);
     }
-    for (const key of rawPermissions.slice(7)) {
+    for (const key of rawPermissions.slice(10)) {
       expect(await resolver.has(key)).toBe(true);
     }
     const projected = await resolver.resolve();
-    expect(projected.effectivePermissions).toEqual([...rawPermissions.slice(7)]);
+    expect(projected.effectivePermissions).toEqual([...rawPermissions.slice(10)]);
     expect(projected.grants).toEqual([...rawPermissions]);
     expect((await raw.forUser("target").resolve()).effectivePermissions).toEqual([...rawPermissions]);
     expect((await wrapped().resolveUser("target")).effectivePermissions).toEqual([...rawPermissions]);

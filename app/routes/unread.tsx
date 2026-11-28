@@ -1,4 +1,4 @@
-import { useLoaderData, type RouterContextProvider } from "react-router";
+import { data, useLoaderData, type RouterContextProvider } from "react-router";
 import { DELETED_USER_NAME } from "../../db/public-identity";
 
 import { authSessionForRequest } from "../auth/request-context";
@@ -11,16 +11,21 @@ export function meta() {
   return [{ title: "Unread · Vico Forum" }];
 }
 
+/** User-specific unread positions must never enter shared or browser caches. */
+export function headers() { return { "Cache-Control": "private, no-store" }; }
+
 export async function loader({ params, context }: {
   params: { locale?: string };
   context: RouterContextProvider;
 }) {
   const session = authSessionForRequest(context);
-  if (!session) throw new Response("Unauthorized", { status: 401 });
+  if (!session) throw new Response("Unauthorized", {
+    status: 401, headers: { "Cache-Control": "private, no-store" },
+  });
 
   try {
     const topics = await forumReaderForRequest(context).readUnreadForUser(session.user.id);
-    return {
+    return data({
       locale: params.locale ?? "en",
       topics: topics.map(({
         id, title, authorName, authorIdentityKind, state, firstUnreadPostId, latestPostId,
@@ -31,10 +36,12 @@ export async function loader({ params, context }: {
         ...(authorIdentityKind === "deleted" ? { authorIdentityKind } : {}),
         state, firstUnreadPostId, latestPostId, unreadCount, activityAt, section, category,
       })),
-    };
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     if (error instanceof ForumStorageUnavailableError) {
-      throw new Response("Unavailable", { status: 503 });
+      throw new Response("Unavailable", {
+        status: 503, headers: { "Cache-Control": "private, no-store" },
+      });
     }
     throw error;
   }

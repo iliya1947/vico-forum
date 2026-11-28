@@ -63,7 +63,7 @@ export function hasAdministrativeUserMeasureRestrictions(ids: readonly UserMeasu
 /** Exact implemented family mapping; still subject to fresh RBAC and resource guards. */
 export const USER_MEASURE_ADMIN_PERMISSION_FAMILIES = {
   "admin.forum": [
-    "forum.topic.pin", "forum.topic.close", "forum.solution.manageAny",
+    "forum.topic.pin", "forum.topic.close", "forum.content.visibility.manage", "forum.structure.manage", "forum.topic.move", "forum.solution.manageAny",
     "forum.helpNeedsDetails.manage", "forum.helpDuplicate.manage",
     "forum.sourceLocale.correctAny", "forum.post.history.read",
   ],

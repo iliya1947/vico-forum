@@ -1,6 +1,6 @@
 import { forumReadLoader } from "../forum/read-availability.server";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
+import { data, useActionData, useLoaderData, type RouterContextProvider, type HeadersArgs } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
@@ -13,13 +13,17 @@ import { ForumRouteError } from "../forum/ui";
 import { SectionView } from "../forum/views";
 
 export { sectionAction as action } from "../forum/actions.server";
-/** Forward controlled action privacy/retry headers without privatizing public GET. */
+/** Hide/Restore changes public topic cards; signed-in reads include private state.
+ * Keep action privacy/retry headers while preventing stale public/error responses. */
 export function headers({ parentHeaders, loaderHeaders, actionHeaders, errorHeaders }: HeadersArgs): Headers {
   const result = new Headers(parentHeaders);
-  for (const name of ["Cache-Control", "Retry-After"] as const) {
-    const value = errorHeaders?.get(name) ?? actionHeaders.get(name) ?? loaderHeaders.get(name);
-    if (value !== null) result.set(name, value);
-  }
+  const policy = errorHeaders?.get("Cache-Control")
+    ?? actionHeaders.get("Cache-Control") ?? loaderHeaders.get("Cache-Control");
+  result.set("Cache-Control", policy?.split(",").some((part) => part.trim().toLowerCase() === "no-store")
+    ? policy : "no-store");
+  const retry = errorHeaders?.get("Retry-After")
+    ?? actionHeaders.get("Retry-After") ?? loaderHeaders.get("Retry-After");
+  if (retry !== null) result.set("Retry-After", retry);
   return result;
 }
 
@@ -63,7 +67,8 @@ export const loader = forumReadLoader(async function loader({ params, context }:
       // Public section reads remain available when optional presentation authorization is unavailable.
     }
   }
-  return { locale: params.locale ?? "en", section, canCreateTopic, canUploadAttachments, topicReadStates };
+  return data({ locale: params.locale ?? "en", section, canCreateTopic, canUploadAttachments, topicReadStates },
+    { headers: { "Cache-Control": session ? "private, no-store" : "no-store" } });
 });
 
 export default function SectionRoute() {

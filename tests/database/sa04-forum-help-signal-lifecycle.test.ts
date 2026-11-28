@@ -186,6 +186,65 @@ describe("SA04-J9 Help Signals AccountState lifecycle", () => {
       .rejects.toBeInstanceOf(ForumEntityNotFoundError);
   });
 
+  it.each(["primary-topic", "proposed-original", "selected-answer"] as const)(
+    "keeps protected own pending withdrawal possible with hidden %s and no hidden source",
+    async (dependency) => {
+      const x = await question(dependency === "selected-answer");
+      const original = dependency === "proposed-original" ? await question() : null;
+      const owner = await person(), other = await person();
+      const kind = dependency === "proposed-original" ? "duplicate"
+        : dependency === "selected-answer" ? "needs-review" : "needs-details";
+      const signal = await pending(x, kind, dependency === "selected-answer" ? x.answerId : null,
+        original?.topicId ?? null, owner);
+      const secret = dependency === "selected-answer" ? "Answer" : "Help question";
+      if (dependency === "selected-answer") {
+        await admin.query(
+          "update forum_posts set is_hidden=true,visibility_version=visibility_version+1,"
+          + "visibility_changed_at=statement_timestamp() where id=$1",
+          [x.answerId],
+        );
+      } else {
+        const hiddenTopic = dependency === "primary-topic" ? x.topicId : original!.topicId;
+        await admin.query(
+          "update forum_topics set is_hidden=true,visibility_version=visibility_version+1,"
+          + "visibility_changed_at=statement_timestamp() where id=$1",
+          [hiddenTopic],
+        );
+      }
+      const before = await facts(x);
+      await expect(forum.withdrawHelpSignal(signal.id, x.topicId, other))
+        .rejects.toBeInstanceOf(ForumAuthorizationError);
+      await expect(forum.withdrawHelpSignal(signal.id, "another-topic", owner))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+      const noResult = await forum.withdrawHelpSignal(signal.id, x.topicId, owner);
+      expect(JSON.stringify({ noResult, signalId: signal.id })).not.toContain(secret);
+      const after = await facts(x);
+      expect(signalState(after, signal.id)).toMatchObject({
+        status: "withdrawn", resolved_by_user_id: owner,
+      });
+      expect(after.topic).toEqual(before.topic);
+      expect(after.posts).toEqual(before.posts);
+      expect(after.relations).toEqual(before.relations);
+      expect(after.history).toEqual(before.history);
+      await expect(forum.withdrawHelpSignal(signal.id, x.topicId, owner))
+        .rejects.toBeInstanceOf(ForumStateConflictError);
+      await expect(forum.resolveHelpSignal(signal.id, other, "accepted"))
+        .rejects.toBeInstanceOf(ForumEntityNotFoundError);
+    },
+  );
+
+  it("does not let an inactive author withdraw even when the pending dependency is hidden", async () => {
+    const x = await question(), owner = await person();
+    const signal = await pending(x, "needs-details", null, null, owner);
+    await admin.query("update forum_topics set is_hidden=true,visibility_version=visibility_version+1,"
+      + "visibility_changed_at=statement_timestamp() where id=$1", [x.topicId]);
+    const before = await facts(x);
+    await deactivate(owner);
+    await expect(forum.withdrawHelpSignal(signal.id, x.topicId, owner))
+      .rejects.toBeInstanceOf(AccountInactiveError);
+    expect(await facts(x)).toEqual(before);
+  });
+
   it("active rejected review uses admin.forum and emits only its single review History event", async () => {
     const x = await question(), actorId = await person();
     const signal = await pending(x, "needs-details");
