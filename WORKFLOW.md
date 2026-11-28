@@ -29,7 +29,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 ## Параллельные AI product-tracks
 
-1. **User AI / Vico Consultant** — product concept согласован, полный план Лёвы готов к проверке Business-Мирой. Будущий реализатор после принятия плана — Ада. Задача ведётся отдельно от ChatGPT-control и Admin/Moderation AI.
+1. **User AI / Vico Consultant** — technical plan принят: PASS; выбран stacked U1 → U6. Активирован U1 в draft implementation PR `#403`; координатор — Business-Мира, реализатор — Ада. Задача ведётся отдельно от ChatGPT-control и Admin/Moderation AI.
 2. **Admin/Moderation AI** — полная product concept proposal подготовлена в `research/admin-moderation-ai-product-concept.md`; ожидает решения владельца.
 3. Ни один из этих product-tracks не расширяет Stage A–I ChatGPT-control и его implementation PR.
 
