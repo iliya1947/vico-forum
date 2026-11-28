@@ -111,3 +111,10 @@ Scope: один protected Admin Overview read через локальный GitH
 4. Действующий product contract User AI: `research/user-ai-product-concept.md`.
 5. Старые `research/user-ai-product-scope.md` и `research/embedded-ai-concept-v1.md` — superseded и не являются входом.
 6. Прежний общий embedded-AI technical plan не возобновлять как объединённый план двух задач.
+
+
+## Будущее назначение — Stage C
+
+По прямой команде владельца следующий этап ChatGPT-control после Stage B назначен **Лёве**.
+
+Условие активации: только после coordinator PASS Stage B. До этого Stage C не начинать и отдельный implementation PR не создавать.
