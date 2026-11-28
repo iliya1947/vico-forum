@@ -55,7 +55,7 @@ function requireTokenBinding(value: unknown, binding: ForumControlBinding): Prov
  * refresh is never permitted to establish/revive a grant.
  */
 export async function admitForumControlTokenInsert(connection: Connection, lifecycle: AuthLifecycleTransaction,
-  binding: ForumControlBinding, value: unknown, initial: boolean): Promise<ForumControlGrant> {
+  binding: ForumControlBinding & { redirectUri: string }, value: unknown, initial: boolean): Promise<ForumControlGrant> {
   requireTransaction(connection, lifecycle);
   const row = requireTokenBinding(value, binding);
   await requireLiveSession(connection, row.userId, row.sessionId, true);
@@ -65,8 +65,8 @@ export async function admitForumControlTokenInsert(connection: Connection, lifec
     'select c.client_id from oauth_client c join oauth_client_resource l on l.client_id=c.client_id ' +
     'join oauth_resource r on r.identifier=l.resource_id where c.client_id=$1 and r.identifier=$2 ' +
     'and c.disabled is not true and r.disabled is not true and c.require_pkce is true ' +
-    'and c.skip_consent is not true for share of c,l,r',
-    [binding.clientId, binding.resource],
+    'and c.skip_consent is not true and c.redirect_uris=array[$3]::text[] for share of c,l,r',
+    [binding.clientId, binding.resource, binding.redirectUri],
   );
   if (registered.rows.length !== 1) throw new ForumControlDenied();
   if (initial) {
@@ -126,4 +126,18 @@ export async function grantForAccessToken(connection: Connection, binding: Forum
     [await hashForumControlToken(token), binding.clientId],
   );
   return result.rows.length === 1 ? loadForumControlGrant(connection, result.rows[0].grant_id) : null;
+}
+
+/** Provider revocation/replay invalidation also closes the Vico delegation.
+ * Caller holds the existing account lock and native transaction. Do not
+ * revoke during ordinary successful refresh rotation.
+ */
+export async function markForumControlGrantsRevoked(connection: Connection,
+  binding: ForumControlBinding, grantIds: readonly string[]): Promise<void> {
+  if (!grantIds.length) return;
+  await connection.query(
+    "update forum_control_grant set revoked_at=timezone('UTC',clock_timestamp()) " +
+    "where id=any($1::text[]) and client_id=$2 and user_id=$3 and revoked_at is null",
+    [[...new Set(grantIds)], binding.clientId, binding.ownerUserId],
+  );
 }
