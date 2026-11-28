@@ -29,23 +29,20 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 
 ## Параллельные AI product-tracks
 
-1. **User AI / Vico Consultant** — product concept согласован; отдельный technical-planning этап активирован. Координатор — Business-Мира, архитектор — Лёва, будущий реализатор после принятия плана — Ада. Задача ведётся отдельно от ChatGPT-control и Admin/Moderation AI.
+1. **User AI / Vico Consultant** — product concept согласован, полный план Лёвы готов к проверке Business-Мирой. Будущий реализатор после принятия плана — Ада. Задача ведётся отдельно от ChatGPT-control и Admin/Moderation AI.
 2. **Admin/Moderation AI** — полная product concept proposal подготовлена в `research/admin-moderation-ai-product-concept.md`; ожидает решения владельца.
 3. Ни один из этих product-tracks не расширяет Stage A–I ChatGPT-control и его implementation PR.
 
 
-## User AI — technical planning
+## User AI — проверка технического плана
 
-**АКТИВЕН как самостоятельная задача №2.**
+**Задача №2 ожидает coordinator review.**
 
-- Coordinator: Business-Мира.
-- Architect/planner: Лёва.
-- Принятый product input: `research/user-ai-product-concept.md`.
-- Результат: полный отдельный `stages/user-ai/PLAN.md` с архитектурой, этапами, зависимостями, acceptance criteria и рекомендацией delivery mode.
-- Future implementer: Ада, только после coordinator PASS плана и отдельного handoff bounded-этапа.
-- Implementation PR ещё не создан и реализация не активирована.
-- Root `PLAN.md`, `#399/#402`, ChatGPT-control и Admin/Moderation AI не входят в эту planning-задачу.
-- Старый `stages/embedded-ai/SCOPE.md` и общий embedded-AI planning не используются как объединённый план.
+- Проверяющая — Business-Мира, архитектор — Лёва.
+- План охватывает Consultant, общий retrieval, состояния сессии, privacy, UX, бюджет и приёмку. [PLAN.md](stages/user-ai/PLAN.md)
+- Проверить соответствие D-25–D-32 и каноническим Search/Help, mapping disclosure, lifecycle stale/hidden и $0 с приоритетом перевода. План предлагает stacked U1–U6. Фактическое качество моделей и лимиты аккаунта проверяются в Stage 6.
+- Future implementer — Ада. После PASS Business-Мира выбирает delivery mode и отдельно назначает первый bounded этап. Implementation PR задачи №2 ещё не создан.
+
 
 ## Зафиксированные три направления AI-блока
 
@@ -55,7 +52,7 @@ Stage B принятого `PLAN.md` **активирован**. Реализа�
 2. **User AI** — встроенный пользовательский консультант/навигация по форуму; product concept согласован отдельно.
 3. **Admin/Moderation AI** — отдельная активная product-задача; исходный scope широкий: определить практически полезные встроенные AI-функции для администрации/модерации, не ограничиваясь прежними примерами. Первый шаг — factual workload map — завершён.
 
-User AI ведётся отдельной Business-Мирой как самостоятельная задача №2; Лёва готовит отдельный technical plan, а Ада получает реализацию только после его принятия. Общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
+User AI ведётся отдельной Business-Мирой как самостоятельная задача №2; Лёва передал отдельный technical plan на проверку. Ада получает реализацию после его принятия. Общий смешанный embedded-AI technical planning не возобновляется. Admin/Moderation AI остаётся отдельной задачей №3. ChatGPT-control ведётся текущей Мирой отдельно.
 
 
 ## Admin/Moderation AI — product concept

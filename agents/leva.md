@@ -2,43 +2,18 @@
 
 # Лёва
 
-## Активное назначение — technical plan User AI
+## User AI — план передан Business-Мире
 
-Business-Мира передала Лёве самостоятельную planning-задачу №2: подготовить полный technical plan User AI / Vico Consultant.
+Полный план готов по D-25–D-32 и `main` `99b4048`. Он опирается на существующие Search и Help readers и отдельную производную проекцию current visible revisions. [План](../stages/user-ai/PLAN.md)
 
-### Обязательный вход
+Критические решения для следующей проверки:
 
-1. Актуальные `AGENTS.md` и локальный `RULES.md`.
-2. `research/user-ai-product-concept.md`, D-25–D-32, `WORKFLOW.md`, `agents/mira-business-user-ai.md`.
-3. Актуальные `PROJECT.md`, `PROJECT_STATE.md`, `ROADMAP.md`.
-4. Профильные source-of-truth: authorization, multilingual/translation, UI/UX, Editor, Settings и database/Hyperdrive — в объёме, необходимом выбранной архитектуре.
-5. Текущие Search, Help similar-question, Forum readers/revisions, auth/request context, permission resolver, locale boundary, translation allowance/provider jobs и Editor entry points.
+- Disclosure layer вычисляется по текущим правам. Знание о конкретном маршруте фильтруется его серверным guard. Привилегированный контекст не отправляется provider.
+- Устаревшие embeddings исключаются из выдачи. Публикация и лексический поиск работают при пустом индексе и сбоях AI.
+- Для Workers AI предусмотрены Free hard stop и заранее выделенный бюджет перевода. Качество RU/HE/EN и остаток квот аккаунта проверяются в Stage 6.
 
-### Результат
+Следующий шаг — проверка Business-Мирой. Ада получает реализацию после принятия плана и отдельного назначения.
 
-Создать `stages/user-ai/PLAN.md` — один полный технический план всей задачи №2 до начала реализации. План должен самостоятельно обосновать:
-
-1. Consultant, knowledge/navigation и retrieval architecture без второго Forum/Search backend.
-2. Переиспользование Search/Help/solved/best-answer и lifecycle индекса для create/edit/hide/restore/current revision/stale cleanup.
-3. Session-only consultation state, переходы между страницами, завершение и удаление состояния.
-4. Fail-closed mapping dynamic permissions/overrides → disclosure layer без копирования RBAC.
-5. Public/private data boundaries, prompt-injection isolation, provenance/freshness и отсутствие autonomous writes/posts.
-6. Provider strategy, quotas, caching/dedup, hard-stop при $0 и приоритет обязательного перевода.
-7. Locale-generic работу и representative RU/HE/EN + mixed-language/technical-code quality acceptance.
-8. Launcher/panel, contextual entries, accessibility, responsive и LTR/RTL acceptance.
-9. Graceful degradation: lexical Search, Editor и forum navigation работают без AI.
-10. Миграции, background jobs, observability и external Stage-6 gates только в необходимом объёме.
-11. Полные этапы, зависимости, repository/local-CI acceptance и рекомендуемый delivery mode для Ады.
-
-Перед использованием внешних API, SDK или provider Лёва проверяет актуальную официальную документацию и отделяет подтверждённые факты от account-specific Stage-6 unknowns.
-
-### Границы
-
-- Не начинать реализацию и не создавать implementation PR.
-- Не включать Admin/Moderation AI.
-- Не использовать старый общий `stages/embedded-ai/SCOPE.md` как вход.
-- Не менять root `PLAN.md`, `#399/#402`, ChatGPT-control, production, secrets или provider resources.
-- Готовый план передать Business-Мире на coordinator review; Ада начинает реализацию только после PASS и отдельного handoff.
 
 ## Предстоящее назначение — Stage C ChatGPT-control
 
