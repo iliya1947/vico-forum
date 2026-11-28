@@ -98,3 +98,16 @@ Exact head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
 Лена реализует Stage B в stacked PR `#402` (`feature/chatgpt-forum-control-stage-b`), base — `#399` на принятом Stage A head `ce85db5f4ae7bc33992174cc6ae69b47da0bf2cd`.
 
 Scope: один protected Admin Overview read через локальный GitHub webhook fixture с возвратом receipt, без внешних credentials и без production ingress. Stage C+ не входит.
+
+
+## Назначение — Business-Мира на User AI
+
+По прямой команде владельца задача №2 из трёх направлений #300 — **User AI / Vico Consultant** — передана отдельной Мире с Business-аккаунта.
+
+Границы назначения:
+1. Business-Мира ведёт только User AI.
+2. ChatGPT-control (#399/#402) остаётся у текущей Миры.
+3. Admin/Moderation AI остаётся отдельной задачей №3.
+4. Действующий product contract User AI: `research/user-ai-product-concept.md`.
+5. Старые `research/user-ai-product-scope.md` и `research/embedded-ai-concept-v1.md` — superseded и не являются входом.
+6. Прежний общий embedded-AI technical plan не возобновлять как объединённый план двух задач.
