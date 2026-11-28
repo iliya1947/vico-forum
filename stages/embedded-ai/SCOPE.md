@@ -16,9 +16,9 @@
 
 ## Источники product scope
 
-1. `research/user-ai-product-scope.md`.
-2. `research/admin-moderation-ai-product-scope.md`.
-3. Текущий `main`, `PROJECT.md`, `PROJECT_STATE.md`, translation/Complaints/Editor source-of-truth.
+1. `research/user-ai-product-concept.md` — действующая принятая User AI product concept.
+2. `research/admin-moderation-ai-product-scope.md` — только ранний proposal; до отдельной product-проработки не является принятым contract.
+3. Текущий `main`, `PROJECT.md`, `PROJECT_STATE.md` и профильные source-of-truth.
 
 ## Цель технического плана
 
@@ -28,10 +28,19 @@
 
 ### Пользовательский AI
 
-1. UAI-01 — semantic/hybrid Search поверх существующего lexical Search.
-2. UAI-02 — похожие темы/решения до публикации, на том же retrieval foundation.
-3. UAI-03 — on-demand question-authoring helper в существующем Editor 2.0.
-4. AI-chat, autonomous answers/posts и обязательные thread summaries в v1 не входят.
+Действующий product contract определяется только `research/user-ai-product-concept.md`.
+
+Ключевой результат:
+1. authenticated Vico Consultant как forum navigator/topic finder;
+2. guest-visible auth gate;
+3. semantic/hybrid retrieval как capability Consultant/Search;
+4. помощь с выбором правильной темы/раздела/Help/tags/title;
+5. session-scoped conversation state с replaceable storage boundary;
+6. disclosure layers User → Moderator → Administrator;
+7. floating launcher + contextual entry points;
+8. до трёх релевантных тем с объяснением;
+9. summary — естественная возможность диалога, не отдельная v1-фича;
+10. general-purpose technical consultant/autonomous posting/persistent memory не входят в v1.
 
 ### Admin / Moderation AI
 
@@ -80,7 +89,7 @@
 
 `stages/embedded-ai/PLAN.md` считается готовым, когда:
 
-1. покрывает UAI-01–03 и MAI-01–04 с указанными границами;
+1. покрывает действующий `research/user-ai-product-concept.md` и отдельно принятый в будущем Admin/Moderation product contract;
 2. показывает, какие компоненты общие, а какие изолированы из-за privacy/authority;
 3. не дублирует существующий Search, Editor, translation, Complaints или moderation backend;
 4. подтверждает, что обязательный scope реально может работать при $0 extra cost либо явно фиксирует подтверждённый blocker;
