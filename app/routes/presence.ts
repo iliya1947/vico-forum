@@ -2,9 +2,9 @@ import type { RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
 import { requireSameOrigin } from "../forum/mutations.server";
 import { forumWriterForRequest } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
-import { UserPrivacyAccountMissingError } from "../../db/user-privacy";
-import { AccountInactiveError } from "../../db/account-state";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
+import { UserPrivacyAccountMissingError } from "../../db/user-privacy-error";
+import { AccountInactiveError } from "../../db/account-state-errors";
 
 export const presencePrivateHeaders = { "Cache-Control": "no-store" } as const;
 export function headers() { return presencePrivateHeaders; }

@@ -3,7 +3,8 @@ import { isPostgresAvailabilityFailure } from "../app/localization/persistent-re
 import { createWebPool, bestEffortDiscardClient, isPostgresConnectionTimeout, isPostgresQueryTimeout } from "./postgres-deadlines";
 import { PostgresTopicMoveWriter, type TopicMoveWriter } from "./topic-move";
 
-export class TopicMoveWriteUnavailableError extends Error {}
+import { TopicMoveWriteUnavailableError } from "./topic-move-error";
+export { TopicMoveWriteUnavailableError } from "./topic-move-error";
 
 /** The existing F3 transaction owns the move, effective authority and original History. */
 export function createHyperdriveTopicMoveWriter(

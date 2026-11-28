@@ -3,7 +3,7 @@ import { data, replace, useActionData, useLoaderData, type ClientActionFunctionA
 import { authSessionForRequest } from "../auth/request-context";
 import { measureRestrictionsForPresentation } from "../measures/presentation.server";
 import { authorizationForRequest } from "../authorization/request-context";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { forumReaderForRequest } from "../forum/request-context";
 import {
   contentGenerationActionForRequest,
@@ -28,7 +28,7 @@ import { ForumRouteError } from "../forum/ui";
 import { TopicView } from "../forum/views";
 import { editorClientAction } from "../forum/editor-action";
 import { hiddenInspectionPath } from "../admin/visibility-queue-path";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import type { ForumTopicReadState, ForumVisibleThreadPost } from "../../db/forum-repository";
 import type { TopicWatchState } from "../forum/topic-watch-control";
 import type { PersonalFilterState } from "../forum/personal-filter-control";

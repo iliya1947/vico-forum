@@ -1,4 +1,5 @@
-import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError, type ForumVisibleThreadPost } from "../../db/forum-repository";
+import { ConcurrentRevisionError, ForumStateConflictError, ForumPublicationReplayConflictError } from "../../db/forum-errors";
+import type { ForumVisibleThreadPost } from "../../db/forum-repository";
 import { data, redirect, type RouterContextProvider } from "react-router";
 import {
   forumMutationGuard,
@@ -22,17 +23,15 @@ import {
 import { forumTopicPath } from "./paths";
 import { visibilityActionFailure, visibilityTopicAction } from "./visibility-actions.server";
 import { topicMoveAction, topicMoveFailure } from "./topic-move.server";
-import { isForumAttachmentUuid } from "../../db/forum-attachments";
+import { isForumAttachmentUuid } from "../../db/forum-attachment-id";
 import { authSessionForRequest } from "../auth/request-context";
 import { forumReaderForRequest } from "./request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { DELETED_USER_NAME } from "../../db/public-identity";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
-import {
-  ContentGenerationPlanningUnavailableError,
-  type ContentGenerationActionResult,
-} from "../localization/content-generation-action.server";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
+import { ContentGenerationPlanningUnavailableError } from "../localization/content-generation-error";
+import type { ContentGenerationActionResult } from "../localization/content-generation-action.server";
 import {
   contentGenerationActionForRequest,
   contentGenerationAdmissionForRequest,

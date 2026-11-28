@@ -2,13 +2,8 @@ import { eq, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { forumOnlinePresence, user, userPrivacyPreferences } from "./schema";
 import { AccountMissingError, assertActiveAccountForDrizzleMutation } from "./account-state";
-
-export class UserPrivacyAccountMissingError extends Error {
-  constructor(message = "Authenticated account no longer exists") {
-    super(message);
-    this.name = "UserPrivacyAccountMissingError";
-  }
-}
+import { UserPrivacyAccountMissingError } from "./user-privacy-error";
+export { UserPrivacyAccountMissingError } from "./user-privacy-error";
 
 type PrivacyTransaction = Parameters<Parameters<NodePgDatabase["transaction"]>[0]>[0];
 

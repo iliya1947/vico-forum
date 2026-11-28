@@ -10,26 +10,9 @@ import {
 import { HELP_SOLUTIONS_CATEGORY_ID, HELP_SOLUTIONS_SERVICE_SECTION_ID } from "./forum-identifiers";
 
 export const STRUCTURE_PERMISSION = "forum.structure.manage" as const;
-const BIGINT_MAX = 9223372036854775807n;
-export class StructureValidationError extends Error {}
-export class StructureForbiddenError extends Error {}
-export class StructureNotFoundError extends Error {}
-export class StructureInvariantError extends Error {}
-export class StructureConflictError extends Error {
-  constructor(readonly reason: "stale" | "parent-changed" | "version-exhausted" | "position-exhausted" | "order-invariant" | "reserved-destination") {
-    super("Forum structure changed or cannot be changed");
-  }
-}
+import { BIGINT_MAX, StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter } from "./forum-structure-contract";
+export { StructureValidationError, StructureForbiddenError, StructureNotFoundError, StructureInvariantError, StructureConflictError, parseStructureCounter } from "./forum-structure-contract";
 
-/** Transport counters are canonical decimal strings, including beyond Number.MAX_SAFE_INTEGER. */
-export function parseStructureCounter(value: unknown): bigint {
-  if (typeof value !== "string" || !/^(0|[1-9][0-9]{0,18})$/.test(value)) {
-    throw new StructureValidationError("Invalid structure counter");
-  }
-  const number = BigInt(value);
-  if (number > BIGINT_MAX) throw new StructureValidationError("Invalid structure counter");
-  return number;
-}
 export function validateStructureName(value: unknown): string {
   if (typeof value !== "string" || /[\p{Cc}\p{Cs}\p{Zl}\p{Zp}]/u.test(value)) {
     throw new StructureValidationError("Invalid structure name");

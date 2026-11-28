@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { ForumMarkdown, ForumInlineAttachmentProvider } from "./markdown";
+import type { AttachmentReference } from "./attachment-url";
 import {
   applyTextareaEdit,
   clearInlineMarkdownFormatting,
@@ -75,7 +76,7 @@ export interface MarkdownEditorProps {
   onPublicationReadyChange?: (ready: boolean) => void;
   actions?: ReactNode;
   existingInlineAttachments?: Array<{
-    id: string; fileName: string; byteSize: number; detectedType: string; url: string;
+    id: string; fileName: string; byteSize: number; detectedType: string; reference: AttachmentReference;
   }>;
 }
 

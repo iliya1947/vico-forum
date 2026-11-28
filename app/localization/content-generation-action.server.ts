@@ -1,3 +1,4 @@
+import { ContentGenerationPlanningUnavailableError } from "./content-generation-error";
 import { isPostgresQueryTimeout } from "../../db/postgres-deadlines";
 import { AccountStateUnavailableError } from "../../db/account-state";
 import type { ContentGenerationAdmission } from "./request-context";
@@ -42,12 +43,7 @@ export type ContentGenerationActionResult =
   | { readonly outcome: "explicit-required" }
   | { readonly outcome: "budget-denied"; readonly retryAfterSeconds: number };
 
-export class ContentGenerationPlanningUnavailableError extends Error {
-  constructor(options?: ErrorOptions) {
-    super("content generation planning infrastructure unavailable", options);
-    this.name = "ContentGenerationPlanningUnavailableError";
-  }
-}
+export { ContentGenerationPlanningUnavailableError } from "./content-generation-error";
 
 export interface ContentGenerationActionCapability {
   generateTopicTitle(input: {

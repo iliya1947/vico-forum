@@ -5,12 +5,12 @@ import { structureIdentity } from "../../db/structure-browse";
 import {
   parseStructureCounter, StructureConflictError, StructureForbiddenError,
   StructureNotFoundError, StructureValidationError,
-} from "../../db/forum-structure";
+} from "../../db/forum-structure-contract";
 import type { TopicMoveWriter } from "../../db/topic-move";
-import { TopicMoveWriteUnavailableError } from "../../db/hyperdrive-topic-move";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { TopicMoveWriteUnavailableError } from "../../db/topic-move-error";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError, AccountStateUnavailableError } from "../../db/account-state-errors";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 
 export const topicMoveWriterContext = createContext<TopicMoveWriter>();
 export type TopicMoveActionResult = { operation: "topicMove" } & (

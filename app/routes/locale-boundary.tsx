@@ -28,9 +28,9 @@ import { adminAccess } from "../admin/access";
 import {
   allowedAdminEntries, allowedAttentionEntries, type AdminEntryId, type AttentionEntryAccess,
 } from "../settings/workspace-access";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { forumReaderForRequest, ForumReaderConfigurationError } from "../forum/request-context";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 
 interface LocaleBoundaryArgs {
   request: Request;

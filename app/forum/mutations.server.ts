@@ -8,16 +8,16 @@ import {
   ForumStateConflictError,
   ForumTopicClosedError,
   ForumVisibilityReasonError,
-} from "../../db/forum-repository";
-import { InvalidForumContentError } from "../../db/forum-service";
+} from "../../db/forum-errors";
+import { InvalidForumContentError } from "../../db/forum-errors";
 import { ForumWriteRateLimitError } from "../../db/forum-write-policy";
-import { UserMeasureRestrictedError } from "../../db/user-measure-policy";
-import { AccountInactiveError, AccountMissingError } from "../../db/account-state";
-import { ForumStorageUnavailableError } from "../../db/hyperdrive-forum";
+import { UserMeasureRestrictedError } from "../../db/user-measures-error";
+import { AccountInactiveError, AccountMissingError } from "../../db/account-state-errors";
+import { ForumStorageUnavailableError } from "../../db/forum-storage-error";
 import { forumWriterForRequest } from "./request-context";
 import { authorizationForRequest } from "../authorization/request-context";
 import type { PermissionKey } from "../authorization/catalog";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 
 export interface ForumMutationError { intent?: "editPost"; error: "invalid" | "unauthenticated" | "origin" | "forbidden" | "notFound" | "conflict" | "topicClosed" | "rateLimited" | "unavailable" | "unexpected" }
 

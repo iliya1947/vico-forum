@@ -1,3 +1,4 @@
+import { InvalidForumContentError } from "./forum-errors";
 import { canonicalizeTranslationLocale } from "../app/localization/locale";
 import {
   ConcurrentRevisionError,
@@ -17,7 +18,7 @@ import {
   type SolutionManagementScope,
 } from "./forum-repository";
 
-export class InvalidForumContentError extends Error {}
+export { InvalidForumContentError } from "./forum-errors";
 
 export type SourceLocaleCorrectionScope = "own" | "any";
 export const HELP_SOLUTION_OUTDATED_REASON_MAX_LENGTH = 1000;

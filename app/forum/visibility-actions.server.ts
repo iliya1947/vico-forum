@@ -1,7 +1,7 @@
 import { data, type RouterContextProvider } from "react-router";
 import { authSessionForRequest } from "../auth/request-context";
-import { AccountStateUnavailableError } from "../../db/account-state";
-import { AuthorizationUnavailableError } from "../../db/authorization-service";
+import { AccountStateUnavailableError } from "../../db/account-state-errors";
+import { AuthorizationUnavailableError } from "../../db/authorization-error";
 import { forumMutationGuard, requireForumPermission, runForumMutation,
   type ForumMutationError } from "./mutations.server";
 

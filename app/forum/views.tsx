@@ -12,6 +12,7 @@ import {MessageQuickActions} from "../admin/message-quick-actions";
 import { hiddenInspectionPath } from "../admin/visibility-queue-path";
 import { useAdministrativeRouting } from "../administrative-routing/provider";
 import { ForumAttachmentDisplay } from "./attachment-presentation";
+import { publishedAttachmentReference } from "./attachment-url";
 import { ComplaintSubmissionForm } from "../complaints/submission-form";
 import { ComplaintQueueList } from "../complaints/queue-view";
 import type { ComplaintQueuePage } from "../complaints/queue-contract";
@@ -3022,7 +3023,7 @@ export function TopicView({
                     >
                       <ForumInlineAttachmentProvider attachments={(post.attachments ?? []).map((attachment) => ({
                         ...attachment,
-                        url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                        reference: publishedAttachmentReference(post.id, attachment.id),
                       }))}>
                         <PostBodyContent presentation={recoveredPost?.id === post.id ? {
                           ...postPresentation, selected: "original", content: post.body.originalContent,
@@ -3071,7 +3072,7 @@ export function TopicView({
                           disabled={isEditSubmitting}
                           existingInlineAttachments={(post.attachments ?? []).map((attachment) => ({
                             ...attachment,
-                            url: `/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`,
+                            reference: publishedAttachmentReference(post.id, attachment.id),
                           }))}
                         />
                         {editBaseRevisionId !== post.body.id || completedEditOperationId ? (
@@ -3092,7 +3093,7 @@ export function TopicView({
                       <div className="topic-message-attachments" aria-label={t("editorAttachments")}>
                         {post.attachments.map((attachment) => (
                           <ForumAttachmentDisplay key={attachment.id} attachment={attachment}
-                            url={`/api/attachments/file/${encodeURIComponent(attachment.id)}?post=${encodeURIComponent(post.id)}`} />
+                            reference={publishedAttachmentReference(post.id, attachment.id)} />
                         ))}
                       </div>
                     ) : null}

@@ -1,4 +1,4 @@
-import { parseStructureCounter, StructureValidationError } from "./forum-structure";
+import { parseStructureCounter, StructureValidationError } from "./forum-structure-contract";
 
 export type StructureBrowseKind = "admin-categories" | "admin-sections" | "categories" | "sections";
 export interface StructureBrowseScope { kind: StructureBrowseKind; parent: string | null; search: string }

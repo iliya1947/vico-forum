@@ -8,6 +8,7 @@ import { canonicalEnglishCatalog } from "../localization/catalog";
 import { createTranslationRuntime } from "../localization/runtime";
 import { HeaderAuthProvider } from "../auth/auth-controls";
 import { ForumMarkdown, ForumInlineAttachmentProvider, highlightCode } from "./markdown";
+import { publishedAttachmentReference } from "./attachment-url";
 import { attributedQuoteMarkdown } from "./quote-markdown";
 import { spreadsheetToMarkdown } from "./technical-markdown";
 import { clipboardHtmlToMarkdown } from "./clipboard-markdown";
@@ -168,7 +169,7 @@ describe("authorized inline attachment image Markdown", () => {
   const body = `Before ![shot](vico-attachment:${id}) after\n\n![remote](https://example.invalid/tracker.png)`;
 
   it("uses only a current server-verified raster reference, never arbitrary image URLs", () => {
-    const attached = { id, fileName: "shot.png", byteSize: 5, detectedType: "png", url };
+    const attached = { id, fileName: "shot.png", byteSize: 5, detectedType: "png", reference: publishedAttachmentReference("post-123", id) };
     const view = render(<I18nextProvider i18n={runtime()}>
       <ForumInlineAttachmentProvider attachments={[attached]}>
         <ForumMarkdown>{body}</ForumMarkdown>
@@ -187,7 +188,7 @@ describe("authorized inline attachment image Markdown", () => {
   it("does not turn non-raster and unrecognized IDs into working images", () => {
     render(<I18nextProvider i18n={runtime()}>
       <ForumInlineAttachmentProvider attachments={[{
-        id, fileName: "source.txt", byteSize: 5, detectedType: "text", url,
+        id, fileName: "source.txt", byteSize: 5, detectedType: "text", reference: publishedAttachmentReference("post-123", id),
       }]}>
         <ForumMarkdown>{body}</ForumMarkdown>
       </ForumInlineAttachmentProvider>
