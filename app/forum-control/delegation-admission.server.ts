@@ -43,7 +43,7 @@ function nonblank(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && value.trim() === value;
 }
 
-function validScopes(scopes: readonly string[]): boolean {
+export function validForumControlScopes(scopes: readonly string[]): boolean {
   return scopes.length > 0 && new Set(scopes).size === scopes.length &&
     scopes.every(scope => scope === read || scope === write || scope === "offline_access") &&
     scopes.some(scope => scope === read || scope === write);
@@ -55,14 +55,14 @@ function matchesGrant(binding: ForumControlBinding, grant: ForumControlGrant): b
     nonblank(binding.repositoryId) && isBoundOwner(grant.userId, binding.ownerUserId) &&
     grant.clientId === binding.clientId && grant.issuer === binding.issuer &&
     grant.resource === binding.resource && grant.repositoryId === binding.repositoryId &&
-    grant.revokedAt === null && validScopes(grant.scopes);
+    grant.revokedAt === null && validForumControlScopes(grant.scopes);
 }
 
 /** Checks identity using the existing authoritative session row, not a cookie,
  * email, role, bearer claims alone, or a replacement session of the same user.
  * The mutation path locks the account in the established auth lock order.
  */
-async function requireLiveSession(connection: Connection, userId: string, sessionId: string,
+export async function requireLiveSession(connection: Connection, userId: string, sessionId: string,
   forMutation: boolean): Promise<void> {
   if (!nonblank(userId) || !nonblank(sessionId)) throw new ForumControlDenied();
   try {
@@ -109,7 +109,7 @@ export function requireScopedProviderClaims(claims: unknown, binding: ForumContr
       token.client_id !== grant.clientId || token.sub !== grant.userId || token.sid !== grant.sessionId ||
       token.token_type !== "Bearer" || typeof token.exp !== "number" ||
       !Number.isSafeInteger(token.exp) || token.exp <= Math.floor(now / 1000) ||
-      !validScopes(scopes) || !scopes.includes(required) || !scopes.every(scope => grant.scopes.includes(scope))) {
+      !validForumControlScopes(scopes) || !scopes.includes(required) || !scopes.every(scope => grant.scopes.includes(scope))) {
     throw new ForumControlDenied();
   }
 }
