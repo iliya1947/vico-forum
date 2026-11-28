@@ -1,3 +1,9 @@
+import {
+  admitForumControlAuthorizationCode, admitForumControlConsent, isForumControlAuthorizationCode, forumControlOAuthError,
+  type ForumControlOAuthInvocation,
+} from "../forum-control/oauth-provider.server";
+import { admitForumControlTokenInsert, revokeForumControlProviderSelection } from "../forum-control/delegation-store.server";
+import { ForumControlDenied } from "../forum-control/delegation-admission.server";
 import { AccountMethodConflictError, assertRemainingAccountMethod } from "./account-security-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APIError, type BetterAuthOptions } from "better-auth";
@@ -46,6 +52,7 @@ export function guardBetterAuthSessionWrites(
   onAccountStateError?: (error: unknown) => void,
   consumeOwnSignOutToken?: (token: string) => boolean,
   lifecycle = new AuthLifecycleTransaction(database.$client),
+  forumControl?: ForumControlOAuthInvocation,
 ): ReturnType<typeof drizzleAdapter> {
   const connection = database.$client;
   lifecycle.assertConnection(connection);
@@ -68,6 +75,58 @@ export function guardBetterAuthSessionWrites(
             where?: { field?: unknown; value?: unknown; operator?: unknown }[];
             update?: { userId?: unknown; id?: unknown };
           } | undefined;
+          if (forumControl && command) {
+            const config = forumControl.config;
+            const model = command.model;
+            const tokenModel = model === "oauthAccessToken" || model === "oauthRefreshToken";
+            const verificationCreate = model === "verification" && property === "create" && isForumControlAuthorizationCode(command.data);
+            const consentWrite = model === "oauthConsent" && (property === "create" || property === "update");
+            const tokenCreate = tokenModel && property === "create";
+            const tokenRevoke = tokenModel &&
+              (property === "delete" || property === "deleteMany" ||
+                (property === "incrementOne" && forumControl.operation === "revoke"));
+            if (verificationCreate || consentWrite || tokenCreate || tokenRevoke) {
+              return lifecycle.runAdapterOperation(async () => {
+                try {
+                  if (verificationCreate) {
+                    await admitForumControlAuthorizationCode(connection, config, command.data);
+                  } else if (consentWrite) {
+                    let data: unknown = command.data;
+                    if (property === "update") {
+                      const id = command.where?.length === 1 && command.where[0].field === "id"
+                        ? command.where[0].value : null;
+                      if (typeof id !== "string") throw new ForumControlDenied();
+                      const existing: unknown = await Reflect.apply(Reflect.get(target, "findOne"), target,
+                        [{ model, where: command.where }]);
+                      if (!existing || typeof existing !== "object") throw new ForumControlDenied();
+                      data = { ...existing, ...command.update };
+                    }
+                    await admitForumControlConsent(connection, config, data);
+                  } else if (tokenCreate) {
+                    if (forumControl.operation !== "code" && forumControl.operation !== "refresh") {
+                      throw new ForumControlDenied();
+                    }
+                    forumControl.mintAttempted = true;
+                    await admitForumControlTokenInsert(connection, lifecycle, config, command.data,
+                      forumControl.operation === "code");
+                  } else if (tokenRevoke) {
+                    // The native provider selects these rows after token/client
+                    // validation or during its replay invalidation. Resolve
+                    // the grant before the native delete removes the evidence.
+                    if (forumControl.operation !== "code" && forumControl.operation !== "refresh" &&
+                      forumControl.operation !== "revoke") throw new ForumControlDenied();
+                    if (!command.where?.length) throw new ForumControlDenied();
+                    if (model !== "oauthAccessToken" && model !== "oauthRefreshToken") throw new ForumControlDenied();
+                    await revokeForumControlProviderSelection(connection, config, model, command.where);
+                  }
+                  return await Reflect.apply(method, target, args);
+                } catch (error) {
+                  if (error instanceof ForumControlDenied) throw forumControlOAuthError();
+                  throw error;
+                }
+              }, true);
+            }
+          }
           const sessionWrite = command?.model === "session" &&
             (property === "create" || property === "update");
           const userWrite = command?.model === "user" &&

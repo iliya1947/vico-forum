@@ -8,6 +8,11 @@
     "db/**/*",
     "workers/**/*",
     "tests/browser/auth-02b/worker-entry.ts",
+    "tests/fixtures/forum-control-mcp.ts",
+    "tests/fixtures/forum-control-oauth.ts",
+    "tests/browser/forum-control/config.ts",
+    "tests/browser/forum-control/worker-entry.ts",
+    "tests/fixtures/forum-control-mcp.test.ts",
     "worker-configuration.d.ts",
     ".github/production-schema-manifest.json"
   ],

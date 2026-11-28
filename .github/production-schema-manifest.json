@@ -1,7 +1,7 @@
 {
   "version": 1,
   "schema": "public",
-  "targetMigration": "0078_auth_registration_challenge_observation",
+  "targetMigration": "0079_forum_control_oauth",
   "tables": {
     "account": {
       "columns": [
@@ -148,80 +148,6 @@
           "columns": [
             {
               "name": "user_id",
-              "order": "asc",
-              "nulls": "last"
-            }
-          ]
-        }
-      ]
-    },
-    "auth_lifecycle_budget": {
-      "columns": [
-        {
-          "name": "key",
-          "type": "text",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "count",
-          "type": "integer",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "nullable": false,
-          "defaultSha256": null
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "auth_lifecycle_budget_pkey",
-          "columns": [
-            "key"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [],
-      "checks": [
-        {
-          "name": "auth_lifecycle_budget_count_check",
-          "columns": [
-            "count"
-          ],
-          "definitionSha256": "4dfacda1689baec36b69b29a3577f01382c22f7f226226c8abe143c26860ea21"
-        },
-        {
-          "name": "auth_lifecycle_budget_expiry_check",
-          "columns": [
-            "expires_at"
-          ],
-          "definitionSha256": "b8a80ac615c2d9c519b94dd43595fc01e2f145451265573cc9237a3022725bcb"
-        },
-        {
-          "name": "auth_lifecycle_budget_key_check",
-          "columns": [
-            "key"
-          ],
-          "definitionSha256": "c2bd5bdaee88b584a180290109519f9fe56298e759790755f1edfc7071089753"
-        }
-      ],
-      "indexes": [
-        {
-          "name": "auth_lifecycle_budget_cleanup_idx",
-          "unique": false,
-          "method": "btree",
-          "columns": [
-            {
-              "name": "expires_at",
-              "order": "asc",
-              "nulls": "last"
-            },
-            {
-              "name": "key",
               "order": "asc",
               "nulls": "last"
             }
@@ -448,6 +374,80 @@
             }
           ],
           "predicateSha256": null
+        }
+      ]
+    },
+    "auth_lifecycle_budget": {
+      "columns": [
+        {
+          "name": "key",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "count",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "auth_lifecycle_budget_pkey",
+          "columns": [
+            "key"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "auth_lifecycle_budget_count_check",
+          "columns": [
+            "count"
+          ],
+          "definitionSha256": "4dfacda1689baec36b69b29a3577f01382c22f7f226226c8abe143c26860ea21"
+        },
+        {
+          "name": "auth_lifecycle_budget_expiry_check",
+          "columns": [
+            "expires_at"
+          ],
+          "definitionSha256": "b8a80ac615c2d9c519b94dd43595fc01e2f145451265573cc9237a3022725bcb"
+        },
+        {
+          "name": "auth_lifecycle_budget_key_check",
+          "columns": [
+            "key"
+          ],
+          "definitionSha256": "c2bd5bdaee88b584a180290109519f9fe56298e759790755f1edfc7071089753"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "auth_lifecycle_budget_cleanup_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "expires_at",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "key",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ]
         }
       ]
     },
@@ -3722,6 +3722,138 @@
         }
       ]
     },
+    "forum_control_grant": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "session_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "issuer",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "resource",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "repository_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "scopes",
+          "type": "text[]",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revoked_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_control_grant_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "forum_control_grant_client_id_oauth_client_client_id_fk",
+          "columns": [
+            "client_id"
+          ],
+          "referencedTable": "oauth_client",
+          "referencedColumns": [
+            "client_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "forum_control_grant_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "forum_control_grant_client_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "forum_control_grant_user_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
     "forum_editor_drafts": {
       "columns": [
         {
@@ -6016,6 +6148,49 @@
         }
       ]
     },
+    "forum_structure_state": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "version",
+          "type": "bigint",
+          "nullable": false,
+          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "forum_structure_state_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [
+        {
+          "name": "forum_structure_state_singleton_check",
+          "columns": [
+            "id"
+          ],
+          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
+        },
+        {
+          "name": "forum_structure_state_version_check",
+          "columns": [
+            "version"
+          ],
+          "definitionSha256": "13dfe986143b3d433922f5bf0e149e3944ea5f5a5b9b0f428b4e969abdb1e192"
+        }
+      ],
+      "indexes": []
+    },
     "forum_tags": {
       "columns": [
         {
@@ -7371,6 +7546,1128 @@
           "definitionSha256": "711a405a553bade6fe1677bd970e43cae97386dc5bfc2eeb51a43a10e9179428"
         }
       ],
+      "indexes": []
+    },
+    "oauth_access_token": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "session_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "reference_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "authorization_code_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "resources",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "requested_user_info_claims",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "refresh_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revoked",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "confirmation",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "scopes",
+          "type": "text[]",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_access_token_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "oauth_access_token_token_unique",
+          "columns": [
+            "token"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "oauth_access_token_client_id_oauth_client_client_id_fk",
+          "columns": [
+            "client_id"
+          ],
+          "referencedTable": "oauth_client",
+          "referencedColumns": [
+            "client_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_access_token_refresh_id_oauth_refresh_token_id_fk",
+          "columns": [
+            "refresh_id"
+          ],
+          "referencedTable": "oauth_refresh_token",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_access_token_session_id_session_id_fk",
+          "columns": [
+            "session_id"
+          ],
+          "referencedTable": "session",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_access_token_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "oauth_access_token_authorization_code_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "authorization_code_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_access_token_client_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_access_token_refresh_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "refresh_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_access_token_session_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "session_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_access_token_user_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "oauth_client": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_secret",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_discovery_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "skip_consent",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "enable_end_session",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "subject_type",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "scopes",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_credentials_scopes",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": "de9b902a0abb75d50771c319ee6d6a50d3963e3d28ce30e76b96e3c382b0c4ab"
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "uri",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "icon",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "contacts",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "tos",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "policy",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "software_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "software_version",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "software_statement",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "redirect_uris",
+          "type": "text[]",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "post_logout_redirect_uris",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "backchannel_logout_uri",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "backchannel_logout_session_required",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "application_type",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "jwks",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "jwks_uri",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "grant_types",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "response_types",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "require_pkce",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "dpop_bound_access_tokens",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "reference_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_client_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "oauth_client_client_id_unique",
+          "columns": [
+            "client_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "oauth_client_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "oauth_client_user_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "oauth_client_assertion": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_client_assertion_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [],
+      "checks": [],
+      "indexes": []
+    },
+    "oauth_client_resource": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "resource_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_client_resource_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "oauth_client_resource_client_id_oauth_client_client_id_fk",
+          "columns": [
+            "client_id"
+          ],
+          "referencedTable": "oauth_client",
+          "referencedColumns": [
+            "client_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_client_resource_resource_id_oauth_resource_identifier_fk",
+          "columns": [
+            "resource_id"
+          ],
+          "referencedTable": "oauth_resource",
+          "referencedColumns": [
+            "identifier"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "oauth_client_resource_client_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_client_resource_client_resource_uidx",
+          "unique": true,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            },
+            {
+              "name": "resource_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_client_resource_resource_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "resource_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "oauth_consent": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "reference_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "resources",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "requested_user_info_claims",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "scopes",
+          "type": "text[]",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_consent_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [],
+      "foreignKeys": [
+        {
+          "name": "oauth_consent_client_id_oauth_client_client_id_fk",
+          "columns": [
+            "client_id"
+          ],
+          "referencedTable": "oauth_client",
+          "referencedColumns": [
+            "client_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_consent_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "oauth_consent_client_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_consent_user_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "oauth_refresh_token": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "token",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "client_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "session_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "user_id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "reference_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "authorization_code_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "resources",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "requested_user_info_claims",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "revoked",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "rotated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "rotation_replay_response",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "rotation_replay_expires_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "auth_time",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "confirmation",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "scopes",
+          "type": "text[]",
+          "nullable": false,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_refresh_token_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "oauth_refresh_token_token_unique",
+          "columns": [
+            "token"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [
+        {
+          "name": "oauth_refresh_token_client_id_oauth_client_client_id_fk",
+          "columns": [
+            "client_id"
+          ],
+          "referencedTable": "oauth_client",
+          "referencedColumns": [
+            "client_id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_refresh_token_session_id_session_id_fk",
+          "columns": [
+            "session_id"
+          ],
+          "referencedTable": "session",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        },
+        {
+          "name": "oauth_refresh_token_user_id_user_id_fk",
+          "columns": [
+            "user_id"
+          ],
+          "referencedTable": "user",
+          "referencedColumns": [
+            "id"
+          ],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "deferrable": false,
+          "initiallyDeferred": false
+        }
+      ],
+      "checks": [],
+      "indexes": [
+        {
+          "name": "oauth_refresh_token_authorization_code_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "authorization_code_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_refresh_token_client_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "client_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_refresh_token_session_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "session_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        },
+        {
+          "name": "oauth_refresh_token_user_id_idx",
+          "unique": false,
+          "method": "btree",
+          "columns": [
+            {
+              "name": "user_id",
+              "order": "asc",
+              "nulls": "last"
+            }
+          ],
+          "predicateSha256": null
+        }
+      ]
+    },
+    "oauth_resource": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "identifier",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "nullable": false,
+          "defaultSha256": null
+        },
+        {
+          "name": "access_token_ttl",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "refresh_token_ttl",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "signing_algorithm",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "signing_key_id",
+          "type": "text",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "allowed_scopes",
+          "type": "text[]",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "custom_claims",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "dpop_bound_access_tokens_required",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "nullable": true,
+          "defaultSha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp without time zone",
+          "nullable": true,
+          "defaultSha256": null
+        },
+        {
+          "name": "policy_version",
+          "type": "integer",
+          "nullable": true,
+          "defaultSha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": true,
+          "defaultSha256": null
+        }
+      ],
+      "primaryKeys": [
+        {
+          "name": "oauth_resource_pkey",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "uniqueConstraints": [
+        {
+          "name": "oauth_resource_identifier_unique",
+          "columns": [
+            "identifier"
+          ],
+          "nullsNotDistinct": false
+        }
+      ],
+      "foreignKeys": [],
+      "checks": [],
       "indexes": []
     },
     "owner_attempt_patterns": {
@@ -10033,49 +11330,6 @@
           ]
         }
       ]
-    },
-    "forum_structure_state": {
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "nullable": false,
-          "defaultSha256": null
-        },
-        {
-          "name": "version",
-          "type": "bigint",
-          "nullable": false,
-          "defaultSha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
-        }
-      ],
-      "primaryKeys": [
-        {
-          "name": "forum_structure_state_pkey",
-          "columns": [
-            "id"
-          ]
-        }
-      ],
-      "uniqueConstraints": [],
-      "foreignKeys": [],
-      "checks": [
-        {
-          "name": "forum_structure_state_singleton_check",
-          "columns": [
-            "id"
-          ],
-          "definitionSha256": "e011fee44ff333a0a1f38e404f1ed1d48857a1dbbadb763ee293518e128398f3"
-        },
-        {
-          "name": "forum_structure_state_version_check",
-          "columns": [
-            "version"
-          ],
-          "definitionSha256": "13dfe986143b3d433922f5bf0e149e3944ea5f5a5b9b0f428b4e969abdb1e192"
-        }
-      ],
-      "indexes": []
     }
   },
   "triggerFunctions": [

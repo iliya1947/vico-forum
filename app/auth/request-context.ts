@@ -81,6 +81,10 @@ export interface AuthRuntime {
   getSession(headers: Headers): Promise<AuthSessionResolution>;
   handle(request: Request): Promise<Response>;
   readonly security?: AccountSecurityRuntime;
+  /** Server-only optional Stage A delegation capability, disabled by default. */
+  readonly forumControl?: {
+    revokeGrant(headers: Headers, grantId: string): Promise<boolean>;
+  };
 }
 
 export class AuthSessionUnavailableError extends Error {

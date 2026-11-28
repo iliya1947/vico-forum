@@ -1,3 +1,9 @@
+import {
+  createForumControlOAuthProvider, forumControlOAuthSchema, validateForumControlOAuthConfig,
+  type ForumControlOAuthConfig, type ForumControlOAuthInvocation,
+} from "../forum-control/oauth-provider.server";
+import { ForumControlDenied, requireOwnerConsentSession } from "../forum-control/delegation-admission.server";
+import { admitForumControlAccessToken, revokeForumControlGrant } from "../forum-control/delegation-store.server";
 import type { CredentialTransition } from "./credential-lifecycle.server";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
@@ -166,7 +172,7 @@ export const betterAuthIpAddressOptions = {
 export const betterAuthAdvancedOptions = { ipAddress: betterAuthIpAddressOptions };
 
 type CanonicalBetterAuthOptions = Omit<BetterAuthOptions, "plugins"> & {
-  plugins: [ReturnType<typeof authLifecyclePlugin>];
+  plugins: [ReturnType<typeof authLifecyclePlugin>, ...ReturnType<typeof createForumControlOAuthProvider>[]];
 };
 
 export function betterAuthOptions(
@@ -175,20 +181,22 @@ export function betterAuthOptions(
   preRoutingSessionLookup = false,
   lifecycle = new AuthLifecycleTransaction(database.$client),
   dependencies?: AuthLifecycleDependencies,
+  forumControl?: ForumControlOAuthInvocation,
 ): CanonicalBetterAuthOptions {
   // Better Auth is created per request in the Worker runtime; a consumed,
   // signed token never broadens the inactive exception to other deletions.
   const ownSignOutTokens = new Set<string>();
   const signupEvidence = new SignupVerificationEvidence();
   const registrationAdmission = createRegistrationAdmission(database);
+  if (forumControl) validateForumControlOAuthConfig(forumControl.config, env.BETTER_AUTH_URL);
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     verification: { storeIdentifier: { default: "plain", overrides: { "reset-password:": "hashed" } } },
     database: guardBetterAuthSessionWrites(database, drizzleAdapter(database, {
       provider: "pg" as const,
-      schema: betterAuthSchema,
-    }), onActorStateError, token => ownSignOutTokens.delete(token), lifecycle),
+      schema: forumControl ? { ...betterAuthSchema, ...forumControlOAuthSchema } : betterAuthSchema,
+    }), onActorStateError, token => ownSignOutTokens.delete(token), lifecycle, forumControl),
     // This gate belongs to the canonical Better Auth configuration, not to
     // optional SA-02 observers or only the HTTP request handler.
     databaseHooks: {
@@ -250,7 +258,7 @@ export function betterAuthOptions(
       () => lifecycle.runAdapterOperation(async () => (await readRegistrationFlags(database)).emailRegistrationEnabled),
       { ...dependencies, registrationChallenge: dependencies?.registrationChallenge ?? registrationChallengeConfig(env.AUTH_REGISTRATION_CHALLENGE_MODE),
         googleEnabled: !!env.GOOGLE_CLIENT_ID && !!env.GOOGLE_CLIENT_SECRET },
-      onActorStateError)],
+      onActorStateError), ...(forumControl ? [createForumControlOAuthProvider(database.$client, lifecycle, forumControl.config)] : [])],
     hooks: createBetterAuthRequestHooks(database, onActorStateError, preRoutingSessionLookup,
       token => { ownSignOutTokens.add(token); }),
     socialProviders: {
@@ -278,6 +286,7 @@ export function createAuth(
   lifecycle = new AuthLifecycleTransaction(database.$client,
     count => { try { onCreatedFact?.recordGap?.(count); } catch { /* best effort */ } }),
   dependencies?: AuthLifecycleDependencies,
+  forumControl?: ForumControlOAuthInvocation,
 ) {
   const options = betterAuthOptions(database, env, onActorStateError, preRoutingSessionLookup, lifecycle, {
     ...dependencies,
@@ -314,7 +323,7 @@ export function createAuth(
         }
       },
     } : {}),
-  });
+  }, forumControl);
   if (onCreatedFact) {
     // A new user's hook is queued before its credential/Google account hook.
     // This is instance-local to the canonical Better Auth operation.
@@ -544,12 +553,15 @@ export function createHyperdriveAuthRuntime(
   onAdmissionDenied?: () => void,
   onCreatedFact?: AuthCreationObserver,
   dependencies?: AuthLifecycleDependencies,
+  forumControlConfig?: ForumControlOAuthConfig,
 ): AuthRuntime {
   async function useAuth<T>(
-    operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client) => Promise<T>,
+    operation: (auth: ReturnType<typeof createAuth>, database: NodePgDatabase, client: Client, lifecycle: AuthLifecycleTransaction) => Promise<T>,
     preserveDatabaseError = false,
     onAdmissionError?: (error: unknown) => void,
     preRoutingSessionLookup = false,
+    forumControlOperation: ForumControlOAuthInvocation["operation"] = "other",
+    invocation?: ForumControlOAuthInvocation,
   ): Promise<T> {
     const client = createClient(connectionString);
     const lifecycle = new AuthLifecycleTransaction(client, count => {
@@ -579,7 +591,9 @@ export function createHyperdriveAuthRuntime(
       const result = await operation(createAuth(database, env,
         preserveDatabaseError ? (error) => { databaseError ??= error; } : undefined,
         onAdmissionError, onAdmissionDenied, onCreatedFact, deletions, creations,
-        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle, dependencies), database, client);
+        (error) => { actorStateError ??= error; }, preRoutingSessionLookup, lifecycle, dependencies,
+        invocation ?? (forumControlConfig ? { config: forumControlConfig, operation: forumControlOperation, mintAttempted: false } : undefined)),
+        database, client, lifecycle);
       // Discard a library-generated success/redirect/cookie on unconfirmed
       // transaction control, even when Better Auth handled the original error.
       if (lifecycle.controlFailure) throw lifecycle.controlFailure;
@@ -624,6 +638,16 @@ export function createHyperdriveAuthRuntime(
   }
 
   return {
+    ...(forumControlConfig ? {
+      forumControl: {
+        revokeGrant: (headers: Headers, grantId: string) => useAuth(async (auth, _database, client, lifecycle) => {
+          const current = await auth.api.getSession({ headers });
+          const actor = await requireOwnerConsentSession(client, forumControlConfig, current as AuthSession | null);
+          return lifecycle.runAdapterOperation(() =>
+            revokeForumControlGrant(client, lifecycle, forumControlConfig, actor, grantId), true);
+        }),
+      },
+    } : {}),
     security: {
       read: (headers, identity) => securityCall(() => useAuth(async (auth, database, client) => {
         const current = await verifyIdentity(auth, headers, identity);
@@ -757,9 +781,76 @@ export function createHyperdriveAuthRuntime(
         return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
       };
       const admission = { failure: undefined as { error: unknown } | undefined };
+      let invocation: ForumControlOAuthInvocation | undefined;
+      let introspectionToken: string | undefined;
+      if (forumControlConfig) {
+        const path = new URL(request.url).pathname;
+        const oauthPath = new URL(forumControlConfig.issuer).pathname + "/oauth2/";
+        let operation: ForumControlOAuthInvocation["operation"] = "other";
+        if (path.startsWith(oauthPath)) {
+          const endpoint = path.slice(oauthPath.length);
+          if (!["authorize", "consent", "continue", "token", "introspect", "revoke"].includes(endpoint)) {
+            return new Response(null, { status: 404, headers: { "Cache-Control": "no-store" } });
+          }
+          if (endpoint === "token") {
+            try {
+              const body = await request.clone().formData();
+              const grant = body.getAll("grant_type");
+              if (grant.length !== 1 || (grant[0] !== "authorization_code" && grant[0] !== "refresh_token")) {
+                return Response.json({ error: "unsupported_grant_type" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+              }
+              operation = grant[0] === "authorization_code" ? "code" : "refresh";
+            } catch {
+              return Response.json({ error: "invalid_request" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+            }
+          } else if (endpoint === "revoke") operation = "revoke";
+          else if (endpoint === "introspect") {
+            try {
+              const body = await request.clone().formData();
+              const tokens = body.getAll("token");
+              if (tokens.length !== 1 || typeof tokens[0] !== "string" || !tokens[0]) throw new ForumControlDenied();
+              introspectionToken = tokens[0];
+            } catch {
+              return Response.json({ error: "invalid_request" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+            }
+          }
+        }
+        invocation = { config: forumControlConfig, operation, mintAttempted: false };
+      }
+      let failedTokenResponse: Response | undefined;
       try {
-        return protectGuestResponse(await useAuth(async (auth) => {
-          const response = await auth.handler(request);
+        return protectGuestResponse(await useAuth(async (auth, _database, client, lifecycle) => {
+          let response: Response;
+          const oauthInvocation = invocation;
+          if (oauthInvocation && (oauthInvocation.operation !== "other" || introspectionToken !== undefined)) {
+            // Native token rotation, replay invalidation, grant insertion
+            // and revoke share one transaction and account lock. Never let
+            // a library-generated token response escape before COMMIT.
+            await auth.$context;
+            response = await lifecycle.runAdapterOperation(async () => {
+              await client.query('select id from "user" where id=$1 for no key update',
+                [oauthInvocation.config.ownerUserId]);
+              let result = await auth.handler(request);
+              if (!result.ok && oauthInvocation.mintAttempted) {
+                failedTokenResponse = result;
+                throw new ForumControlDenied();
+              }
+              if (introspectionToken !== undefined && result.ok) {
+                const claims: unknown = await result.clone().json();
+                try {
+                  // Read the native claims and the current grant under the
+                  // same account lock used by issuance and revocation.
+                  await admitForumControlAccessToken(client, oauthInvocation.config, introspectionToken, claims);
+                } catch (error) {
+                  if (!(error instanceof ForumControlDenied)) throw error;
+                  result = Response.json({ active: false }, { headers: { "Cache-Control": "no-store" } });
+                }
+              }
+              return result;
+            }, true);
+          } else {
+            response = await auth.handler(request);
+          }
           if (!admission.failure) return response;
           if (sessionStorageUnavailable(admission.failure.error)) {
             return new Response("Service unavailable. Please try again.", {
@@ -770,8 +861,11 @@ export function createHyperdriveAuthRuntime(
           // Missing policy singleton, unexpected schema/configuration and programming errors
           // must follow the normal unexpected-error path, not Better Auth's validation_failed 403.
           throw admission.failure.error;
-        }, false, (error) => { admission.failure ??= { error }; }));
+        }, false, (error) => { admission.failure ??= { error }; }, false, invocation?.operation, invocation));
       } catch (error) {
+        if (invocation && (error instanceof ForumControlDenied || (isAPIError(error) && error.body?.error === "invalid_grant"))) {
+          return failedTokenResponse ?? Response.json({ error: "invalid_grant" }, { status: 400, headers: { "Cache-Control": "no-store" } });
+        }
         if (error instanceof AuthLifecycleTransactionError) {
           if (!sessionStorageUnavailable(error)) throw new AccountStateUnexpectedError({ cause: error });
           return protectGuestResponse(new Response(error.code === "commit-uncertain"

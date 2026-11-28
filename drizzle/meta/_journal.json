@@ -554,6 +554,13 @@
       "when": 1795696548652,
       "tag": "0078_auth_registration_challenge_observation",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1795696548653,
+      "tag": "0079_forum_control_oauth",
+      "breakpoints": true
     }
   ]
 }
